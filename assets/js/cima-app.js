@@ -13479,6 +13479,12 @@ ${ftFechaDocsHtml}
         if (hasFTText) {
             const qtTextContainer = document.getElementById('qt-section-text');
             if (qtTextContainer) {
+                // La misma limpieza de presentación que en 4.1, 4.2, 4.5 y 4.8, y antes de
+                // resaltar como allí. Solo quita bloques sin ningún carácter visible: una mención
+                // de QT o ECG nunca está en un bloque vacío, así que no cambia qué se resalta
+                // (comprobado en Chromium el 2026-10-04 con las 48 secciones reales del fixture de
+                // menciones: mismo texto, mismas líneas copiables, mismos títulos y resaltados).
+                this._compactarTextoFT(qtTextContainer);
                 // Patrones QT amplios — se usan solo para resaltado, no para decidir si mostrar el tab
                 const qtHighlightPatterns = [
                     /\bQTc?\b/gi,
@@ -21560,6 +21566,512 @@ ${ftFechaDocsHtml}
 
     // ─── PESTAÑA EVIDENCIA ────────────────────────────────────────────────────
 
+    /**
+     * Resaltados del apartado 5.1 (Propiedades farmacodinámicas) en Evidencia: dónde nombra la
+     * ficha cada TIPO de medida de resultado. Misma forma que `RESALTADOS_POSOLOGIA` para usar el
+     * mismo `_segmentarResaltados`, más un glosario por término (`terminos`) para el tooltip.
+     *
+     * ESPEJO, NO JUEZ. Un resaltado dice «aquí aparece una medida de este tipo», nunca si el efecto
+     * es grande, favorable o relevante. Por eso no hay colores de semáforo, no hay recuentos
+     * («Diferencias · 0» se leería como «la ficha no da diferencias absolutas») y no se calcula
+     * nada: ni NNT, ni absolutos a partir de relativos, ni cifras que falten.
+     *
+     * RECONOCER EL NOMBRE, Y EL VALOR SOLO SI ESTÁ PEGADO A ÉL. «HR 0,74» o «reducción del riesgo
+     * relativo del 20 %» llevan su cifra; un porcentaje suelto no se marca nunca (puede ser un
+     * resultado de grupo, un cambio respecto al basal, una frecuencia o un efecto relativo), y una
+     * cifra en otra celda de la tabla tampoco: no se asocia por proximidad.
+     *
+     * SIGLAS CON CONTEXTO. Las mayúsculas no acreditan nada: «RR» es también el intervalo del ECG,
+     * «HR+» son receptores hormonales, «IC» es insuficiencia cardiaca y «DE» o «SE» son palabras en
+     * un encabezado en mayúsculas. Una sigla solo cuenta pegada a su valor, a «(IC …)», o entre
+     * paréntesis tras su nombre; los nombres desarrollados, en cambio, se reconocen en cualquier
+     * caja, porque hay fichas con las cabeceras de tabla en mayúsculas.
+     *
+     * TIPO NO DECLARADO, SIN CLASIFICAR. «Reducción del 20 % del riesgo» no dice si es relativa o
+     * absoluta: va a una categoría neutra que lo dice, no a una de las dos.
+     *
+     * EL ORDEN DE LA LISTA ES EL ORDEN DE APLICACIÓN, como en Posología: lo que marca una categoría
+     * ya no lo ve la siguiente. Las medidas relativas y las diferencias van antes que «sin tipo»
+     * para que «reducción del riesgo relativo» no caiga allí; las diferencias antes que el
+     * resultado de grupo para que «diferencia en la tasa de respuesta» no se lea como una tasa;
+     * Dispersión antes que el resultado de grupo para que «(DE)» vea el «medio» de «cambio medio
+     * (DE)» (cada categoría solo ve el texto que dejan sin marcar las anteriores). `leyenda` es
+     * solo el orden en que se ven los rótulos.
+     *
+     * LÍMITE DEL MOTOR, A LA VISTA. Se resalta por nodo de texto (`_resaltar51`), sin reescribir el
+     * HTML: una expresión partida entre etiquetas («<b>HR</b> 0,74») no se reconoce entera.
+     *
+     * Getter y no constante, por la misma razón que en Posología: expresiones nuevas en cada uso.
+     */
+    static get RESALTADOS_51() {
+        const L = 'A-Za-zÁÉÍÓÚÜÑáéíóúüñ';
+        // Sin la bandera `u`, `\b` no ve las letras con tilde: los límites se escriben a mano.
+        const ini = `(?<![\\w${L}])`;
+        const fin = `(?![\\w${L}])`;
+        const num = '[-−–]?\\d+(?:[.,]\\d+)*';
+        // Lo que une un nombre con su valor: «HR 0,74», «HR = 0,74», «HR: 0,74», «HR de 0,74»,
+        // «fue de 0,74», «del 20 %», «de un 20 %».
+        const enlace = '(?:\\s*[=:]\\s*|\\s+(?:fue\\s+)?(?:de\\s+un|del|de)\\s+|\\s+)';
+        const valorPct = `(?:${enlace}${num}(?:\\s*%)?)`;
+        const unidad = '(?:\\s*(?:%|puntos(?:\\s+porcentuales)?|mmHg|mg\\/dl|mmol\\/l|kg|cm|ml\\/min|ml|meses|semanas|días|años)(?![\\w' + L + ']))?';
+        const valorUnidad = `(?:${enlace}${num}${unidad})`;
+        const conIC = '(?=\\s*[(\\[]\\s*IC)';
+        // Sigla con contexto: o lleva su valor pegado, o la sigue «(IC …)».
+        const contexto = `(?:${conIC}|${valorPct})`;
+        const siglaEntre = s => `(?:\\s*\\(\\s*(?:${s})\\s*\\))?`;
+        const ajuste = '(?:\\s+(?:ajustad|estratificad|no\\s+estratificad)[oa]s?)?';
+        const verbo = '(?:redu(?:jo|ce|cen|jeron|cía|cían)|disminu(?:yó|ye|yen|yeron)|aument(?:ó|a|an|aron)|increment(?:ó|a|an|aron))';
+        const cambio = '(?:reducci(?:ón|on)|disminuci(?:ón|on)|aumento|incremento|descenso)';
+        const de = '(?:[dD][eE][lL]?|[aA][lL])';
+        const rango = `${num}\\s*%?\\s*(?:[-–—;]|,(?=\\s)|\\s+a\\s+|\\s+y\\s+)\\s*${num}\\s*%?`;
+        const valorIC = `(?:\\s*[:=,]?\\s*(?:\\(\\s*${rango}\\s*\\)|\\[\\s*${rango}\\s*\\]|${rango}))?`;
+        const nivel = '(?:[89]\\d(?:[.,]\\d+)?)\\s*%';
+
+        return [
+            {
+                clase: 'ev51-var', etiqueta: 'Variable y tipo de análisis', leyenda: 7,
+                ayuda: 'Cómo declara el estudio lo que mide y analiza: variable o criterio de valoración principal o secundario, análisis preespecificado, exploratorio, post hoc o de subgrupos, por intención de tratar o por protocolo, no inferioridad o superioridad, tiempo hasta el evento.',
+                patrones: [
+                    new RegExp(`${ini}(?:variables?|criterios?\\s+de\\s+valoraci[óo]n|objetivos?|endpoints?)\\s+(?:de\\s+(?:eficacia|valoraci[óo]n)\\s+)?(?:principal(?:es)?|primari[oa]s?|co-?primari[oa]s?|secundari[oa]s?|clave|exploratori[oa]s?|compuest[oa]s?)(?:\\s+(?:de\\s+(?:eficacia|seguridad|valoraci[óo]n)|clave|compuest[oa]s?))*${fin}`, 'gi'),
+                    new RegExp(`${ini}criterios?\\s+(?:principal(?:es)?|primari[oa]s?|secundari[oa]s?|compuest[oa]s?)\\s+de\\s+(?:valoraci[óo]n|eficacia)${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:criterios?\\s+de\\s+valoraci[óo]n|variables?\\s+de\\s+(?:eficacia|resultado))${fin}`, 'gi'),
+                    new RegExp(`${ini}margen(?:es)?\\s+de\\s+no[\\s-]?inferioridad${fin}`, 'gi'),
+                    new RegExp(`${ini}an[áa]lisis\\s+(?:primari[oa]|principal|pre-?especificad[oa]s?|pre-?definid[oa]s?|exploratori[oa]s?|post[\\s-]?hoc|de\\s+subgrupos?|intermedi[oa]s?|de\\s+sensibilidad|por\\s+protocolo|por\\s+intenci[óo]n\\s+de\\s+tratar(?:\\s+modificad[oa])?)${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:pre-?especificad[oa]s?|post[\\s-]?hoc|(?:no[\\s-]?)?inferioridad|no\\s+inferior(?:es)?|superioridad|subgrupos?)${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:poblaci[óo]n\\s+(?:por|de)\\s+(?:intenci[óo]n\\s+de\\s+tratar|protocolo)|(?:por\\s+)?intenci[óo]n\\s+de\\s+tratar(?:\\s+modificad[oa])?)${siglaEntre('m?ITT|ITTm|IDT')}${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:m?ITT|ITTm)${fin}`, 'g'),
+                    new RegExp(`${ini}tiempo\\s+(?:medi[oa]n?o?\\s+)?hasta\\s+(?:el\\s+|la\\s+|los\\s+|las\\s+)?(?:primer[oa]?\\s+)?[${L}]+`, 'gi'),
+                ],
+                terminos: [
+                    { nombre: 'Margen de no inferioridad', reconoce: /margen/i,
+                      definicion: 'Diferencia máxima en contra del tratamiento que el estudio fijó de antemano como aceptable para concluir que no es peor que el comparador.' },
+                    { nombre: 'No inferioridad', reconoce: /no[\s-]?inferior/i,
+                      definicion: 'Diseño cuyo objetivo es mostrar que el tratamiento no es peor que el comparador más allá de un margen fijado de antemano. No equivale a demostrar superioridad ni equivalencia.' },
+                    { nombre: 'Superioridad', reconoce: /superioridad/i,
+                      definicion: 'Contraste cuyo objetivo es mostrar que un tratamiento obtiene mejor resultado que el comparador en la variable estudiada.' },
+                    { nombre: 'Variable o criterio principal', reconoce: /principal|primari/i,
+                      definicion: 'La variable que el estudio fijó de antemano como base de su conclusión principal y del cálculo del tamaño de la muestra.' },
+                    { nombre: 'Variable o criterio secundario', reconoce: /secundari|clave/i,
+                      definicion: 'Variables fijadas de antemano además de la principal. Cómo se interpretan depende de si se contrastaron dentro de una jerarquía que controla las comparaciones múltiples; el texto suele indicarlo.' },
+                    { nombre: 'Criterio de valoración compuesto', reconoce: /compuest/i,
+                      definicion: 'Combina varios eventos (p. ej., muerte, infarto o ictus) y cuenta el primero que aparece en cada paciente. El texto suele dar también el resultado de cada componente.' },
+                    { nombre: 'Análisis exploratorio o post hoc', reconoce: /exploratori|post[\s-]?hoc/i,
+                      definicion: 'Análisis no previstos como contraste confirmatorio, o decididos después de ver los datos. El propio texto los identifica así.' },
+                    { nombre: 'Preespecificado', reconoce: /pre-?especific|pre-?definid/i,
+                      definicion: 'Variable o análisis definido en el protocolo antes de conocer los resultados.' },
+                    { nombre: 'Subgrupos', reconoce: /subgrupo/i,
+                      definicion: 'Resultados en una parte de los pacientes (por edad, sexo, gravedad…). Incluyen menos pacientes y más comparaciones; el texto indica si estaban preespecificados.' },
+                    { nombre: 'Intención de tratar (ITT)', reconoce: /intenci|\b(?:m?ITTm?|IDT)\b/i,
+                      definicion: 'Análisis de todos los pacientes en el grupo al que fueron asignados al azar, con independencia de que completaran o recibieran el tratamiento. «Modificada» indica alguna exclusión definida por el estudio.' },
+                    { nombre: 'Por protocolo', reconoce: /protocolo/i,
+                      definicion: 'Análisis limitado a los pacientes que siguieron el protocolo sin desviaciones importantes.' },
+                    { nombre: 'Análisis intermedio o de sensibilidad', reconoce: /intermedi|sensibilidad/i,
+                      definicion: 'Intermedio: realizado antes de completar el seguimiento previsto. De sensibilidad: repite el análisis con otros supuestos para ver si el resultado cambia.' },
+                    { nombre: 'Tiempo hasta el evento', reconoce: /tiempo/i,
+                      definicion: 'Variable que mide cuánto tarda en aparecer un evento. Se describe con curvas de supervivencia (Kaplan-Meier) y se compara habitualmente con un hazard ratio.' },
+                    { nombre: 'Criterio de valoración', reconoce: /./,
+                      definicion: 'Variable de resultado con la que el estudio mide el efecto. El texto indica si es principal, secundaria o exploratoria.' },
+                ],
+            },
+            {
+                clase: 'ev51-rel', etiqueta: 'Cociente (medida relativa)', leyenda: 1,
+                ayuda: 'Medidas que comparan dos grupos dividiendo: riesgo relativo (RR), odds ratio (OR), hazard ratio (HR), razón de tasas, razón de medias geométricas, y la reducción o aumento relativo del riesgo y la eficacia vacunal. Un cociente de 1 indica igualdad entre grupos. No informan por sí solas de la diferencia absoluta.',
+                patrones: [
+                    // Reducción o aumento RELATIVO declarado, con su valor si va pegado.
+                    new RegExp(`${ini}${cambio}(?:es)?\\s+(?:relativ[oa]\\s+del\\s+riesgo|del\\s+riesgo\\s+relativo)${siglaEntre('RRR|RRA')}${valorPct}?`, 'gi'),
+                    new RegExp(`${ini}${cambio}(?:es)?\\s+relativ[oa]s?${fin}`, 'gi'),
+                    new RegExp(`${ini}${verbo}\\s+(?:significativamente\\s+)?el\\s+riesgo\\s+relativo(?:\\s+(?:en\\s+(?:un|el)\\s+|un\\s+)${num}\\s*%)?`, 'gi'),
+                    new RegExp(`${ini}eficacia\\s+(?:de\\s+la\\s+vacuna|vacunal)${siglaEntre('EV|VE')}${valorPct}?`, 'gi'),
+                    new RegExp(`${ini}(?:hazard\\s+ratios?|(?:cocientes?|raz(?:ón|on|ones))\\s+de\\s+riesgos?\\s+instant[áa]neos?)${siglaEntre('HR')}${ajuste}${valorPct}?`, 'gi'),
+                    new RegExp(`${ini}(?:odds\\s+ratios?|(?:cocientes?|raz(?:ón|on|ones))\\s+de\\s+(?:odds|momios|posibilidades|probabilidades))${siglaEntre('OR')}${ajuste}${valorPct}?`, 'gi'),
+                    new RegExp(`${ini}(?:(?:incidence\\s+)?rate\\s+ratios?|(?:cocientes?|raz(?:ón|on|ones))\\s+de\\s+(?:las\\s+)?tasas?(?:\\s+de\\s+(?:incidencia|eventos))?)${siglaEntre('IRR|RT|RR')}${ajuste}${valorPct}?`, 'gi'),
+                    new RegExp(`${ini}(?:cocientes?|raz(?:ón|on|ones))\\s+de\\s+(?:las\\s+)?(?:medias\\s+geom[ée]tricas(?:\\s+de\\s+(?:los\\s+)?t[íi]tulos)?|MGT|GMT)${siglaEntre('GMR|RMG|MGT|GMT')}${valorPct}?`, 'gi'),
+                    new RegExp(`${ini}(?:riesgos?\\s+relativos?|(?:cocientes?|raz(?:ón|on|ones))\\s+de\\s+riesgos?(?!\\s+instant))${siglaEntre('RR|HR')}${ajuste}${valorPct}?`, 'gi'),
+                    // Siglas: solo con su valor pegado o seguidas de «(IC …)». HR no puede ser
+                    // «HR+» ni «HR positivo» (receptores hormonales); RR no puede ser el intervalo
+                    // del ECG («intervalo RR», «QT/RR», «RR de 850 ms»).
+                    new RegExp(`(?<![\\w${L}+\\/-])HR${fin}(?![+\\-−–]|\\s*(?:positiv|negativ))${ajuste}(?:${contexto}|(?=\\s+(?:para|en)\\s+(?:la|el)\\s+[^.;:()]{1,40}?\\s(?:de|=|fue\\s+de)\\s*\\d))`, 'g'),
+                    new RegExp(`(?<![\\w${L}+\\/-])(?<![Ii]ntervalos?\\s+(?:de\\s+)?)RR${fin}(?!\\s*[=:]?\\s*(?:de\\s+)?\\d+(?:[.,]\\d+)?\\s*(?:ms|mseg|milisegundos)${fin})${ajuste}${contexto}`, 'g'),
+                    new RegExp(`(?<![\\w${L}+\\/-])(?:OR|IRR|GMR)${fin}${ajuste}${contexto}`, 'g'),
+                    new RegExp(`(?<![\\w${L}+\\/-])RRR${fin}${valorPct}?`, 'g'),
+                ],
+                terminos: [
+                    { nombre: 'Eficacia vacunal', reconoce: /vacun/i,
+                      definicion: 'Reducción relativa del riesgo de la enfermedad en vacunados frente a no vacunados (1 − RR o 1 − HR, en %). Es una medida relativa: no informa del riesgo absoluto evitado.' },
+                    { nombre: 'Reducción o aumento relativo del riesgo (RRR)', reconoce: /RRR|(?:reducci|disminuci|aument|increment|descens|redu|disminu)\S*\s+(?:significativamente\s+)?(?:(?:el|del)\s+riesgo\s+)?relativ/i,
+                      definicion: 'Cuánto disminuye (o aumenta) el riesgo de un grupo en proporción al del otro: 1 − RR (o 1 − HR si procede de un análisis de tiempo hasta el evento), expresado en %. Es una medida relativa: el mismo porcentaje puede corresponder a diferencias absolutas muy distintas según el riesgo de partida, que hay que buscar aparte.' },
+                    { nombre: 'Hazard ratio (HR) · cociente de riesgos instantáneos', reconoce: /\bHR\b|hazard|instant[áa]ne/i,
+                      definicion: 'Compara la tasa instantánea del evento entre dos grupos a lo largo del seguimiento, en análisis de tiempo hasta el evento (p. ej., modelo de Cox). HR = 1: misma tasa; por debajo o por encima de 1: menor o mayor en el grupo que se compara (el texto indica cuál frente a cuál). No es el porcentaje de pacientes que evitan el evento ni cuánto se retrasa, y no equivale a un RR ni a un OR.' },
+                    { nombre: 'Odds ratio (OR)', reconoce: /\bOR\b|odds|momios|posibilidades|probabilidades/i,
+                      definicion: 'Cociente entre las odds de presentar el resultado en dos grupos (odds: probabilidad de presentarlo dividida por la de no presentarlo). OR = 1: sin diferencia. Solo se parece al riesgo relativo cuando el resultado es poco frecuente; no son intercambiables.' },
+                    { nombre: 'Razón de tasas (IRR)', reconoce: /\bIRR\b|tasas?|rate\s+ratio/i,
+                      definicion: 'Cociente entre dos tasas de eventos por tiempo de exposición (p. ej., exacerbaciones por paciente y año). 1 = misma tasa. Cuenta eventos, que pueden repetirse en un mismo paciente, no pacientes con al menos un evento.' },
+                    { nombre: 'Razón de medias geométricas', reconoce: /geom[ée]tric|\b(?:GMR|RMG|MGT|GMT)\b/i,
+                      definicion: 'Cociente entre las medias geométricas de dos grupos o condiciones; habitual con títulos de anticuerpos y en farmacocinética. 1 = sin diferencia.' },
+                    { nombre: 'Razón o cociente de riesgos', reconoce: /(?:raz|cocient)\S*\s+de\s+riesgo/i,
+                      definicion: 'Cociente entre el riesgo de dos grupos. En las fichas en español puede traducir tanto el riesgo relativo (RR) como el hazard ratio (HR): si va con «(HR)» o el análisis es de tiempo hasta el evento, es un HR. 1 = igualdad entre grupos.' },
+                    { nombre: 'Riesgo relativo (RR)', reconoce: /./,
+                      definicion: 'Cociente entre el riesgo (proporción de pacientes con el evento durante el estudio) de un grupo y el del otro. RR = 1: mismo riesgo. No informa del riesgo de partida ni de la diferencia absoluta.' },
+                ],
+            },
+            {
+                clase: 'ev51-dif', etiqueta: 'Diferencia entre grupos', leyenda: 2,
+                ayuda: 'Medidas que comparan restando: diferencia de riesgos o de proporciones, reducción o aumento absoluto del riesgo, diferencia de tasas, diferencia de medias (también ajustada, de mínimos cuadrados o estandarizada), tamaño del efecto, NNT o NNH publicados y puntos porcentuales. Una diferencia de 0 indica igualdad.',
+                patrones: [
+                    new RegExp(`${ini}${cambio}(?:es)?\\s+(?:absolut[oa]\\s+del\\s+riesgo|del\\s+riesgo\\s+absoluto)${siglaEntre('RAR|ARR|ARI|AAR')}${valorUnidad}?`, 'gi'),
+                    new RegExp(`${ini}${cambio}(?:es)?\\s+absolut[oa]s?${fin}`, 'gi'),
+                    new RegExp(`${ini}${verbo}\\s+(?:significativamente\\s+)?el\\s+riesgo\\s+absoluto(?:\\s+(?:en\\s+(?:un|el)\\s+|un\\s+)${num}${unidad})?`, 'gi'),
+                    // NNH antes que NNT: «número de pacientes que es necesario tratar para producir
+                    // un daño» empieza igual que el NNT, y a igual inicio gana el primero.
+                    new RegExp(`${ini}n[úu]mero\\s+(?:necesario\\s+(?:de\\s+pacientes\\s+)?(?:a|para)\\s+(?:dañar|producir\\s+un\\s+(?:daño|efecto\\s+adverso|acontecimiento\\s+adverso))|de\\s+pacientes\\s+que\\s+(?:es\\s+necesario|es\\s+preciso|hay\\s+que|se\\s+necesita|ser[íi]a\\s+necesario|necesario)\\s+tratar\\s+para\\s+(?:producir|que\\s+(?:se\\s+produzca|aparezca))\\s+un\\s+(?:daño|efecto\\s+adverso|acontecimiento\\s+adverso))${siglaEntre('NNH|NND|NNTH|NNTD')}${valorPct}?`, 'gi'),
+                    new RegExp(`${ini}n[úu]mero\\s+(?:necesario\\s+(?:de\\s+pacientes\\s+)?(?:a|para)\\s+tratar|de\\s+pacientes\\s+que\\s+(?:es\\s+necesario|es\\s+preciso|hay\\s+que|se\\s+necesita|ser[íi]a\\s+necesario|necesario)\\s+tratar)${siglaEntre('NNT|NNTB')}${valorPct}?`, 'gi'),
+                    new RegExp(`(?<![\\w${L}+\\/-])(?:NNTB|NNTH|NNTD|NNT|NNH|NND)${fin}${valorPct}?`, 'g'),
+                    new RegExp(`(?<![\\w${L}+\\/-])(?:RAR|ARR)${fin}${contexto}`, 'g'),
+                    new RegExp(`${ini}(?:${num}\\s*)?puntos\\s+porcentuales${fin}`, 'gi'),
+                    new RegExp(`${ini}tama[ñn]os?\\s+del?\\s+efecto${valorUnidad}?|${ini}[dg]\\s+de\\s+(?:Cohen|Hedges)${valorUnidad}?`, 'gi'),
+                    new RegExp(`${ini}diferencias?\\s+(?:absolutas?\\s+)?(?:de|del|en\\s+el|entre\\s+los)\\s+riesgos?(?:\\s+absolutos?)?${valorUnidad}?`, 'gi'),
+                    new RegExp(`${ini}diferencias?\\s+(?:absolutas?\\s+)?(?:de|en)\\s+(?:la\\s+|las\\s+|el\\s+|los\\s+)?(?:proporci(?:ón|on|ones)|porcentajes?|tasas?(?:\\s+(?:anual(?:es|izadas?)?|de\\s+(?:respuesta|remisi[óo]n|curaci[óo]n|eventos|incidencia)))?)${valorUnidad}?`, 'gi'),
+                    new RegExp(`${ini}diferencias?\\s+(?:de\\s+|en\\s+)(?:el\\s+|los\\s+)?cambios?\\s+(?:porcentual(?:es)?\\s+)?(?:medios?\\s+)?(?:desde|respecto|con\\s+respecto|frente)\\s+(?:a|al|del)\\s+(?:(?:valor|momento|nivel)\\s+)?(?:basal|inicial|de\\s+referencia)${valorUnidad}?`, 'gi'),
+                    new RegExp(`${ini}diferencias?\\s+(?:(?:de\\s+(?:las\\s+)?)?medias?|medias?)(?:\\s+(?:ajustadas?|estandarizadas?|ponderadas?|estimadas?|de\\s+(?:los\\s+)?m[íi]nimos\\s+cuadrados))*${siglaEntre('DM|DME|SMD|MD|LS|LSM|MC|DMS')}${valorUnidad}?`, 'gi'),
+                    new RegExp(`${ini}diferencias?\\s+(?:(?:estimadas?|ajustadas?|medias?)\\s+)?(?:del?\\s+tratamientos?|entre\\s+(?:los\\s+)?(?:tratamientos|grupos|brazos)|(?:frente|respecto)\\s+(?:a\\s+|al\\s+)?(?:placebo|comparador)|con\\s+placebo|vs\\.?\\s+placebo)${valorUnidad}?`, 'gi'),
+                    new RegExp(`${ini}diferencias?\\s+(?:de|del)\\s+${num}${unidad}`, 'gi'),
+                    // Cabecera de tabla: «Diferencia (IC del 95 %)».
+                    new RegExp(`${ini}diferencias?(?=\\s*[(\\[]\\s*IC)`, 'gi'),
+                ],
+                terminos: [
+                    { nombre: 'Número necesario para dañar (NNH)', reconoce: /\b(?:NNH|NND|NNTH|NNTD)\b|dañ|adverso/i,
+                      definicion: 'Número de pacientes que tendrían que recibir el tratamiento, en lugar del comparador y durante el tiempo del estudio, para que uno más presente el efecto adverso. Es el inverso de la diferencia absoluta de riesgos de ese efecto. MedCheck no lo calcula: solo lo resalta cuando la ficha lo publica.' },
+                    { nombre: 'Número necesario a tratar (NNT)', reconoce: /\bNNTB?\b|tratar/i,
+                      definicion: 'Número de pacientes que tendrían que recibir el tratamiento, en lugar del comparador y durante el tiempo del estudio, para que uno más obtenga el resultado (o uno menos presente el evento). Es el inverso de la diferencia absoluta de riesgos. MedCheck no lo calcula: solo lo resalta cuando la ficha lo publica.' },
+                    { nombre: 'Reducción o aumento absoluto del riesgo', reconoce: /absolut|\b(?:RAR|ARR|ARI|AAR)\b/i,
+                      definicion: 'Diferencia entre los riesgos de dos grupos, en % o puntos porcentuales. Depende del riesgo de partida y del tiempo de seguimiento del estudio.' },
+                    { nombre: 'Diferencia estandarizada · tamaño del efecto', reconoce: /estandarizad|tama[ñn]o|Cohen|Hedges|\b(?:SMD|DME)\b/i,
+                      definicion: 'Diferencia de medias dividida por una desviación estándar: no tiene unidades y permite comparar escalas distintas. 0 = sin diferencia.' },
+                    { nombre: 'Diferencia en el cambio respecto al basal', reconoce: /cambio/i,
+                      definicion: 'Diferencia entre grupos del cambio que se midió dentro de cada uno desde el valor basal. Va en las unidades de la variable o escala.' },
+                    { nombre: 'Diferencia de riesgos o de proporciones', reconoce: /riesgo|proporci|porcentaj|respuesta|remisi|curaci/i,
+                      definicion: 'Resta entre las proporciones de pacientes con el resultado en dos grupos, en % o puntos porcentuales. 0 = sin diferencia.' },
+                    { nombre: 'Diferencia de tasas', reconoce: /tasa/i,
+                      definicion: 'Resta entre dos tasas de eventos (por tiempo de exposición o como proporción, según el estudio). 0 = sin diferencia.' },
+                    { nombre: 'Diferencia de medias', reconoce: /media|\bLS\b|\bMC\b|m[íi]nimos/i,
+                      definicion: 'Resta entre las medias de dos grupos, en las unidades de la variable (mmHg, puntos de una escala, % de HbA1c…; un % de HbA1c es una unidad, no un porcentaje de pacientes). «Ajustada» o «de mínimos cuadrados» indica que procede de un modelo que tiene en cuenta otras variables. 0 = sin diferencia.' },
+                    { nombre: 'Diferencia entre tratamientos', reconoce: /tratamiento|grupo|brazo|placebo|comparador/i,
+                      definicion: 'Diferencia entre el grupo tratado y el comparador en la variable que se describe. El texto o la tabla indican si es de proporciones (puntos porcentuales) o de medias (unidades de la variable). 0 = sin diferencia.' },
+                    { nombre: 'Puntos porcentuales', reconoce: /porcentuales/i,
+                      definicion: 'Unidad de la diferencia entre dos porcentajes: de 20 % a 15 % van 5 puntos porcentuales (que en términos relativos serían un 25 %). Puede ser entre grupos o entre dos momentos: el texto lo indica.' },
+                    { nombre: 'Diferencia', reconoce: /./,
+                      definicion: 'Diferencia expresada con su valor. El texto indica entre qué grupos o momentos, y en qué unidad: un % puede ser una unidad de la variable (como en la HbA1c) o una diferencia de proporciones.' },
+                ],
+            },
+            {
+                clase: 'ev51-sintipo', etiqueta: 'Cambio porcentual sin tipo declarado', leyenda: 3,
+                ayuda: 'Reducciones o aumentos porcentuales del riesgo o de una tasa en los que el texto no dice si son relativos o absolutos. MedCheck no los clasifica: comprueba en el texto o en la tabla de qué medida proceden.',
+                patrones: [
+                    new RegExp(`${ini}${cambio}(?:es)?\\s+(?:del|de\\s+un|de)\\s+${num}\\s*%\\s+(?:del|en\\s+el|de\\s+la|en\\s+la|de\\s+los|en\\s+los)\\s+(?:riesgos?|tasas?|incidencia|n[úu]mero)`, 'gi'),
+                    new RegExp(`${ini}${cambio}(?:es)?\\s+del\\s+riesgo(?:\\s+de\\s+[${L}-]+(?:\\s+[${L}-]+){0,4}?)?\\s+(?:del|de\\s+un|en\\s+un)\\s+${num}\\s*%`, 'gi'),
+                    new RegExp(`${ini}${verbo}\\s+(?:significativamente\\s+)?(?:el\\s+riesgo|la\\s+tasa|la\\s+incidencia)(?:\\s+(?:de|del)\\s+[^.;:()]{1,80}?)?\\s+en\\s+(?:un|el)\\s+${num}\\s*%`, 'gi'),
+                    new RegExp(`${ini}riesgos?\\s+(?:un\\s+)?${num}\\s*%\\s+(?:menor|mayor|inferior|superior)${fin}`, 'gi'),
+                    new RegExp(`${ini}riesgos?\\s+(?:de\\s+[^.;:()]{1,60}?\\s+)?se\\s+(?:redujo|reduce|redujeron|disminuy[óo]|aument[óo]|increment[óo])\\s+(?:en\\s+)?(?:un|el)\\s+${num}\\s*%`, 'gi'),
+                ],
+                terminos: [
+                    { nombre: 'Cambio porcentual sin tipo declarado', reconoce: /./,
+                      definicion: 'El texto expresa un cambio porcentual del riesgo o de una tasa sin decir si es relativo o absoluto. MedCheck no lo clasifica: comprueba en el texto o en la tabla de qué medida procede (HR, RR, diferencia de riesgos…).' },
+                ],
+            },
+            {
+                clase: 'ev51-disp', etiqueta: 'Dispersión (DE, EE, RIC)', leyenda: 6,
+                ayuda: 'Describen la variabilidad de los datos (desviación estándar, rango intercuartílico) o la precisión de una media (error estándar). No son intervalos de confianza ni medidas de efecto.',
+                patrones: [
+                    new RegExp(`${ini}desviaci(?:ón|on|ones)\\s+(?:est[áa]ndar|t[íi]picas?)${siglaEntre('DE|DT|SD')}${fin}`, 'gi'),
+                    new RegExp(`${ini}error(?:es)?\\s+(?:est[áa]ndar|t[íi]picos?)(?:\\s+de\\s+la\\s+media)?${siglaEntre('EE|ET|EEM|SE|SEM')}${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:rango|intervalo|amplitud)\\s+intercuart[íi]lic[oa]${siglaEntre('RIC|IQR')}${fin}`, 'gi'),
+                    // «(DE)» suelta es también disfunción eréctil, y «(EE)», estado epiléptico: la
+                    // sigla entre paréntesis solo cuenta tras «media» o «mediana», o con su valor.
+                    new RegExp(`(?<=(?:[Mm]edi[ao]|MEDI[AO]|[Mm]ediana|MEDIANA)[sS]?\\s*)\\(\\s*(?:±\\s*)?(?:DE|DT|SD|EE|ET|EEM|SE|SEM|RIC|IQR)\\s*\\)`, 'g'),
+                    new RegExp(`\\(\\s*(?:DE|DT|SD|EE|ET|EEM|SE|SEM|RIC|IQR)\\s*[:=]?\\s*${num}(?:\\s*\\))?`, 'g'),
+                    new RegExp(`±\\s*(?:(?:DE|DT|SD|EE|ET|EEM|SE|SEM)${fin}|${num})`, 'g'),
+                ],
+                terminos: [
+                    { nombre: 'Error estándar (EE)', reconoce: /error|\b(?:EE|ET|SE|EEM|SEM)\b/i,
+                      definicion: 'Precisión con que se estima una media (la desviación estándar dividida por la raíz del tamaño de la muestra). Es menor que la DE y no describe la variabilidad entre pacientes.' },
+                    { nombre: 'Rango intercuartílico (RIC)', reconoce: /intercuart|RIC|IQR/i,
+                      definicion: 'Intervalo que contiene el 50 % central de los valores de un grupo (del percentil 25 al 75). Suele acompañar a la mediana.' },
+                    { nombre: 'Desviación estándar (DE)', reconoce: /desviaci|\b(?:DE|DT|SD)\b/i,
+                      definicion: 'Variabilidad de los valores individuales alrededor de la media de un grupo. No es un intervalo de confianza ni mide la precisión de la estimación.' },
+                    { nombre: '±', reconoce: /./,
+                      definicion: 'Valor ± otro: habitualmente media ± DE o media ± EE. El texto o la tabla deben indicar cuál, y no son intercambiables.' },
+                ],
+            },
+            {
+                clase: 'ev51-grupo', etiqueta: 'Resultado de cada grupo', leyenda: 4,
+                ayuda: 'Lo que se midió dentro de cada grupo: tasas de respuesta o remisión, porcentaje de pacientes, tasas por paciente y año, medias y medianas, supervivencia, cambio respecto al valor basal. No son por sí solos una comparación entre tratamientos.',
+                patrones: [
+                    new RegExp(`${ini}cambios?\\s+(?:porcentual(?:es)?\\s+)?(?:medios?\\s+)?(?:desde|respecto|con\\s+respecto|frente)\\s+(?:a|al|del|el)\\s+(?:(?:valor|momento|nivel)\\s+)?(?:basal|inicial|de\\s+referencia|inicio(?:\\s+del\\s+(?:estudio|tratamiento))?)${fin}`, 'gi'),
+                    new RegExp(`${ini}variaci(?:ón|on|ones)\\s+(?:porcentual(?:es)?\\s+)?(?:medias?\\s+)?(?:desde|respecto|con\\s+respecto)\\s+(?:a|al|del|el)\\s+(?:(?:valor|momento|nivel)\\s+)?(?:basal|inicial|de\\s+referencia|inicio(?:\\s+del\\s+(?:estudio|tratamiento))?)${fin}`, 'gi'),
+                    new RegExp(`${ini}supervivencia\\s+(?:global|libre\\s+de\\s+(?:progresi[óo]n|enfermedad|reca[íi]da|eventos|recidiva|met[áa]stasis)|sin\\s+progresi[óo]n)${siglaEntre('SG|SLP|SLE|SLR|SSP|OS|PFS|DFS|EFS|SLEv')}`, 'gi'),
+                    new RegExp(`${ini}duraci[óo]n\\s+(?:mediana\\s+)?de\\s+(?:la\\s+)?respuesta${siglaEntre('DR|DoR')}`, 'gi'),
+                    new RegExp(`${ini}tasas?\\s+anual(?:es|izadas?)?(?:\\s+de\\s+[${L}]+)?`, 'gi'),
+                    new RegExp(`${ini}tasas?\\s+(?:de\\s+)?(?:respuesta|remisi[óo]n|curaci[óo]n|erradicaci[óo]n|[ée]xito|fracaso|recidiva|reca[íi]da|exacerbaci(?:ón|on|ones)|hospitalizaci(?:ón|on|ones)|mortalidad|eventos|acontecimientos|incidencia|abandono|control|respondedores|seroconversi[óo]n|seroprotecci[óo]n|supervivencia)(?:\\s+(?:global|objetiva|completa|parcial|cl[íi]nica|virol[óo]gica|serol[óo]gica|sostenida|patol[óo]gica(?:\\s+completa)?|de\\s+la\\s+enfermedad))?${siglaEntre('TRO|TRG|TR|ORR|pCR|RCp')}`, 'gi'),
+                    new RegExp(`${ini}respuestas?\\s+(?:completa|parcial|objetiva|global|cl[íi]nica|virol[óo]gica|sostenida|patol[óo]gica\\s+completa)s?${fin}`, 'gi'),
+                    new RegExp(`${ini}respondedor(?:es|as?)?${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:porcentajes?|proporci(?:ón|on|ones))\\s+de\\s+(?:pacientes|sujetos|participantes|respondedores|niños|mujeres|hombres)${fin}`, 'gi'),
+                    new RegExp(`${ini}riesgos?\\s+absolutos?${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:${num}\\s*)?%\\s+de\\s+(?:los\\s+|las\\s+)?(?:pacientes|sujetos|participantes|niños|mujeres|hombres|adultos|respondedores)${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:por|cada)\\s+(?:100|1[.\\s]?000|10[.\\s]?000|100[.\\s]?000)\\s+(?:pacientes|personas|sujetos|participantes)[-\\s]?a[ñn]os?${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:pacientes|personas|sujetos|participantes)[-\\s]a[ñn]os?${fin}|${ini}a[ñn]os[-\\s](?:paciente|persona)${fin}`, 'gi'),
+                    new RegExp(`${ini}incidencias?\\s+(?:acumuladas?|anual(?:es)?)${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:estimaci(?:ón|on|ones)\\s+(?:de\\s+)?)?Kaplan[-\\s]Meier${fin}`, 'gi'),
+                    new RegExp(`${ini}medianas?${fin}(?!\\s+edad)`, 'gi'),
+                    new RegExp(`${ini}medias?\\s+(?:de\\s+(?:los\\s+)?m[íi]nimos\\s+cuadrados|ajustadas?|geom[ée]tricas?|aritm[ée]ticas?)${siglaEntre('LS|MC')}${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:cambio|variaci[óo]n|reducci[óo]n|disminuci[óo]n|aumento|incremento|descenso|puntuaci[óo]n|valor)(?:es)?\\s+(?:porcentual(?:es)?\\s+)?medi[oa]s?${fin}`, 'gi'),
+                    new RegExp(`(?<![\\w${L}])[nN]\\s*\\(\\s*%\\s*\\)`, 'g'),
+                ],
+                terminos: [
+                    { nombre: 'Cambio respecto al valor basal', reconoce: /basal|inicial|referencia/i,
+                      definicion: 'Cambio dentro de un mismo grupo entre el inicio del estudio y un momento posterior. No es una comparación entre tratamientos: para eso hace falta la diferencia entre grupos.' },
+                    { nombre: 'n (%)', reconoce: /^[nN]\s*\(/,
+                      definicion: 'Número de pacientes con el resultado en el grupo y su porcentaje sobre el total del grupo.' },
+                    { nombre: 'Supervivencia', reconoce: /supervivencia/i,
+                      definicion: 'Variable de tiempo hasta el evento (muerte, progresión, recaída…) en cada grupo. Suele resumirse con la mediana o con la proporción estimada a un tiempo (Kaplan-Meier), y compararse entre grupos con un hazard ratio.' },
+                    { nombre: 'Kaplan-Meier', reconoce: /Kaplan/i,
+                      definicion: 'Método que estima, para cada grupo, la proporción de pacientes sin el evento a lo largo del tiempo, teniendo en cuenta el seguimiento incompleto. Es una estimación por grupo, no una comparación.' },
+                    { nombre: 'Duración de la respuesta', reconoce: /duraci/i,
+                      definicion: 'Tiempo que se mantiene la respuesta, medido solo en los pacientes que respondieron; se resume habitualmente con la mediana.' },
+                    { nombre: 'Tasa por paciente y año', reconoce: /a[ñn]o|anual/i,
+                      definicion: 'Número de eventos dividido por el tiempo total de seguimiento del grupo (p. ej., exacerbaciones por paciente y año). Cuenta eventos, que pueden repetirse en un mismo paciente.' },
+                    { nombre: 'Respuesta, remisión o curación', reconoce: /respuesta|respondedor|remisi|curaci|erradicaci|seroconversi|seroprotecci|[ée]xito|control/i,
+                      definicion: 'Proporción de pacientes de un grupo que cumplen la definición de respuesta, remisión o curación que fija el estudio (la definición está en el texto). Por sí sola no compara grupos.' },
+                    { nombre: 'Riesgo absoluto', reconoce: /absolut/i,
+                      definicion: 'Proporción de pacientes de un grupo que presentan el evento en un periodo. Es un resultado de grupo, no una comparación entre grupos.' },
+                    { nombre: 'Porcentaje de pacientes', reconoce: /%|porcentaj|proporci/i,
+                      definicion: 'Proporción de pacientes de un grupo que presentan el resultado. Para comparar grupos hace falta una medida de efecto (una diferencia o un cociente).' },
+                    { nombre: 'Tasa o incidencia', reconoce: /tasa|incidencia/i,
+                      definicion: 'Frecuencia del evento en un grupo, como proporción de pacientes o por tiempo de exposición, según el estudio.' },
+                    { nombre: 'Mediana', reconoce: /mediana/i,
+                      definicion: 'Valor central de un grupo: la mitad de los pacientes queda por debajo y la mitad por encima. Se usa para tiempos (supervivencia, seguimiento) y variables asimétricas. La mediana de cada grupo no es la diferencia entre grupos.' },
+                    { nombre: 'Media', reconoce: /./,
+                      definicion: 'Promedio de un grupo. «De mínimos cuadrados» o «ajustada» indica que procede de un modelo estadístico. La media de cada grupo no es la diferencia entre grupos.' },
+                ],
+            },
+            {
+                clase: 'ev51-ic', etiqueta: 'Intervalo de confianza y valor p', leyenda: 5,
+                ayuda: 'Expresan la incertidumbre de una estimación o el contraste estadístico. No miden el tamaño del efecto ni su relevancia clínica. Se resaltan igual sea cual sea su valor.',
+                patrones: [
+                    new RegExp(`${ini}intervalos?\\s+de\\s+(?:confianza|credibilidad)${siglaEntre('IC|ICr|IC\\s*95\\s*%')}(?:\\s*${de})?(?:\\s*${nivel})?${valorIC}`, 'gi'),
+                    new RegExp(`(?<![\\w${L}])ICr?\\s*(?:${de}\\s+)?${nivel}${valorIC}`, 'g'),
+                    // «IC95» sin %, solo con su intervalo pegado: «IC90 de 0,5 µg/ml» es una
+                    // concentración inhibitoria, frecuente en la 5.1 de antiinfecciosos.
+                    new RegExp(`(?<![\\w${L}])ICr?\\s?[89]\\d${fin}(?=\\s*[:=]?\\s*[(\\[]?\\s*${rango})${valorIC}`, 'g'),
+                    new RegExp(`(?<![\\w${L}.])[pP]\\s*(?:nominal\\s*)?[<>=≤≥]\\s*(?:\\d*[.,]?\\d+(?:\\s*[x×·]\\s*10\\s*[-−–]?\\s*\\d+)?|NS${fin}|n\\.\\s?s\\.)`, 'g'),
+                    new RegExp(`${ini}valor(?:es)?\\s+(?:de\\s+)?p${fin}(?:\\s+nominal(?:es)?)?(?:\\s*[<>=≤≥]\\s*\\d*[.,]?\\d+)?`, 'gi'),
+                    new RegExp(`(?<![\\w${L}])[pP]\\s+nominal(?:es)?${fin}|${ini}nominalmente\\s+significativ[oa]s?${fin}`, 'g'),
+                    new RegExp(`${ini}(?:no\\s+(?:fue|fueron|era|eran|es|son|alcanz[óo]|alcanzaron|result[óo]|resultaron)\\s+)?estad[íi]sticamente\\s+significativ[oa]s?${fin}`, 'gi'),
+                    new RegExp(`${ini}(?:significaci[óo]n|significancia)\\s+estad[íi]stica${fin}|${ini}nivel\\s+de\\s+significaci[óo]n${fin}`, 'gi'),
+                ],
+                terminos: [
+                    { nombre: 'Valor p nominal', reconoce: /nominal/i,
+                      definicion: 'Valor p que el propio texto presenta como nominal: calculado fuera de la jerarquía de contrastes preespecificada o sin ajustar por comparaciones múltiples.' },
+                    { nombre: 'Significación estadística', reconoce: /significa/i,
+                      definicion: 'Indica que el valor p quedó por debajo del umbral fijado (habitualmente 0,05). Es una afirmación sobre el contraste estadístico, no sobre la magnitud ni la relevancia clínica del efecto.' },
+                    { nombre: 'Valor p', reconoce: /^[pP][\s<>=≤≥]|^valor/i,
+                      definicion: 'Probabilidad de observar un resultado al menos tan extremo como el obtenido si no hubiera diferencia real. No mide el tamaño del efecto ni su relevancia clínica; MedCheck lo resalta igual sea cual sea su valor.' },
+                    { nombre: 'Intervalo de credibilidad', reconoce: /credibilidad|ICr/i,
+                      definicion: 'Intervalo de un análisis bayesiano: rango en el que se sitúa el parámetro con la probabilidad indicada, según el modelo y sus supuestos previos.' },
+                    { nombre: 'Intervalo de confianza (IC)', reconoce: /./,
+                      definicion: 'Rango de valores compatibles con los datos para la estimación a la que acompaña (un HR, una diferencia…), con el nivel indicado (habitualmente 95 %). Expresa la precisión de la estimación, no su relevancia clínica. Si incluye el valor de no diferencia (1 en un cociente, 0 en una diferencia), los datos son compatibles con que no haya diferencia.' },
+                ],
+            },
+        ];
+    }
+
+    /** Entrada del glosario de 5.1 para un tramo resaltado: la primera de su categoría que lo reconoce. */
+    _glosa51(texto, clase, categorias = MedCheckApp.RESALTADOS_51) {
+        const cat = categorias.find(c => c.clase === clase);
+        if (!cat) return null;
+        return cat.terminos.find(t => t.reconoce.test(texto)) || null;
+    }
+
+    /**
+     * Aplica `RESALTADOS_51` a los nodos de texto del contenedor, sin tocar su HTML (como
+     * `_resaltarPosologia`, que no se toca para esto). Cada marca lleva su término del glosario en
+     * `title` y en `data-termino`, para el tooltip y para el toque en móvil. Devuelve cuántas.
+     */
+    _resaltar51(contenedor) {
+        const categorias = MedCheckApp.RESALTADOS_51;
+        const walker = document.createTreeWalker(contenedor, NodeFilter.SHOW_TEXT);
+        const nodos = [];
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            if (n.textContent.trim() && !n.parentElement?.closest('mark')) nodos.push(n);
+        }
+        let marcas = 0;
+        for (const nodo of nodos) {
+            const segmentos = this._segmentarResaltados(nodo.textContent, categorias);
+            if (!segmentos.some(s => s.clase)) continue;
+            const fragmento = document.createDocumentFragment();
+            for (const s of segmentos) {
+                if (!s.clase) { fragmento.appendChild(document.createTextNode(s.texto)); continue; }
+                const mark = document.createElement('mark');
+                mark.className = s.clase;
+                mark.textContent = s.texto;
+                const glosa = this._glosa51(s.texto, s.clase, categorias);
+                if (glosa) {
+                    mark.dataset.termino = glosa.nombre;
+                    mark.title = `${glosa.nombre}: ${glosa.definicion}`;
+                }
+                fragmento.appendChild(mark);
+                marcas++;
+            }
+            nodo.parentNode.replaceChild(fragmento, nodo);
+        }
+        return marcas;
+    }
+
+    /** El acordeón de 5.1, cerrado: lo que se pinta con la pestaña. El texto se pide al abrirlo. */
+    _acordeonFT51Html() {
+        return `
+            <details class="evidence-section ev51" id="ev51">
+                <summary class="ev51-summary">
+                    <i class="fas fa-file-medical" aria-hidden="true"></i>
+                    <span class="ev51-summary-text">
+                        <span class="evidence-section-title">Resultados de estudios y farmacodinámica · Ficha técnica 5.1</span>
+                        <span class="evidence-section-subtitle">CIMA/AEMPS · Texto original</span>
+                    </span>
+                    <i class="fas fa-chevron-down ev51-chevron" aria-hidden="true"></i>
+                </summary>
+                <div class="ev51-body" id="ev51-body"></div>
+            </details>`;
+    }
+
+    /** Conecta el acordeón: al abrirlo por primera vez (o tras un error) pide la 5.1. */
+    _conectarFT51(med, details) {
+        if (!details) return;
+        details.addEventListener('toggle', () => {
+            if (details.open && !['cargando', 'listo'].includes(details.dataset.estado)) this._cargarFT51(med, details);
+        });
+    }
+
+    /**
+     * Pide el apartado 5.1 y lo pinta: texto completo de CIMA, compactado como el resto de la
+     * ficha, con los resaltados de `RESALTADOS_51`, su leyenda, el interruptor para leer sin ellos
+     * y el glosario. Distingue cuatro estados que no son el mismo: error de carga, CIMA sin texto
+     * para ese apartado, texto sin ninguna expresión reconocida, y texto con resaltados.
+     *
+     * Una respuesta tardía no puede acabar en la ficha de otro medicamento: con J/K o al cerrar,
+     * el panel ya no es este, y entonces no se pinta nada.
+     */
+    async _cargarFT51(med, details) {
+        const cuerpo = details.querySelector('.ev51-body');
+        if (!cuerpo) return;
+        const panel = this._nregEnPanel;
+        const vigente = () => details.isConnected && this._nregEnPanel === panel;
+        const enlaceCima = this._enlaceSeccionCima(med, '5.1');
+        details.dataset.estado = 'cargando';
+        cuerpo.innerHTML = `<div class="ev51-estado"><i class="fas fa-circle-notch fa-spin"></i> Cargando el apartado 5.1 de la ficha técnica…</div>`;
+
+        let html = '';
+        let error = null;
+        try {
+            html = await this.api.getDocSeccion(med.nregistro, '5.1');
+        } catch (e) {
+            error = e;
+        }
+        if (!vigente()) return;
+
+        // HTTP 204: CIMA no expone ese medicamento en su ficha segmentada. No es un fallo de red.
+        if (error && error.status !== 204) {
+            details.dataset.estado = 'error';
+            cuerpo.innerHTML = `
+                <div class="ev51-estado ev51-estado--error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    No se ha podido cargar el apartado 5.1 desde CIMA. El resto de Evidencia no depende de él.
+                    <button type="button" class="btn btn-sm btn-secondary ev51-reintentar">Reintentar</button>
+                    ${enlaceCima}
+                </div>`;
+            cuerpo.querySelector('.ev51-reintentar')?.addEventListener('click', () => this._cargarFT51(med, details));
+            return;
+        }
+
+        const contenido = String(html || '').normalize('NFC');
+        if (error || CimaAPI.textoFT(contenido).trim().length < 20) {
+            details.dataset.estado = 'listo';
+            cuerpo.innerHTML = `
+                <div class="ev51-estado">
+                    <i class="fas fa-info-circle"></i>
+                    CIMA no devuelve texto para el apartado 5.1 de esta ficha técnica. Eso no dice nada sobre los estudios del medicamento: consulta la ficha completa.
+                    ${enlaceCima}
+                </div>`;
+            return;
+        }
+
+        const categorias = MedCheckApp.RESALTADOS_51;
+        const leyenda = [...categorias].sort((a, b) => a.leyenda - b.leyenda);
+        cuerpo.innerHTML = `
+            <div class="ev51-cabecera">
+                <span class="ev51-origen">Apartado 5.1 «Propiedades farmacodinámicas», completo y tal como lo publica CIMA.</span>
+                <span class="section-header-actions">${enlaceCima}
+                    <button type="button" class="btn btn-sm btn-secondary ev51-copiar" title="Copiar a la historia clínica: lo seleccionado o el apartado entero, con su fuente">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </span>
+            </div>
+            <div class="posology-legend ev51-leyenda">
+                ${leyenda.map(c => `<span class="legend-item" title="${this._escapeHtml(c.ayuda)}"><mark class="${c.clase}">${c.etiqueta}</mark></span>`).join('')}
+                <label class="ev51-interruptor" title="Quita el color para leer el texto tal cual; los resaltados vuelven al activarlo">
+                    <input type="checkbox" class="ev51-activar" checked> Resaltar medidas
+                </label>
+            </div>
+            <p class="ev51-aviso">
+                <i class="fas fa-info-circle"></i>
+                Resaltar no valora el resultado: señala dónde aparece cada tipo de medida.
+                Pueden quedar expresiones sin reconocer, y que algo no esté resaltado no significa que la ficha no lo recoja.
+                Toca o pasa el cursor sobre un término resaltado para ver qué significa.
+            </p>
+            <details class="ev51-glosario">
+                <summary>Qué significa cada tipo de medida</summary>
+                ${leyenda.map(c => `
+                    <div class="ev51-glosario-grupo">
+                        <p class="ev51-glosario-titulo"><mark class="${c.clase}">${c.etiqueta}</mark> ${this._escapeHtml(c.ayuda)}</p>
+                        <dl>${c.terminos.map(t => `<dt>${this._escapeHtml(t.nombre)}</dt><dd>${this._escapeHtml(t.definicion)}</dd>`).join('')}</dl>
+                    </div>`).join('')}
+            </details>
+            <p class="ev51-sin-marcas-aviso" hidden>
+                No se ha reconocido ninguna de estas expresiones en el texto. Eso no significa que el apartado no recoja resultados: pueden estar expresados de otra forma.
+            </p>
+            <div id="ev51-texto" class="section-text ev51-texto">
+                ${contenido}
+            </div>
+            <div class="ev51-glosa" role="status" aria-live="polite" hidden>
+                <span class="ev51-glosa-texto"></span>
+                <button type="button" class="ev51-glosa-cerrar" aria-label="Cerrar la definición">×</button>
+            </div>`;
+
+        const texto = cuerpo.querySelector('#ev51-texto');
+        this._compactarTextoFT(texto);
+        const marcas = this._resaltar51(texto);
+        details.dataset.estado = 'listo';
+        if (!marcas) cuerpo.querySelector('.ev51-sin-marcas-aviso').hidden = false;
+
+        cuerpo.querySelector('.ev51-copiar')?.addEventListener('click', () =>
+            this.copyTabContent('ev51-texto', med.nombre || '', 'Propiedades farmacodinámicas', '5.1'));
+        // La definición va FUERA del texto de la ficha (no se copia con él) y fija al pie de la
+        // pantalla mientras se lee: en el móvil, encima del texto quedaba lejos del término tocado.
+        const glosa = cuerpo.querySelector('.ev51-glosa');
+        glosa.querySelector('.ev51-glosa-cerrar').addEventListener('click', () => { glosa.hidden = true; });
+        cuerpo.querySelector('.ev51-activar')?.addEventListener('change', e => {
+            texto.classList.toggle('ev51-plano', !e.target.checked);
+            if (!e.target.checked) glosa.hidden = true;
+        });
+        // En móvil no hay `title`: tocar un término enseña su definición encima del texto.
+        texto.addEventListener('click', e => {
+            const mark = e.target.closest?.('mark[data-termino]');
+            if (!mark || texto.classList.contains('ev51-plano')) return;
+            const glosaTermino = this._glosa51(mark.textContent, mark.className, categorias);
+            if (!glosaTermino) return;
+            glosa.querySelector('.ev51-glosa-texto').innerHTML = `<strong>${this._escapeHtml(glosaTermino.nombre)}</strong>: ${this._escapeHtml(glosaTermino.definicion)}`;
+            glosa.hidden = false;
+        });
+    }
+
     renderEvidenceTab(med) {
         const container = document.getElementById('evidence-content');
         if (!container || container.dataset.loaded) return;
@@ -21647,7 +22159,13 @@ ${ftFechaDocsHtml}
 
         const filterDefs = this._evidenceFilterDefs();
 
+        // El apartado 5.1 de la ficha va primero y aparte: es texto oficial de CIMA, no un recurso
+        // externo, y se lee antes de salir a buscar literatura. Nadie más reescribe este
+        // contenedor (el término y el deslizador de PubMed solo recargan contadores), así que lo ya
+        // leído no desaparece al tocarlos.
         container.innerHTML = `
+            ${this._acordeonFT51Html()}
+
             <div class="evidence-section">
                 <div class="evidence-section-header">
                     <i class="fas fa-book-medical"></i>
@@ -21796,6 +22314,8 @@ ${ftFechaDocsHtml}
                 </div>
             </div>
         `;
+
+        this._conectarFT51(med, container.querySelector('#ev51'));
 
         // Estado de combinación entre filtros — se resetea cada vez que se renderiza la pestaña
         this._evSelectedFilters = new Set();

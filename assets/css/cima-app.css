@@ -10206,6 +10206,206 @@ code {
     color: var(--text-primary);
 }
 
+/* ─── Ficha técnica 5.1 en Evidencia (`_cargarFT51`) ───
+   Un acordeón cerrado con el texto oficial de CIMA, separado de los recursos externos por su
+   propio borde. Los colores de las medidas no son de semáforo (ni verde ni rojo ni ámbar): un
+   resaltado dice qué TIPO de medida es, no si el resultado es bueno. «Sin tipo declarado» y
+   «Dispersión» van sin fondo, con borde discontinuo o subrayado punteado, para que no dependan
+   solo del color. */
+.ev51 {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 0 0.75rem;
+}
+
+.ev51-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.65rem 0;
+    cursor: pointer;
+    list-style: none;
+}
+
+.ev51-summary::-webkit-details-marker { display: none; }
+
+.ev51-summary > .fa-file-medical {
+    color: var(--primary);
+    margin-top: 0.2rem;
+}
+
+.ev51-summary-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ev51-chevron {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-top: 0.3rem;
+    transition: transform 0.15s;
+}
+
+.ev51[open] .ev51-chevron { transform: rotate(180deg); }
+
+.ev51[open] > .ev51-summary {
+    border-bottom: 1px solid var(--border-default);
+    margin-bottom: 0.6rem;
+}
+
+.ev51-body { padding-bottom: 0.75rem; }
+
+.ev51-estado {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+}
+
+.ev51-estado--error > .fa-exclamation-triangle { color: var(--warning, #f59e0b); }
+
+.ev51-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.ev51-origen {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.ev51-interruptor {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: auto;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.ev51-aviso,
+.ev51-sin-marcas-aviso {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0 0 0.5rem;
+}
+
+/* Definición del término tocado: fija al pie de la pantalla mientras se lee el apartado. */
+.ev51-glosa {
+    position: sticky;
+    bottom: 0.5rem;
+    z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-hover);
+    border-left: 3px solid var(--primary);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    padding: 0.45rem 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.ev51-glosa[hidden] { display: none; }
+
+.ev51-glosa-texto { flex: 1; min-width: 0; }
+
+.ev51-glosa-cerrar {
+    flex-shrink: 0;
+    background: none;
+    border: 0;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0 0.15rem;
+    cursor: pointer;
+}
+
+.ev51-glosario {
+    font-size: 0.78rem;
+    margin: 0 0 0.75rem;
+}
+
+.ev51-glosario > summary {
+    cursor: pointer;
+    color: var(--primary);
+}
+
+.ev51-glosario-grupo { margin-top: 0.6rem; }
+
+.ev51-glosario-titulo {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0 0 0.3rem;
+}
+
+.ev51-glosario dl { margin: 0 0 0 0.75rem; }
+
+.ev51-glosario dt {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-top: 0.3rem;
+}
+
+.ev51-glosario dd {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+mark.ev51-rel     { --mark-fg: #ddd6fe; --mark-bg: rgba(139, 92, 246, 0.30); }
+mark.ev51-dif     { --mark-fg: #bae6fd; --mark-bg: rgba(14, 165, 233, 0.22); }
+mark.ev51-grupo   { --mark-fg: #e2e8f0; --mark-bg: rgba(148, 163, 184, 0.22); }
+mark.ev51-ic      { --mark-fg: #fbcfe8; --mark-bg: rgba(236, 72, 153, 0.20); }
+mark.ev51-var     { --mark-fg: #c7d2fe; --mark-bg: rgba(99, 102, 241, 0.16); }
+mark.ev51-sintipo { --mark-fg: #e2e8f0; --mark-bg: transparent; }
+mark.ev51-disp    { --mark-fg: #cbd5e1; --mark-bg: transparent; }
+
+mark.ev51-rel,
+mark.ev51-dif,
+mark.ev51-grupo,
+mark.ev51-ic,
+mark.ev51-var,
+mark.ev51-sintipo,
+mark.ev51-disp {
+    color: var(--mark-fg) !important;
+    background: var(--mark-bg) !important;
+    padding: 0 0.15em;
+    border-radius: 3px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+
+mark.ev51-sintipo { outline: 1px dashed #94a3b8; outline-offset: -1px; }
+mark.ev51-disp { text-decoration: underline dotted #94a3b8 2px; text-underline-offset: 3px; }
+.ev51-texto mark[data-termino] { cursor: help; }
+
+/* Interruptor apagado: el texto tal cual, sin color ni subrayados. Las marcas siguen en el DOM
+   (no se vuelve a pedir ni a resaltar nada al encenderlo otra vez). */
+.ev51-texto.ev51-plano mark {
+    color: inherit !important;
+    background: none !important;
+    outline: none;
+    text-decoration: none;
+    padding: 0;
+    cursor: text;
+}
+
 .evidence-filter-list {
     display: flex;
     flex-direction: column;
