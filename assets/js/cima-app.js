@@ -159,7 +159,8 @@ class MedCheckApp {
             elderly: false,
             driving: false,
             hepatic: false,
-            renal: false
+            renal: false,
+            dysphagia: false
         };
 
         // Search State Persistence
@@ -781,7 +782,8 @@ class MedCheckApp {
             elderly: false,
             driving: false,
             hepatic: false,
-            renal: false
+            renal: false,
+            dysphagia: false
         };
 
         // Reset UI - just toggle buttons now
@@ -836,8 +838,10 @@ class MedCheckApp {
         if (this.patientContext.lactation) active.push('Lactancia');
         if (this.patientContext.elderly) active.push('>65 años');
         if (this.patientContext.hepatic) active.push('I.Hepática');
+        if (this.patientContext.renal) active.push('I.Renal');
         if (this.patientContext.gfr) active.push(`FG ${this.patientContext.gfr}`);
         if (this.patientContext.driving) active.push('Conducción');
+        if (this.patientContext.dysphagia) active.push('Disfagia/sonda');
 
         return active.length > 0 ? active.join(', ') : 'Sin contexto definido';
     }
@@ -4478,6 +4482,9 @@ class MedCheckApp {
         if (this.patientContext.elderly) {
             contextAlerts.push(accesoContexto('elderly', 'user-clock', '>65', 'Paciente mayor — ver sección 4.4'));
         }
+        if (this.patientContext.dysphagia) {
+            contextAlerts.push(accesoContexto('dysphagia', 'glass-water', 'Revisar Disfagia', 'Disfagia o sonda — ver secciones 3, 4.2 y 6.6'));
+        }
 
         // Principio activo desde la API - sin fallback del nombre comercial
         let pActivo = '';
@@ -5090,10 +5097,12 @@ class MedCheckApp {
         if (!Array.isArray(check.sections)) return '';
         const esc = value => this._escapeHtml(String(value ?? ''));
         const sectionNames = {
+            '3': 'Forma farmacéutica',
             '4.2': 'Posología y forma de administración',
             '4.4': 'Advertencias y precauciones especiales',
             '4.6': 'Fertilidad, embarazo y lactancia',
-            '4.7': 'Efectos sobre conducción y maquinaria'
+            '4.7': 'Efectos sobre conducción y maquinaria',
+            '6.6': 'Precauciones especiales de eliminación y otras manipulaciones'
         };
         const id = (section, ordinal) => `ft-passage-${scope}-${String(med.nregistro).replace(/[^\w-]/g, '')}-${check.context}-${section.replace(/[^\w-]/g, '-')}-${ordinal}`;
         const ordered = section => (section.displayOrder || [])
@@ -9712,7 +9721,7 @@ class MedCheckApp {
      * Abre la ficha del medicamento.
      *
      * `options.focusContext` es la clave del contexto de paciente que originó la apertura
-     * (`renal`, `hepatic`, `elderly`, `pregnancy`, `lactation`, `driving`). Los accesos
+     * (`renal`, `hepatic`, `elderly`, `pregnancy`, `lactation`, `driving`, `dysphagia`). Los accesos
      * contextuales de la tarjeta SABEN qué contexto pulsaste y hasta el 22/09/2026 lo
      * olvidaban al llamar aquí: los seis abrían la misma pestaña de Seguridad, que con las
      * tres secciones clave más un check por contexto activo llega a nueve tarjetas. Quien
@@ -20289,7 +20298,7 @@ ${ftFechaDocsHtml}
                         title: '4. Contexto antes de decidir',
                         icon: 'fa-user-injured',
                         body: `
-                            <p>Activa embarazo, lactancia, edad, conducción, renal o hepática <span class="guide-highlight">antes</span> de consultar: la ficha se lee después con ese contexto puesto.</p>
+                            <p>Activa embarazo, lactancia, edad, conducción, renal, hepática o disfagia/sonda <span class="guide-highlight">antes</span> de consultar: la ficha se lee después con ese contexto puesto.</p>
                             <p>Los botones ajustan la lectura de la ficha a una situación general; no introduzcas datos que identifiquen a una persona. La ausencia de una señal no demuestra ausencia de riesgo.</p>
                             <p class="guide-case"><strong>Caso</strong>Mujer embarazada con una infección urinaria. Activas «Embarazo», abres el antibiótico y la pestaña Seguridad te sube lo que la ficha técnica dice en su sección 4.6, en vez de dejarlo enterrado en el PDF.</p>
                         `,
@@ -20414,7 +20423,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-shield-alt',
                         action: { type: 'modalTab', tab: 'safety' },
                         body: `
-                            <p>Seguridad cruza la ficha con el contexto activo: embarazo, lactancia, edad, conducción, renal o hepática.</p>
+                            <p>Seguridad cruza la ficha con el contexto activo: embarazo, lactancia, edad, conducción, renal, hepática o disfagia/sonda.</p>
                             <p>Organiza las señales de seguridad relevantes según ese contexto; la valoración final es clínica. El enlace a la ficha abre la sección y señala el pasaje o epígrafe original cuando se puede localizar.</p>
                             <p class="guide-case"><strong>Caso</strong>Revisión de un mayor de 80 años polimedicado: con el contexto «Mayor de 65» puesto, recorres su lista y ves de un vistazo cuáles llevan advertencia por edad.</p>
                         `,
@@ -23004,6 +23013,7 @@ MedCheckApp._CONTEXT_ANALYTICS_MAP = {
     driving:   'driving',
     renal:     'renal',
     hepatic:   'hepatic',
+    dysphagia: 'disfagia',
 };
 
 // Initialize app on DOM ready

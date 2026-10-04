@@ -634,14 +634,14 @@ console.log('\n— Los seis accesos contextuales llevan SU contexto al modal —
         }, '');
     };
 
-    // Las seis claves son EXACTAMENTE las de `contextMapping` en cima-api.js. Si una de las
+    // Las siete claves son EXACTAMENTE las de `contextMapping` en cima-api.js. Si una de las
     // dos listas se renombra sin la otra, el botón abre el modal y no enfoca nada, en
     // silencio. Por eso se leen de la fuente en vez de repetirlas a mano aquí.
     const apiSrc = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8');
     const bloqueMapping = apiSrc.slice(apiSrc.indexOf('const contextMapping = {'));
-    const clavesApi = ['pregnancy', 'lactation', 'elderly', 'hepatic', 'renal', 'driving']
+    const clavesApi = ['pregnancy', 'lactation', 'elderly', 'hepatic', 'renal', 'driving', 'dysphagia']
         .filter(k => new RegExp(`^\\s{12}${k}: \\{`, 'm').test(bloqueMapping));
-    ok(clavesApi.length === 6, 'las seis claves de contexto siguen declaradas en `contextMapping`',
+    ok(clavesApi.length === 7, 'las siete claves de contexto siguen declaradas en `contextMapping`',
         `encontradas: ${clavesApi.join(', ')}`);
 
     for (const clave of clavesApi) {
@@ -675,13 +675,15 @@ console.log('\n— Los seis accesos contextuales llevan SU contexto al modal —
 
     // Ningún acceso contextual puede volver a abrir Seguridad "a pelo".
     const todos = pintaCon({ pregnancy: true, lactation: true, renal: true, hepatic: true,
-        elderly: true, driving: true }, { conduc: true });
+        elderly: true, driving: true, dysphagia: true }, { conduc: true });
     const aPelo = (todos.match(/context-alert-inline[\s\S]*?<\/div>/g) || [])
         .filter(a => !a.includes('focusContext'));
     ok(aPelo.length === 0, 'ningún acceso contextual abre el modal sin decir qué contexto pidió',
         aPelo.join('\n'));
-    ok((todos.match(/context-alert-inline/g) || []).length === 6,
-        'con los seis contextos activos se pintan los seis accesos');
+    ok((todos.match(/context-alert-inline/g) || []).length === 7,
+        'con los siete contextos activos se pintan los siete accesos');
+    ok(/title="Disfagia o sonda — ver secciones 3, 4\.2 y 6\.6"/.test(todos),
+        'el acceso de disfagia nombra sus tres apartados de la ficha');
 
     // La sección de la ficha va en el `title` de los que la tienen fija: es el dato que el
     // médico contrasta contra la fuente oficial, y antes solo lo decía embarazo.

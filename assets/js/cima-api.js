@@ -2749,6 +2749,37 @@ class CimaAPI {
                     'cockcroft', 'ckd-epi', 'tfge', 'tfg', 'clearance',
                     'depuración de creatinina', 'depuracion de creatinina']
             },
+            // DISFAGIA / SONDA, desde el 2026-10-04. No es una población de la ficha sino una
+            // pregunta práctica de consulta y residencia: ¿cómo puede tomar esto quien no traga
+            // bien o lleva sonda? Por eso lee tres apartados: el 3 (forma farmacéutica, donde la
+            // plantilla QRD pone la ranura y si divide en dosis iguales), la 4.2 (forma de
+            // administración) y la 6.6 (preparación y otras manipulaciones). Espejo: enseña lo
+            // que dice cada uno; si no dice nada, NO significa que se pueda triturar.
+            //
+            // Las palabras se buscan como SUBCADENA del texto sin tildes, así que cada una está
+            // elegida para no casar con lo que no es: nada de «partir» a secas («a partir de»),
+            // ni «enteral» («parenteral»), ni «entero» («enterocolitis»), ni «dosis iguales»
+            // suelto («dividir la dosis diaria en dos dosis iguales» es posología).
+            dysphagia: {
+                section: '4.2',
+                sections: ['3', '4.2', '6.6'],
+                label: 'Disfagia / sonda',
+                keywords: ['disfagia', 'dificultad para tragar', 'dificultades para tragar',
+                    'dificultad para deglutir', 'problemas para tragar', 'problemas de deglucion',
+                    'pueden tragar', 'puedan tragar', 'capaces de tragar', 'sonda', 'gastrostomia',
+                    'nasogastric', 'nutricion enteral', 'via enteral', 'triturar', 'triturad',
+                    'machac', 'masticar', 'masticad', 'sin masticar', 'partirse',
+                    'partir el comprimido', 'partir los comprimidos', 'ranura',
+                    'dividir en dosis iguales', 'dividirse en dosis iguales', 'mitades iguales',
+                    'partes iguales', 'abrir la capsula', 'abrir las capsulas', 'abrirse la capsula',
+                    'abrirse las capsulas', 'contenido de la capsula', 'contenido de las capsulas',
+                    'espolvore', 'dispersar', 'disolver', 'tragarse entero', 'tragarse enteros',
+                    'tragarse enteras', 'tragar entero', 'tragarlos enteros', 'ingerirse entero',
+                    'ingerirse enteros'],
+                indicios: ['tragar', 'deglu', 'masticable', 'bucodispersable', 'dispersable',
+                    'efervescente', 'liberacion prolongada', 'liberacion modificada',
+                    'gastrorresistente', 'recubrimiento enterico']
+            },
             driving: {
                 section: '4.7',
                 label: 'Conducción',
@@ -2825,8 +2856,8 @@ class CimaAPI {
             // El navegador conserva grupos y tablas originales de CIMA. El fallback mantiene
             // el contrato de los consumidores sin DOMParser (bancos Node).
             if (typeof DOMParser !== 'undefined') {
-                const requested = ['elderly', 'hepatic', 'renal'].includes(contextKey)
-                    ? ['4.2', '4.4'] : [mapping.section];
+                const requested = mapping.sections
+                    || (['elderly', 'hepatic', 'renal'].includes(contextKey) ? ['4.2', '4.4'] : [mapping.section]);
                 const responses = await Promise.allSettled(requested.map(getRawSection));
                 const sections = responses.map((response, i) => {
                     if (response.status === 'rejected') {
