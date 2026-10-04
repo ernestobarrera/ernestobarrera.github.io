@@ -2324,14 +2324,21 @@ class CimaAPI {
             }
         }
 
-        // Función auxiliar para limpiar contenido
+        // Saltos de línea del contenido. CIMA sirve la ficha como HTML exportado de Word, con el
+        // código fuente sangrado («</p>\r\n\r\n    <p …>»): esos saltos son formato del archivo, y
+        // en HTML valen un espacio, que es como los pinta la propia CIMA. Hasta el 2026-10-04 se
+        // convertían en <br> —2.413 en las 13 pestañas del banco visual— y por eso el CSS acabó
+        // ocultando TODOS los <br> de la ficha, también los que sí separan datos («Día 1<br>300 mg»
+        // se leía «Día 1300 mg»). Solo un contenido sin ninguna etiqueta, texto plano, conserva
+        // sus saltos como <br>.
         const cleanContent = (raw) => {
             if (!raw) return '';
+            const salto = /<[a-z][^>]*>/i.test(raw) ? ' ' : '<br>';
             return raw
-                .replace(/\\r\\n/g, '<br>')
-                .replace(/\\n/g, '<br>')
-                .replace(/\r\n/g, '<br>')
-                .replace(/\n/g, '<br>');
+                .replace(/\\r\\n/g, salto)
+                .replace(/\\n/g, salto)
+                .replace(/\r\n/g, salto)
+                .replace(/\n/g, salto);
         };
 
         // Si es un array, CONCATENAR el contenido de TODOS los elementos
@@ -2350,7 +2357,9 @@ class CimaAPI {
                     return '';
                 })
                 .filter(c => c.length > 0)
-                .join('<br><br>');
+                // Un solo <br>: tras el bloque anterior deja una línea en blanco antes del título
+                // del subapartado. Con dos, ahora que los <br> se ven, eran 59 px de hueco.
+                .join('<br>');
 
             return allContent;
         }
