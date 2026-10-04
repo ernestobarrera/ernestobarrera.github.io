@@ -11767,21 +11767,42 @@ ${ftFechaDocsHtml}
      * CIMA publica la ficha exportada de Word, con un párrafo `&nbsp;` como separador entre
      * bloques y entre filas de una misma celda: en las 48 secciones del fixture de menciones hay
      * 518. Aquí cada uno se pintaba como una línea en blanco de 24 px, y una tabla de indicaciones
-     * salía con medio hueco por fila. Se quitan solo los bloques sin ningún carácter visible ni
-     * contenido no textual (imagen, tabla, línea); el margen propio de cada párrafo ya separa.
+     * salía con medio hueco por fila.
+     *
+     * Pero esos huecos SON la estructura visual de la ficha: separan un epígrafe («Consideraciones
+     * generales») del párrafo anterior, y no lo separan del texto que encabeza. Quitarlos sin más
+     * (así se hizo el 2026-10-04 por la mañana) dejaba todo a la misma distancia, y Ernesto lo
+     * vio esa tarde comparando con la ficha de CIMA. Ahora cada racha de párrafos vacíos se quita
+     * y deja una marca, `ft-tras-hueco`, en el bloque que la sigue, que recibe un espacio moderado
+     * (menor dentro de una celda). Solo si hay contenido antes en el mismo nivel: un hueco al
+     * principio no separa nada. Un bloque vacío es el que no tiene ningún carácter visible ni
+     * contenido no textual (imagen, tabla, línea).
+     *
      * Las tablas, además, van dentro de un contenedor con desplazamiento horizontal propio para
-     * que una tabla ancha no ensanche el modal en el móvil.
+     * que una tabla ancha no ensanche el modal en el móvil; la marca pasa al contenedor.
      */
     _compactarTextoFT(contenedor) {
         if (!contenedor) return;
+        const vacio = el => !el.querySelector('img, table, hr, svg')
+            && !el.textContent.replace(/[\s\u00a0\u200b\ufeff]+/g, '');
         contenedor.querySelectorAll('p, div').forEach(el => {
-            if (el.querySelector('img, table, hr, svg')) return;
-            if (!el.textContent.replace(/[\s ​﻿]+/g, '')) el.remove();
+            // Uno ya arrancado con su contenedor vacío no se vuelve a mirar.
+            if (!el.isConnected || !vacio(el)) return;
+            let antes = el.previousElementSibling;
+            while (antes && vacio(antes)) antes = antes.previousElementSibling;
+            let despues = el.nextElementSibling;
+            while (despues && vacio(despues)) despues = despues.nextElementSibling;
+            if (antes && despues) despues.classList.add('ft-tras-hueco');
+            el.remove();
         });
         contenedor.querySelectorAll('table').forEach(table => {
             if (table.closest('.table-scroll-wrapper')) return;
             const wrapper = document.createElement('div');
             wrapper.className = 'table-scroll-wrapper';
+            if (table.classList.contains('ft-tras-hueco')) {
+                table.classList.remove('ft-tras-hueco');
+                wrapper.classList.add('ft-tras-hueco');
+            }
             table.parentNode.insertBefore(wrapper, table);
             wrapper.appendChild(table);
         });
