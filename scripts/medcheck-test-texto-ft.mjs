@@ -166,6 +166,17 @@ console.log('\n— Pestaña QT —');
     const qt = appSrc.slice(appSrc.indexOf('async loadQTDetection('), appSrc.indexOf('injectQTTab(nregistro, medNombre, displayHtml'));
     ok('`loadQTDetection` busca sobre `CimaAPI.textoFT` plegado', /CimaAPI\.plegar\(CimaAPI\.textoFT\(h\)\)/.test(qt));
     ok('y ya no aplica la regex sobre HTML con solo las etiquetas quitadas', !/QT_DETECTION_REGEX[\s\S]{0,200}replace\(\/<\[\^>\]\*>\/g/.test(qt) && !/\.replace\(\/<\[\^>\]\*>\/g, ' '\)/.test(qt));
+
+    // Desde el 2026-10-04 la pestaña compacta el texto como 4.1, 4.2, 4.5 y 4.8, y ANTES de
+    // resaltar, como Posología. Comprobado en Chromium con las 48 secciones reales del fixture:
+    // mismo texto, mismas líneas copiables, mismos títulos y mismos resaltados QT/ECG que sin
+    // compactar. Aquí se fija el orden, que es lo que un cambio futuro podría romper sin verlo.
+    const inyectar = appSrc.slice(appSrc.indexOf('    injectQTTab(nregistro, medNombre, displayHtml, matchCount) {'), appSrc.indexOf("const tabsBar = document.querySelector('.modal-tabs');", appSrc.indexOf('    injectQTTab(')));
+    const compacta = inyectar.indexOf('this._compactarTextoFT(qtTextContainer)');
+    ok('`injectQTTab` compacta el texto de la ficha', compacta > -1);
+    ok('y lo hace antes de los resaltados QT y ECG', compacta > -1 && compacta < inyectar.indexOf("this._highlightTextNodes(qtTextContainer, qtHighlightPatterns, 'qt-highlight')")
+        && compacta < inyectar.indexOf("this._highlightTextNodes(qtTextContainer, ecgHighlightPatterns, 'ecg-highlight')"));
+    ok('solo cuando hay texto de ficha (dentro de `if (qtTextContainer)`)', /if \(qtTextContainer\) \{[\s\S]{0,600}this\._compactarTextoFT\(qtTextContainer\)/.test(inyectar));
 }
 
 console.log('\n— Ninguna búsqueda nueva sobre HTML crudo —');

@@ -13479,6 +13479,12 @@ ${ftFechaDocsHtml}
         if (hasFTText) {
             const qtTextContainer = document.getElementById('qt-section-text');
             if (qtTextContainer) {
+                // La misma limpieza de presentación que en 4.1, 4.2, 4.5 y 4.8, y antes de
+                // resaltar como allí. Solo quita bloques sin ningún carácter visible: una mención
+                // de QT o ECG nunca está en un bloque vacío, así que no cambia qué se resalta
+                // (comprobado en Chromium el 2026-10-04 con las 48 secciones reales del fixture de
+                // menciones: mismo texto, mismas líneas copiables, mismos títulos y resaltados).
+                this._compactarTextoFT(qtTextContainer);
                 // Patrones QT amplios — se usan solo para resaltado, no para decidir si mostrar el tab
                 const qtHighlightPatterns = [
                     /\bQTc?\b/gi,
