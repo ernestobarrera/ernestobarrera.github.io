@@ -174,6 +174,62 @@ for (const expected of fixture.expected) {
     check('sin párrafo de mención utilizable, primer bloque y sin guion inicial',
         sinMencion.groups[0]?.linkPhrase?.startsWith('Tratamiento inicial de estabilización'), sinMencion.groups[0]?.linkPhrase);
 }
+// DISFAGIA / SONDA (2026-10-04): lee los apartados 3, 4.2 y 6.6. La 4.2 es la real de la 75071
+// (esomeprazol, con pellets, dispersión y sonda gástrica); el 3 y la 6.6 son sintéticos porque el
+// fixture no los trae. Las palabras se buscan como subcadena: aquí se fija que no casen con lo
+// que no es («a partir de», «parenteral», dividir la dosis diaria).
+{
+    const p = body => `<p><span>${body}</span></p>`;
+    const sintetico = {
+        '3': [{ seccion: '3', titulo: 'FORMA FARMACÉUTICA', contenido: p('Comprimido recubierto con película.') +
+            p('Comprimidos blancos, redondos y ranurados. La ranura sirve únicamente para fraccionar y facilitar la deglución pero no para dividir en dosis iguales.') }],
+        '6.6': [{ seccion: '6.6', titulo: 'Precauciones especiales de eliminación y otras manipulaciones', contenido: p('Ninguna especial.') }],
+    };
+    const api = Object.create(CimaAPI.prototype);
+    api.getDocSeccion = async () => '';
+    api._request = async endpoint => {
+        const section = new URL(endpoint, 'https://fixture.invalid').searchParams.get('seccion');
+        return sintetico[section] || fixture.responses['75071'][section];
+    };
+    const report = await api.analyzeSafety('75071', { dysphagia: true });
+    const disfagia = report.checks.find(item => item.context === 'dysphagia');
+    check('disfagia: un check de contexto con el contrato de navegador', Array.isArray(disfagia?.sections) && disfagia.excerpt === null);
+    check('disfagia: lee 3, 4.2 y 6.6, en ese orden', JSON.stringify(disfagia?.sections?.map(s => s.section)) === '["3","4.2","6.6"]',
+        JSON.stringify(disfagia?.sections?.map(s => s.section)));
+    const sec = n => disfagia?.sections?.find(s => s.section === n);
+    check('disfagia: el apartado 3 enseña la frase de la ranura', sec('3')?.groups.some(g => /ranura sirve/.test(g.text)), JSON.stringify(sec('3')?.groups.map(g => g.text)));
+    const texto42 = (sec('4.2')?.groups || []).map(g => g.text).join(' ');
+    check('disfagia: la 4.2 enseña los pellets que no se mastican ni trituran', /no deben masticarse ni triturarse/.test(texto42));
+    check('disfagia: la 4.2 enseña la sonda gástrica', /sonda gástrica/.test(texto42));
+    check('disfagia: la 4.2 casa por palabras del contexto, no por indicios', sec('4.2')?.groups.every(g => g.level === 'palabras del contexto'));
+    check('disfagia: una 6.6 sin mención se dice como tal, no como «se puede»',
+        sec('6.6')?.status === 'review' && sec('6.6')?.groups.length === 0 && /No se localizó una mención literal/.test(sec('6.6')?.message), JSON.stringify(sec('6.6')));
+    check('disfagia: el estado del check nunca es «safe»', disfagia?.status !== 'safe');
+
+    // Una 4.2 con trampas de subcadena, y CIMA sin apartados 3 ni 6.6 (respuesta vacía).
+    const soloCon42 = async html => {
+        const a = Object.create(CimaAPI.prototype);
+        a.getDocSeccion = async () => '';
+        a._request = async endpoint => {
+            const section = new URL(endpoint, 'https://fixture.invalid').searchParams.get('seccion');
+            return section === '4.2' ? [{ seccion: '4.2', titulo: 'Posología', contenido: html }] : [];
+        };
+        const r = await a.analyzeSafety('1', { dysphagia: true });
+        return r.checks.find(item => item.context === 'dysphagia');
+    };
+    const trampas = await soloCon42(p('A partir de los 12 años, 500 mg al día.') +
+        p('La dosis diaria puede dividirse en dos dosis iguales.') +
+        p('En pacientes con nutrición parenteral no se requiere ajuste de dosis.') +
+        p('Puede aparecer enterocolitis.'));
+    const t42 = trampas?.sections?.find(s => s.section === '4.2');
+    check('disfagia: «a partir de», dividir la dosis diaria, «parenteral» y «enterocolitis» no son menciones',
+        t42?.status === 'review' && t42.groups.length === 0, JSON.stringify(t42?.groups.map(g => g.text)));
+    const t3 = trampas?.sections?.find(s => s.section === '3');
+    check('disfagia: un apartado que CIMA no sirve se dice no disponible, no «sin mención»',
+        t3?.status === 'unknown' && /no disponible/i.test(t3?.message), JSON.stringify(t3));
+    check('disfagia: con 3 y 6.6 ausentes, el aviso pide revisar la ficha completa',
+        /Carga parcial|revisar/i.test(trampas?.message || ''), trampas?.message);
+}
 check('el DOMParser inyectado se ejercitó', parses > 0, `${parses} parseos`);
 console.log(`Menciones FT: ${fixture.expected.length} contextos, ${fixture.sourceCount} respuestas, ${parses} parseos, ${failures} fallos`);
 process.exit(failures ? 1 : 0);
