@@ -11527,8 +11527,8 @@ ${ftFechaDocsHtml}
             content = content.normalize('NFC');
 
             container.innerHTML = `
-    <div class="section-header section-header-split" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
-        <h4 style="margin:0;"><i class="fas fa-stethoscope"></i> Sección 4.1: Indicaciones terapéuticas</h4>
+    <div class="section-header section-header-split">
+        <h4><i class="fas fa-stethoscope"></i> Sección 4.1: Indicaciones terapéuticas</h4>
         <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.1')}
         <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('indications-section-text', '${medNombre.replace(/'/g, "\\'")}', 'Indicaciones terapéuticas', '4.1')" title="Copiar a la historia clínica: lo seleccionado o la sección entera, con su fuente">
             <i class="fas fa-copy"></i>
@@ -11538,9 +11538,253 @@ ${ftFechaDocsHtml}
         ${content}
     </div>
 `;
+            this._compactarTextoFT(document.getElementById('indications-section-text'));
         } catch (err) {
             container.innerHTML = `<div class="empty-state"><p class="text-danger">Error cargando indicaciones: ${err.message}</p></div>`;
         }
+    }
+
+    /**
+     * Resaltados de la sección 4.2, como tabla: cada categoría con su clase, su rótulo en la
+     * leyenda y sus patrones. Están aquí y no dentro de `loadPosologyContent` para que
+     * `medcheck-test-resaltado-posologia.mjs` pruebe los mismos patrones que ve el médico.
+     *
+     * RESALTAR NO ES AFIRMAR. Un resaltado dice «aquí la ficha habla de esto», nunca «se puede» ni
+     * «no se puede». Por eso las dos categorías añadidas el 2026-10-04 marcan la FRASE con su
+     * negación dentro («no deben masticarse ni triturarse»): marcar solo el verbo enseñaría
+     * «triturarse» resaltado en una ficha que lo prohíbe. Y por eso la leyenda no lleva recuentos:
+     * «Manipulación · 0» se leería como «se puede triturar», cuando solo significa que la 4.2 no
+     * lo menciona (la forma farmacéutica, en el apartado 3, puede decirlo).
+     *
+     * EL ORDEN DE LA LISTA ES EL ORDEN DE APLICACIÓN y decide los solapes: lo que marca una
+     * categoría ya no lo ve la siguiente. Unidades va primero para que «400 microgramos» no caiga
+     * en Posología como si fuera una dosis más en mg; Manipulación antes que Posología y
+     * Alimentos para que la frase negada llegue entera. Dentro de una categoría, a igual posición
+     * gana el patrón que va antes (por eso los más específicos van arriba). `leyenda` es solo el
+     * orden en que se ven los rótulos.
+     *
+     * Getter y no constante: devuelve expresiones nuevas en cada llamada, así ningún `lastIndex`
+     * de una búsqueda anterior se arrastra a la siguiente.
+     */
+    static get RESALTADOS_POSOLOGIA() {
+        // Verbos de manipulación de la forma farmacéutica, con sus enclíticos y participios.
+        // `partir` lleva una exclusión: «a partir de» aparece en casi todas las 4.2 hablando de
+        // edades y días (8 veces en las 12 fichas del fixture, frente a 0 de «partir» el
+        // comprimido). «dividir» NO está suelto: «dividir la dosis diaria en dos tomas» es
+        // posología, no manipulación; solo cuentan las formas de partir la unidad en partes.
+        const verbos = [
+            'mastic(?:ar(?:se|lo|los|la|las)?|ad[oa]s?|ables?)',
+            'tritur(?:ar(?:se|lo|los|la|las)?|ad[oa]s?)',
+            'machac(?:ar(?:se|lo|los|la|las)?|ad[oa]s?)',
+            'partir(?:se|lo|los|la|las)?(?!\\s+del?\\b)',
+            'partid[oa]s?',
+            'romper(?:se|lo|los|la|las)?',
+            'fraccion(?:ar(?:se|lo|los|la|las)?|ad[oa]s?|amiento)',
+            'dispers(?:ar(?:se|lo|los|la|las)?|ad[oa]s?|ables?|i[oó]n)',
+            'disolver(?:se|lo|los|la|las)?',
+            'disuelt[oa]s?',
+            'tragar(?:se|lo|los|la|las)?(?:\\s+enter[oa]s?)?',
+            'ingerir(?:se|lo|los|la|las)?\\s+enter[oa]s?',
+            'deglutir(?:se|lo|los|la|las)?(?:\\s+enter[oa]s?)?',
+            'espolvorear(?:se|lo|los|la|las)?',
+            'abrir(?:se|la|las)?(?:\\s+(?:la|las))?\\s+c[áa]psulas?',
+        ].join('|');
+        // La negación o la restricción que precede al verbo forma parte de lo resaltado, y los
+        // verbos coordinados («partir, masticar ni triturar») se resaltan como una sola frase.
+        const negacion = '(?:(?:no\\s+(?:se\\s+)?(?:debe|deben|deberá|deberán|debería|deberían|puede|pueden|recomienda|recomiendan|aconseja|hay\\s+que)\\s+(?:se\\s+)?(?:ser\\s+)?|sin\\s+))?';
+        const coordinados = `(?:(?:\\s*,\\s*|\\s+(?:ni|o|u|y)\\s+)(?:se\\s+)?(?:${verbos}))*`;
+        // Cantidad con unidad: miles con punto y decimales con coma, y combinaciones «50/12,5».
+        const cantidad = '\\d+(?:[.,]\\d+)*(?:\\s*\\/\\s*\\d+(?:[.,]\\d+)*)?\\s*';
+        const porUnidad = '(?:\\s*\\/\\s*(?:kg|m2|m²|ml|h|hora|día|dosis))*';
+        return [
+            {
+                clase: 'posology-unit', etiqueta: 'Unidades y equivalencias', leyenda: 4,
+                ayuda: 'Cantidades en microgramos, UI, mmol o mEq, y cantidades «expresadas como» o «equivalentes a» otra forma del principio activo. Se distinguen de los mg para no compararlas con ellos por error.',
+                patrones: [
+                    new RegExp(`\\b(${cantidad}(?:microgramos?|µg|μg|mcg|nanogramos?|ng|UI|U\\.I\\.|unidades\\s+internacionales|mmol|milimoles?|mEq|miliequivalentes?)${porUnidad})(?![\\wáéíóúñ])`, 'gi'),
+                    // «U» de unidades solo en mayúscula: en minúscula es la conjunción («3 u 4 horas»).
+                    new RegExp(`\\b(${cantidad}U${porUnidad})(?![\\wáéíóúñ]|\\.\\w)`, 'g'),
+                    /\b((?:expresad[oa]s?|se\s+expresan?)\s+(?:como|en\s+forma\s+de)\s+[a-záéíóúñü]+)/gi,
+                    /\b(equivalentes?\s+a\s+\d+(?:[.,]\d+)*\s*(?:mg|g|microgramos?|µg|μg|mcg|UI|mmol|mEq)\b)/gi,
+                ],
+            },
+            {
+                clase: 'posology-manip', etiqueta: 'Manipulación', leyenda: 3,
+                ayuda: 'Lo que dice la ficha sobre tragar entero, masticar, triturar, partir, dispersar, abrir cápsulas o administrar por sonda. Se resalta la frase con su negación: léela entera. Que no aparezca nada no significa que se pueda manipular.',
+                patrones: [
+                    new RegExp(`\\b(${negacion}(?:${verbos})${coordinados})`, 'gi'),
+                    /\b(dividir(?:se)?\s+en\s+(?:dos\s+)?(?:partes|mitades)(?:\s+iguales)?|dividir(?:se)?\s+en\s+dosis\s+iguales)/gi,
+                    /\b(ranurad[oa]s?|ranuras?)\b/gi,
+                    /\b(medio\s+comprimido|(?:la\s+)?mitad\s+de(?:l|\s+un)\s+comprimido|cuarto\s+de\s+comprimido)/gi,
+                    /\b(contenido\s+de\s+(?:la|las)\s+c[áa]psulas?)/gi,
+                    /\b(sondas?(?:\s+(?:nasogástricas?|nasogastricas?|de\s+gastrostomía|de\s+alimentación|enterales?|gástricas?))?)\b/gi,
+                    /\b(disfagia)\b/gi,
+                ],
+            },
+            {
+                clase: 'posology-timing', etiqueta: 'Posología', leyenda: 1,
+                ayuda: 'Pautas, frecuencias, duraciones y cantidades en mg, g o ml.',
+                patrones: [
+                    // Frequency phrases
+                    /\b(una\s+vez\s+al\s+día)\b/gi,
+                    /\b(dos\s+veces\s+al\s+día)\b/gi,
+                    /\b(tres\s+veces\s+al\s+día)\b/gi,
+                    /\b(cuatro\s+veces\s+al\s+día)\b/gi,
+
+                    // Time intervals with numbers
+                    /\b(cada\s+\d+\s*horas?)\b/gi,
+                    /\b(cada\s+\d+\s*días?)\b/gi,
+                    /(≥\s*\d+\s*horas?)/gi,
+
+                    // Duration patterns - ranges first (e.g. "28-35 días", "4-8 semanas")
+                    // MUST precede single-number patterns to capture full range as one unit
+                    /\b(durante\s+\d+[\s-]*(?:a\s+\d+\s*)?(?:días?|semanas?|meses?))\b/gi,
+                    /\b(\d+\s*[-–]\s*\d+\s*semanas?)\b/gi,
+                    /\b(\d+\s*[-–]\s*\d+\s*meses?)\b/gi,
+                    /\b(\d+\s*[-–]\s*\d+\s*días?)\b/gi,
+                    /\b(\d+\s*(?:a\s+\d+\s*)?semanas?)\b/gi,
+                    /\b(\d+\s*(?:a\s+\d+\s*)?meses?)\b/gi,
+                    /\b(\d+\s*(?:a\s+\d+\s*)?días?)\b/gi,
+
+                    // Dose units - handle combination doses like "10/80 mg" or "10/ 80 mg"
+                    // Match full combination first, then single doses
+                    /\b(\d+\s*\/\s*\d+\s*(?:mg|mcg|µg|g|ml|UI))\b/gi,  // "10/80 mg", "10/ 80 mg"
+                    // Single dose - but NOT if followed by "/" (part of combination)
+                    /\b(\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|g|ml|UI))(?!\s*\/)/gi,
+                    /\b(\d+\s*(?:comprimidos?|cápsulas?|sobres?|gotas?|ampollas?|parches?))\b/gi,
+
+                    // Per day patterns
+                    // NOTE: /(\/\s*día)/gi removed - fragments text (e.g. "mg/kg /día")
+                    // "al día" and "por día" already cover meaningful clinical expressions
+                    /\b(al\s+día)\b/gi,
+                    /\b(por\s+día)\b/gi,
+
+                    // Time of day
+                    /\b(por\s+la\s+mañana)\b/gi,
+                    /\b(por\s+la\s+noche)\b/gi,
+                    /\b(por\s+la\s+tarde)\b/gi,
+                    /\b(antes\s+de\s+acostarse)\b/gi,
+                    /\b(a\s+la\s+misma\s+hora)\b/gi,
+
+                    // Clinical phrases
+                    /\b(dosis\s+(?:inicial|máxima|mínima|recomendada|única|diaria|habitual))\b/gi,
+                    /\b(ajustes?\s+de\s+dosis)\b/gi,
+                    /\b(inicio\s+del\s+tratamiento)\b/gi,
+                    /\b(duración\s+del\s+tratamiento)\b/gi,
+                    /\b(no\s+(?:debe\s+)?(?:superar|exceder))\b/gi,
+                    /\b(máximo|mínimo)\b/gi,
+
+                    // Administration
+                    /\b(vía\s+oral)\b/gi,
+                    /\b(uso\s+(?:oral|tópico|cutáneo))\b/gi,
+                ],
+            },
+            {
+                clase: 'posology-food', etiqueta: 'Alimentos', leyenda: 2,
+                ayuda: 'Menciones de comidas, ayunas y bebidas.',
+                patrones: [
+                    /\b(alimentos?|comidas?)\b/gi,
+                    /\b(desayuno|almuerzo|cena)\b/gi,
+                    /\b(ayunas?|ayuno)\b/gi,
+                    /\b(estómago\s+vacío|estómago\s+lleno)\b/gi,
+                    /\b(con\s+las\s+comidas|sin\s+alimentos)\b/gi,
+                    /\b(leche|lácteos|zumo|agua)\b/gi,
+                    /\b(grasa|grasas)\b/gi,
+                ],
+            },
+        ];
+    }
+
+    /**
+     * Parte un texto en segmentos `{ texto, clase }` según las categorías de resaltado, en su
+     * orden: lo que marca una ya no lo ve la siguiente. Función pura, sin DOM, para que el banco
+     * la pruebe tal cual la usa `_resaltarPosologia`.
+     */
+    _segmentarResaltados(texto, categorias) {
+        let segmentos = [{ texto, clase: null }];
+        for (const { clase, patrones } of categorias) {
+            segmentos = segmentos.flatMap(s => (s.clase ? [s] : this._partirPorPatrones(s.texto, patrones, clase)));
+        }
+        return segmentos.filter(s => s.texto);
+    }
+
+    /**
+     * Coincidencias de una categoría sobre un texto, sin solapes: gana la que empieza antes y, a
+     * igual inicio, el patrón que va antes en la lista. Se recorre con `exec` desde `lastIndex = 0`
+     * en cada texto. La versión anterior comprobaba antes con `test()`, que con la bandera `g`
+     * arranca donde se quedó la llamada previa: un nodo corto tras uno largo podía quedarse sin
+     * resaltar aunque tuviera coincidencias.
+     */
+    _partirPorPatrones(texto, patrones, clase) {
+        const coincidencias = [];
+        patrones.forEach((patron, orden) => {
+            patron.lastIndex = 0;
+            let m;
+            while ((m = patron.exec(texto)) !== null) {
+                if (!m[0]) { patron.lastIndex += 1; continue; }
+                coincidencias.push({ inicio: m.index, fin: m.index + m[0].length, orden });
+            }
+        });
+        coincidencias.sort((a, b) => a.inicio - b.inicio || a.orden - b.orden);
+        const segmentos = [];
+        let cursor = 0;
+        for (const c of coincidencias) {
+            if (c.inicio < cursor) continue;
+            if (c.inicio > cursor) segmentos.push({ texto: texto.slice(cursor, c.inicio), clase: null });
+            segmentos.push({ texto: texto.slice(c.inicio, c.fin), clase });
+            cursor = c.fin;
+        }
+        if (cursor < texto.length) segmentos.push({ texto: texto.slice(cursor), clase: null });
+        return segmentos;
+    }
+
+    /** Aplica `RESALTADOS_POSOLOGIA` a los nodos de texto del contenedor, sin tocar su HTML. */
+    _resaltarPosologia(contenedor) {
+        const categorias = MedCheckApp.RESALTADOS_POSOLOGIA;
+        const walker = document.createTreeWalker(contenedor, NodeFilter.SHOW_TEXT);
+        const nodos = [];
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            if (n.textContent.trim() && !n.parentElement?.closest('mark')) nodos.push(n);
+        }
+        for (const nodo of nodos) {
+            const segmentos = this._segmentarResaltados(nodo.textContent, categorias);
+            if (!segmentos.some(s => s.clase)) continue;
+            const fragmento = document.createDocumentFragment();
+            for (const s of segmentos) {
+                if (!s.clase) { fragmento.appendChild(document.createTextNode(s.texto)); continue; }
+                const mark = document.createElement('mark');
+                mark.className = s.clase;
+                mark.textContent = s.texto;
+                fragmento.appendChild(mark);
+            }
+            nodo.parentNode.replaceChild(fragmento, nodo);
+        }
+    }
+
+    /**
+     * Limpieza de presentación del HTML de un apartado de la ficha, sin tocar una palabra.
+     *
+     * CIMA publica la ficha exportada de Word, con un párrafo `&nbsp;` como separador entre
+     * bloques y entre filas de una misma celda: en las 48 secciones del fixture de menciones hay
+     * 518. Aquí cada uno se pintaba como una línea en blanco de 24 px, y una tabla de indicaciones
+     * salía con medio hueco por fila. Se quitan solo los bloques sin ningún carácter visible ni
+     * contenido no textual (imagen, tabla, línea); el margen propio de cada párrafo ya separa.
+     * Las tablas, además, van dentro de un contenedor con desplazamiento horizontal propio para
+     * que una tabla ancha no ensanche el modal en el móvil.
+     */
+    _compactarTextoFT(contenedor) {
+        if (!contenedor) return;
+        contenedor.querySelectorAll('p, div').forEach(el => {
+            if (el.querySelector('img, table, hr, svg')) return;
+            if (!el.textContent.replace(/[\s ​﻿]+/g, '')) el.remove();
+        });
+        contenedor.querySelectorAll('table').forEach(table => {
+            if (table.closest('.table-scroll-wrapper')) return;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-scroll-wrapper';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        });
     }
 
     /**
@@ -11582,18 +11826,17 @@ ${ftFechaDocsHtml}
             // Normalize content
             content = content.normalize('NFC');
 
-            // First, render the HTML without highlighting
+            // Primero el HTML sin resaltar; los resaltados se aplican después sobre sus nodos de texto.
             container.innerHTML = `
-    <div class="section-header section-header-split" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
-        <h4 style="margin:0;"><i class="fas fa-clock"></i> Sección 4.2: Posología y forma de administración</h4>
+    <div class="section-header section-header-split">
+        <h4><i class="fas fa-clock"></i> Sección 4.2: Posología y forma de administración</h4>
         <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.2')}
         <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('posology-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Posología', '4.2')" title="Copiar a la historia clínica: lo seleccionado o la sección entera, con su fuente">
             <i class="fas fa-copy"></i>
         </button>${this._botonCompartir('posology-section-text', 'Posología y forma de administración (4.2)', '4.2')}</span>
     </div>
     <div class="posology-legend">
-        <span class="legend-item"><mark class="posology-food">Alimentos</mark></span>
-        <span class="legend-item"><mark class="posology-timing">Posología</mark></span>
+        ${MedCheckApp.RESALTADOS_POSOLOGIA.sort((a, b) => a.leyenda - b.leyenda).map(c => `<span class="legend-item" title="${c.ayuda}"><mark class="${c.clase}">${c.etiqueta}</mark></span>`).join('')}
         <button id="share-como-tomar" type="button" class="btn btn-sm btn-secondary share-paciente" hidden onclick="app.shareComoTomar()">
             <i class="fas fa-user"></i> Para el paciente
         </button>
@@ -11603,194 +11846,14 @@ ${ftFechaDocsHtml}
     </div>
 `;
 
-            // Now apply format-safe highlighting using TreeWalker
             // «Cómo tomar» del prospecto, en segundo plano: el botón «Para el paciente» aparece
             // solo cuando el texto ya está aquí, porque compartir exige un clic reciente.
             this._precargarComoTomar(med || this.currentMed);
 
             const textContainer = document.getElementById('posology-section-text');
             if (!textContainer) return;
-
-            // Food-related patterns (yellow)
-            const foodPatterns = [
-                /\b(alimentos?|comidas?)\b/gi,
-                /\b(desayuno|almuerzo|cena)\b/gi,
-                /\b(ayunas?|ayuno)\b/gi,
-                /\b(estómago\s+vacío|estómago\s+lleno)\b/gi,
-                /\b(con\s+las\s+comidas|sin\s+alimentos)\b/gi,
-                /\b(leche|lácteos|zumo|agua)\b/gi,
-                /\b(grasa|grasas)\b/gi
-            ];
-
-            // Timing/dosing patterns (blue) - sorted by specificity (longer first)
-            const timingPatterns = [
-                // Frequency phrases
-                /\b(una\s+vez\s+al\s+día)\b/gi,
-                /\b(dos\s+veces\s+al\s+día)\b/gi,
-                /\b(tres\s+veces\s+al\s+día)\b/gi,
-                /\b(cuatro\s+veces\s+al\s+día)\b/gi,
-
-                // Time intervals with numbers
-                /\b(cada\s+\d+\s*horas?)\b/gi,
-                /\b(cada\s+\d+\s*días?)\b/gi,
-                /(≥\s*\d+\s*horas?)/gi,
-
-                // Duration patterns - ranges first (e.g. "28-35 días", "4-8 semanas")
-                // MUST precede single-number patterns to capture full range as one unit
-                /\b(durante\s+\d+[\s-]*(?:a\s+\d+\s*)?(?:días?|semanas?|meses?))\b/gi,
-                /\b(\d+\s*[-–]\s*\d+\s*semanas?)\b/gi,
-                /\b(\d+\s*[-–]\s*\d+\s*meses?)\b/gi,
-                /\b(\d+\s*[-–]\s*\d+\s*días?)\b/gi,
-                /\b(\d+\s*(?:a\s+\d+\s*)?semanas?)\b/gi,
-                /\b(\d+\s*(?:a\s+\d+\s*)?meses?)\b/gi,
-                /\b(\d+\s*(?:a\s+\d+\s*)?días?)\b/gi,
-
-                // Dose units - handle combination doses like "10/80 mg" or "10/ 80 mg"
-                // Match full combination first, then single doses
-                /\b(\d+\s*\/\s*\d+\s*(?:mg|mcg|µg|g|ml|UI))\b/gi,  // "10/80 mg", "10/ 80 mg"
-                // Single dose - but NOT if followed by "/" (part of combination)
-                /\b(\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|g|ml|UI))(?!\s*\/)/gi,
-                /\b(\d+\s*(?:comprimidos?|cápsulas?|sobres?|gotas?|ampollas?|parches?))\b/gi,
-
-                // Per day patterns
-                // NOTE: /(\/\s*día)/gi removed - fragments text (e.g. "mg/kg /día")
-                // "al día" and "por día" already cover meaningful clinical expressions
-                /\b(al\s+día)\b/gi,
-                /\b(por\s+día)\b/gi,
-
-                // Time of day
-                /\b(por\s+la\s+mañana)\b/gi,
-                /\b(por\s+la\s+noche)\b/gi,
-                /\b(por\s+la\s+tarde)\b/gi,
-                /\b(antes\s+de\s+acostarse)\b/gi,
-                /\b(a\s+la\s+misma\s+hora)\b/gi,
-
-                // Clinical phrases
-                /\b(dosis\s+(?:inicial|máxima|mínima|recomendada|única|diaria|habitual))\b/gi,
-                /\b(ajustes?\s+de\s+dosis)\b/gi,
-                /\b(inicio\s+del\s+tratamiento)\b/gi,
-                /\b(duración\s+del\s+tratamiento)\b/gi,
-                /\b(no\s+(?:debe\s+)?(?:superar|exceder))\b/gi,
-                /\b(máximo|mínimo)\b/gi,
-
-                // Administration
-                /\b(vía\s+oral)\b/gi,
-                /\b(uso\s+(?:oral|tópico|cutáneo))\b/gi
-            ];
-
-            // TreeWalker-based safe highlighting function
-            const highlightTextNodes = (container, patterns, className) => {
-                // Get all text nodes using TreeWalker
-                const walker = document.createTreeWalker(
-                    container,
-                    NodeFilter.SHOW_TEXT,
-                    null,
-                    false
-                );
-
-                const textNodes = [];
-                let node;
-                while (node = walker.nextNode()) {
-                    // Skip if parent is already a mark
-                    if (node.parentNode.tagName === 'MARK') continue;
-                    // Only process nodes with actual text content
-                    if (node.textContent.trim().length > 0) {
-                        textNodes.push(node);
-                    }
-                }
-
-                // Process each text node
-                textNodes.forEach(textNode => {
-                    let text = textNode.textContent;
-                    let hasMatch = false;
-
-                    // Check if any pattern matches
-                    for (const pattern of patterns) {
-                        if (pattern.test(text)) {
-                            hasMatch = true;
-                            break;
-                        }
-                    }
-
-                    if (!hasMatch) return;
-
-                    // Create a temporary container to build the new content
-                    const fragment = document.createDocumentFragment();
-                    let lastIndex = 0;
-                    let currentText = text;
-
-                    // Apply all patterns
-                    patterns.forEach(pattern => {
-                        // Reset pattern lastIndex
-                        pattern.lastIndex = 0;
-                    });
-
-                    // Find all matches and their positions
-                    const matches = [];
-                    patterns.forEach(pattern => {
-                        pattern.lastIndex = 0;
-                        let match;
-                        while ((match = pattern.exec(text)) !== null) {
-                            matches.push({
-                                start: match.index,
-                                end: match.index + match[0].length,
-                                text: match[0]
-                            });
-                        }
-                    });
-
-                    // Sort by position and remove overlaps
-                    matches.sort((a, b) => a.start - b.start);
-                    const filteredMatches = [];
-                    let lastEnd = -1;
-                    matches.forEach(m => {
-                        if (m.start >= lastEnd) {
-                            filteredMatches.push(m);
-                            lastEnd = m.end;
-                        }
-                    });
-
-                    // Build fragment with highlights
-                    filteredMatches.forEach(match => {
-                        // Add text before match
-                        if (match.start > lastIndex) {
-                            fragment.appendChild(
-                                document.createTextNode(text.slice(lastIndex, match.start))
-                            );
-                        }
-                        // Add highlighted match
-                        const mark = document.createElement('mark');
-                        mark.className = className;
-                        mark.textContent = match.text;
-                        fragment.appendChild(mark);
-                        lastIndex = match.end;
-                    });
-
-                    // Add remaining text
-                    if (lastIndex < text.length) {
-                        fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
-                    }
-
-                    // Replace the text node with the fragment
-                    if (filteredMatches.length > 0) {
-                        textNode.parentNode.replaceChild(fragment, textNode);
-                    }
-                });
-            };
-
-            // Apply highlighting in order: timing first (more specific), then food
-            highlightTextNodes(textContainer, timingPatterns, 'posology-timing');
-            highlightTextNodes(textContainer, foodPatterns, 'posology-food');
-
-            // Wrap tables in scrollable containers to prevent horizontal overflow
-            textContainer.querySelectorAll('table').forEach(table => {
-                if (!table.closest('.table-scroll-wrapper')) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'table-scroll-wrapper';
-                    table.parentNode.insertBefore(wrapper, table);
-                    wrapper.appendChild(table);
-                }
-            });
+            this._compactarTextoFT(textContainer);
+            this._resaltarPosologia(textContainer);
         } catch (error) {
             console.error('Error loading section 4.2:', error);
             container.innerHTML = `
@@ -11848,6 +11911,7 @@ ${ftFechaDocsHtml}
         ${content}
     </div>
 `;
+            this._compactarTextoFT(container.querySelector('.section-text'));
         } catch (error) {
             console.error('Error loading section 4.5:', error);
             container.innerHTML = `
@@ -11904,6 +11968,7 @@ ${ftFechaDocsHtml}
         ${content}
     </div>
 `;
+            this._compactarTextoFT(container.querySelector('.section-text'));
         } catch (error) {
             console.error('Error loading section 4.8:', error);
             container.innerHTML = `

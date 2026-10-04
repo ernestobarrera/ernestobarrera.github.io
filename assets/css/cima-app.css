@@ -4445,27 +4445,40 @@ body.med-panel-resizing {
 
 /* NOTE: .mb-md, .mt-sm utilities defined in Utility Classes section (line ~1030) */
 
-/* Section Viewer Content - for Modal tabs (Interactions, Reactions) */
+/* ============================================
+   Apartados de la ficha técnica en el modal
+   ============================================
+   ÚNICA definición de `.section-viewer-content`, `.section-header` y `.section-text`. Hasta el
+   2026-10-04 había tres bloques repartidos por este archivo (un «papel» blanco con texto oscuro,
+   un gris claro y el oscuro actual) que se pisaban entre sí con !important: el que se veía era
+   una mezcla, y cualquier ajuste en uno lo deshacía otro más abajo. Se unificaron conservando
+   los valores que de hecho se aplicaban, comprobado elemento a elemento con los estilos
+   calculados de fichas reales antes y después. Solo cambió lo que se quería cambiar: los
+   saltos de línea de la ficha se ven, las cabeceras de tabla tienen fondo y los enlaces color. */
+
 .section-viewer-content {
     padding: 0;
+    min-height: 150px;
 }
 
 .section-header {
-    margin-bottom: var(--space-sm);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border-default);
 }
 
 .section-header h4 {
-    color: var(--primary);
-    font-size: 1rem;
-    font-weight: 600;
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+    color: var(--primary);
+    font-size: 1rem;
+    font-weight: 600;
     margin: 0;
 }
 
 .section-header h4 i {
-    font-size: 0.9rem;
+    font-size: 1.1rem;
 }
 
 /* Enlace «Ver sección en CIMA ↗» en la cabecera de las pestañas de apartado entero. Mismo
@@ -4473,27 +4486,49 @@ body.med-panel-resizing {
 .section-header-split { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; }
 .section-header-split h4 { margin: 0; }
 .section-header-actions { display: inline-flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; justify-content: flex-end; }
+/* Cuando el título largo empuja las acciones a la línea siguiente, se quedan a la derecha, donde
+   estaban, en vez de colgar a la izquierda bajo el título. */
+.section-header-split > .section-header-actions,
+.section-header-split > .section-cima-link { margin-left: auto; }
 .section-cima-link { font-size: 0.8rem; color: var(--primary); text-decoration: none; white-space: nowrap; }
 .section-cima-link:hover, .section-cima-link:focus-visible { text-decoration: underline; }
 
-/* Section text - Paper style (white background, dark text) */
+/* Contenedor del texto de la ficha (4.1, 4.2, 4.5, 4.8 y QT). */
 .section-text {
-    background: #fff;
-    color: #1a1a1a;
-    padding: 0.5rem;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.02);
+    padding: var(--space-md);
     border-radius: var(--radius-md);
-    font-size: 0.85rem;
-    line-height: 1.35;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-/* Force API content children to expand naturally - override any inline styles */
-/* NOTE: Do NOT apply overflow:visible to .section-text itself - it needs overflow-y:auto */
+/* El HTML de CIMA sale de Word con estilos en línea en cada elemento (Times New Roman 11pt,
+   negro, justificado, márgenes en pt, alturas fijas). Se neutralizan para que la ficha se lea con
+   la tipografía y el color del modal. Lo que se quiera distinto dentro del texto (resaltados,
+   cabeceras de tabla, enlaces) tiene que declararse con !important y más especificidad. */
+.section-text,
 .section-text * {
+    color: var(--text-primary) !important;
+    text-align: left !important;
+}
+
+.section-text * {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    background: transparent !important;
     max-height: none !important;
     height: auto !important;
+    margin-top: 0.2rem !important;
+    margin-bottom: 0.2rem !important;
 }
 
-/* Reduce all spacing in API content */
+/* Bloques: sin relleno propio y un margen inferior corto. Los párrafos vacíos ya los quita
+   `_compactarTextoFT`; `:empty` cubre los que no llevan ni un espacio. */
 .section-text p,
 .section-text div,
 .section-text span {
@@ -4501,7 +4536,13 @@ body.med-panel-resizing {
     padding: 0 !important;
 }
 
-/* Remove top margin from FIRST element - handle nested structures */
+.section-text p:empty,
+.section-text div:empty,
+.section-text span:empty {
+    display: none !important;
+}
+
+/* Sin hueco antes del primer elemento, aunque venga anidado en los <div> de CIMA. */
 .section-text>*:first-child,
 .section-text>*:first-child>*:first-child,
 .section-text>*:first-child>*:first-child>*:first-child,
@@ -4517,7 +4558,12 @@ body.med-panel-resizing {
     padding-top: 0 !important;
 }
 
-/* Add heading styles - compact */
+.section-text p:last-child,
+.section-text div:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Títulos internos de la ficha: mismo tamaño que el texto, en negrita. */
 .section-text h1,
 .section-text h2,
 .section-text h3,
@@ -4526,75 +4572,68 @@ body.med-panel-resizing {
 .section-text h6 {
     margin: 0 0 0.3rem 0 !important;
     padding: 0 !important;
-    font-size: 0.9rem;
     font-weight: 600;
-}
-
-/* Collapse empty elements */
-.section-text p:empty,
-.section-text div:empty,
-.section-text span:empty {
-    display: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    height: 0 !important;
-    line-height: 0 !important;
-}
-
-.section-text p:last-child,
-.section-text div:last-child {
-    margin-bottom: 0 !important;
 }
 
 .section-text ul,
 .section-text ol {
-    margin: 0 0 0.4rem 0 !important;
-    padding-left: 1rem !important;
+    margin: var(--space-sm) 0 !important;
+    padding-left: 1.5rem !important;
 }
 
 .section-text li {
-    margin-bottom: 0.2rem !important;
+    margin-bottom: var(--space-xs) !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    text-indent: 0 !important;
+}
+
+/* Las tablas van dentro de `.table-scroll-wrapper` (lo pone `_compactarTextoFT`), que es quien
+   desplaza en horizontal cuando no caben. */
+.section-text .table-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: var(--space-sm) 0 !important;
+    border-radius: var(--radius-sm);
 }
 
 .section-text table {
     width: 100%;
+    min-width: 320px;
+    table-layout: auto;
     border-collapse: collapse;
     margin: 0.4rem 0 !important;
-    font-size: 0.8rem;
     overflow-x: auto !important;
 }
 
-.section-text th,
-.section-text td {
-    padding: 0.2rem 0.4rem;
-    border: 1px solid #ddd;
-    text-align: left;
-}
-
+.section-text td,
 .section-text th {
-    background: #f5f5f5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    /* CIMA trae cada borde en línea en negro (`border-right-color:#000000`…): sobre el fondo
+       oscuro del modal se veía una rejilla negra que pesaba más que el texto. */
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    text-align: left !important;
 }
 
+/* La cabecera de tabla tenía un fondo declarado que `background: transparent !important`
+   anulaba: se distinguía de las filas solo por la negrita. */
+.section-text th {
+    background: rgba(255, 255, 255, 0.06) !important;
+    font-weight: 600;
+}
+
+/* Mismo caso con los enlaces: salían del color del texto y no se veía que lo eran. */
 .section-text a {
-    color: var(--primary);
+    color: var(--primary) !important;
 }
 
-/* Remove any br spacing issues - hide leading brs */
-.section-text br {
-    display: none !important;
-}
-
-/* Force ALL margins to be minimal regardless of inline styles */
-.section-text * {
-    margin-top: 0.2rem !important;
-    margin-bottom: 0.2rem !important;
-}
-
-.section-text>*:first-child,
-.section-text>*:first-child>*:first-child {
-    margin-top: 0 !important;
-}
-
+/* Los saltos de línea de la ficha SE RESPETAN. Hasta el 2026-10-04 había aquí
+   `.section-text br { display: none !important }`, pensado para quitar huecos al principio, que
+   en una celda «Día 1<br>300 mg» dejaba «Día 1300 mg»: dos datos fundidos en un número que no
+   está en la ficha. Los huecos de verdad (párrafos vacíos) los quita `_compactarTextoFT`. */
 
 .text-xs {
     font-size: 0.75rem;
@@ -6507,44 +6546,6 @@ body.med-panel-resizing {
     font-size: 0.8rem;
 }
 
-/* Section content viewer in modal */
-.section-header {
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-default);
-}
-
-.section-header h4 {
-    margin: 0;
-    font-size: 1rem;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.section-text {
-    font-size: 0.85rem;
-    font-family: var(--font-family);
-    line-height: 1.5;
-    padding: 0.75rem;
-    background: #f8f9fa;
-    border-radius: var(--radius-sm);
-    color: #1a1a2e;
-}
-
-.section-text * {
-    font-family: var(--font-family) !important;
-    color: #1a1a2e !important;
-    font-size: inherit !important;
-    line-height: inherit !important;
-    background: transparent !important;
-}
-
-.section-text p {
-    margin-bottom: 0.5rem;
-}
-
 /* Compact interactions view */
 .drug-list-container {
     margin-top: 0.75rem;
@@ -7571,60 +7572,22 @@ body.med-panel-resizing {
    Posology Tab - Section 4.2 Highlighting
    ============================================ */
 
-/* Section header for all modal tabs */
-.section-header {
-    margin-bottom: var(--space-md);
-    padding-bottom: var(--space-sm);
-    border-bottom: 1px solid var(--border-default);
-}
-
-.section-header h4 {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    color: var(--primary);
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0;
-}
-
-.section-header h4 i {
-    font-size: 1.1rem;
-}
-
-/* Section text container - for FT/prospectus content */
-.section-text {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 0.9rem;
-    line-height: 1.7;
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.02);
-    padding: var(--space-md);
-    border-radius: var(--radius-md);
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-/* Override API HTML colors and text-align:justify inline styles */
-.section-text,
-.section-text * {
-    color: var(--text-primary) !important;
-    text-align: left !important;
-}
-
-/* Keep highlights with their specific colors - no extra margins that break text flow */
-.section-text mark.posology-food {
-    color: #fbbf24 !important;
+/* Resaltados de la 4.2 dentro del texto. El fondo lleva !important porque
+   `.section-text * { background: transparent !important }` lo anulaba: quedaba solo el relleno
+   lateral del <mark> y se leía como un espacio de más («dosis diaria .»). Relleno mínimo, y
+   `box-decoration-break` para que un resaltado partido en dos líneas conserve sus bordes. */
+.section-text mark.posology-food,
+.section-text mark.posology-timing,
+.section-text mark.posology-manip,
+.section-text mark.posology-unit {
+    color: var(--mark-fg) !important;
+    background: var(--mark-bg) !important;
     margin: 0 !important;
+    padding: 0 0.12em !important;
     display: inline !important;
     vertical-align: baseline;
-}
-
-.section-text mark.posology-timing {
-    color: #60a5fa !important;
-    margin: 0 !important;
-    display: inline !important;
-    vertical-align: baseline;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
 }
 
 .section-text mark.qt-highlight {
@@ -7643,57 +7606,13 @@ body.med-panel-resizing {
     vertical-align: baseline;
 }
 
-.section-text p {
-    margin-bottom: var(--space-sm);
-}
-
-.section-text ul,
-.section-text ol {
-    margin: var(--space-sm) 0 !important;
-    padding-left: 1.5rem !important;
-}
-
-.section-text li {
-    margin-bottom: var(--space-xs) !important;
-    margin-left: 0 !important;
-    padding-left: 0 !important;
-    text-indent: 0 !important;
-}
-
-/* Tables inside section text - wrapped by JS in .table-scroll-wrapper */
-.section-text .table-scroll-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: var(--space-sm) 0 !important;
-    border-radius: var(--radius-sm);
-}
-
-.section-text table {
-    width: 100%;
-    min-width: 320px;
-    table-layout: auto;
-    font-size: 0.8rem;
-    border-collapse: collapse;
-}
-
-.section-text td,
-.section-text th {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    padding: var(--space-xs) var(--space-sm);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    text-align: left !important;
-}
-
-.section-text th {
-    background: rgba(255, 255, 255, 0.06);
-    font-weight: 600;
-}
-
-/* Posology legend */
+/* Posology legend: con cuatro categorías y el botón «Para el paciente» ya no cabe en una fila
+   de móvil, así que pasa a la siguiente en vez de desbordar el modal. */
 .posology-legend {
     display: flex;
-    gap: var(--space-md);
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs) var(--space-sm);
     margin-bottom: var(--space-sm);
     padding: var(--space-xs) var(--space-sm);
     background: var(--bg-surface);
@@ -7704,33 +7623,30 @@ body.med-panel-resizing {
 .posology-legend .legend-item {
     display: flex;
     align-items: center;
+    cursor: help;
     gap: var(--space-xs);
     color: var(--text-secondary);
 }
 
-/* Food-related keyword highlight - warm yellow/orange */
-.posology-food,
-mark.posology-food {
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.25));
-    color: #fbbf24 !important;
-    padding: 0.1rem 0.3rem;
+/* Colores de cada categoría de resaltado de la 4.2, compartidos por el texto y la leyenda.
+   Manipulación en violeta y unidades en rosa: ni verde ni rojo, porque un resaltado no dice si
+   algo está permitido o prohibido, solo dónde lo menciona la ficha. Posología y Alimentos salen
+   decenas de veces por ficha y llevan un fondo tenue; las dos nuevas son raras y lo llevan más
+   marcado, para que no se pierdan entre las pautas. */
+mark.posology-food   { --mark-fg: #fbbf24; --mark-bg: rgba(251, 191, 36, 0.11); }
+mark.posology-timing { --mark-fg: #7cb4fb; --mark-bg: rgba(59, 130, 246, 0.11); }
+mark.posology-manip  { --mark-fg: #d8ccff; --mark-bg: rgba(139, 92, 246, 0.32); }
+mark.posology-unit   { --mark-fg: #fbcfe8; --mark-bg: rgba(236, 72, 153, 0.30); }
+
+mark.posology-food,
+mark.posology-timing,
+mark.posology-manip,
+mark.posology-unit {
+    color: var(--mark-fg) !important;
+    background: var(--mark-bg);
+    padding: 0.1rem 0.35rem;
     border-radius: 3px;
     font-weight: 500;
-}
-
-/* Timing keyword highlight - cool blue */
-.posology-timing,
-mark.posology-timing {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.30), rgba(99, 102, 241, 0.20));
-    color: #60a5fa !important;
-    padding: 0.1rem 0.3rem;
-    border-radius: 3px;
-    font-weight: 500;
-}
-
-/* Section viewer content container */
-.section-viewer-content {
-    min-height: 150px;
 }
 
 
