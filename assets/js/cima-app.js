@@ -11588,10 +11588,23 @@ ${ftFechaDocsHtml}
             'deglutir(?:se|lo|los|la|las)?(?:\\s+enter[oa]s?)?',
             'espolvorear(?:se|lo|los|la|las)?',
             'abrir(?:se|la|las)?(?:\\s+(?:la|las))?\\s+c[áa]psulas?',
+            // Formas no orales, añadidas el 2026-10-04 tras la 4.2 de DYNASTAT (parecoxib
+            // inyectable), que no tenía un solo resaltado: preparar, mezclar y cortar también es
+            // manipular. De «agitar» solo el infinitivo: «agitación» y «paciente agitado» son
+            // síntomas, y aparecen en la 4.2 de los antipsicóticos inyectables.
+            'reconstitu(?:ir(?:se|lo|los|la|las)?|id[oa]s?|ci[oó]n)',
+            'dilu(?:ir(?:se|lo|los|la|las)?|id[oa]s?|ci[oó]n)',
+            'mezclar(?:se|lo|los|la|las)?',
+            'mezclad[oa]s?',
+            'agitar(?:se|lo|los|la|las)?',
+            'cortar(?:se|lo|los|la|las)?',
+            'cortad[oa]s?',
+            'precipit(?:ar(?:se)?|aci[oó]n)',
         ].join('|');
         // La negación o la restricción que precede al verbo forma parte de lo resaltado, y los
         // verbos coordinados («partir, masticar ni triturar») se resaltan como una sola frase.
-        const negacion = '(?:(?:no\\s+(?:se\\s+)?(?:debe|deben|deberá|deberán|debería|deberían|puede|pueden|recomienda|recomiendan|aconseja|hay\\s+que)\\s+(?:se\\s+)?(?:ser\\s+)?|sin\\s+))?';
+        // También el «no» imperativo a secas de prospectos y parches: «No cortar el parche».
+        const negacion = '(?:no\\s+(?:se\\s+)?(?:(?:debe|deben|deberá|deberán|debería|deberían|puede|pueden|recomienda|recomiendan|aconseja|hay\\s+que)\\s+(?:se\\s+)?(?:ser\\s+)?)?|sin\\s+)?';
         const coordinados = `(?:(?:\\s*,\\s*|\\s+(?:ni|o|u|y)\\s+)(?:se\\s+)?(?:${verbos}))*`;
         // Cantidad con unidad: miles con punto y decimales con coma, y combinaciones «50/12,5».
         const cantidad = '\\d+(?:[.,]\\d+)*(?:\\s*\\/\\s*\\d+(?:[.,]\\d+)*)?\\s*';
@@ -11610,13 +11623,14 @@ ${ftFechaDocsHtml}
             },
             {
                 clase: 'posology-manip', etiqueta: 'Manipulación', leyenda: 3,
-                ayuda: 'Lo que dice la ficha sobre tragar entero, masticar, triturar, partir, dispersar, abrir cápsulas o administrar por sonda. Se resalta la frase con su negación: léela entera. Que no aparezca nada no significa que se pueda manipular.',
+                ayuda: 'Lo que dice la ficha sobre tragar entero, masticar, triturar, partir, dispersar, abrir cápsulas, administrar por sonda, reconstituir, diluir, mezclar o cortar. Se resalta la frase con su negación: léela entera. Que no aparezca nada no significa que se pueda manipular.',
                 patrones: [
                     new RegExp(`\\b(${negacion}(?:${verbos})${coordinados})`, 'gi'),
                     /\b(dividir(?:se)?\s+en\s+(?:dos\s+)?(?:partes|mitades)(?:\s+iguales)?|dividir(?:se)?\s+en\s+dosis\s+iguales)/gi,
                     /\b(ranurad[oa]s?|ranuras?)\b/gi,
                     /\b(medio\s+comprimido|(?:la\s+)?mitad\s+de(?:l|\s+un)\s+comprimido|cuarto\s+de\s+comprimido)/gi,
                     /\b(contenido\s+de\s+(?:la|las)\s+c[áa]psulas?)/gi,
+                    /\b(disolventes?|(?:in)?compatib(?:le|les|ilidad|ilidades))\b/gi,
                     /\b(sondas?(?:\s+(?:nasogástricas?|nasogastricas?|de\s+gastrostomía|de\s+alimentación|enterales?|gástricas?))?)\b/gi,
                     /\b(disfagia)\b/gi,
                 ],
