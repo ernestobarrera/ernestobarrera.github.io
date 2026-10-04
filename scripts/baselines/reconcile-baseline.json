@@ -178,6 +178,25 @@
           "status": "accepted",
           "nombre": "KAPRUVIA 50 MICROGRAMOS/ML SOLUCION INYECTABLE",
           "reason": "Difelikefalina: prurito urémico en hemodiálisis; uso hospitalario/diálisis, fuera de foco AP."
+        },
+        "61523": {
+          "status": "accepted",
+          "nombre": "FRAGMIN 10.000 UI/ml SOLUCION INYECTABLE EN AMPOLLAS",
+          "vtm": "dalteparina sodio",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: prevención de coágulos del sistema extracorpóreo durante la hemodiálisis y hemofiltración en enfermos con insuficiencia renal crónica — la ERC es el escenario del procedimiento, no la diana terapéutica. Idéntico a los once registros de dalteparina ya aceptados en este término (revisados 2026-07-21); este es un registro nuevo de la misma clase.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        }
+      },
+      "clases": {
+        "dalteparina-circuito-extracorporeo": {
+          "status": "accepted",
+          "categoria": "contextual",
+          "vtm": "dalteparina sodio",
+          "exige": "hemodialisis y hemofiltracion",
+          "reason": "En dalteparina la ERC es el escenario de la hemodiálisis, no la diana. Ya adjudicado en once registros desde 2026-07-21; la clase evita que cada envase nuevo lo reabra.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
         }
       }
     },
@@ -788,6 +807,57 @@
           "status": "accepted",
           "nombre": "MULTAQ 400 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
           "reason": "Dronedarona (C01BD07): indicada para mantenimiento de ritmo sinusal en FA. La insuficiencia cardiaca aparece en su 4.1/4.3 como CONTRAINDICACION por disfuncion sistolica, no como indicacion de tratarla. Verificado en vivo (MULTAQ nreg 09591003)."
+        },
+        "1211608006": {
+          "status": "accepted",
+          "nombre": "WEGOVY FLEXTOUCH SOLUCION INYECTABLE EN PLUMA PRECARGADA",
+          "vtm": "semaglutida",
+          "reason": "Falso positivo por REMISIÓN A OTRA SECCIÓN: la 4.1 indica control de peso en obesidad o sobrepeso con comorbilidad, y la insuficiencia cardiaca aparece solo en la frase «Para resultados de ensayos relacionados con la reducción del riesgo cardiovascular, insuficiencia cardiaca relacionada con obesidad y las poblaciones estudiadas, ver sección 5.1». Es un reenvío a los resultados de ensayos, no una indicación. Leído en CIMA el 2026-10-03.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "1211608007": {
+          "status": "accepted",
+          "nombre": "WEGOVY FLEXTOUCH SOLUCION INYECTABLE EN PLUMA PRECARGADA",
+          "vtm": "semaglutida",
+          "reason": "Falso positivo por REMISIÓN A OTRA SECCIÓN: la 4.1 indica control de peso en obesidad o sobrepeso con comorbilidad, y la insuficiencia cardiaca aparece solo en la frase «Para resultados de ensayos relacionados con la reducción del riesgo cardiovascular, insuficiencia cardiaca relacionada con obesidad y las poblaciones estudiadas, ver sección 5.1». Es un reenvío a los resultados de ensayos, no una indicación. Leído en CIMA el 2026-10-03.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "1211608008": {
+          "status": "accepted",
+          "nombre": "WEGOVY FLEXTOUCH SOLUCION INYECTABLE EN PLUMA PRECARGADA",
+          "vtm": "semaglutida",
+          "reason": "Falso positivo por REMISIÓN A OTRA SECCIÓN: la 4.1 indica control de peso en obesidad o sobrepeso con comorbilidad, y la insuficiencia cardiaca aparece solo en la frase «Para resultados de ensayos relacionados con la reducción del riesgo cardiovascular, insuficiencia cardiaca relacionada con obesidad y las poblaciones estudiadas, ver sección 5.1». Es un reenvío a los resultados de ensayos, no una indicación. Leído en CIMA el 2026-10-03.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "1211608009": {
+          "status": "accepted",
+          "nombre": "WEGOVY FLEXTOUCH SOLUCION INYECTABLE EN PLUMA PRECARGADA",
+          "vtm": "semaglutida",
+          "reason": "Falso positivo por REMISIÓN A OTRA SECCIÓN: la 4.1 indica control de peso en obesidad o sobrepeso con comorbilidad, y la insuficiencia cardiaca aparece solo en la frase «Para resultados de ensayos relacionados con la reducción del riesgo cardiovascular, insuficiencia cardiaca relacionada con obesidad y las poblaciones estudiadas, ver sección 5.1». Es un reenvío a los resultados de ensayos, no una indicación. Leído en CIMA el 2026-10-03.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "1211608010": {
+          "status": "accepted",
+          "nombre": "WEGOVY FLEXTOUCH SOLUCION INYECTABLE EN PLUMA PRECARGADA",
+          "vtm": "semaglutida",
+          "reason": "Falso positivo por REMISIÓN A OTRA SECCIÓN: la 4.1 indica control de peso en obesidad o sobrepeso con comorbilidad, y la insuficiencia cardiaca aparece solo en la frase «Para resultados de ensayos relacionados con la reducción del riesgo cardiovascular, insuficiencia cardiaca relacionada con obesidad y las poblaciones estudiadas, ver sección 5.1». Es un reenvío a los resultados de ensayos, no una indicación. Leído en CIMA el 2026-10-03.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        }
+      },
+      "clases": {
+        "semaglutida-remision-5.1": {
+          "status": "accepted",
+          "categoria": "remision",
+          "vtm": "semaglutida",
+          "exige": "Para resultados de ensayos relacionados con la reducci",
+          "reason": "La 4.1 de semaglutida para control de peso cita la insuficiencia cardiaca solo en la remisión «…ver sección 5.1» sobre resultados de ensayos. Cubre las presentaciones nuevas con el mismo texto, incluida WEGOVY 7,2 mg (1211608025), que hoy no está comercializada y entrará en el universo cuando lo esté.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
         }
       }
     },
@@ -813,6 +883,25 @@
           "status": "accepted",
           "nombre": "ADENOSINA HIKMA 6 MG/2ML SOLUCION INYECTABLE EFG",
           "reason": "Adenosina (C01EB10): indicacion real es reversion de taquicardia paroxistica supraventricular (TPSV, incl. WPW), arritmia distinta de la fibrilacion auricular. Coincidia con el ancla \"auricular\" por mencion incidental (diagnostico diferencial), no por indicacion de tratar la FA. Verificado en vivo contra su 4.1 (Adenocor nreg 60375)."
+        },
+        "81545": {
+          "status": "accepted",
+          "nombre": "ADENOSINA ACCORD 6 MG/2 ML SOLUCION INYECTABLE EFG",
+          "vtm": "adenosina",
+          "reason": "Falso positivo por NEGACIÓN EXPRESA: su 4.1 indica reversión de taquicardias por reentrada A-V y, sobre la FA, dice literalmente «Si bien este medicamento no revierte el flutter auricular, la fibrilación auricular o la taquicardia ventricular a ritmo sinusal…». La ficha niega la indicación que el ancla «auricular» le atribuye. Coherente con el descarte de adenosina ya documentado en la nota de la entrada (2026-07-19), ahora con registro propio.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        }
+      },
+      "clases": {
+        "adenosina-niega-flutter": {
+          "status": "accepted",
+          "categoria": "niega",
+          "vtm": "adenosina",
+          "exige": "no revierte el flutter",
+          "reason": "La 4.1 de adenosina niega expresamente revertir el flutter o la fibrilación auricular. Cualquier registro nuevo de adenosina con esa frase es el mismo caso.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
         }
       }
     },
@@ -897,6 +986,50 @@
           "nombre": "LORAZEPAM NORMON 5 MG COMPRIMIDOS EFG",
           "vtm": "lorazepam",
           "reason": "Falso positivo por MENCIÓN CONTEXTUAL: su 4.1 indica ansiedad asociada a insomnio y depresión — trata la ansiedad concomitante, no la depresión. No es antidepresivo. Revisado 2026-07-21."
+        },
+        "53886": {
+          "status": "accepted",
+          "nombre": "DUNA 10 mg cápsulas duras",
+          "vtm": "pinazepam",
+          "reason": "Falso positivo: trata la ANSIEDAD de origen depresivo, no la depresión. Su 4.1 dice «En todos los estados de ansiedad y tensión de origen psiconeurótico, depresivo, involutivo o psicosomático». Mismo criterio que el descarte ya escrito para lorazepam en la nota de esta entrada: trata la ansiedad asociada a la depresión, no la depresión.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "53885": {
+          "status": "accepted",
+          "nombre": "DUNA 10 mg cápsulas duras",
+          "vtm": "pinazepam",
+          "reason": "Falso positivo: trata la ANSIEDAD de origen depresivo, no la depresión. Su 4.1 dice «En todos los estados de ansiedad y tensión de origen psiconeurótico, depresivo, involutivo o psicosomático». Mismo criterio que el descarte ya escrito para lorazepam en la nota de esta entrada: trata la ansiedad asociada a la depresión, no la depresión.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "61952": {
+          "status": "accepted",
+          "nombre": "DOBUTAMINA HOSPIRA 12,5 mg/ml CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
+          "vtm": "dobutamina",
+          "reason": "Falso positivo por HOMONIMIA: «depresión de la contractilidad» es función cardiaca, no trastorno del ánimo. Su 4.1 es apoyo inotrópico en la descompensación cardiaca. Misma categoría que los descartes ya escritos de naloxona («depresión respiratoria») y rifaximina («inmuno-depresión»).",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        }
+      },
+      "clases": {
+        "pinazepam-ansiedad-de-origen-depresivo": {
+          "status": "accepted",
+          "categoria": "adyacente",
+          "vtm": "pinazepam",
+          "exige": "estados de ansiedad y tension de origen psiconeurotico",
+          "reason": "Pinazepam trata la ansiedad de origen depresivo, no la depresión.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "dobutamina-depresion-de-la-contractilidad": {
+          "status": "accepted",
+          "categoria": "homonimia",
+          "vtm": "dobutamina",
+          "exige": "depresion de la contractilidad",
+          "reason": "«Depresión de la contractilidad» es función cardiaca, no ánimo.",
+          "reviewedAt": "2026-10-03",
+          "reviewedBy": "Ernesto Barrera"
         }
       }
     }

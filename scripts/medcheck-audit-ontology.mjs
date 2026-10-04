@@ -877,16 +877,84 @@ function acceptedBlockReason(gapRecord, termRecord, currentHash41, currentConfig
   return null;
 }
 
+// ---- Aceptación por CLASE, no por matrícula ----------------------------------------------------
+// PROBLEMA QUE RESUELVE, medido el 2026-10-03: de los 10 GAPS que bloqueaban la publicación, 9 eran
+// registros NUEVOS de clases ya adjudicadas. `61523` era un Fragmin más, con once hermanos ya
+// aceptados en el baseline y la razón escrita («la ERC es el escenario, no la diana»); dobutamina
+// repetía la homonimia de naloxona («depresión de la contractilidad»); pinazepam repetía lo de
+// lorazepam (trata la ansiedad de origen depresivo). Mientras la memoria se indexe por `nregistro`,
+// cada envase nuevo de la misma sustancia reabre una decisión cerrada, y el gate que existe para
+// frenar lo NUEVO acaba frenando lo viejo con matrícula nueva. Eso es lo que hace que se publique
+// por encima de él, que es como muere un gate.
+//
+// POR QUÉ NO BASTA EL PRINCIPIO ACTIVO, y aquí está la línea que no se cruza: una aceptación «toda
+// la dalteparina, siempre» sería un falso negativo esperando su turno — el día que un producto de
+// dalteparina reciba de verdad una indicación en ERC, el gate callaría. Por eso una clase exige DOS
+// condiciones: la sustancia Y que la 4.1 del registro nuevo siga diciendo lo que se adjudicó
+// (`exige`, una frase que debe aparecer en el extracto del hallazgo). Si el texto cambia de
+// fraseo, la clase deja de cubrirlo y vuelve a bloquear como nuevo.
+//
+// Y NO SILENCIA: lo cubierto por clase se imprime bajo su propio epígrafe con la clase que lo
+// cubrió. Un guardián que aprueba sin decir qué aprueba es el que ya costó once días en septiembre.
+const CLASE_CATEGORIAS = new Set([
+  'contextual',   // la condición es el escenario del procedimiento, no la diana (Fragmin/hemodiálisis)
+  'homonimia',    // la palabra en otro campo semántico (dobutamina: «depresión de la contractilidad»)
+  'remision',     // aparece en una remisión a otra sección («…ver sección 5.1»)
+  'niega',        // la 4.1 niega expresamente esa indicación (adenosina: «no revierte el flutter»)
+  'adyacente',    // trata algo asociado, no la condición (pinazepam: ansiedad de origen depresivo)
+]);
+
+/** Normaliza para comparar texto clínico: minúsculas, sin acentos, espacios colapsados. */
+function plegarTexto(s) {
+  return String(s || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * ¿Hay una clase adjudicada y VIGENTE que cubra este hallazgo? Devuelve `{ clave, clase }` o null.
+ * Una clase mal declarada NO cubre nada: preferimos que bloquee a que apruebe por un campo mal
+ * escrito.
+ */
+function claseQueCubre(known, gap) {
+  const [, nombre, vtm, excerpt] = gap;
+  const clases = known?.clases;
+  if (!clases || typeof clases !== 'object') return null;
+  const sustancia = plegarTexto(vtm || nombre);
+  const texto = plegarTexto(excerpt);
+  for (const [clave, clase] of Object.entries(clases)) {
+    if (!clase || clase.status !== 'accepted') continue;
+    if (!String(clase.reason || '').trim()) continue;
+    if (!String(clase.reviewedBy || '').trim()) continue;
+    if (!CLASE_CATEGORIAS.has(clase.categoria)) continue;
+    const edad = daysSince(clase.reviewedAt);
+    if (edad === null || edad > ACCEPTED_MAX_AGE_DAYS) continue;
+    const esperada = plegarTexto(clase.vtm);
+    if (!esperada || !sustancia.includes(esperada)) continue;
+    // La frase es obligatoria: sin ella la clase sería «esta sustancia nunca bloquea».
+    const exige = plegarTexto(clase.exige);
+    if (!exige || !texto.includes(exige)) continue;
+    return { clave, clase };
+  }
+  return null;
+}
+
 function classifyGapsAgainstBaseline(row, entry) {
   const known = baselineEntryFor(row.term);
   const currentConfigHash = entry ? entryConfigHash(entry) : null;
   row.newGaps = [];
   row.knownGaps = [];
+  row.classGaps = []; // [gap, clave de la clase que lo cubre]
   row.blockedGaps = []; // [gap, motivo]
   for (const gap of row.gaps) {
     const [nr, , , , hash41] = gap;
     const record = known?.gaps?.[String(nr)];
-    if (!record) { row.newGaps.push(gap); continue; }
+    if (!record) {
+      const porClase = claseQueCubre(known, gap);
+      if (porClase) row.classGaps.push([gap, porClase.clave]);
+      else row.newGaps.push(gap);
+      continue;
+    }
     const status = record.status;
     if (status === 'accepted') {
       const motivo = acceptedBlockReason(record, known, hash41, currentConfigHash);
@@ -953,7 +1021,14 @@ async function writeBaseline(rows) {
         }
       }
     }
-    next.terms[row.term] = { anchor: row.anchor || null, configHash, gaps };
+    // Las CLASES son curación humana, igual que los accepted: si no se preservaran, la primera
+    // pasada con --update-baseline las borraría y volverían los diez hallazgos del 2026-10-03.
+    next.terms[row.term] = {
+      anchor: row.anchor || null,
+      configHash,
+      ...(prevTerm.clases ? { clases: prevTerm.clases } : {}),
+      gaps,
+    };
   }
   await fs.writeFile(baselinePath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
   console.log(`\n[baseline] escrito ${path.relative(repoRoot, baselinePath)} (${rows.length} entradas)`);
@@ -973,7 +1048,7 @@ async function reconcileEntry(term, entry) {
     atcMeds = await searchEntry(entry);
   } catch (error) {
     inconcluso.push(`universo ATC no medible: ${error.message}`);
-    return { term, source: 'n/a', anchor: null, atc: 0, ft: 0, perTerm: [], gaps: [], extra: 0, anchorErrors: [], inconcluso, newGaps: [], knownGaps: [], blockedGaps: [] };
+    return { term, source: 'n/a', anchor: null, atc: 0, ft: 0, perTerm: [], gaps: [], extra: 0, anchorErrors: [], inconcluso, newGaps: [], knownGaps: [], classGaps: [], blockedGaps: [] };
   }
   const atcIds = new Set(atcMeds.map(m => m.nregistro).filter(Boolean));
 
@@ -1064,7 +1139,7 @@ async function reconcileEntry(term, entry) {
   const gaps = [...txt.entries()].map(([nr, v]) => [nr, v.nombre, v.vtm, v.excerpt, v.hash41]).filter(([nr]) => !atcIds.has(nr));
   const extra = atcMeds.filter(m => m.nregistro && !txt.has(m.nregistro)).length;
   // newGaps/knownGaps/blockedGaps los rellena classifyGapsAgainstBaseline.
-  return { term, source, anchor, atc: atcIds.size, ft: txt.size, perTerm, gaps, extra, anchorErrors, inconcluso, newGaps: [], knownGaps: [], blockedGaps: [] };
+  return { term, source, anchor, atc: atcIds.size, ft: txt.size, perTerm, gaps, extra, anchorErrors, inconcluso, newGaps: [], knownGaps: [], classGaps: [], blockedGaps: [] };
 }
 
 async function countSectionMatches(meds, filter) {
@@ -1713,6 +1788,22 @@ function printReport() {
         if (groups.length > 15) console.log(`      ... (+${groups.length - 15} principios activos mas)`);
       } else if (!r.inconcluso.length) {
         console.log('    GAPS NUEVOS = 0');
+      }
+      // Lo cubierto por clase se DICE, con la clase que lo cubrió: una aprobación silenciosa es
+      // indistinguible de un gate que no mira.
+      if (r.classGaps?.length) {
+        const porClase = new Map();
+        for (const [[nr, nombre], clave] of r.classGaps) {
+          if (!porClase.has(clave)) porClase.set(clave, { n: 0, sample: nombre, nregs: [] });
+          const g = porClase.get(clave);
+          g.n += 1;
+          g.nregs.push(nr);
+        }
+        console.log(`    Cubiertos por CLASE adjudicada (no bloquean) = ${r.classGaps.length}:`);
+        for (const [clave, g] of porClase) {
+          const muestra = g.nregs.slice(0, 3).join(',') + (g.nregs.length > 3 ? '…' : '');
+          console.log(`      ~ ${clave}: ${g.n}x (p.ej. "${g.sample}", nregistro ${muestra})`);
+        }
       }
       if (r.knownGaps.length) {
         console.log(`    GAPS conocidos (accepted vigente en baseline) = ${r.knownGaps.length}`);
