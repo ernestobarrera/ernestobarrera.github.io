@@ -62,8 +62,29 @@ function writeCache(endpoint, pagina, data) {
 
 // Umbral de cordura: una caída brusca de cobertura significa cambio de contrato en CIMA,
 // no que España se haya quedado sin medicamentos. Mismo criterio fail-closed que el auditor.
+//
+// RECALIBRADO EL 05/10/2026, y conviene saber por qué antes de volver a tocarlo. Ese día la
+// pasada mensual abortó con 20.573 presentaciones contra un mínimo de 22.000, y el guardián
+// hizo bien en no publicar: no entendía lo que estaba viendo. Lo que había pasado no es que
+// CIMA perdiera nada, sino que ARREGLÓ una incoherencia suya. La cuenta cuadra sola:
+//
+//   05/09/2026:  27.584 presentaciones, de ellas 6.986 HUÉRFANAS (su nregistro no estaba en
+//                la lista de medicamentos comercializados)
+//   05/10/2026:  20.573 ≈ 27.584 − 6.986
+//
+// Es decir: hasta septiembre `/presentaciones?comerc=1` colaba presentaciones de medicamentos
+// NO comercializados, y ahora ya no. Comprobado contra el detalle en una muestra de 12
+// medicamentos: 26 presentaciones en el índice y 26 en las fichas, sin un hueco. El 22.000 se
+// había calibrado, sin saberlo, sobre un total que incluía 7.000 registros de basura.
+//
+// 18.000 deja un 12 % de margen bajo la cobertura real de hoy. Y queda dicho lo que este
+// umbral NO puede hacer: un absoluto escrito a mano envejece en silencio —acaba de pasar— y
+// no detecta una cosecha a la que le falten doscientas filas. Para eso haría falta comparar
+// contra el índice anterior y exigir que la caída relativa sea pequeña, que es otro diseño.
+// Mientras tanto, el número de huérfanas que imprime esta misma pasada es el canario: si
+// vuelve a subir de cero, CIMA ha deshecho su arreglo.
 const MIN_NREGISTROS = 12000;
-const MIN_PRESENTACIONES = 22000;
+const MIN_PRESENTACIONES = 18000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
