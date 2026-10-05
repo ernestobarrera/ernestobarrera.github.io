@@ -9,6 +9,9 @@ class CimaAPI {
     static ATC_VERSION = '2024.12';
     static ATC_LAST_UPDATE = '2024-12-16';
 
+    // Cuánto se espera a CIMA antes de darlo por caído. Ver `_request`.
+    static REQUEST_TIMEOUT_MS = 15000;
+
     constructor() {
         // Configuración de proxies
         // Opción 1: Proxy público CORS (para desarrollo/pruebas)
@@ -163,13 +166,28 @@ class CimaAPI {
 
     /**
      * Wrapper genérico para peticiones con manejo de errores y cache
+     *
+     * TIMEOUT, desde el 2026-10-05. Hasta hoy NINGUNA llamada a CIMA lo tenía: un `fetch` sin
+     * `signal` espera lo que decida el navegador, que son minutos. Y CIMA se cuelga: medido ese
+     * día, 5 de 40 búsquedas por principio activo no respondieron en 25 s, y 3 de esas 5 fueron
+     * CONTRA `cima.aemps.es` DIRECTAMENTE, sin pasar por el Worker — no es Cloudflare, es la
+     * fuente. El mismo episodio lo cazó el watchdog esa mañana con `/health` en verde.
+     *
+     * Sin corte, el síntoma era un spinner girando sin decir nada. En una pantalla de consulta,
+     * «no sé si está tardando o se ha roto» es peor que un error honesto: quien la usa necesita
+     * saber cuándo dejar de esperar y abrir la ficha en CIMA.
+     *
+     * 15 s, no los 8 s de las capas auxiliares, porque este es el camino principal: el p95 medido
+     * contra CIMA es 1,9 s, así que quedan ocho veces de margen para una conexión mala antes de
+     * cortar una petición que iba a llegar. `options.timeoutMs` lo ajusta quien llame.
      */
     async _request(endpoint, options = {}, useCache = true) {
-        const cacheKey = `${options.method || 'GET'}:${endpoint}`;
+        const { timeoutMs = CimaAPI.REQUEST_TIMEOUT_MS, ...fetchOptions } = options;
+        const cacheKey = `${fetchOptions.method || 'GET'}:${endpoint}`;
 
         // Las peticiones primarias (sin X-MC-Autocomplete) siempre van a red
         // para que el Worker registre la analítica. Las secundarias usan caché.
-        const isTracked = !options.headers?.['X-MC-Autocomplete'];
+        const isTracked = !fetchOptions.headers?.['X-MC-Autocomplete'];
         const canUseCache = useCache && !isTracked;
 
         if (canUseCache && this._hasValidCache(cacheKey)) {
@@ -179,16 +197,30 @@ class CimaAPI {
 
         const url = this.buildURL(endpoint);
 
+        // Si quien llama ya traía su propio `signal`, manda el primero que dispare: el corte por
+        // tiempo no puede pisar una cancelación deliberada (una búsqueda que el usuario sustituye
+        // por otra), ni al revés.
+        //
+        // La guarda de `AbortSignal` no es por navegadores viejos —lo soportan todos los que
+        // ejecutan esta app— sino por el sandbox `vm` de los bancos, que monta un global mínimo.
+        // Sin ella, meter un timeout aquí rompería cualquier banco que llegue a `_request`.
+        const puedeCortar = typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function';
+        const timeoutSignal = puedeCortar ? AbortSignal.timeout(timeoutMs) : null;
+        const signal = (timeoutSignal && fetchOptions.signal && AbortSignal.any)
+            ? AbortSignal.any([fetchOptions.signal, timeoutSignal])
+            : (fetchOptions.signal || timeoutSignal || undefined);
+
         try {
             const response = await fetch(url, {
-                ...options,
+                ...fetchOptions,
+                signal,
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     ...(window._mcCurrentView    ? { 'X-MC-View':    window._mcCurrentView }    : {}),
                     ...(window._mcActiveContexts ? { 'X-MC-Context': window._mcActiveContexts } : {}),
                     ...(window._mcSource         ? { 'X-MC-Source':  window._mcSource }         : {}),
-                    ...options.headers
+                    ...fetchOptions.headers
                 }
             });
 
@@ -229,6 +261,17 @@ class CimaAPI {
             return data;
 
         } catch (error) {
+            // `AbortSignal.timeout` lanza TimeoutError, NO AbortError: es nuestro corte, no una
+            // cancelación de quien llama, y tiene que distinguirse para que la UI pueda decir
+            // «CIMA no responde» en vez de un error genérico de red.
+            if (error.name === 'TimeoutError') {
+                const err = new Error(`CIMA no respondió en ${Math.round(timeoutMs / 1000)} s`);
+                err.code = 'TIMEOUT';
+                err.endpoint = endpoint;
+                this.isOnline = false;
+                console.warn('⏱️ CIMA sin respuesta:', endpoint);
+                throw err;
+            }
             if (error.name === 'AbortError') {
                 throw error;
             }
@@ -2792,38 +2835,50 @@ class CimaAPI {
         };
 
         // 1. SIEMPRE cargar las 3 secciones clave para mostrar información
-        for (const coreSection of coreSections) {
-            try {
-                const sectionContent = await this.getDocSeccion(nregistro, coreSection.section);
-
-                if (sectionContent && sectionContent.length > 50) {
-                    // Limpiar HTML para preview
-                    const plainText = sectionContent
-                        .replace(/<[^>]*>/g, ' ')
-                        .replace(/\\n/g, ' ')
-                        .replace(/\s+/g, ' ')
-                        .trim();
-
-                    // Recortar para mostrar solo preview
-                    const preview = plainText.length > 300
-                        ? plainText.substring(0, 300) + '...'
-                        : plainText;
-
-                    results.checks.push({
-                        context: null, // No es contexto específico
-                        label: coreSection.label,
-                        section: coreSection.section,
-                        status: 'info', // Estado base informativo
-                        message: 'Ver información completa',
-                        excerpt: preview,
-                        isCore: true
-                    });
-                }
-            } catch (error) {
+        //
+        // EN PARALELO desde el 2026-10-05. Estaban en un `for...await`, así que la 4.6 no se pedía
+        // hasta que había llegado la 4.4: tres viajes de red encadenados para tres apartados que no
+        // dependen entre sí. Medido ese día, 614 ms en serie contra 73 ms a la vez, ocho veces menos,
+        // y la ficha no se pinta hasta que terminan (`openMedDetails` las espera en su `Promise.all`).
+        //
+        // `allSettled` y no `all`: una sección que CIMA no sirve no puede tumbar a las otras dos,
+        // que es justo lo que hacía el `try` por iteración. El orden de los checks lo fija el
+        // recorrido de `coreSections`, no el de llegada: la ficha se lee igual que antes.
+        const coreContents = await Promise.allSettled(
+            coreSections.map(cs => this.getDocSeccion(nregistro, cs.section))
+        );
+        coreSections.forEach((coreSection, i) => {
+            const respuesta = coreContents[i];
+            if (respuesta.status === 'rejected') {
                 // Si falla, no añadir (sección no disponible)
-                console.warn(`Sección ${coreSection.section} no disponible:`, error);
+                console.warn(`Sección ${coreSection.section} no disponible:`, respuesta.reason);
+                return;
             }
-        }
+            const sectionContent = respuesta.value;
+            if (!sectionContent || sectionContent.length <= 50) return;
+
+            // Limpiar HTML para preview
+            const plainText = sectionContent
+                .replace(/<[^>]*>/g, ' ')
+                .replace(/\\n/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            // Recortar para mostrar solo preview
+            const preview = plainText.length > 300
+                ? plainText.substring(0, 300) + '...'
+                : plainText;
+
+            results.checks.push({
+                context: null, // No es contexto específico
+                label: coreSection.label,
+                section: coreSection.section,
+                status: 'info', // Estado base informativo
+                message: 'Ver información completa',
+                excerpt: preview,
+                isCore: true
+            });
+        });
 
         // 2. Para cada contexto ACTIVO, SIEMPRE mostrar sección correspondiente
         // Principio: "Siempre Revisar, Nunca Asumir" - evitar falsos negativos clínicos
@@ -2848,6 +2903,34 @@ class CimaAPI {
             }
             return rawSections.get(section);
         };
+        // Qué apartados pide cada contexto. Una sola regla, usada por el precalentado de abajo y
+        // por el bucle que pinta, para que no puedan decir cosas distintas.
+        const seccionesDe = (contextKey, mapping) => mapping.sections
+            || (['elderly', 'hepatic', 'renal'].includes(contextKey) ? ['4.2', '4.4'] : [mapping.section]);
+
+        // PRECALENTADO, 2026-10-05. El bucle de abajo recorre los contextos EN SERIE, así que la
+        // sección del segundo contexto no se pedía hasta que había llegado la del primero. Con
+        // cinco contextos encendidos eso eran cinco esperas encadenadas; medido con los siete,
+        // 5,3 s de reloj en un momento de CIMA lento, con la ficha en blanco mientras tanto.
+        //
+        // Lanzarlas aquí todas a la vez no cambia NADA de lo que se pide ni del orden en que se
+        // pinta: `getRawSection` memoiza por apartado, así que los contextos que comparten
+        // sección (embarazo y lactancia, las dos la 4.6) siguen siendo una sola petición, y el
+        // bucle encuentra la promesa ya en vuelo en lugar de empezarla. El `.catch` vacío solo
+        // evita el aviso de promesa rechazada sin manejar: quien decide qué hacer con el fallo
+        // sigue siendo el bucle, que ya lo pinta como «Error al cargar».
+        //
+        // Solo en navegador: el fallback sin DOMParser (bancos Node) no pasa por `getRawSection`,
+        // y precalentar allí serían peticiones que nadie llega a usar.
+        if (typeof DOMParser !== 'undefined') {
+            for (const [contextKey, isActive] of Object.entries(patientContext || {})) {
+                if (!isActive || !contextMapping[contextKey]) continue;
+                for (const section of seccionesDe(contextKey, contextMapping[contextKey])) {
+                    getRawSection(section).catch(() => {});
+                }
+            }
+        }
+
         for (const [contextKey, isActive] of Object.entries(patientContext || {})) {
             if (!isActive || !contextMapping[contextKey]) continue;
 
@@ -2856,8 +2939,7 @@ class CimaAPI {
             // El navegador conserva grupos y tablas originales de CIMA. El fallback mantiene
             // el contrato de los consumidores sin DOMParser (bancos Node).
             if (typeof DOMParser !== 'undefined') {
-                const requested = mapping.sections
-                    || (['elderly', 'hepatic', 'renal'].includes(contextKey) ? ['4.2', '4.4'] : [mapping.section]);
+                const requested = seccionesDe(contextKey, mapping);
                 const responses = await Promise.allSettled(requested.map(getRawSection));
                 const sections = responses.map((response, i) => {
                     if (response.status === 'rejected') {

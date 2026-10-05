@@ -14285,7 +14285,23 @@ ${ftFechaDocsHtml}
         let message = error.message;
         let help = '';
 
-        if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
+        // CIMA colgada, no caída: responde al resto pero esta petición se quedó sin contestar y
+        // la cortamos nosotros (ver `CimaAPI._request`). Se dice de quién es el problema —no del
+        // ordenador de quien busca— y qué hacer, que es repetir o ir a la fuente. Es intermitente:
+        // la misma búsqueda suele salir a la segunda.
+        if (error.code === 'TIMEOUT') {
+            message = 'CIMA no responde';
+            help = `
+                <div style="margin-top: 1rem; padding: 1rem; background: var(--warning-light); border-radius: var(--radius-md);">
+                    <p class="text-muted" style="font-size: 0.85rem;">
+                        El servicio de la AEMPS no ha contestado a tiempo. No es tu conexión:
+                        suele ser pasajero y la misma búsqueda funciona al repetirla.
+                        También puedes consultarlo en
+                        <a href="https://cima.aemps.es/cima/publico/home.html" target="_blank" rel="noopener">CIMA</a>.
+                    </p>
+                </div>
+            `;
+        } else if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
             message = 'Error de conexión';
             help = `
                 <div style="margin-top: 1rem; padding: 1rem; background: var(--warning-light); border-radius: var(--radius-md);">
