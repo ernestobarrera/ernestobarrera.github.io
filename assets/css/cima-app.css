@@ -942,6 +942,20 @@ body {
         margin-left: 0;
         padding: 0;
     }
+
+    /* Fármacos: sus tarjetas también son `.search-box`, pero van DENTRO de `.combo-view`, que
+       ya está centrada a 1080 px. La regla de arriba les quitaba a cada una el ancho entero del
+       panel y quedaban en 172 px (24 px las de acciones), como en un teléfono: lo vio Ernesto
+       el 2026-10-05 con QUVIVIQ abierto. Aquí el hueco del panel se reserva una sola vez, en la
+       vista, que se centra en la parte visible; sus tarjetas no reservan nada más. */
+    body:has(#med-modal:not(.hidden)) .app-main .combo-view {
+        margin-right: max(0px, calc(var(--flyout-ancho) - var(--space-lg)));
+        margin-left: max(0px, calc((100% - var(--flyout-ancho) + var(--space-lg) - 1080px) / 2));
+    }
+
+    body:has(#med-modal:not(.hidden)) .app-main .combo-view .search-box {
+        margin-right: 0;
+    }
 }
 
 /* Producto abierto en el panel de ficha: al comparar, la lista dice cuál se está leyendo. */
