@@ -42,9 +42,9 @@
       "mantenimiento": "auto",
       "workflow": ".github/workflows/etl-materiales.yml",
       "campo_fecha": "_meta.generated_at",
-      "max_age_days": 40,
-      "desfase_dato_max_days": 40,
+      "max_age_days": null,
       "campo_fecha_fuente": "_meta.generated_at",
+      "vigilancia": "Sin umbral de edad aqui A PROPOSITO (05/10/2026), por el mismo motivo que atc-index.json. El ETL mensual solo commitea si el catalogo CAMBIA, asi que generated_at del fichero envejece mientras la AEMPS no publique materiales nuevos: el 05/10/2026 marcaba 40,7 dias con el ETL en verde 29 dias antes, y contaba DOS veces (OBSOLETO y DATO VIEJO) de los cuatro avisos de esa mañana. Medir eso aqui es vigilar si la AEMPS publica novedades, que no es un fallo nuestro ni algo que nadie pueda arreglar. Lo que SI se vigila es que el ETL siga corriendo y publicando, y eso tiene reloj propio: el paso de KV del workflow NO lleva condicion de cambio, sube materiales:meta en cada pasada, y desde hoy esa clave esta en SOURCES con umbral de 40 dias. Mas el latido, que avisa si el workflow deja de salir en verde.",
       "degradacion": null,
       "nota": "campo_fecha_fuente coincide con campo_fecha a proposito: la fuente (CIMA REST) no publica fecha de corte, asi que el crawl propio ES la captura del dato. No hay reloj externo que vigilar."
     },

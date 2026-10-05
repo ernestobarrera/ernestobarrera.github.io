@@ -62,6 +62,18 @@ SOURCES = [
         "date_fields": ["generated_at"],
         "max_age_days": 40,
     },
+    # Entra el 05/10/2026, al retirar el umbral de edad de `materiales-catalog.json` en el repo.
+    # Aquel medía si la AEMPS publica materiales nuevos —cosa que no depende de nosotros y que
+    # nadie puede arreglar—; esto mide que NUESTRO ETL sigue corriendo, que es lo vigilable. La
+    # clave vale para eso porque el paso de KV del workflow no lleva condicion de cambio: sube
+    # `generated_at` en cada pasada aunque el catalogo venga identico. Cadencia mensual (dia 6),
+    # asi que 40 dias es el mismo margen que sus hermanos.
+    {
+        "key": "materiales:meta",
+        "label": "Catalogo de materiales informativos (AEMPS)",
+        "date_fields": ["generated_at"],
+        "max_age_days": 40,
+    },
     # Cadencia anual: el Ministerio publico la tabla de 2025 el 1 de abril de 2026. 400 dias deja
     # margen para un retraso de un par de meses sin ruido; mas alla de eso hay que mirarlo.
     #
