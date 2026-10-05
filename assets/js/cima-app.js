@@ -2862,6 +2862,61 @@ class MedCheckApp {
     }
 
     /**
+     * SEGUIMIENTO ADICIONAL (▼). CIMA lo da como `triangulo: true`. El símbolo oficial de la UE
+     * es un triángulo NEGRO INVERTIDO, y hasta el 2026-10-05 MedCheck enseñaba un «▲ Vigilancia»
+     * rojo, como una alarma: seguimiento adicional significa que se vigila más de cerca (principio
+     * activo nuevo, datos limitados de uso…), no que el medicamento sea menos seguro. Una sola
+     * definición para todas las superficies, para que no vuelvan a divergir (había cinco
+     * variantes: ▲ rojo, ⚠️ ámbar, «Triángulo negro»…).
+     *
+     * Es un dato regulatorio aparte de las notas de seguridad (`notas`) y de los materiales
+     * informativos (`materialesInf`): uno no implica los otros. CIMA no da motivo ni fecha de
+     * inclusión, así que no se enseñan.
+     */
+    static get SEGUIMIENTO_ADICIONAL() {
+        return {
+            texto: 'Medicamento sujeto a seguimiento adicional (▼): las autoridades lo vigilan más estrechamente que a otros, por ejemplo por contener un principio activo nuevo o tener datos limitados de uso a largo plazo. No significa que sea inseguro. Se pide notificar cualquier sospecha de reacción adversa.',
+            urlAemps: 'https://www.aemps.gob.es/medicamentos-de-uso-humano/farmacovigilancia-de-medicamentos-de-uso-humano/medicamentos-sujetos-a-seguimiento-adicional/',
+            urlNotificar: 'https://www.notificaram.es/',
+        };
+    }
+
+    /**
+     * La insignia ▼. Con `enlace`, lleva a la explicación de la AEMPS (en el móvil no hay
+     * `title`); sin él, para tarjetas que ya son pulsables enteras. `compacto` deja solo el ▼.
+     */
+    _badgeSeguimientoAdicional({ enlace = false, compacto = false } = {}) {
+        const sa = MedCheckApp.SEGUIMIENTO_ADICIONAL;
+        const etiqueta = compacto ? '▼' : '▼ Seguimiento adicional';
+        const clase = `badge badge-seguimiento${compacto ? ' badge-xs' : ''}`;
+        const titulo = this._escapeHtml(`${sa.texto}${enlace ? ' Pulsa para ver la explicación de la AEMPS.' : ''}`);
+        return enlace
+            ? `<a class="${clase}" href="${sa.urlAemps}" target="_blank" rel="noopener" title="${titulo}" aria-label="Seguimiento adicional: qué significa (AEMPS)">${etiqueta}</a>`
+            : `<span class="${clase}" title="${titulo}"${compacto ? ' aria-label="Seguimiento adicional"' : ''}>${etiqueta}</span>`;
+    }
+
+    /**
+     * El aviso de Seguridad: información regulatoria, fuera de los contextos clínicos (sale con
+     * cualquier contexto y sin ninguno). Dice qué es y a dónde ir; no valora el medicamento.
+     */
+    _avisoSeguimientoAdicional(med) {
+        if (!med?.triangulo) return '';
+        const sa = MedCheckApp.SEGUIMIENTO_ADICIONAL;
+        return `
+    <div class="seguimiento-adicional-aviso">
+        <span class="seguimiento-adicional-simbolo" aria-hidden="true">▼</span>
+        <div>
+            <p class="seguimiento-adicional-titulo">Sujeto a seguimiento adicional <span class="seguimiento-adicional-fuente">· CIMA/AEMPS</span></p>
+            <p>${this._escapeHtml(sa.texto)}</p>
+            <p class="seguimiento-adicional-enlaces">
+                <a href="${sa.urlAemps}" target="_blank" rel="noopener">Qué significa (AEMPS) ↗</a>
+                <a href="${sa.urlNotificar}" target="_blank" rel="noopener">Notificar una sospecha de reacción adversa (NotificaRAM) ↗</a>
+            </p>
+        </div>
+    </div>`;
+    }
+
+    /**
      * Genera badges de tipología de producto centralizados
      * Usa campos reales de la API CIMA: biosimilar, nosustituible, ema, cpresc, generico
      * @param {Object} med - Objeto medicamento de la API
@@ -4418,7 +4473,7 @@ class MedCheckApp {
         const badges = [...this._renderProductTypeBadges(med)];
         if (!med.comerc) badges.unshift('<span class="badge badge-no-comerc" title="Sin presentaciones comercializadas actualmente">No comercializado</span>');
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
-        if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia</span>');
+        if (med.triangulo) badges.push(this._badgeSeguimientoAdicional());
         // Badge de suministro (modelo central; neutro, fiel al nomenclátor)
         const supplyBadgeInd = this._supplyBadgeHtml(med);
         if (supplyBadgeInd) badges.push(supplyBadgeInd);
@@ -5265,7 +5320,7 @@ class MedCheckApp {
                             ${med.principiosActivos?.[0]?.nombre || ''} · ${med.labtitular}
                         </div>
                     </div>
-                    ${med.triangulo ? '<span class="badge badge-warning" title="Seguimiento adicional">⚠️ Vigilancia</span>' : ''}
+                    ${med.triangulo ? this._badgeSeguimientoAdicional() : ''}
                 </div>
                 <div class="safety-checks">
                     ${checksHtml}
@@ -10438,9 +10493,32 @@ class MedCheckApp {
         `;
     }
 
+    /**
+     * El CN de la fila «Código Nacional». Era siempre el de la PRIMERA presentación, aunque no
+     * estuviera comercializada: en QUVIVIQ 50 mg salía el envase de 10 comprimidos sin
+     * comercializar en vez del de 30 que sí lo está (lo vio Codex el 2026-10-04). Ahora, el de la
+     * primera comercializada; si hay más, se dice cuántas y dónde verlas; si ninguna lo está, se
+     * enseña el primero diciendo que no está comercializado. `comerc !== false` es el mismo
+     * criterio que la fila «Presentaciones».
+     */
+    _cnPrincipalHtml(med) {
+        const presentaciones = med?.presentaciones || [];
+        const comercializadas = presentaciones.filter(p => p?.comerc !== false && p?.cn);
+        const elegida = comercializadas[0] || presentaciones.find(p => p?.cn);
+        if (!elegida) return '-';
+        const cn = this._escapeHtml(elegida.cn);
+        if (!comercializadas.length) {
+            return `${cn} <span class="detail-value-nota">(presentación no comercializada)</span>`;
+        }
+        const otras = comercializadas.length - 1;
+        return otras > 0
+            ? `${cn} <span class="detail-value-nota" title="Todos los CN, en «Ver envases y CN»">(+${otras} comercializada${otras === 1 ? '' : 's'}, ver envases)</span>`
+            : cn;
+    }
+
     renderInfoTab(med) {
         const pActivos = med.principiosActivos
-            ? med.principiosActivos.map(pa => `${pa.nombre}${pa.cantidad ? ' ' + pa.cantidad : ''} `).join(', ')
+            ? med.principiosActivos.map(pa => `${pa.nombre}${pa.cantidad ? ' ' + pa.cantidad + (pa.unidad ? ' ' + pa.unidad : '') : ''} `).join(', ')
             : '-';
 
         // `a.nombre` puede faltar: desde que el índice ATC resuelve la jerarquía sin nomenclatura
@@ -10462,7 +10540,7 @@ class MedCheckApp {
         // Igual que la insignia "Biológico": se describe la categoría de la lista oficial,
         // no se enuncia la regla (que depende de norma, ámbito y fecha).
         if (med.nosustituible && med.nosustituible.id === 2) alerts.push('<span class="badge badge-nti" title="Categoría «principios activos de estrecho margen terapéutico» de la lista de no sustituibles de la AEMPS"><i class="fas fa-exclamation-triangle"></i> NTI — Estrecho margen terapéutico</span>');
-        if (med.triangulo) alerts.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia adicional</span>');
+        if (med.triangulo) alerts.push(this._badgeSeguimientoAdicional({ enlace: true }));
         let shortageRowHtml = '';
         if (med.psum) {
             const aggInfo = this._aggregateShortage(med);
@@ -10559,7 +10637,7 @@ class MedCheckApp {
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Código Nacional</span>
-                    <span class="detail-value">${med.presentaciones?.[0]?.cn || '-'}</span>
+                    <span class="detail-value">${this._cnPrincipalHtml(med)}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Principios Activos</span>
@@ -11241,6 +11319,8 @@ ${ftFechaDocsHtml}
     }
 
     renderModalSafetyTab(med, safetyReport) {
+        // Seguimiento adicional: regulatorio, va antes y con cualquier contexto (o ninguno).
+        const avisoSA = this._avisoSeguimientoAdicional(med);
         const allChecks = safetyReport ? safetyReport.checks : [];
         // H17: las secciones que CIMA no devuelve ('unknown') se agrupan en una nota
         // compacta al pie en vez de tarjetas completas — menos ruido, mismo aviso honesto.
@@ -11253,7 +11333,7 @@ ${ftFechaDocsHtml}
     </div>` : '';
 
         if (allChecks.length === 0) {
-            return `
+            return `${avisoSA}
     <div class="empty-state">
                      <i class="fas fa-check-circle text-success" style="font-size: 2rem; margin-bottom: 1rem;"></i>
                     <p class="text-muted">No se detectaron alertas de seguridad para el contexto actual.</p>
@@ -11262,10 +11342,10 @@ ${ftFechaDocsHtml}
         }
 
         if (checks.length === 0) {
-            return `<div class="safety-panel">${unknownNote}</div>`;
+            return `${avisoSA}<div class="safety-panel">${unknownNote}</div>`;
         }
 
-        return `
+        return `${avisoSA}
     <div class="safety-panel">
         ${checks.map(check => {
             let icon = 'info-circle';
@@ -18938,7 +19018,7 @@ ${ftFechaDocsHtml}
         const badgesTags = [];
         if (fav.generico) badgesTags.push('<span class="badge badge-success badge-xs" title="Genérico (EFG)">Gen.</span>');
         if (fav.biosimilar) badgesTags.push('<span class="badge badge-biosimilar badge-xs" title="Autorizado como medicamento biosimilar (CIMA/AEMPS)"><i class="fas fa-dna"></i> Biosim.</span>');
-        if (fav.triangulo) badgesTags.push('<span class="badge badge-danger badge-xs" title="Triángulo negro">▲</span>');
+        if (fav.triangulo) badgesTags.push(this._badgeSeguimientoAdicional({ compacto: true }));
         if (this._isHospitalUse(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Uso Hospitalario — solo farmacia hospitalaria"><i class="fas fa-hospital"></i> H</span>');
         else if (this._isDiagnosticoHospitalario(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Diagnóstico Hospitalario — prescripción iniciada en hospital"><i class="fas fa-hospital"></i> DH</span>');
         if (fav.psum) badgesTags.push('<span class="badge badge-neutral badge-xs" title="Problema de suministro (nomenclátor CIMA)"><i class="fas fa-boxes"></i> Suministro</span>');
@@ -19888,10 +19968,10 @@ ${ftFechaDocsHtml}
                                 biosimilares > 0 ? { type: 'biosimilar', value: true, label: 'Biosimilares' } : null)}
                             ${metricCard('file-prescription', 'Con receta', prescRate + '%',
                                 `${withReceta}/${total}`, '')}
-                            ${metricCard('exclamation-triangle', 'Triángulo negro', triangulos.length,
-                                'Vigilancia adicional',
-                                triangulos.length === 0 ? 'good' : '',
-                                triangulos.length > 0 ? { type: 'triangulo', value: true, label: 'Triángulo negro' } : null)}
+                            ${metricCard('caret-down', 'Seguimiento adicional', triangulos.length,
+                                '▼ según CIMA',
+                                '',
+                                triangulos.length > 0 ? { type: 'triangulo', value: true, label: 'Seguimiento adicional (▼)' } : null)}
                             ${metricCard('bell', 'Alertas AEMPS', conAemps.length,
                                 'Notas de seguridad',
                                 conAemps.length === 0 ? 'good' : 'warn',

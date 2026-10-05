@@ -942,6 +942,20 @@ body {
         margin-left: 0;
         padding: 0;
     }
+
+    /* Fármacos: sus tarjetas también son `.search-box`, pero van DENTRO de `.combo-view`, que
+       ya está centrada a 1080 px. La regla de arriba les quitaba a cada una el ancho entero del
+       panel y quedaban en 172 px (24 px las de acciones), como en un teléfono: lo vio Ernesto
+       el 2026-10-05 con QUVIVIQ abierto. Aquí el hueco del panel se reserva una sola vez, en la
+       vista, que se centra en la parte visible; sus tarjetas no reservan nada más. */
+    body:has(#med-modal:not(.hidden)) .app-main .combo-view {
+        margin-right: max(0px, calc(var(--flyout-ancho) - var(--space-lg)));
+        margin-left: max(0px, calc((100% - var(--flyout-ancho) + var(--space-lg) - 1080px) / 2));
+    }
+
+    body:has(#med-modal:not(.hidden)) .app-main .combo-view .search-box {
+        margin-right: 0;
+    }
 }
 
 /* Producto abierto en el panel de ficha: al comparar, la lista dice cuál se está leyendo. */
@@ -1082,6 +1096,86 @@ body {
 .badge-info {
     background: var(--info-light);
     color: var(--info);
+}
+
+/* Seguimiento adicional (▼, `_badgeSeguimientoAdicional`): el símbolo oficial de la UE es un
+   triángulo NEGRO invertido. Negro sobre claro, como en la ficha, y sin el rojo de alarma que
+   tenía: seguimiento adicional no significa que el medicamento sea menos seguro. */
+.badge-seguimiento {
+    background: #e5e7eb;
+    color: #111827;
+    border: 1px solid #9ca3af;
+    text-decoration: none;
+}
+
+a.badge-seguimiento:hover,
+a.badge-seguimiento:focus-visible {
+    background: #f9fafb;
+    text-decoration: underline;
+}
+
+/* El aviso de la pestaña Seguridad: informativo, neutro, antes de los contextos. */
+.seguimiento-adicional-aviso {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: var(--space-md);
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.seguimiento-adicional-aviso p { margin: 0 0 0.3rem; }
+.seguimiento-adicional-aviso p:last-child { margin-bottom: 0; }
+
+.seguimiento-adicional-simbolo {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 4px;
+    background: #e5e7eb;
+    color: #111827;
+    font-size: 0.95rem;
+}
+
+.seguimiento-adicional-titulo {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.seguimiento-adicional-fuente {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 0.75rem;
+}
+
+.seguimiento-adicional-enlaces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+}
+
+.seguimiento-adicional-enlaces a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.seguimiento-adicional-enlaces a:hover,
+.seguimiento-adicional-enlaces a:focus-visible { text-decoration: underline; }
+
+/* Aclaración junto a un valor de la ficha (CN de varias presentaciones). */
+.detail-value-nota {
+    font-weight: 400;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 .badge-material {
