@@ -648,7 +648,25 @@ class MedCheckApp {
         this.lastATCBreadcrumb = [];
         this.lastATCCode = '';
         this.lastATCLabel = '';
+        // El estado limpio incluye la búsqueda: hasta el 2026-10-05 el logo llevaba a Buscar con
+        // la última consulta y sus resultados, igual que la pestaña «Buscar» (que sí debe
+        // conservarlos: es volver a lo que estabas mirando).
+        this._limpiarBusqueda();
         this.loadView('search');
+    }
+
+    /**
+     * Vacía la búsqueda en curso: el texto, los resultados y los filtros de ESA búsqueda
+     * (principio activo, vía, forma, dosis, laboratorio). No toca el ámbito —Comercializado,
+     * Genérico, Receta, Biosimilar, duplicados, hospitalarios—, que el contrato de filtrado ya
+     * trata como preferencias que persisten entre búsquedas, ni los «Abiertos en esta sesión».
+     * La usan el logo y la × de la caja de búsqueda.
+     */
+    _limpiarBusqueda() {
+        this.lastSearchQuery = '';
+        this.lastSearchResults = null;
+        this._lastSearchData = null;
+        this._resetResultFilters();
     }
 
     /**
@@ -1486,9 +1504,12 @@ class MedCheckApp {
                         <i class="fas fa-search"></i>
                         <input type="text" id="search-input" class="search-input"
                                placeholder="Buscar medicamento (nombre, principio activo o CN)..." 
-                               value="${this.lastSearchQuery}"
+                               value="${this._escapeHtml(this.lastSearchQuery)}"
                                autocomplete="off"
                                autofocus>
+                        <button type="button" id="search-clear" class="search-clear" title="Borrar la búsqueda y empezar de nuevo" aria-label="Borrar la búsqueda"${this.lastSearchQuery ? '' : ' hidden'}>
+                            <span aria-hidden="true">×</span>
+                        </button>
                         <div id="search-autocomplete" class="autocomplete-dropdown hidden"></div>
                     </div>
                     <div class="search-options">
@@ -1523,6 +1544,18 @@ class MedCheckApp {
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
         const filterComerc = document.getElementById('filter-comerc');
+
+        // La ×: aparece en cuanto hay algo escrito y deja Buscar como al entrar, con el foco en
+        // la caja. La URL se REEMPLAZA: borrar no es un paso de navegación, y «Atrás» no debe
+        // devolver una búsqueda que se acaba de descartar.
+        const searchClear = document.getElementById('search-clear');
+        searchInput.addEventListener('input', () => { searchClear.hidden = !searchInput.value; });
+        searchClear.addEventListener('click', () => {
+            this._limpiarBusqueda();
+            this.renderSearch();
+            this.updateURL({ view: 'search' }, { replace: true });
+            document.getElementById('search-input')?.focus();
+        });
         const filterGeneric = document.getElementById('filter-generic');
 
         searchBtn.addEventListener('click', () => {
@@ -1847,6 +1880,10 @@ class MedCheckApp {
         // genérico/receta/biosimilar viven en `filterState`, que es la fuente única del
         // contrato de filtrado (y persisten entre búsquedas: son ámbito, no faceta).
         this.lastSearchQuery = query;
+        // La × también cuando la caja se rellena por código (sustancia, enlace con `?q=`), que
+        // no dispara el evento `input`.
+        const searchClear = document.getElementById('search-clear');
+        if (searchClear) searchClear.hidden = !query;
         // `showBrands` se retiró: leía `#filter-show-brands`, un control que no existe en
         // ninguna plantilla, así que el valor era siempre false y no lo consumía nadie.
         this.lastSearchFilters = {

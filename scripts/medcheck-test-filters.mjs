@@ -417,5 +417,37 @@ check('detector de fusión identidad/regla caza el título retirado',
 check('detector "biológico original" caza el título retirado',
     /[Bb]iológico original/.test(textoAntiguo), true);
 
+console.log('\n— El logo y la × de Buscar: empezar de cero sin perder el ámbito —');
+// 2026-10-05: el logo («volver al estado limpio», según su propio comentario) llevaba a Buscar
+// con la última consulta y sus resultados, y no había forma de borrar la búsqueda. Ahora los
+// dos vacían texto, resultados y facetas; el ámbito (Comercializado, tipo de producto, receta)
+// se queda, por la misma razón que sobrevive a una búsqueda nueva.
+const inicio = appWith({ biosimilar: true, receta: true, generic: true,
+    form: 'SOLUCION INYECTABLE', lab: 'Lab B', doses: ['1000 UI'], routes: ['Parenteral'], pas: ['epoetina alfa'] });
+inicio.lastSearchFilters = { comerc: false, searchType: 'smart' };
+inicio.lastSearchResults = { resultados: [{}] };
+inicio._lastSearchData = { resultados: [{}] };
+inicio._syncTopFilterCheckboxes = function () {};
+inicio._limpiarBusqueda();
+const trasInicio = inicio._filterSnapshot();
+check('limpia la consulta y los resultados',
+    [inicio.lastSearchQuery, inicio.lastSearchResults, inicio._lastSearchData], ['', null, null]);
+check('…y las facetas de esa búsqueda',
+    [trasInicio.form, trasInicio.lab, trasInicio.doses.size, trasInicio.routes.size, trasInicio.pas.size], [null, null, 0, 0, 0]);
+check('…pero conserva el ámbito (tipo de producto, receta, Comercializado)',
+    [trasInicio.generic, trasInicio.biosimilar, trasInicio.receta, inicio.lastSearchFilters.comerc], [true, true, true, false]);
+const cuerpoDe = (firma) => { const i = src.indexOf(firma); return i === -1 ? '' : src.slice(i, src.indexOf('\n    }\n', i)); };
+const home = cuerpoDe('    goHome() {');
+check('el logo limpia la búsqueda ANTES de pintar Buscar',
+    home.indexOf('this._limpiarBusqueda()') > -1 && home.indexOf('this._limpiarBusqueda()') < home.indexOf("this.loadView('search')"), true);
+check('la pestaña «Buscar» NO limpia (volver a lo que se estaba mirando)',
+    /_limpiarBusqueda/.test(cuerpoDe('    async loadView(viewName, updateURL = true) {')), false);
+const buscar = cuerpoDe('    renderSearch() {');
+check('la × existe, oculta con la caja vacía, y limpia y repinta', /id="search-clear"[^>]*\$\{this\.lastSearchQuery \? '' : ' hidden'\}/.test(buscar)
+    && /searchClear\.addEventListener\('click', \(\) => \{\s*this\._limpiarBusqueda\(\);\s*this\.renderSearch\(\);/.test(buscar), true);
+check('borrar REEMPLAZA la URL (Atrás no devuelve lo descartado)', /this\.updateURL\(\{ view: 'search' \}, \{ replace: true \}\)/.test(buscar), true);
+check('el texto buscado se pinta escapado en la caja', /value="\$\{this\._escapeHtml\(this\.lastSearchQuery\)\}"/.test(buscar)
+    && !/value="\$\{this\.lastSearchQuery\}"/.test(src), true);
+
 console.log(`\n${failures === 0 ? 'TODO OK' : `${failures} FALLO(S)`}`);
 process.exit(failures === 0 ? 0 : 1);
