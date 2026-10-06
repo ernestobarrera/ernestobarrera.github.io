@@ -20410,14 +20410,13 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#app-content',
+                        target: '#search-input',
                         title: '1. Buscar y orientarse',
                         icon: 'fa-search',
                         action: { type: 'view', view: 'search' },
                         body: `
                             <p>Escribe un nombre comercial, principio activo, código nacional o número de registro CIMA. El <span class="guide-highlight">autocompletado</span> ayuda a elegir el término; confirma la búsqueda para ver el listado.</p>
-                            <p>Las tarjetas abren directamente <span class="guide-key">FT</span> ficha y prospecto, <span class="guide-key">IND</span> indicaciones, <span class="guide-key">POS</span> posología, <span class="guide-key">INT</span> interacciones, <span class="guide-key">EVI</span> evidencia o <span class="guide-key">SEG</span> seguridad. Un acceso apagado indica que ese registro no publica la sección.</p>
-                            <p>La cámara abre las imágenes disponibles y el frasco consulta los excipientes declarables. La subguía de búsqueda explica cómo revisar varias tarjetas a la vez.</p>
+                            <p>La <span class="guide-key">×</span> borra el término y reinicia la búsqueda. El logo <span class="guide-key">MedCheck</span> vuelve a Buscar limpio desde cualquier vista.</p>
                             <p class="guide-case"><strong>Caso</strong>Te traen una caja: busca su nombre y abre <span class="guide-key">IND</span> para consultar el uso autorizado.</p>
                         `,
                         position: 'bottom',
@@ -20469,7 +20468,7 @@ ${ftFechaDocsHtml}
                         position: 'bottom',
                     },
                     {
-                        target: '.modal-content',
+                        target: '.modal-tabs',
                         title: '5. Abrir la ficha',
                         icon: 'fa-window-maximize',
                         action: { type: 'modal', tab: 'info', source: 'any' },
@@ -20480,7 +20479,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-consult.active',
+                        target: '.modal-tab[data-tab="consult"]',
                         title: '6. Preparar la consulta a IA',
                         icon: 'fa-robot',
                         action: { type: 'modalTab', tab: 'consult' },
@@ -20538,7 +20537,7 @@ ${ftFechaDocsHtml}
                 icon: 'fa-window-maximize',
                 steps: [
                     {
-                        target: '.modal-content',
+                        target: '.modal-header',
                         title: 'La ficha del medicamento',
                         icon: 'fa-window-maximize',
                         action: { type: 'modal', tab: 'info', source: 'any' },
@@ -20546,6 +20545,17 @@ ${ftFechaDocsHtml}
                             <p>Al abrir un medicamento, el modal reúne la información accionable: ficha, indicaciones, posología, interacciones, reacciones, seguridad, ficha y prospecto, documentación, evidencia, utilización y consulta a IA.</p>
                             <p>Cinco pestañas son <span class="guide-highlight">condicionales</span>: Alertas AEMPS, PGx, Financiación, Utilización y QT. Su ausencia indica que esa ficha no dispone de ese contenido; no demuestra ausencia de riesgo ni de evidencia.</p>
                             <p>Si no había una ficha abierta, la guía carga un ejemplo real para poder recorrerla.</p>
+                        `,
+                    },
+                    {
+                        target: '.modal-content .badge-seguimiento, .modal-content .seguimiento-adicional-aviso',
+                        title: 'El triángulo negro señala seguimiento adicional',
+                        icon: 'fa-circle-info',
+                        action: { type: 'modalTab', tab: 'info' },
+                        unavailable: 'El medicamento de este ejemplo no muestra seguimiento adicional. El símbolo aparece únicamente cuando CIMA lo declara.',
+                        body: `
+                            <p><strong>▼ Seguimiento adicional</strong> identifica una vigilancia regulatoria más estrecha; no significa por sí mismo que el medicamento sea inseguro. La insignia y el aviso de Seguridad enlazan la explicación de la AEMPS.</p>
+                            <p>En la ficha general, revisa también el código nacional de la presentación comercializada y su envase. Son datos de presentación, distintos del número de registro del medicamento.</p>
                         `,
                     },
                     {
@@ -20560,7 +20570,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-indications.active',
+                        target: '.modal-tab[data-tab="indications"]',
                         title: 'Indicaciones',
                         icon: 'fa-stethoscope',
                         action: { type: 'modalTab', tab: 'indications' },
@@ -20571,18 +20581,40 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-posology.active',
+                        target: '.modal-tab[data-tab="posology"]',
                         title: 'Posología',
                         icon: 'fa-prescription-bottle-medical',
                         action: { type: 'modalTab', tab: 'posology' },
                         body: `
                             <p>Posología muestra la dosificación oficial completa de la ficha técnica (sección 4.2), para lectura detenida.</p>
+                            <p>La leyenda distingue <strong>manipulación, dosis y unidades</strong>. Resalta palabras del texto oficial; no calcula dosis ni autoriza triturar o partir por inferencia.</p>
                             <p>Junto a «Copiar», <span class="guide-highlight">Compartir</span> envía la sección —o solo el fragmento que selecciones, con enlace a él— si tu navegador tiene menú de compartir. <span class="guide-highlight">Para el paciente</span> comparte el apartado «Cómo tomar» del prospecto, que es el texto escrito para él. Indicaciones lleva también el botón Compartir.</p>
                             <p class="guide-case"><strong>Caso</strong>Ajuste en insuficiencia renal: la 4.2 trae los tramos por filtrado glomerular literales, sin la aproximación de memoria.</p>
                         `,
                     },
                     {
-                        target: '#tab-safety.active',
+                        target: '#tab-posology .posology-legend',
+                        title: 'Dosis, unidades y manipulación en su contexto',
+                        icon: 'fa-highlighter',
+                        action: { type: 'modalTab', tab: 'posology' },
+                        body: `
+                            <p>La leyenda identifica categorías de resaltado en la 4.2. Lee la frase completa: partir, triturar, dispersar, preparar un inyectable o manipular un parche pueden tener condiciones distintas.</p>
+                            <p>Los colores ayudan a localizar texto; no convierten una mención en permiso de administración. Si no hay marcas, tampoco significa que el medicamento se pueda manipular.</p>
+                        `,
+                    },
+                    {
+                        target: '.context-toggle[data-context="dysphagia"]',
+                        title: 'Disfagia o sonda: volver a las instrucciones originales',
+                        icon: 'fa-glass-water',
+                        action: { type: 'view', view: 'search' },
+                        body: `
+                            <p>Este contexto dirige la revisión hacia los apartados <strong>3, 4.2 y 6.6</strong>: forma farmacéutica, forma de administración y manipulación.</p>
+                            <p>Al activarlo tú, Seguridad reúne los pasajes que publica la ficha. Comprueba condiciones y restricciones; la ausencia de una mención no autoriza triturar ni administrar por sonda.</p>
+                            <p>La guía señala el botón sin cambiar tu contexto.</p>
+                        `,
+                    },
+                    {
+                        target: '.modal-tab[data-tab="safety"]',
                         title: 'Seguridad por contexto',
                         icon: 'fa-shield-alt',
                         action: { type: 'modalTab', tab: 'safety' },
@@ -20593,7 +20625,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-interactions.active',
+                        target: '.modal-tab[data-tab="interactions"]',
                         title: 'Interacciones y reacciones',
                         icon: 'fa-random',
                         action: { type: 'modalTab', tab: 'interactions' },
@@ -20604,7 +20636,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-docs.active',
+                        target: '.modal-tab[data-tab="docs"]',
                         title: 'Ficha y prospecto',
                         icon: 'fa-file-medical-alt',
                         action: { type: 'modalTab', tab: 'docs' },
@@ -20614,7 +20646,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-documentacion.active',
+                        target: '.modal-tab[data-tab="documentacion"]',
                         title: 'Documentación',
                         icon: 'fa-balance-scale',
                         action: { type: 'modalTab', tab: 'documentacion' },
@@ -20625,12 +20657,12 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-evidence.active',
+                        target: '.modal-tab[data-tab="evidence"]',
                         title: 'Evidencia',
                         icon: 'fa-book-medical',
                         action: { type: 'modalTab', tab: 'evidence' },
                         body: `
-                            <p>Evidencia parte del término de la sustancia y monta la búsqueda por ti, en cuatro bloques:</p>
+                            <p>Evidencia empieza por el apartado oficial <strong>5.1</strong>, con medidas y términos resaltados para leer los resultados en contexto. Después prepara búsquedas y accesos a fuentes externas:</p>
                             <ul class="guide-features">
                                 <li><i class="fas fa-database"></i> PubMed con filtros validados</li>
                                 <li><i class="fas fa-compass"></i> consulta clínica de referencia</li>
@@ -20642,7 +20674,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-utilizacion.active, .modal-content',
+                        target: '.modal-tab[data-tab="utilizacion"]',
                         title: 'Utilización observada',
                         icon: 'fa-chart-column',
                         action: { type: 'modalTab', tab: 'utilizacion' },
@@ -20653,7 +20685,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-financing.active, .modal-content',
+                        target: '.modal-tab[data-tab="financing"]',
                         title: 'Financiación',
                         icon: 'fa-receipt',
                         action: { type: 'modalTab', tab: 'financing' },
@@ -20663,7 +20695,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-consult.active',
+                        target: '.modal-tab[data-tab="consult"]',
                         title: 'Consultar IA (documental)',
                         icon: 'fa-robot',
                         action: { type: 'modalTab', tab: 'consult' },
@@ -20677,7 +20709,7 @@ ${ftFechaDocsHtml}
             },
             search: {
                 label: 'Búsqueda y navegación',
-                desc: 'Autocompletado, filtros con recuentos y comparación sin cerrar la ficha.',
+                desc: 'Buscar, limpiar el término, filtrar y recorrer fichas sin perder la lista.',
                 icon: 'fa-search',
                 view: 'search',
                 steps: [
@@ -20689,10 +20721,11 @@ ${ftFechaDocsHtml}
                             <p>Escribe parte de un nombre comercial o principio activo. Las sugerencias ayudan a elegir; revisa el término y confirma la búsqueda.</p>
                             <p>Seleccionar una sustancia acota los resultados a ese principio activo: evita confundir, por ejemplo, omeprazol con esomeprazol por compartir parte del nombre.</p>
                             <p>También puedes pegar un <strong>código nacional</strong> o <strong>número de registro CIMA</strong>, como 67605. Si un número tiene forma de ambos identificadores, se consultan los dos y se reúnen los resultados.</p>
+                            <p>La <span class="guide-key">×</span> borra la consulta. El logo MedCheck vuelve a Buscar limpio desde cualquier vista.</p>
                         `,
                     },
                     {
-                        target: '#search-results',
+                        target: '#search-results .results-control-bar',
                         title: 'Filtrar con los números a la vista',
                         icon: 'fa-filter',
                         action: { type: 'searchResults' },
@@ -20703,7 +20736,17 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#search-results',
+                        target: '#search-results .result-card-actions',
+                        title: 'Abrir directamente la sección que necesitas',
+                        icon: 'fa-arrow-up-right-from-square',
+                        action: { type: 'searchResults' },
+                        body: `
+                            <p>Estos accesos de la tarjeta abren <span class="guide-key">FT</span> ficha y prospecto, <span class="guide-key">IND</span> indicaciones, <span class="guide-key">POS</span> posología, <span class="guide-key">INT</span> interacciones, <span class="guide-key">EVI</span> evidencia o <span class="guide-key">SEG</span> seguridad.</p>
+                            <p>Un acceso apagado indica que ese registro no publica esa sección. No demuestra ausencia de riesgo ni falta de información en otros registros.</p>
+                        `,
+                    },
+                    {
+                        target: '#search-results .med-detail-tag--exc',
                         title: 'Imágenes y excipientes sin abrir cada ficha',
                         icon: 'fa-vial',
                         action: { type: 'searchResults' },
@@ -20714,7 +20757,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '.modal-pos-lista, .modal-content',
+                        target: '.modal-pos-lista',
                         title: 'Recorrer la lista sin cerrar el modal',
                         icon: 'fa-left-right',
                         action: { type: 'modalList', tab: 'posology' },
@@ -20775,7 +20818,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#ind-ai-panel',
+                        target: '#ind-ai-panel .ind-ai-scope',
                         title: 'Preguntar por el grupo que queda tras filtrar',
                         icon: 'fa-sitemap',
                         action: { type: 'indicationAi' },
@@ -20793,6 +20836,27 @@ ${ftFechaDocsHtml}
                 icon: 'fa-book-medical',
                 steps: [
                     {
+                        target: '#ev51 .ev51-summary',
+                        title: 'Leer primero los estudios de la ficha técnica',
+                        icon: 'fa-file-medical',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p>Este acordeón abre el apartado <strong>5.1 «Propiedades farmacodinámicas»</strong> completo, tal como lo publica CIMA. Se carga al abrirlo; un fallo de carga no impide usar PubMed ni los registros.</p>
+                            <p>Al desplegarlo aparecen medidas relativas, diferencias, cifras por grupo, intervalos de confianza y otros términos. Pulsa una marca para leer su explicación y conserva población, comparador y plazo al interpretar el resultado.</p>
+                            <p>El resaltado no estima beneficio absoluto ni NNT a partir de cifras insuficientes, y no es una evaluación de calidad del estudio.</p>
+                        `,
+                    },
+                    {
+                        target: '#ev51 .ev51-leyenda',
+                        title: 'Leer las medidas sin perder su significado',
+                        icon: 'fa-chart-column',
+                        action: { type: 'evidence51' },
+                        body: `
+                            <p>La leyenda distingue medidas relativas, diferencias, cifras por grupo, intervalos de confianza y términos estadísticos. Cada marca conserva el texto original y permite leer una explicación.</p>
+                            <p>Comprueba población, comparador y plazo. Un intervalo de confianza no es una medida de efecto; una cifra sin tipo identificado queda señalada como tal. Puedes desactivar el resaltado y leer la 5.1 completa.</p>
+                        `,
+                    },
+                    {
                         target: '#evidence-drug-input',
                         title: 'Revisar el término de PubMed',
                         icon: 'fa-search',
@@ -20803,13 +20867,23 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-evidence .evidence-section',
+                        target: '#tab-evidence .evidence-filter-row',
                         title: 'Combinar filtros y acotar fechas',
                         icon: 'fa-filter',
                         action: { type: 'modalTab', tab: 'evidence' },
                         body: `
-                            <p>Los filtros bibliográficos muestran recuentos y permiten combinar selecciones con <span class="guide-key">AND / OR</span>. El deslizador temporal acota PubMed; abre el enlace para leer los artículos.</p>
+                            <p>Cada fila ofrece un filtro bibliográfico y su recuento. Al seleccionar dos o más filtros aparece la barra para combinarlos con <span class="guide-key">AND / OR</span>.</p>
                             <p>Revisa la referencia y las métricas de validación cuando estén disponibles. La curva por bienio y los recuentos describen volumen de publicaciones, no calidad, relevancia clínica ni certeza.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-evidence .evidence-date-range',
+                        title: 'Acotar PubMed por fecha',
+                        icon: 'fa-calendar-days',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p>El deslizador cambia el intervalo temporal de PubMed y recalcula los recuentos. Abre el enlace para leer las publicaciones.</p>
+                            <p>El intervalo de PubMed no modifica el apartado 5.1 ni los términos originales usados en los registros de ensayos.</p>
                         `,
                     },
                     {
@@ -20860,7 +20934,7 @@ ${ftFechaDocsHtml}
                         position: 'bottom',
                     },
                     {
-                        target: '#profile-section-content',
+                        target: '.profile-subnav-btn[data-section="essentials"]',
                         title: 'Esenciales',
                         icon: 'fa-clipboard-list',
                         action: { type: 'profileSection', section: 'essentials' },
@@ -20870,7 +20944,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#profile-section-content',
+                        target: '.profile-subnav-btn[data-section="prescription"]',
                         title: 'Prescripción',
                         icon: 'fa-notes-medical',
                         action: { type: 'profileSection', section: 'prescription' },
@@ -20880,7 +20954,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#profile-section-content',
+                        target: '.profile-subnav-btn[data-section="analytics"]',
                         title: 'Analítica 80/20',
                         icon: 'fa-chart-bar',
                         action: { type: 'profileSection', section: 'analytics' },
@@ -20907,7 +20981,7 @@ ${ftFechaDocsHtml}
                         position: 'bottom',
                     },
                     {
-                        target: '.pgx-controls',
+                        target: '.pgx-group-bar',
                         title: 'Filtrar o agrupar',
                         icon: 'fa-filter',
                         body: `
@@ -20917,7 +20991,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-pgx.active, .modal-content',
+                        target: '.modal-tab[data-tab="pgx"]',
                         title: 'De la vista global al modal',
                         icon: 'fa-arrow-up-right-from-square',
                         action: { type: 'modal', tab: 'pgx', source: 'pgx' },
@@ -20954,9 +21028,10 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '.util-body',
+                        target: '#tab-utilizacion .util-unit-long',
                         title: 'Leer la cifra sin malinterpretarla',
                         icon: 'fa-chart-simple',
+                        action: { type: 'modalTab', tab: 'utilizacion' },
                         body: `
                             <p>La <span class="guide-highlight">DHD</span> son dosis diarias definidas por 1.000 habitantes y día. La lectura en personas es una estimación condicionada a que la dosis prescrita se aproxime a la DDD, especialmente en tratamientos crónicos; no cuenta pacientes.</p>
                             <p>Y el reparto del grupo en una frase: «de cada 100 dosis dispensadas en C10AA, 55 son de atorvastatina…». El sujeto son <strong>dosis, no pacientes</strong>.</p>
@@ -20975,7 +21050,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-utilizacion.active, .modal-content',
+                        target: '.modal-tab[data-tab="utilizacion"]',
                         title: 'Desde la ficha del medicamento',
                         icon: 'fa-window-maximize',
                         action: { type: 'modalTab', tab: 'utilizacion' },
@@ -21012,7 +21087,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#tab-documentacion.active, .modal-content',
+                        target: '.modal-tab[data-tab="documentacion"]',
                         title: 'Abrir cuando importa',
                         icon: 'fa-folder-open',
                         action: { type: 'modal', tab: 'documentacion', source: 'materials' },
@@ -21040,7 +21115,7 @@ ${ftFechaDocsHtml}
                         position: 'bottom',
                     },
                     {
-                        target: '.indications-search-panel',
+                        target: '#indication-input',
                         title: 'Escribir la indicación',
                         icon: 'fa-keyboard',
                         body: `
@@ -21053,7 +21128,7 @@ ${ftFechaDocsHtml}
                         title: 'O explorar por categoría',
                         icon: 'fa-sitemap',
                         body: `
-                            <p>También puedes partir de una categoría clínica y descender, para recorrer el abanico autorizado en un área sin saber de antemano qué fármaco buscas.</p>
+                            <p>Parte de una categoría ATC y desciende por la clasificación farmacológica sin saber de antemano qué medicamento buscas. El grupo orienta la exploración; verifica la indicación autorizada en el apartado 4.1 de cada ficha.</p>
                         `,
                     },
                     {
@@ -21066,7 +21141,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#indication-results',
+                        target: '.ind-ai-toggle',
                         title: 'Acotar y preguntar por un grupo',
                         icon: 'fa-robot',
                         action: { type: 'indicationAi' },
@@ -21113,7 +21188,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '#app-content .combo-ai-hero',
+                        target: '#app-content .combo-ai-primary .combo-ai-buttons',
                         title: 'Consulta sin veredicto automático',
                         icon: 'fa-magnifying-glass-chart',
                         body: `
@@ -21166,11 +21241,13 @@ ${ftFechaDocsHtml}
                         position: 'bottom',
                     },
                     {
-                        target: null,
+                        target: '.supply-action-btn',
                         title: 'Buscar alternativa',
                         icon: 'fa-right-left',
+                        unavailable: 'La lista visible no muestra un botón de alternativas disponibles. Comprueba los datos de Suministro antes de repetir la demostración.',
                         body: `
-                            <p>Desde la ficha de un medicamento afectado, "Alternativas de Suministro" propone equivalentes disponibles para no dejar al paciente sin tratamiento.</p>
+                            <p><span class="guide-key">Ver alternativas disponibles</span> abre la búsqueda desde un medicamento afectado. También se accede desde su distintivo de suministro en los resultados.</p>
+                            <p>Comprueba principio activo, dosis, forma, vía y disponibilidad antes de valorar una sustitución.</p>
                         `,
                     },
                 ],
@@ -21192,9 +21269,10 @@ ${ftFechaDocsHtml}
                         position: 'bottom',
                     },
                     {
-                        target: null,
+                        target: '.modal-tab[data-tab="alerts"]',
                         title: 'En cada ficha',
                         icon: 'fa-exclamation-circle',
+                        action: { type: 'modalTab', tab: 'alerts' },
                         body: `
                             <p>Dentro de la ficha, la pestaña Alertas muestra solo las notas que afectan a ese medicamento; los que tienen notas se marcan en los listados con el distintivo <span class="guide-highlight">Alertas AEMPS</span>.</p>
                         `,
@@ -21395,6 +21473,19 @@ ${ftFechaDocsHtml}
         const tourView = this._guideTours()[this.guideTour]?.view;
         const action = step?.action || (tourView ? { type: 'view', view: tourView } : null);
         if (!action) return;
+
+        if (action.type === 'evidence51') {
+            await this._runGuideStepAction({ action: { type: 'modalTab', tab: 'evidence' } });
+            if (this._guideStepNotice) return;
+            const details = document.getElementById('ev51');
+            if (!details) {
+                this._guideStepNotice = 'El apartado 5.1 no está disponible en la ficha abierta.';
+                return;
+            }
+            details.open = true;
+            if (details.dataset.estado !== 'listo') await this._cargarFT51(this.currentMed, details);
+            return;
+        }
 
         if (action.type === 'searchResults' || action.type === 'modalList') {
             await this._runGuideStepAction({ action: { type: 'view', view: 'search' } });
@@ -23446,6 +23537,7 @@ ${ftFechaDocsHtml}
     }
 
     endGuide() {
+        this._clearGuideLayout();
         this.guideActive = false;
         if ((this.guideTour || 'core') === 'core') this._markGuideSeen();
         // Si la guía abrió una ficha de demostración, ciérrala al terminar/saltar
@@ -23527,23 +23619,28 @@ ${ftFechaDocsHtml}
             el.classList.remove('guide-spotlight-target');
         });
 
-        const isCentered = !step.target;
+        this._clearGuideLayout();
+        const isCentered = !step.target || !!this._guideStepNotice;
         let targetRect = null;
+        let targetEl = null;
 
         if (!isCentered) {
             // Respetar el orden de las alternativas: un contenedor padre aparecería antes
             // que su pestaña en querySelectorAll('pestaña, contenedor'). Ignorar paneles ocultos.
-            const targetEl = step.target.split(',').flatMap(selector =>
+            targetEl = step.target.split(',').flatMap(selector =>
                 [...document.querySelectorAll(selector.trim())]
             ).find(el => {
                 const rect = el.getBoundingClientRect();
                 return rect.width > 0 && rect.height > 0;
             });
             if (targetEl) {
-                targetEl.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+                targetEl.scrollIntoView?.({ block: 'center', inline: 'nearest', behavior: 'instant' });
                 targetRect = targetEl.getBoundingClientRect();
                 targetEl.classList.add('guide-spotlight-target');
             }
+        }
+        if (!isCentered && !targetEl) {
+            this._guideStepNotice = step.unavailable || 'El elemento señalado no está visible en esta vista o todavía no ha terminado de cargar. Este paso no demuestra su disponibilidad en el ejemplo abierto.';
         }
         const effectiveCentered = isCentered || !targetRect;
 
@@ -23569,12 +23666,12 @@ ${ftFechaDocsHtml}
                     <defs>
                         <mask id="guide-mask">
                             <rect width="100%" height="100%" fill="white"/>
-                            <rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="12" fill="black"/>
+                            <rect id="guide-cutout" x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="12" fill="black"/>
                         </mask>
                     </defs>
                     <rect width="100%" height="100%" fill="rgba(0,0,0,0.65)" mask="url(#guide-mask)"/>
-                    <rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="12"
-                          fill="none" stroke="rgba(14,165,233,0.35)" stroke-width="2"/>
+                    <rect id="guide-ring" x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="12"
+                          fill="none" stroke="#38bdf8" stroke-width="3"/>
                 </svg>
             `;
         } else {
@@ -23609,40 +23706,24 @@ ${ftFechaDocsHtml}
             </div>
         `;
 
-        // Position the card relative to target
+        // Medir de nuevo al desplazar o redimensionar: la ficha y sus datos pueden crecer.
         const card = document.getElementById('guide-card');
         if (card && targetRect && !effectiveCentered) {
+            this._guideTargetEl = targetEl;
+            this._guideGeometryHandler = (event) => {
+                if (event?.target?.closest?.('#guide-card')) return;
+                this._positionGuideCard(step);
+            };
+            window.addEventListener?.('resize', this._guideGeometryHandler);
+            document.addEventListener('scroll', this._guideGeometryHandler, true);
+            if (typeof ResizeObserver !== 'undefined') {
+                this._guideResizeObserver = new ResizeObserver(this._guideGeometryHandler);
+                this._guideResizeObserver.observe(targetEl);
+                this._guideResizeObserver.observe(card);
+            }
             requestAnimationFrame(() => {
-                const cardRect = card.getBoundingClientRect();
-                const vw = window.innerWidth;
-                const vh = window.innerHeight;
-
-                let top, left;
-                const gap = 16;
-
-                // Prefer positioning below the target
-                if (step.position === 'bottom' || !step.position) {
-                    top = targetRect.bottom + gap;
-                    left = targetRect.left + (targetRect.width / 2) - (cardRect.width / 2);
-                } else {
-                    top = targetRect.top - cardRect.height - gap;
-                    left = targetRect.left + (targetRect.width / 2) - (cardRect.width / 2);
-                }
-
-                // Clamp to viewport
-                left = Math.max(12, Math.min(left, vw - cardRect.width - 12));
-                top = Math.max(12, Math.min(top, vh - cardRect.height - 12));
-
-                // If below overflows, try above
-                if (top + cardRect.height > vh - 12) {
-                    top = targetRect.top - cardRect.height - gap;
-                    top = Math.max(12, top);
-                }
-
-                card.style.left = `${left}px`;
-                card.style.top = `${top}px`;
-
-                // Animate in
+                if (document.getElementById('guide-card') !== card) return;
+                this._positionGuideCard(step);
                 requestAnimationFrame(() => card.classList.add('visible'));
             });
         } else if (card && effectiveCentered) {
@@ -23662,6 +23743,78 @@ ${ftFechaDocsHtml}
             if (e.target.closest('.guide-card')) return;
             this.endGuide();
         });
+    }
+
+    _clearGuideLayout() {
+        if (this._guideGeometryHandler) {
+            window.removeEventListener?.('resize', this._guideGeometryHandler);
+            document.removeEventListener('scroll', this._guideGeometryHandler, true);
+        }
+        this._guideResizeObserver?.disconnect();
+        this._guideResizeObserver = null;
+        this._guideGeometryHandler = null;
+        this._guideTargetEl = null;
+    }
+
+    // Cuatro espacios posibles. Elegir antes de limitar al viewport: limitar primero
+    // hacía imposible detectar el desbordamiento y colocaba la tarjeta sobre el destino.
+    _guidePlacement(rect, size, viewport, preferred = 'bottom') {
+        const margin = 12, gap = 16;
+        const { width: vw, height: vh } = viewport;
+        const left = Math.max(margin, rect.left);
+        const right = Math.min(vw - margin, rect.right);
+        const top = Math.max(margin, rect.top);
+        const bottom = Math.min(vh - margin, rect.bottom);
+        const clamp = (n, lo, hi) => Math.max(lo, Math.min(n, Math.max(lo, hi)));
+        const middleX = clamp((left + right - size.width) / 2, margin, vw - size.width - margin);
+        const middleY = clamp((top + bottom - size.height) / 2, margin, vh - size.height - margin);
+        const spaces = {
+            bottom: { left: middleX, top: bottom + gap, width: vw - margin * 2, height: vh - margin - bottom - gap },
+            top: { left: middleX, top: margin, width: vw - margin * 2, height: top - margin - gap },
+            right: { left: right + gap, top: middleY, width: vw - margin - right - gap, height: vh - margin * 2 },
+            left: { left: margin, top: middleY, width: left - margin - gap, height: vh - margin * 2 },
+        };
+        const order = [...new Set([preferred, 'bottom', 'top', 'right', 'left'])].filter(k => spaces[k]);
+        const fits = order.find(k => spaces[k].width >= size.width && spaces[k].height >= size.height);
+        // En un teléfono la tarjeta puede reducir su cuerpo, con pie y botones siempre visibles.
+        const compact = order.filter(k => spaces[k].width >= size.width && spaces[k].height >= 180)
+            .sort((a, b) => spaces[b].height - spaces[a].height)[0];
+        const side = fits || compact;
+        if (side) {
+            const space = spaces[side];
+            const height = Math.min(size.height, space.height);
+            return {
+                left: side === 'left' ? left - size.width - gap : space.left,
+                top: side === 'top' ? top - height - gap : space.top,
+                maxHeight: space.height, side,
+            };
+        }
+        // Destinos que ocupan toda la pantalla: no fingir que existe espacio lateral.
+        return { left: middleX, top: clamp(bottom + gap, margin, vh - size.height - margin), maxHeight: vh - margin * 2, side: 'overlap' };
+    }
+
+    _positionGuideCard(step) {
+        const card = document.getElementById('guide-card');
+        const target = this._guideTargetEl;
+        if (!card || !target) return;
+        const rect = target.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const pad = 8;
+        const box = { x: Math.max(2, rect.left - pad), y: Math.max(2, rect.top - pad),
+            width: Math.max(0, Math.min(vw - 2, rect.right + pad) - Math.max(2, rect.left - pad)),
+            height: Math.max(0, Math.min(vh - 2, rect.bottom + pad) - Math.max(2, rect.top - pad)) };
+        for (const id of ['guide-cutout', 'guide-ring']) {
+            const node = document.getElementById(id);
+            if (node) for (const [key, value] of Object.entries(box)) node.setAttribute(key, String(value));
+        }
+        // Medir siempre con el techo del viewport, no con el espacio del último repintado.
+        // Si se mide la tarjeta ya encogida, el observador puede alternar entre dos lados.
+        card.style.maxHeight = 'calc(100vh - 24px)';
+        const size = { width: card.offsetWidth, height: card.offsetHeight };
+        const placement = this._guidePlacement(rect, size, { width: vw, height: vh }, step.position);
+        card.style.maxHeight = `${Math.max(180, placement.maxHeight)}px`;
+        card.style.left = `${placement.left}px`;
+        card.style.top = `${placement.top}px`;
     }
 }
 

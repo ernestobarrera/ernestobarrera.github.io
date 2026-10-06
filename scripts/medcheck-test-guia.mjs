@@ -53,7 +53,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 
 await test('todos los pasos tienen acciones reconocidas y contenido', () => {
     const { app } = setup();
-    const types = new Set(['view', 'modal', 'modalTab', 'profileSection', 'searchResults', 'modalList', 'indicationAi']);
+    const types = new Set(['view', 'modal', 'modalTab', 'profileSection', 'searchResults', 'modalList', 'indicationAi', 'evidence51']);
     for (const tour of Object.values(app._guideTours())) {
         assert.ok(tour.steps.length && tour.label && tour.desc);
         for (const step of tour.steps) {
@@ -223,6 +223,61 @@ await test('siguiente repetido: solo una transición mientras la acción está p
     release(); await pending; assert.equal(app._guideBusy, false);
 });
 
+await test('colocación: deja la caja de Buscar visible en un portátil', () => {
+    const { app } = setup();
+    const p = app._guidePlacement({ left: 24, top: 201, right: 435, bottom: 257 }, { width: 420, height: 500 }, { width: 1280, height: 720 });
+    assert.equal(p.side, 'right'); assert.ok(p.left > 435);
+    assert.ok(p.top >= 12 && p.top + 500 <= 708);
+});
+await test('colocación: en móvil reduce la tarjeta bajo la búsqueda sin taparla', () => {
+    const { app } = setup();
+    const p = app._guidePlacement({ left: 24, top: 201, right: 351, bottom: 257 }, { width: 351, height: 520 }, { width: 375, height: 720 });
+    assert.equal(p.side, 'bottom'); assert.equal(p.top, 273);
+    assert.equal(p.maxHeight, 435); assert.ok(p.top + p.maxHeight <= 708);
+});
+await test('colocación: usa el espacio a la izquierda de una ficha lateral', () => {
+    const { app } = setup();
+    const p = app._guidePlacement({ left: 640, top: 24, right: 1256, bottom: 500 }, { width: 420, height: 400 }, { width: 1280, height: 720 });
+    assert.equal(p.side, 'left'); assert.ok(p.left + 420 < 640);
+});
+await test('colocación: prueba arriba antes de limitar un desbordamiento inferior', () => {
+    const { app } = setup();
+    const p = app._guidePlacement({ left: 100, top: 520, right: 380, bottom: 555 }, { width: 420, height: 350 }, { width: 600, height: 720 });
+    assert.equal(p.side, 'top'); assert.equal(p.top + 350, 504);
+});
+await test('finalizar: libera observador y escuchas de scroll y resize', () => {
+    const { app } = setup(); let disconnected = false;
+    app._guideGeometryHandler = () => {};
+    app._guideResizeObserver = { disconnect: () => { disconnected = true; } };
+    app._clearGuideLayout();
+    assert.equal(disconnected, true); assert.equal(app._guideGeometryHandler, null);
+    assert.equal(app._guideTargetEl, null);
+});
+await test('Evidencia: el paso de filtros no señala el nuevo acordeón 5.1', () => {
+    const { app } = setup();
+    const tour = app._guideTours().evidence;
+    assert.equal(tour.steps[0].target, '#ev51 .ev51-summary');
+    assert.equal(tour.steps.find(s => /Combinar filtros/.test(s.title)).target, '#tab-evidence .evidence-filter-row');
+    assert.equal(app._guideTours().core.steps[1].target, '#search-input');
+});
+await test('5.1: abre el acordeón real y espera su carga antes de señalar las medidas', async () => {
+    const { app } = setup(); const details = { open: false, dataset: {} }; let loads = 0;
+    elements.set('ev51', details); app._guideStepNotice = '';
+    app._ensureGuideModal = async () => true; app._selectGuideModalTab = async () => true;
+    app._cargarFT51 = async (_, d) => { assert.equal(d.open, true); loads++; d.dataset.estado = 'listo'; };
+    await app._runGuideStepAction({ action: { type: 'evidence51' } });
+    await app._runGuideStepAction({ action: { type: 'evidence51' } });
+    assert.equal(loads, 1);
+});
+await test('repintado: medir una tarjeta encogida no alterna su colocación', () => {
+    const { app } = setup();
+    const card = { style: { maxHeight: '180px' }, offsetWidth: 420,
+        get offsetHeight() { return this.style.maxHeight.startsWith('calc') ? 460 : parseFloat(this.style.maxHeight); } };
+    elements.set('guide-card', card);
+    app._guideTargetEl = { getBoundingClientRect: () => ({ left: 12, right: 1268, top: 350, bottom: 400 }) };
+    app._positionGuideCard({}); const first = { ...card.style };
+    app._positionGuideCard({}); assert.deepEqual(card.style, first);
+});
 console.log(`\n${passed} regresiones de guía verificadas (sin red).`);
 const tours = Object.values(Object.create(App.prototype)._guideTours());
 console.log(`${tours.length} recorridos · ${tours.reduce((sum, tour) => sum + tour.steps.length, 0)} pasos.`);
