@@ -21254,27 +21254,36 @@ ${ftFechaDocsHtml}
             },
             alerts: {
                 label: 'Alertas',
-                desc: 'Notas de seguridad y farmacovigilancia de la AEMPS.',
+                desc: 'Cambios recientes del registro de CIMA, y dónde están las notas de seguridad.',
                 icon: 'fa-bell',
                 view: 'alerts',
                 steps: [
                     {
+                        // La vista sirve `registroCambios` de CIMA —altas, bajas y modificaciones de
+                        // los últimos 7 días—, no notas de farmacovigilancia. El texto anterior
+                        // prometía la nota oficial de la AEMPS sobre una pantalla que no la tiene.
                         target: '.nav-tab[data-view="alerts"]',
-                        title: 'Seguridad oficial',
+                        title: 'Qué recoge esta vista',
                         icon: 'fa-bell',
                         body: `
-                            <p>Reúne las <span class="guide-highlight">comunicaciones oficiales de seguridad</span> de la AEMPS —notas informativas de farmacovigilancia— ligadas a medicamentos.</p>
-                            <p class="guide-case"><strong>Caso</strong>Un paciente te dice que ha leído algo en prensa sobre su fármaco. Aquí está la nota oficial, con fecha, para contestarle con la fuente y no con la impresión.</p>
+                            <p>Lista las <span class="guide-highlight">altas, bajas y modificaciones</span> que el registro de cambios de CIMA ha comunicado en los últimos 7 días. Es movimiento del registro: un cambio puede ser de ficha, de comercialización o administrativo, y no supone por sí mismo un problema de seguridad.</p>
+                            <p>Las <strong>notas informativas de farmacovigilancia</strong> de la AEMPS no están en esta lista: aparecen en la pestaña <span class="guide-key">Alertas AEMPS</span> de cada ficha, y solo en los medicamentos que tienen alguna.</p>
+                            <p class="guide-case"><strong>Caso</strong>Una presentación que ayer estaba deja de aparecer: aquí ves si se ha dado de baja y cuándo. Para saber si además hay una nota de seguridad, abre su ficha.</p>
                         `,
                         position: 'bottom',
                     },
                     {
-                        target: '.modal-tab[data-tab="alerts"]',
+                        // Sin destino ni acción a propósito. Con acción `modalTab` el paso abría una
+                        // ficha cualquiera, la pestaña no existía —solo se dibuja si el medicamento
+                        // tiene notas— y el recorrido terminaba con un aviso de indisponibilidad más
+                        // un toast de error. Comprobado el 6/10/2026 a 375 y 1280 px: fallaba en las
+                        // dos. El paso explica dónde está la pestaña, que es lo que sí puede sostener.
+                        target: null,
                         title: 'En cada ficha',
                         icon: 'fa-exclamation-circle',
-                        action: { type: 'modalTab', tab: 'alerts' },
                         body: `
-                            <p>Dentro de la ficha, la pestaña Alertas muestra solo las notas que afectan a ese medicamento; los que tienen notas se marcan en los listados con el distintivo <span class="guide-highlight">Alertas AEMPS</span>.</p>
+                            <p>Dentro de la ficha, la pestaña <span class="guide-key">Alertas AEMPS</span> muestra solo las notas que afectan a ese medicamento; los que tienen notas se marcan en los listados con ese mismo distintivo.</p>
+                            <p>La pestaña aparece únicamente cuando hay notas publicadas. Que no aparezca no acredita ausencia de riesgo: solo que CIMA no devuelve notas para ese registro.</p>
                         `,
                     },
                 ],
@@ -23717,7 +23726,7 @@ ${ftFechaDocsHtml}
             window.addEventListener?.('resize', this._guideGeometryHandler);
             document.addEventListener('scroll', this._guideGeometryHandler, true);
             if (typeof ResizeObserver !== 'undefined') {
-                this._guideResizeObserver = new ResizeObserver(this._guideGeometryHandler);
+                this._guideResizeObserver = new ResizeObserver(() => this._onGuideResize());
                 this._guideResizeObserver.observe(targetEl);
                 this._guideResizeObserver.observe(card);
             }
@@ -23745,11 +23754,28 @@ ${ftFechaDocsHtml}
         });
     }
 
+    // El observador vigila la tarjeta además del destino, y recolocar cambia su alto: hacerlo
+    // DENTRO del callback deja notificaciones sin entregar y Chrome emite «ResizeObserver loop
+    // completed with undelivered notifications». Medido el 6/10/2026 en Chrome real: salía en 7
+    // de los 14 recorridos a 375 px. Diferir un frame saca la escritura del ciclo de entrega del
+    // observador y conserva el recálculo; el filtro evita encadenar frames mientras hay uno vivo.
+    _onGuideResize() {
+        if (this._guideResizeFrame) return;
+        this._guideResizeFrame = requestAnimationFrame(() => {
+            this._guideResizeFrame = 0;
+            this._guideGeometryHandler?.();
+        });
+    }
+
     _clearGuideLayout() {
         if (this._guideGeometryHandler) {
             window.removeEventListener?.('resize', this._guideGeometryHandler);
             document.removeEventListener('scroll', this._guideGeometryHandler, true);
         }
+        if (this._guideResizeFrame && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(this._guideResizeFrame);
+        }
+        this._guideResizeFrame = 0;
         this._guideResizeObserver?.disconnect();
         this._guideResizeObserver = null;
         this._guideGeometryHandler = null;

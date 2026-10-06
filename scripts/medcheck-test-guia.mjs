@@ -26,9 +26,14 @@ const document = {
     querySelector: q => (queries.get(q) || [])[0] || null,
     querySelectorAll: q => queries.get(q) || [],
 };
+const frames = [];
 const App = runInNewContext(`${src}\nMedCheckApp;`, {
     document, window: { innerWidth: 1280, innerHeight: 800 },
-    setTimeout: fn => { timers.push(fn); }, requestAnimationFrame() {},
+    setTimeout: fn => { timers.push(fn); },
+    // Devuelve un identificador truthy: el filtro de reentrada del observador de tamaño lo usa
+    // para no encadenar frames, y con un `rAF` que devolvía `undefined` ese filtro no se probaba.
+    requestAnimationFrame: fn => frames.push(fn),
+    cancelAnimationFrame: id => { frames[id - 1] = null; },
 });
 let passed = 0;
 async function test(name, body) {
@@ -37,7 +42,7 @@ async function test(name, body) {
     console.log(`✓ ${name}`);
 }
 function setup() {
-    elements.clear(); queries.clear(); timers.length = 0;
+    elements.clear(); queries.clear(); timers.length = 0; frames.length = 0;
     const app = Object.create(App.prototype);
     app.guideTour = 'core'; app.currentView = 'search'; app.guideStep = 0;
     app.modal = { classList: classList('hidden') };
@@ -277,6 +282,30 @@ await test('repintado: medir una tarjeta encogida no alterna su colocación', ()
     app._guideTargetEl = { getBoundingClientRect: () => ({ left: 12, right: 1268, top: 350, bottom: 400 }) };
     app._positionGuideCard({}); const first = { ...card.style };
     app._positionGuideCard({}); assert.deepEqual(card.style, first);
+});
+await test('tamaño: el observador difiere la recolocación, no la hace en su propio callback', () => {
+    const { app } = setup(); let recolocadas = 0;
+    app._guideGeometryHandler = () => { recolocadas++; };
+    app._onGuideResize();
+    // Dentro del callback no se toca el layout: si se tocara, el alto de la tarjeta cambiaría
+    // durante la entrega y Chrome registraría «ResizeObserver loop».
+    assert.equal(recolocadas, 0);
+    assert.equal(frames.length, 1);
+    app._onGuideResize(); app._onGuideResize();
+    assert.equal(frames.length, 1, 'con un frame vivo no se encadenan más');
+    frames[0]();
+    assert.equal(recolocadas, 1);
+    app._onGuideResize();
+    assert.equal(frames.length, 2, 'consumido el frame, el siguiente cambio vuelve a programar');
+});
+await test('tamaño: terminar cancela el frame pendiente y no recoloca después', () => {
+    const { app } = setup(); let recolocadas = 0;
+    app._guideGeometryHandler = () => { recolocadas++; };
+    app._onGuideResize();
+    app._clearGuideLayout();
+    assert.equal(app._guideResizeFrame, 0);
+    assert.equal(frames[0], null);
+    assert.equal(recolocadas, 0);
 });
 console.log(`\n${passed} regresiones de guía verificadas (sin red).`);
 const tours = Object.values(Object.create(App.prototype)._guideTours());
