@@ -4217,8 +4217,13 @@ class CimaAPI {
      * Devuelve { items: [{nreg, n, atc, biom: [{biomarcador, genotipo, clase, secciones_ft, cartera_sns}]}], meta }
      */
     async getPgxAll() {
-        const KEY = 'medcheck_pgx_all_v1';
+        // v2 (2026-10-08): el dato de KV se republicó con las entidades XML decodificadas
+        // («c.521T&gt;C» → «c.521T>C»). Con la clave anterior, quien hubiera abierto la vista PGx
+        // en las últimas 24 h seguía viendo los `&gt;` y el buscador no encontraba las variantes.
+        const KEY = 'medcheck_pgx_all_v2';
         const TTL_MS = 24 * 3600 * 1000;
+        // La v1 ocupa ~1,2 MB del cupo de localStorage (~5 MB): no dejarla huérfana.
+        try { localStorage.removeItem('medcheck_pgx_all_v1'); } catch (_) {}
         try {
             const cached = JSON.parse(localStorage.getItem(KEY) || 'null');
             if (cached && (Date.now() - cached.t) < TTL_MS && Array.isArray(cached.items)) {
