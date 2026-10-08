@@ -984,6 +984,48 @@ body {
     }
 }
 
+/* Solo desde 1024 px: el panel mide al menos 650 px por defecto y, por debajo, a la página le
+   quedan menos de ~370 px; la cabecera se apilaba en una columna más alta que la pantalla y
+   aun así no cabía (medido a 800×700: 766 px de alto). Ahí se queda como estaba. Y si el panel
+   se ensancha a mano, la cabecera nunca baja de 360 px: se prefiere que algo quede debajo del
+   panel a que la cabecera se convierta en una tira. */
+@media (min-width: 1024px) {
+    /* Cabecera y navegación: también se apartan del panel, pero partiéndose en líneas, no
+       desplazándose. La nota de `--flyout-ancho` descartó apartar la página ENTERA porque la
+       navegación (una sola fila con `overflow-x: auto`) sacaba barra horizontal y escondía
+       pestañas. Aquí no se aparta el layout, solo estas dos franjas, y se les permite bajar
+       de línea: el contexto clínico (Disfagia/sonda incluida) y las pestañas quedaban debajo
+       del panel, visibles a medias e inalcanzables. Lo vio Ernesto el 2026-10-08 con la ficha
+       abierta a 1183 px. */
+    body:has(#med-modal:not(.hidden)) .app-header {
+        padding-right: min(calc(var(--flyout-ancho) + var(--space-md)), calc(100% - 360px));
+        row-gap: var(--space-sm);
+    }
+
+    /* El contexto baja a su propia fila bajo la marca: al lado de ella solo le quedaban
+       ~250 px y los botones se partían de dos en dos. Medido a 1183×721: cabecera + navegación
+       pasan de 392 a 335 px de alto, y de 490 a 405 a 1024×700. */
+    body:has(#med-modal:not(.hidden)) .patient-context {
+        flex-basis: 100%;
+    }
+
+    body:has(#med-modal:not(.hidden)) .context-actions {
+        margin-left: 0;
+    }
+
+    body:has(#med-modal:not(.hidden)) .app-nav {
+        padding-right: min(calc(var(--flyout-ancho) + var(--space-md)), calc(100% - 360px));
+        flex-wrap: wrap;
+        overflow-x: visible;
+        row-gap: 2px;
+    }
+
+    body:has(#med-modal:not(.hidden)) .app-nav .nav-tab {
+        padding: 0.45rem 0.7rem;
+        font-size: 0.85rem;
+    }
+}
+
 /* Producto abierto en el panel de ficha: al comparar, la lista dice cuál se está leyendo. */
 .result-card.result-card--en-panel,
 .result-card.result-card--en-panel:hover {
@@ -11956,6 +11998,10 @@ a.evidence-reec-chip--link:focus-visible i {
     justify-content: space-between;
     padding: 16px 24px 20px;
     gap: 12px;
+    /* Con 15 pasos los puntos ocupan ~200 px y Saltar + ← + Siguiente otros ~245: no caben en
+       los 372 útiles de una tarjeta de 420. Sin partir línea, «Siguiente» se encogía y quedaba
+       cortado por el borde (`overflow: hidden` de la tarjeta). Lo vio Ernesto el 2026-10-08. */
+    flex-wrap: wrap;
 }
 
 /* Progress dots */
@@ -11989,10 +12035,13 @@ a.evidence-reec-chip--link:focus-visible i {
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 .guide-btn {
     appearance: none;
+    white-space: nowrap;
     border: none;
     border-radius: 12px;
     padding: 9px 18px;
