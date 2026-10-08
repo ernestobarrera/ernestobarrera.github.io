@@ -20,6 +20,14 @@ const classList = (...initial) => {
     const values = new Set(initial);
     return { contains: v => values.has(v), add: v => values.add(v), remove: v => values.delete(v) };
 };
+// Un DOMRect real expone left/top/right/bottom/width/height como getters de su PROTOTIPO, no
+// como propiedades propias del objeto. `{ ...rect }` o `Object.assign({}, rect)` los pierde en
+// silencio (quedan `undefined`): así se coló el bug del 8/10/2026, invisible con un objeto
+// literal de prueba. Este helper replica esa forma para que la regresión lo detecte.
+const domRectProto = { get left() { return this._l; }, get top() { return this._t; },
+    get right() { return this._r; }, get bottom() { return this._b; } };
+const domRect = ({ left, top, right, bottom }) =>
+    Object.assign(Object.create(domRectProto), { _l: left, _t: top, _r: right, _b: bottom });
 const document = {
     addEventListener() {}, removeEventListener() {},
     getElementById: id => elements.get(id) || null,
@@ -249,6 +257,84 @@ await test('colocación: prueba arriba antes de limitar un desbordamiento inferi
     const { app } = setup();
     const p = app._guidePlacement({ left: 100, top: 520, right: 380, bottom: 555 }, { width: 420, height: 350 }, { width: 600, height: 720 });
     assert.equal(p.side, 'top'); assert.equal(p.top + 350, 504);
+});
+// `box` lo construye un método de la clase evaluada en el contexto vm: aunque sus campos
+// coincidan uno a uno con un literal del módulo, su prototipo es el del otro realm y
+// `assert.deepEqual` lo rechaza («same structure but are not reference-equal»). Se compara
+// campo a campo, como ya hace el resto de pruebas de colocación con sus objetos devueltos.
+const sameBox = (box, expected) => {
+    for (const k of ['x', 'y', 'width', 'height']) assert.equal(box[k], expected[k], k);
+};
+await test('ficha abierta: oscurecer solo el cajón, no la página de detrás', () => {
+    const { app } = setup();
+    app.modal.classList.remove('hidden');
+    const panel = { getBoundingClientRect: () => ({ left: 565, top: 0, width: 618, height: 721 }),
+        contains: el => el === target };
+    app.modal.querySelector = sel => (sel === '.modal-content' ? panel : null);
+    const target = { id: 'tab-interactions' };
+    sameBox(app._guideDarkenBox(target), { x: 565, y: 0, width: 618, height: 721 });
+});
+await test('ficha abierta pero destino fuera de ella: oscurecer toda la pantalla', () => {
+    const { app } = setup();
+    app.modal.classList.remove('hidden');
+    const panel = { getBoundingClientRect: () => ({ left: 565, top: 0, width: 618, height: 721 }), contains: () => false };
+    app.modal.querySelector = () => panel;
+    sameBox(app._guideDarkenBox({ id: 'disfagia-toggle' }), { x: 0, y: 0, width: 1280, height: 800 });
+});
+await test('sin ficha abierta: oscurecer toda la pantalla como siempre', () => {
+    const { app } = setup(); // app.modal sigue 'hidden' por defecto
+    sameBox(app._guideDarkenBox({ id: 'cualquiera' }), { x: 0, y: 0, width: 1280, height: 800 });
+});
+await test('colocación dentro de la ficha: por defecto a la izquierda, no sobre sus propias pestañas', () => {
+    const { app } = setup();
+    app.modal.classList.remove('hidden');
+    // `getBoundingClientRect` real: left/top/right/bottom en el prototipo, no propiedades
+    // propias. Con un objeto literal de prueba este caso no habría detectado el bug del
+    // 8/10/2026 (el spread «{ ...rect, left }» de la implementación los perdía en silencio).
+    const target = { id: 'tab-interactions', getBoundingClientRect: () => domRect({ left: 845, top: 170, right: 960, bottom: 206 }) };
+    const panel = { getBoundingClientRect: () => ({ left: 565, top: 0, width: 618, height: 721 }), contains: el => el === target };
+    app.modal.querySelector = () => panel;
+    const card = { style: {}, offsetWidth: 420, offsetHeight: 400 };
+    elements.set('guide-card', card);
+    app._guideTargetEl = target;
+    // Sin `position` explícito: antes caía en 'bottom' y tapaba la segunda fila de pestañas de
+    // la ficha (Evidencia, Financiación, Consultar IA). Ahora usa el hueco real a la izquierda
+    // del cajón, que en una ficha (máximo 650px) siempre existe en escritorio.
+    app._positionGuideCard({});
+    assert.ok(parseFloat(card.style.left) + 420 <= 565, 'la tarjeta no invade el cajón');
+    assert.ok(!Number.isNaN(parseFloat(card.style.top)), 'el top no debe quedar NaN');
+});
+await test('colocación dentro de la ficha: un `position` explícito del paso se respeta', () => {
+    const { app } = setup();
+    app.modal.classList.remove('hidden');
+    const target = { id: 'tab-interactions', getBoundingClientRect: () => domRect({ left: 845, top: 170, right: 960, bottom: 206 }) };
+    const panel = { getBoundingClientRect: () => ({ left: 565, top: 0, width: 618, height: 721 }), contains: el => el === target };
+    app.modal.querySelector = () => panel;
+    const card = { style: {}, offsetWidth: 420, offsetHeight: 400 };
+    elements.set('guide-card', card);
+    app._guideTargetEl = target;
+    app._positionGuideCard({ position: 'bottom' });
+    assert.ok(parseFloat(card.style.top) > 206, 'se coloca debajo, como pedía el paso');
+});
+await test('colocación dentro de una ficha sin hueco a la izquierda: no arrastra NaN y no cae sobre el destino', () => {
+    const { app } = setup();
+    app.modal.classList.remove('hidden');
+    // El entorno de pruebas fija la ventana en 1280×800 (no hay forma de simular 375 px aquí),
+    // pero `scoped.left = 0` basta para forzar lo mismo que en móvil: 'left' no cabe (hueco
+    // negativo) y el código prueba 'bottom'/'top'/'right'. Esas tres dependían de top/right/bottom
+    // del DOMRect, justo los campos que el spread perdía — con el bug, SIEMPRE caían en el
+    // "overlap" final (la tarjeta tapando su propio destino) en cualquier paso dentro de la ficha
+    // sin margen lateral, que es exactamente el caso real de la ficha en un móvil a 375 px.
+    const target = { id: 'tab-posology', getBoundingClientRect: () => domRect({ left: 242, top: 202, right: 314, bottom: 227 }) };
+    const panel = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 314, height: 800 }), contains: el => el === target };
+    app.modal.querySelector = () => panel;
+    const card = { style: {}, offsetWidth: 351, offsetHeight: 497 };
+    elements.set('guide-card', card);
+    app._guideTargetEl = target;
+    app._positionGuideCard({});
+    const top = parseFloat(card.style.top);
+    assert.ok(!Number.isNaN(top), 'el top no debe quedar NaN');
+    assert.ok(top >= 227 + 16 - 1, `debe quedar debajo del destino, no sobre él (top=${top})`);
 });
 await test('finalizar: libera observador y escuchas de scroll y resize', () => {
     const { app } = setup(); let disconnected = false;

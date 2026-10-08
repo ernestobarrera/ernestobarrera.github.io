@@ -23670,6 +23670,13 @@ ${ftFechaDocsHtml}
             const ry = targetRect.y - pad;
             const rw = targetRect.width + pad * 2;
             const rh = targetRect.height + pad * 2;
+            // Si el destino vive dentro de la ficha abierta, oscurecer solo la ficha. Su propio
+            // fondo (`.modal-overlay`, rgba(0,0,0,0.6) + blur) ya atenúa la página de detrás; sumar
+            // el oscurecido de pantalla completa del tour dejaba casi negros el contexto clínico,
+            // los filtros y la navegación a la izquierda del cajón — visibles pero inservibles.
+            // Hallado el 8/10/2026 con una captura real a 1183 px (la ficha mide 650px como máximo,
+            // no ocupa todo el ancho).
+            const darkBox = this._guideDarkenBox(targetEl);
             backdropSVG = `
                 <svg class="guide-backdrop" width="100%" height="100%">
                     <defs>
@@ -23678,7 +23685,8 @@ ${ftFechaDocsHtml}
                             <rect id="guide-cutout" x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="12" fill="black"/>
                         </mask>
                     </defs>
-                    <rect width="100%" height="100%" fill="rgba(0,0,0,0.65)" mask="url(#guide-mask)"/>
+                    <rect id="guide-darken" x="${darkBox.x}" y="${darkBox.y}" width="${darkBox.width}" height="${darkBox.height}"
+                          fill="rgba(0,0,0,0.65)" mask="url(#guide-mask)"/>
                     <rect id="guide-ring" x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="12"
                           fill="none" stroke="#38bdf8" stroke-width="3"/>
                 </svg>
@@ -23784,7 +23792,13 @@ ${ftFechaDocsHtml}
 
     // Cuatro espacios posibles. Elegir antes de limitar al viewport: limitar primero
     // hacía imposible detectar el desbordamiento y colocaba la tarjeta sobre el destino.
-    _guidePlacement(rect, size, viewport, preferred = 'bottom') {
+    // `centerRect` solo mueve el centrado horizontal de "arriba"/"abajo" (`middleX`); por
+    // defecto es el propio `rect`, igual que siempre. Dentro de una ficha abierta se le pasa el
+    // destino real aunque `rect.left` se haya forzado al borde del cajón para medir el hueco de
+    // "izquierda" — si no, ese mismo borde se colaba en el centrado de "abajo" y en móvil (donde
+    // la ficha ocupa toda la pantalla y "izquierda" nunca cabe) la tarjeta aparecía descentrada
+    // respecto al destino. Hallado el 8/10/2026 al generalizar el hueco lateral a 1183 px.
+    _guidePlacement(rect, size, viewport, preferred = 'bottom', centerRect = rect) {
         const margin = 12, gap = 16;
         const { width: vw, height: vh } = viewport;
         const left = Math.max(margin, rect.left);
@@ -23792,7 +23806,9 @@ ${ftFechaDocsHtml}
         const top = Math.max(margin, rect.top);
         const bottom = Math.min(vh - margin, rect.bottom);
         const clamp = (n, lo, hi) => Math.max(lo, Math.min(n, Math.max(lo, hi)));
-        const middleX = clamp((left + right - size.width) / 2, margin, vw - size.width - margin);
+        const cLeft = Math.max(margin, centerRect.left);
+        const cRight = Math.min(vw - margin, centerRect.right);
+        const middleX = clamp((cLeft + cRight - size.width) / 2, margin, vw - size.width - margin);
         const middleY = clamp((top + bottom - size.height) / 2, margin, vh - size.height - margin);
         const spaces = {
             bottom: { left: middleX, top: bottom + gap, width: vw - margin * 2, height: vh - margin - bottom - gap },
@@ -23819,6 +23835,22 @@ ${ftFechaDocsHtml}
         return { left: middleX, top: clamp(bottom + gap, margin, vh - size.height - margin), maxHeight: vh - margin * 2, side: 'overlap' };
     }
 
+    // Ficha abierta y el destino vive dentro: devuelve su rect (el cajón, no la página). `null`
+    // en cualquier otro caso. Un único punto de verdad para el oscurecido y para la colocación,
+    // que antes decidían cada uno por su cuenta y podían quedar desincronizados.
+    _guideModalScopeRect(targetEl) {
+        if (!targetEl || !this.modal || this.modal.classList.contains('hidden')) return null;
+        const panel = this.modal.querySelector('.modal-content');
+        if (!panel || !panel.contains(targetEl)) return null;
+        return panel.getBoundingClientRect();
+    }
+
+    _guideDarkenBox(targetEl) {
+        const scoped = this._guideModalScopeRect(targetEl);
+        if (scoped) return { x: scoped.left, y: scoped.top, width: scoped.width, height: scoped.height };
+        return { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
+    }
+
     _positionGuideCard(step) {
         const card = document.getElementById('guide-card');
         const target = this._guideTargetEl;
@@ -23833,11 +23865,35 @@ ${ftFechaDocsHtml}
             const node = document.getElementById(id);
             if (node) for (const [key, value] of Object.entries(box)) node.setAttribute(key, String(value));
         }
+        const scopeRect = this._guideModalScopeRect(target);
+        const darkenNode = document.getElementById('guide-darken');
+        if (darkenNode) {
+            const darkBox = this._guideDarkenBox(target);
+            for (const [key, value] of Object.entries(darkBox)) darkenNode.setAttribute(key, String(value));
+        }
         // Medir siempre con el techo del viewport, no con el espacio del último repintado.
         // Si se mide la tarjeta ya encogida, el observador puede alternar entre dos lados.
         card.style.maxHeight = 'calc(100vh - 24px)';
         const size = { width: card.offsetWidth, height: card.offsetHeight };
-        const placement = this._guidePlacement(rect, size, { width: vw, height: vh }, step.position);
+        // Dentro de la ficha, "abajo" cae sobre su propia segunda fila de pestañas y el cuerpo de
+        // texto: no es hueco libre, es otro control del cajón. A la izquierda, fuera del cajón
+        // (máximo 650px de ancho), siempre hay sitio real. En móvil el cajón ocupa toda la
+        // pantalla, ese hueco mide ~0 y `_guidePlacement` cae sola al orden de siempre.
+        // Hallado el 8/10/2026: la tarjeta tapaba Evidencia/Financiación/Consultar IA al explicar
+        // Interacciones, en 1183 px. El límite izquierdo del hueco es el borde del CAJÓN
+        // (`scopeRect.left`), no el del destino: el destino está dentro del cajón, y medir desde
+        // ahí dejaba la tarjeta invadiendo las pestañas anteriores a la señalada.
+        const preferred = step.position || (scopeRect ? 'left' : 'bottom');
+        // `rect` es el DOMRect real de getBoundingClientRect(): top/right/bottom viven como
+        // getters de su prototipo, no como propiedades propias, y «{ ...rect, left: x }» los
+        // pierde en silencio (quedan `undefined` → NaN en cuanto se operan). En escritorio no se
+        // notaba porque el lado 'left' nunca llega a necesitarlos; en móvil, donde 'left' no cabe
+        // y se prueba 'bottom', arrastraba NaN a los cuatro huecos y la tarjeta caía siempre en el
+        // "overlap" final. Hallado el 8/10/2026 con los recorridos dentro de la ficha a 375 px.
+        const placementRect = scopeRect
+            ? { left: scopeRect.left, top: rect.top, right: rect.right, bottom: rect.bottom }
+            : rect;
+        const placement = this._guidePlacement(placementRect, size, { width: vw, height: vh }, preferred, rect);
         card.style.maxHeight = `${Math.max(180, placement.maxHeight)}px`;
         card.style.left = `${placement.left}px`;
         card.style.top = `${placement.top}px`;
