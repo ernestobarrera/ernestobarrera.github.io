@@ -5,5 +5,6 @@
   { "drug": "IRINOTECAN",    "biomarcador": "UGT1A1",  "genotipo_substr": null,             "min_presentaciones": 1 },
   { "drug": "ABACAVIR",      "biomarcador": "HLA-B",   "genotipo_substr": "HLA-B*57:01",    "min_presentaciones": 1 },
   { "drug": "CLOPIDOGREL",   "biomarcador": "CYP2C19", "genotipo_substr": null,             "min_presentaciones": 1 },
-  { "drug": "CODEINA",       "biomarcador": "CYP2D6",  "genotipo_substr": null,             "min_presentaciones": 1, "atc_prefix": "R05DA04" }
+  { "drug": "CODEINA",       "biomarcador": "CYP2D6",  "genotipo_substr": null,             "min_presentaciones": 1, "atc_prefix": "R05DA04" },
+  { "drug": "ATORVASTATINA", "biomarcador": "SLCO1B1", "genotipo_substr": "c.521T>C",       "min_presentaciones": 1 }
 ]

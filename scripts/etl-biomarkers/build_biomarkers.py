@@ -71,9 +71,55 @@ def read_xml_from_zip(zip_bytes: bytes) -> tuple[str, dict[str, str]]:
             return f.read().decode("utf-8"), meta
 
 
+# El XML se lee con expresiones regulares, no con un parser, así que nadie decodifica sus
+# entidades: `c.521T>C` llega como `c.521T&gt;C`, y la app, que escapa al pintar, mostraba el
+# `&gt;` literal. Medido el 2026-10-08: 876 genotipos en 573 de 3.165 medicamentos (SLCO1B1,
+# ABCG2, MT-RNR1, CFTR, CYP2B6, VKORC1). Una sola pasada, para que `&amp;gt;` quede en `&gt;`
+# —que es lo que significa— y no en `>`. El XML de la AEMPS no usa CDATA (comprobado el mismo
+# día); si algún día lo usa, su contenido se devuelve tal cual, sin decodificar.
+_XML_ENTITY = re.compile(r"&(#[0-9]+|#x[0-9a-fA-F]+|lt|gt|amp|quot|apos);")
+_XML_NAMED = {"lt": "<", "gt": ">", "amp": "&", "quot": '"', "apos": "'"}
+
+
+def xml_text(raw: str) -> str:
+    cdata = re.fullmatch(r"\s*<!\[CDATA\[([\s\S]*)\]\]>\s*", raw)
+    if cdata:
+        return cdata.group(1).strip()
+
+    def sub(m: re.Match) -> str:
+        ref = m.group(1)
+        if ref.startswith("#x"):
+            return chr(int(ref[2:], 16))
+        if ref.startswith("#"):
+            return chr(int(ref[1:]))
+        return _XML_NAMED[ref]
+
+    return _XML_ENTITY.sub(sub, raw).strip()
+
+
 def grab(tag: str, src: str) -> str | None:
     m = re.search(rf"<{tag}>([\s\S]*?)</{tag}>", src)
-    return m.group(1).strip() if m else None
+    return xml_text(m.group(1)) if m else None
+
+
+# Cualquier `&nombre;` o `&#n;` que sobreviva en la salida es un gazapo de codificación: el
+# decodificador de arriba no lo conoce o el dato venía doblemente escapado. Se para ANTES de
+# publicar —el paso de KV del workflow no corre si este script sale distinto de 0— en vez de
+# dejar que lo encuentre un médico en la pestaña PGx, que es como se encontró este.
+_ENTITY_LEAK = re.compile(r"&(#[0-9]+|#x[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]{1,7});")
+
+
+def find_entity_leaks(obj: Any, path: str = "") -> list[str]:
+    leaks: list[str] = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            leaks += find_entity_leaks(v, f"{path}.{k}" if path else str(k))
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            leaks += find_entity_leaks(v, f"{path}[{i}]")
+    elif isinstance(obj, str) and _ENTITY_LEAK.search(obj):
+        leaks.append(f"{path}: {obj[:80]}")
+    return leaks
 
 
 def parse(xml: str) -> dict[str, Any]:
@@ -200,6 +246,14 @@ def main(argv: list[str] | None = None) -> int:
     sentinels = json.loads(sentinels_path.read_text(encoding="utf-8"))
     sentinels_ok = validate_sentinels(by_nreg, sentinels)
 
+    leaks = find_entity_leaks(by_nreg)
+    if leaks:
+        print(f"[etl] FAIL: {len(leaks)} texto(s) con entidades sin decodificar; no se publica:", file=sys.stderr)
+        for line in leaks[:10]:
+            print(f"  {line}", file=sys.stderr)
+    else:
+        print("[etl] entidades: OK (ningún texto con &...; sin decodificar)", file=sys.stderr)
+
     out = {
         "meta": {
             "schema_version": SCHEMA_VERSION,
@@ -223,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[etl] json: {len(compact)/1024:.1f} KB (gzip {gz_size/1024:.1f} KB)", file=sys.stderr)
     print(f"[etl] escrito: {args.out}", file=sys.stderr)
 
-    return 0 if sentinels_ok else 2
+    return 0 if sentinels_ok and not leaks else 2
 
 
 if __name__ == "__main__":
