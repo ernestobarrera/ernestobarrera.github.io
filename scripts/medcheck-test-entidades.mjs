@@ -117,5 +117,38 @@ if (!py) {
         r.leaks_fixture.length === 2, JSON.stringify(r.leaks_fixture));
 }
 
+// ─── 3. Separador interno de la fuente en la ficha PGx ────────────────────────
+// Mismo tipo de gazapo, otra forma: el Nomenclátor separa con «|» las secciones de ficha técnica
+// de un biomarcador y la app lo pintaba («4.4 Advertencias…|5.2 Propiedades…»). Lo vio Ernesto
+// el 09/10/2026, al día siguiente del `&gt;`: el 78 % de los biomarcadores (3.050 de 3.920).
+// Se prueba la tarjeta y el texto para la IA REALES de la app, no una réplica.
+console.log('\nFicha PGx (render real de la app):');
+{
+    const { runInNewContext } = await import('node:vm');
+    const fuente = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const App = runInNewContext(`${fuente}\nMedCheckApp;`, {
+        document: { addEventListener() {}, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [] },
+        window: { innerWidth: 1280, innerHeight: 800 }, setTimeout() {}, requestAnimationFrame() {},
+    });
+    const app = Object.create(App.prototype);
+    const varias = { biomarcador: 'SLCO1B1', clase: 'Germinal', genotipo: 'c.521T>C',
+        secciones_ft: '4.4 Advertencias y precauciones especiales de empleo|5.2 Propiedades farmacocinéticas' };
+    const una = { biomarcador: 'SLCO1B1', secciones_ft: '5.2 Propiedades farmacocinéticas' };
+    const html = app._renderPgxCard(varias);
+    const prompt = app._buildPgxAiPrompt('SIMVASTATINA', 'C10AA01', [varias]);
+    check('tarjeta: ninguna «|» de la fuente llega a pantalla', !html.includes('|'), html.match(/[^>]*\|[^<]*/)?.[0]);
+    check('tarjeta: cada sección en su línea, con etiqueta en plural',
+        html.includes('Secciones FT') && html.includes('<li>4.4 Advertencias y precauciones especiales de empleo</li>')
+        && html.includes('<li>5.2 Propiedades farmacocinéticas</li>'));
+    check('tarjeta: una sola sección sigue en singular y sin lista',
+        (h => h.includes('Sección FT') && !h.includes('<ul'))(app._renderPgxCard(una)));
+    // Solo la línea de secciones: el resto del texto pide a la IA una tabla markdown, y ahí las
+    // «|» son legítimas.
+    const lineaSecciones = prompt.split('\n').find(l => l.includes('Secciones FT afectadas')) || '';
+    check('texto para la IA: secciones separadas por «; », sin «|»',
+        lineaSecciones.trim() === 'Secciones FT afectadas: 4.4 Advertencias y precauciones especiales de empleo; 5.2 Propiedades farmacocinéticas',
+        `llegó: ${lineaSecciones.trim()}`);
+}
+
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}\n`);
 process.exit(fallos === 0 ? 0 : 1);

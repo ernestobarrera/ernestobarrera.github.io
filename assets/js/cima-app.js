@@ -13296,6 +13296,14 @@ ${ftFechaDocsHtml}
         }
     }
 
+    // El Nomenclátor separa con «|» las secciones de ficha técnica de un mismo biomarcador
+    // («4.4 Advertencias…|5.2 Propiedades…»): es su separador interno, no texto, y se pintaba
+    // tal cual. Medido el 2026-10-09: 3.050 de 3.920 biomarcadores (78 %), hasta 7 secciones.
+    // El dato se deja como lo publica la AEMPS; se parte al presentarlo.
+    static _seccionesFt(texto) {
+        return String(texto || '').split('|').map(x => x.trim()).filter(Boolean);
+    }
+
     /**
      * Renderiza una tarjeta de biomarcador con enlace CPIC condicional al pie.
      * El enlace solo aparece si el biomarcador está cubierto por una guideline CPIC.
@@ -13308,6 +13316,7 @@ ${ftFechaDocsHtml}
         const bm = b.biomarcador || '';
         const tieneCpic = MedCheckApp.PGX_CPIC_GENES.has(bm);
         const textoCompleto = `${b.descripcion || ''} ${b.notas || ''}`;
+        const secciones = MedCheckApp._seccionesFt(b.secciones_ft);
         const citadoAemps = /\bCPIC\b/i.test(textoCompleto);
         const cpicLink = tieneCpic ? `
             <div class="pgx-cpic">
@@ -13324,7 +13333,7 @@ ${ftFechaDocsHtml}
                     ${partes.join(' ')}
                 </div>
                 ${b.genotipo     ? `<div class="pgx-row"><span class="pgx-label">Genotipo/Fenotipo</span><span class="pgx-value">${this._escapeHtml(b.genotipo)}</span></div>` : ''}
-                ${b.secciones_ft ? `<div class="pgx-row"><span class="pgx-label">Sección FT</span><span class="pgx-value">${this._escapeHtml(b.secciones_ft)}</span></div>` : ''}
+                ${secciones.length ? `<div class="pgx-row"><span class="pgx-label">${secciones.length > 1 ? 'Secciones FT' : 'Sección FT'}</span><span class="pgx-value">${secciones.length > 1 ? `<ul class="pgx-secciones">${secciones.map(x => `<li>${this._escapeHtml(x)}</li>`).join('')}</ul>` : this._escapeHtml(secciones[0])}</span></div>` : ''}
                 ${b.descripcion  ? `<div class="pgx-description">${this._escapeHtml(b.descripcion)}</div>` : ''}
                 ${b.notas        ? `<div class="pgx-notes"><strong>Notas:</strong> ${this._escapeHtml(b.notas)}</div>` : ''}
                 ${cpicLink}
@@ -13364,7 +13373,7 @@ ${ftFechaDocsHtml}
             return [
                 `Biomarcador ${i + 1}: ${b.biomarcador || '—'}${b.clase ? ` (clase ${b.clase})` : ''}`,
                 b.genotipo     ? `  Genotipo/fenotipo: ${b.genotipo}` : null,
-                b.secciones_ft ? `  Secciones FT afectadas: ${b.secciones_ft}` : null,
+                b.secciones_ft ? `  Secciones FT afectadas: ${MedCheckApp._seccionesFt(b.secciones_ft).join('; ')}` : null,
                 desc           ? `  Texto regulatorio AEMPS: "${desc}"` : null,
                 b.notas        ? `  Notas AEMPS (Nomenclátor de Prescripción): ${b.notas}` : null,
             ].filter(Boolean).join('\n');
