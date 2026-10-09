@@ -142,6 +142,19 @@ console.log('\nFicha PGx (render real de la app):');
         && html.includes('<li>5.2 Propiedades farmacocinéticas</li>'));
     check('tarjeta: una sola sección sigue en singular y sin lista',
         (h => h.includes('Sección FT') && !h.includes('<ul'))(app._renderPgxCard(una)));
+    // Errata HGVS de la fuente («c.521T> C», 107 descripciones de simvastatina). Lo vio Ernesto el
+    // 09/10/2026 en ALCOSIN. Se corrige al presentarla; una comparación clínica no se toca.
+    const N = s => App._normalizarHgvs(s);
+    check('HGVS: «c.521T> C» se presenta como «c.521T>C»', N('alelo c.521T> C del gen') === 'alelo c.521T>C del gen');
+    check('HGVS: también con espacio a ambos lados, posiciones negativas e intrónicas',
+        N('c.-1639G > A') === 'c.-1639G>A' && N('c.1521+5G >A') === 'c.1521+5G>A');
+    check('HGVS: una comparación clínica NO se toca («PD-L1 > 5 %», «dosis > 180 mg/m²», «> 12 semanas»)',
+        N('PD-L1 > 5 %; dosis > 180 mg/m²; (> 12 semanas); ≥ 6 a < 18 años') === 'PD-L1 > 5 %; dosis > 180 mg/m²; (> 12 semanas); ≥ 6 a < 18 años');
+    const conErrata = { ...varias, descripcion: '(4.4) Los pacientes portadores del alelo c.521T> C del gen SLCO1B1' };
+    check('tarjeta y texto para la IA presentan la variante sin el espacio',
+        app._renderPgxCard(conErrata).includes('alelo c.521T&gt;C del gen')
+        && app._buildPgxAiPrompt('SIMVASTATINA', 'C10AA01', [conErrata]).includes('alelo c.521T>C del gen'));
+
     // Solo la línea de secciones: el resto del texto pide a la IA una tabla markdown, y ahí las
     // «|» son legítimas.
     const lineaSecciones = prompt.split('\n').find(l => l.includes('Secciones FT afectadas')) || '';

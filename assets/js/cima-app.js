@@ -13304,6 +13304,15 @@ ${ftFechaDocsHtml}
         return String(texto || '').split('|').map(x => x.trim()).filter(Boolean);
     }
 
+    // Errata de la fuente en notación HGVS: la descripción de las simvastatinas dice «c.521T> C»
+    // con un espacio dentro de la variante, justo debajo del genotipo bien escrito «c.521T>C».
+    // Medido el 2026-10-09: 107 descripciones, todas esa misma; los 876 genotipos, bien. Solo se
+    // quitan espacios DENTRO de una sustitución HGVS (prefijo c./g./p., posición y bases A/C/G/T):
+    // una comparación clínica como «PD-L1 > 5 %» o «dosis > 180 mg/m²» no casa y no se toca.
+    static _normalizarHgvs(texto) {
+        return String(texto || '').replace(/\b([cgp]\.-?\*?\d+(?:[+_-]\d+)*[ACGT])\s*>\s*([ACGT])\b/g, '$1>$2');
+    }
+
     /**
      * Renderiza una tarjeta de biomarcador con enlace CPIC condicional al pie.
      * El enlace solo aparece si el biomarcador está cubierto por una guideline CPIC.
@@ -13334,8 +13343,8 @@ ${ftFechaDocsHtml}
                 </div>
                 ${b.genotipo     ? `<div class="pgx-row"><span class="pgx-label">Genotipo/Fenotipo</span><span class="pgx-value">${this._escapeHtml(b.genotipo)}</span></div>` : ''}
                 ${secciones.length ? `<div class="pgx-row"><span class="pgx-label">${secciones.length > 1 ? 'Secciones FT' : 'Sección FT'}</span><span class="pgx-value">${secciones.length > 1 ? `<ul class="pgx-secciones">${secciones.map(x => `<li>${this._escapeHtml(x)}</li>`).join('')}</ul>` : this._escapeHtml(secciones[0])}</span></div>` : ''}
-                ${b.descripcion  ? `<div class="pgx-description">${this._escapeHtml(b.descripcion)}</div>` : ''}
-                ${b.notas        ? `<div class="pgx-notes"><strong>Notas:</strong> ${this._escapeHtml(b.notas)}</div>` : ''}
+                ${b.descripcion  ? `<div class="pgx-description">${this._escapeHtml(MedCheckApp._normalizarHgvs(b.descripcion))}</div>` : ''}
+                ${b.notas        ? `<div class="pgx-notes"><strong>Notas:</strong> ${this._escapeHtml(MedCheckApp._normalizarHgvs(b.notas))}</div>` : ''}
                 ${cpicLink}
             </div>`;
     }
@@ -13369,13 +13378,14 @@ ${ftFechaDocsHtml}
     _buildPgxAiPrompt(medName, medAtc, biomList) {
         const TRUNC = 1200;
         const bloques = biomList.map((b, i) => {
-            const desc = (b.descripcion || '').length > TRUNC ? (b.descripcion || '').slice(0, TRUNC) + '…' : (b.descripcion || '');
+            const descripcion = MedCheckApp._normalizarHgvs(b.descripcion);
+            const desc = descripcion.length > TRUNC ? descripcion.slice(0, TRUNC) + '…' : descripcion;
             return [
                 `Biomarcador ${i + 1}: ${b.biomarcador || '—'}${b.clase ? ` (clase ${b.clase})` : ''}`,
                 b.genotipo     ? `  Genotipo/fenotipo: ${b.genotipo}` : null,
                 b.secciones_ft ? `  Secciones FT afectadas: ${MedCheckApp._seccionesFt(b.secciones_ft).join('; ')}` : null,
                 desc           ? `  Texto regulatorio AEMPS: "${desc}"` : null,
-                b.notas        ? `  Notas AEMPS (Nomenclátor de Prescripción): ${b.notas}` : null,
+                b.notas        ? `  Notas AEMPS (Nomenclátor de Prescripción): ${MedCheckApp._normalizarHgvs(b.notas)}` : null,
             ].filter(Boolean).join('\n');
         }).join('\n\n');
         return [
