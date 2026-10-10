@@ -10181,7 +10181,7 @@ class MedCheckApp {
                     }
                     // Utilización observada — carga diferida al pulsar la pestaña
                     if (tab.dataset.tab === 'utilizacion' && !document.getElementById('utilizacion-content')?.dataset.loaded) {
-                        this.loadUtilizacion(atc5Util, med.cpresc);
+                        this.loadUtilizacion(atc5Util, med.cpresc, med.nregistro);
                     }
                 });
             });
@@ -10190,7 +10190,7 @@ class MedCheckApp {
             if (hasCns) this._hydrateFinancingSummary(med);
 
             // Utilización si el modal se abre directamente en esa pestaña
-            if (isUtilActive) this.loadUtilizacion(atc5Util, med.cpresc);
+            if (isUtilActive) this.loadUtilizacion(atc5Util, med.cpresc, med.nregistro);
 
             // Enfoque del contexto que abrió el modal (accesos contextuales de la tarjeta).
             if (isSafetyActive) this._focusSafetyContext();
@@ -18305,11 +18305,14 @@ ${ftFechaDocsHtml}
         return null;
     }
 
-    async loadUtilizacion(atc5, cpresc) {
+    async loadUtilizacion(atc5, cpresc, nregistro) {
         const slot = document.getElementById('utilizacion-content');
         if (!slot || slot.dataset.loaded) return;
         slot.dataset.loaded = '1';
         const data = await this.api.getUtilizacionNodo(atc5);
+        // La financiación solo se pide si el código falta: es lo que explica el hueco cuando no
+        // es hospitalario. Sale del índice que la ficha ya ha cargado para su resumen.
+        if (data?.found === false) data.financiacion = await this._utilEstadoFinanciacion(nregistro);
         slot.innerHTML = this.renderUtilizacionHtml(atc5, data, cpresc);
 
         // La pestaña deja de ser una imagen fija: cada principio activo del reparto y el propio
@@ -18317,6 +18320,21 @@ ${ftFechaDocsHtml}
         // tenía vuelta, así que comparar con un hermano obligaba a empezar de cero.
         slot.querySelectorAll('[data-util-vista]').forEach(el =>
             el.addEventListener('click', () => this.irAUtilizacion(el.dataset.utilVista)));
+    }
+
+    /**
+     * Estado de financiación del medicamento (`no`, `si`, `parcial`…) leído SOLO del índice.
+     * Cualquier duda devuelve `null`, y entonces la ficha dice el texto neutro: afirmar «no
+     * financiado» sin haberlo podido leer sería inventar la causa del hueco.
+     */
+    async _utilEstadoFinanciacion(nregistro) {
+        if (!nregistro) return null;
+        try {
+            await this._loadFinancingIndex();
+            return this._financingSummaryFromIndex(nregistro)?.resumen?.estado ?? null;
+        } catch (_) {
+            return null;
+        }
     }
 
     // ─── Vista principal «Utilización» ───────────────────────────────────────
@@ -18922,39 +18940,62 @@ ${ftFechaDocsHtml}
         : ''}</p>` : '';
 
         if (d.found === false) {
-            // Tres motivos distintos para el mismo hueco. Confundirlos es el error clínico.
-            if (canal === 'H') {
-                return `<div class="util-outofscope">
-                    <span class="util-state util-state--out"><i class="fas fa-hospital"></i> Fuera del alcance de esta fuente</span>
-                    <h4>Medicamento de uso hospitalario</h4>
-                    <p>Se dispensa dentro del hospital, no en oficina de farmacia, así que esta
-                    fuente no lo ve. Su ausencia aquí
-                    <strong>no significa que se use poco</strong>.</p>
-                    ${pistaHospital}
-                    <p class="util-meta">Perímetro de esta pestaña: ${esc(d.perimetro_corto)} · ${esc(d.periodo)}</p>
-                </div>`;
-            }
-            if (canal === 'DH') {
-                return `<div class="util-outofscope">
-                    <span class="util-state util-state--out"><i class="fas fa-user-doctor"></i> Sin dato en esta fuente</span>
-                    <h4>Medicamento de diagnóstico hospitalario</h4>
-                    <p>Requiere prescripción de origen hospitalario. Puede dispensarse en oficina de
+            // Un solo bloque y UNA línea de motivo, elegida con datos y nunca supuesta. Confundir
+            // los motivos es el error clínico: el antineoplásico se leería como «no se usa».
+            //
+            // Hasta el 2026-10-10 la rama genérica conjeturaba («puede deberse a un consumo muy
+            // bajo…, o a que…»). En pivmecilinam (J01CA08) ninguna de las dos era la causa: no
+            // está financiado, y la fuente solo cuenta lo que se factura con fondos públicos.
+            //
+            // La frase de no financiado pone dos hechos juntos sin enlazarlos causalmente: la
+            // financiación es la de HOY y la tabla es de un año cerrado. Y habla del medicamento,
+            // no del principio activo, porque la financiación se lee por producto.
+            const NO_FINANCIADO = ['no', 'estudio_sin_peticion', 'sin_cobertura'];
+            const perimetro = 'esta fuente solo cuenta recetas dispensadas con cargo a fondos públicos';
+            const motivo = canal === 'H' ? {
+                icono: 'fa-hospital', estado: 'Fuera del alcance de esta fuente',
+                titulo: 'Medicamento de uso hospitalario',
+                texto: `Se dispensa dentro del hospital, no en oficina de farmacia, así que esta
+                    fuente no lo ve. Su ausencia aquí <strong>no significa que se use poco</strong>.`,
+            } : canal === 'DH' ? {
+                icono: 'fa-user-doctor', estado: 'Sin dato en esta fuente',
+                titulo: 'Medicamento de diagnóstico hospitalario',
+                texto: `Requiere prescripción de origen hospitalario. Puede dispensarse en oficina de
                     farmacia o en el hospital según la comunidad autónoma, y no figura en las tablas
-                    de ${esc(d.periodo || '')}. <strong>No debe leerse como ausencia de uso.</strong></p>
-                    ${pistaHospital}
-                    <p class="util-meta">Perímetro de esta pestaña: ${esc(d.perimetro_corto)} · ${esc(d.periodo)}</p>
-                </div>`;
-            }
+                    de ${esc(d.periodo || '')}. <strong>No debe leerse como ausencia de uso.</strong>`,
+            } : NO_FINANCIADO.includes(d.financiacion) ? {
+                icono: 'fa-circle-info', estado: 'No financiado · fuera de esta fuente',
+                titulo: `${esc(atc5)} no figura en las tablas de ${esc(d.periodo || '')}`,
+                texto: `Actualmente no está financiado por el SNS, y ${perimetro}.
+                    <strong>No debe leerse como ausencia de uso.</strong>`,
+            } : {
+                icono: 'fa-circle-info', estado: 'Sin dato en esta fuente',
+                titulo: `${esc(atc5)} no figura en las tablas de ${esc(d.periodo || '')}`,
+                texto: `${perimetro.charAt(0).toUpperCase()}${perimetro.slice(1)}. Que no figure no
+                    permite saber cuánto se usa. <strong>No debe leerse como ausencia de uso.</strong>`,
+            };
+
+            // Debajo, lo que la fuente SÍ ve: su grupo, con el mismo reparto que el resto de la
+            // capa, y la salida a la vista completa.
+            const grupoAusente = d.grupo?.miembros?.length
+                ? `<section class="util-group ${d.grupo.denominador === 'parcial' ? 'is-partial' : ''}">${this.renderUtilizacionRepartoHtml(d, d.grupo)}</section>`
+                : '';
+            const salidaAusente = d.padre ? `
+                <div class="util-tab-actions">
+                    <button class="btn btn-secondary" data-util-vista="${esc(d.padre)}">
+                        <i class="fas fa-layer-group"></i> Ver el grupo ${esc(d.padre)} completo
+                    </button>
+                </div>` : '';
+
             return `<div class="util-outofscope">
-                <span class="util-state util-state--out"><i class="fas fa-circle-info"></i> Sin dato en esta fuente</span>
-                <h4>${esc(atc5)} no figura en las tablas de ${esc(d.periodo || '')}</h4>
-                <p>Puede deberse a un consumo muy bajo en receta del SNS, o a que su dispensación
-                ocurra fuera de la oficina de farmacia. <strong>No debe leerse como ausencia de
-                uso.</strong></p>
+                <span class="util-state util-state--out"><i class="fas ${motivo.icono}"></i> ${motivo.estado}</span>
+                <h4>${motivo.titulo}</h4>
+                <p>${motivo.texto}</p>
                 ${pistaHospital}
-                <p class="util-meta">Perímetro de esta pestaña: ${esc(d.perimetro_corto)} · el
-                desglose por principio activo se publica desde ${esc(d.atc5_desde || '2025')}</p>
-            </div>`;
+                <p class="util-meta">Perímetro de esta pestaña: ${esc(d.perimetro_corto)} · ${esc(d.periodo)}</p>
+            </div>
+            ${grupoAusente}
+            ${salidaAusente}`;
         }
 
         // ── cabecera: el perímetro va SIEMPRE, nunca «España · 2025» a secas ──

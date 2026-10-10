@@ -4132,7 +4132,6 @@ class CimaAPI {
 
         const nodo = arbol.nodos[code];
         const base = { atc: code, ...arbol.meta };
-        if (!nodo) return { ...base, found: false };
 
         // Un reparto declara SIEMPRE su magnitud. Uno de dosis y uno de envases no se leen en la
         // misma escala, así que el ETL los escribe en claves excluyentes —`h` y `he`— y aquí
@@ -4187,6 +4186,17 @@ class CimaAPI {
             }
             return null;
         };
+
+        // Un código ausente casi nunca deja huérfano a su grupo: J01CA08 (pivmecilinam, no
+        // financiado) no está, pero J01CA sí, con amoxicilina y ampicilina. Se devuelve el primer
+        // antepasado que exista para que la ficha enseñe lo que la fuente SÍ ve, en vez de un
+        // hueco sin contexto. Longitudes ATC: 7 → 5 → 4 → 3 → 1.
+        if (!nodo) {
+            const ancestro = [5, 4, 3, 1].map(n => code.slice(0, n))
+                .find(c => c.length < code.length && arbol.nodos[c]) ?? null;
+            return { ...base, found: false, padre: ancestro, grupo: ancestro ? reparto(ancestro) : null };
+        }
+
         return {
             ...base,
             found: true,

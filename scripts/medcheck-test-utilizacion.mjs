@@ -393,8 +393,8 @@ console.log('\n10) medicamentos de uso hospitalario: la fuente es ciega, no inco
   ok('tolera cpresc ausente', !detecta(undefined) && !detecta(null) && !detecta(''));
 
   ok('el render recibe cpresc', /renderUtilizacionHtml\(atc5, d, cpresc\)/.test(app));
-  ok('las dos llamadas a loadUtilizacion pasan cpresc',
-    (app.match(/loadUtilizacion\(atc5Util, med\.cpresc\)/g) || []).length === 2);
+  ok('las dos llamadas a loadUtilizacion pasan cpresc y nregistro',
+    (app.match(/loadUtilizacion\(atc5Util, med\.cpresc, med\.nregistro\)/g) || []).length === 2);
 
   // Lo esencial: un hueco por canal hospitalario NO puede presentarse igual que un hueco por
   // consumo bajo. Si alguien unifica los dos mensajes, el antineoplásico se lee como «no se usa».
@@ -426,6 +426,80 @@ console.log('\n10) medicamentos de uso hospitalario: la fuente es ciega, no inco
     && /No cubre todas las vías/.test(limites));
   ok('MUTANTE: el texto no vuelve a duplicarse en los renders',
     (app.match(/Qué <em>no<\/em> dice este dato/g) || []).length === 1);
+}
+
+// ── 10 bis 0. código ausente: motivo con datos y su grupo a la vista ────────
+// Caso real (2026-10-10): pivmecilinam, J01CA08, no financiado. El aviso conjeturaba dos causas
+// y ninguna era la buena, y no enseñaba nada de lo que la fuente sí ve. Se ejecutan los métodos
+// reales, no se busca su texto: lo que importa es qué sale con cada estado.
+console.log('\n10 bis 0) código ausente: motivo elegido con datos y grupo a la vista');
+{
+  const api = readFileSync(join(RAIZ, 'assets', 'js', 'cima-api.js'), 'utf8');
+  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const metodo = (src, firma) => {
+    const i = src.indexOf(`\n    ${firma}`);
+    return src.slice(i, src.indexOf('\n    }\n', i) + 6);
+  };
+
+  // getUtilizacionNodo contra un árbol mínimo con la forma real de J01CA.
+  const arbol = {
+    meta: { periodo: '2025', perimetro_corto: 'España · recetas SNS · oficina de farmacia' },
+    nodos: {
+      J01: { n: 'Antibacterianos', niv: 2, dhd: 20, h: ['J01C'], den: 'completo' },
+      J01C: { n: 'Betalactámicos, penicilinas', niv: 3, dhd: 3.26, p: 'J01', h: ['J01CA'], den: 'completo' },
+      J01CA: { n: 'Penicilinas con espectro ampliado', niv: 4, dhd: 3.26, env: 5971.38, p: 'J01C', den: 'completo', h: ['J01CA04', 'J01CA01'] },
+      J01CA04: { n: 'Amoxicilina', niv: 5, dhd: 3.25, env: 5931.96, p: 'J01CA' },
+      J01CA01: { n: 'Ampicilina', niv: 5, dhd: 0.01, env: 39.43, p: 'J01CA' },
+    },
+  };
+  const nodoApi = new Function(`return { getUtilizacionArbol: async () => null, ${metodo(api, 'async getUtilizacionNodo(')} };`)();
+  nodoApi.getUtilizacionArbol = async () => arbol;
+  const aus = await nodoApi.getUtilizacionNodo('J01CA08');
+  ok('un código ausente sigue devolviendo found:false', aus.found === false);
+  ok('y trae su grupo más cercano (J01CA) con el reparto real',
+    aus.padre === 'J01CA' && aus.grupo?.miembros?.map((m) => m.atc).join() === 'J01CA04,J01CA01');
+  const ausSinAtc4 = await nodoApi.getUtilizacionNodo('J01CE02');
+  ok('si falta también el ATC4, sube al siguiente nivel que exista', ausSinAtc4.padre === 'J01C');
+  const ausSinNada = await nodoApi.getUtilizacionNodo('Z99ZZ99');
+  ok('sin ningún antepasado no inventa grupo', ausSinNada.padre === null && ausSinNada.grupo === null);
+  ok('MUTANTE: un código presente no cambia de contrato',
+    (await nodoApi.getUtilizacionNodo('J01CA04')).found === true);
+
+  // renderUtilizacionHtml real, con el reparto sustituido por una marca.
+  const vista = new Function(`return {
+    _escapeHtml: (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;'),
+    renderUtilizacionRepartoHtml: () => '<REPARTO/>',
+    ${metodo(app, '_utilCanal(cpresc) {')},
+    ${metodo(app, 'renderUtilizacionHtml(atc5, d, cpresc) {')}
+  };`)();
+  const pinta = (financiacion, cpresc = 'Medicamento Sujeto A Prescripción Médica') =>
+    vista.renderUtilizacionHtml('J01CA08', { ...arbol.meta, ...aus, financiacion }, cpresc);
+
+  const noFin = pinta('no');
+  ok('no financiado: lo dice, y dice qué cuenta la fuente',
+    /Actualmente no está financiado por el SNS/.test(noFin) && /con cargo a fondos públicos/.test(noFin));
+  ok('los tres estados sin cobertura dan la misma frase',
+    ['estudio_sin_peticion', 'sin_cobertura'].every((e) => /no está financiado/.test(pinta(e))));
+  ok('MUTANTE: financiado, parcial o sin dato NO dicen «no financiado»',
+    ['si', 'si_nom', 'cond', 'parcial', 'sindato', null, undefined].every((e) => !/no está financiado/.test(pinta(e))));
+  ok('sin dato de financiación sale el texto neutro',
+    /Que no figure no\s+permite saber cuánto se usa/.test(pinta(null)));
+  ok('ninguna rama vuelve a conjeturar la causa',
+    ['no', null].every((e) => !/Puede deberse|consumo muy bajo/.test(pinta(e))));
+  ok('todas las ramas avisan de no leerlo como ausencia de uso',
+    ['no', null].every((e) => /No debe leerse como ausencia de uso/.test(pinta(e))));
+  ok('el grupo y su salida aparecen debajo del aviso',
+    /<REPARTO\/>/.test(noFin) && /data-util-vista="J01CA"/.test(noFin));
+  const hosp = pinta('no', 'Uso Hospitalario');
+  ok('MUTANTE: el canal hospitalario manda sobre la financiación',
+    /Medicamento de uso hospitalario/.test(hosp) && !/no está financiado/.test(hosp));
+  ok('sin grupo no pinta reparto ni botón',
+    !/<REPARTO\/>|data-util-vista/.test(vista.renderUtilizacionHtml('Z99ZZ99', { ...arbol.meta, ...ausSinNada }, '')));
+
+  const estado = metodo(app, 'async _utilEstadoFinanciacion(nregistro) {');
+  ok('la financiación se lee solo del índice, nunca en vivo CN a CN',
+    /_financingSummaryFromIndex/.test(estado) && !/_fetchFinancingByCns/.test(estado));
+  ok('y ante cualquier fallo devuelve null (texto neutro)', /catch \(_\) \{\s*return null;/.test(estado));
 }
 
 // ── 10 bis. lo que corrigió la revisión de Codex ────────────────────────────
