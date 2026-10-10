@@ -475,28 +475,42 @@ console.log('\n10 bis 0) código ausente: motivo elegido con datos y grupo a la 
   const pinta = (financiacion, cpresc = 'Medicamento Sujeto A Prescripción Médica') =>
     vista.renderUtilizacionHtml('J01CA08', { ...arbol.meta, ...aus, financiacion }, cpresc);
 
-  const noFin = pinta('no');
-  ok('no financiado: lo dice, y dice qué cuenta la fuente',
-    /Actualmente no está financiado por el SNS/.test(noFin) && /con cargo a fondos públicos/.test(noFin));
-  ok('los tres estados sin cobertura dan la misma frase',
-    ['estudio_sin_peticion', 'sin_cobertura'].every((e) => /no está financiado/.test(pinta(e))));
-  ok('MUTANTE: financiado, parcial o sin dato NO dicen «no financiado»',
-    ['si', 'si_nom', 'cond', 'parcial', 'sindato', null, undefined].every((e) => !/no está financiado/.test(pinta(e))));
-  ok('sin dato de financiación sale el texto neutro',
-    /Que no figure no\s+permite saber cuánto se usa/.test(pinta(null)));
+  // Las etiquetas salen del motor REAL de financiación, no se escriben aquí: lo que se prueba es
+  // que sus matices llegan intactos a la pestaña.
+  const motor = new Function(`return { ${metodo(app, '_financingSummaryFromCounts(')} };`)();
+  const fin = (c) => motor._financingSummaryFromCounts(c);
+  const noFinRes = fin({ nofin: 1 });
+  const incompleto = fin({ nofin: 1, sindato: 1 }); // el caso que reprodujo Codex
+  const estudio = fin({ estudio: 1 });
+
+  const noFin = pinta(noFinRes);
+  ok('dice qué cuenta la fuente, con la fórmula del Ministerio', /con cargo a fondos públicos/.test(noFin));
+  ok('añade la financiación actual con la etiqueta literal del motor',
+    noFin.includes(`Financiación actual de este medicamento: <strong>${noFinRes.label}</strong>`));
+  ok('el caso incompleto conserva su salvedad («1 de 2», «sin dato»)',
+    /1 de 2 presentaciones/.test(pinta(incompleto)) && pinta(incompleto).includes(incompleto.label));
+  ok('«en estudio o sin petición» no se convierte en «no financiado»',
+    /En estudio o sin petición/.test(pinta(estudio)) && !/No financiado/.test(pinta(estudio)));
+  ok('MUTANTE: la financiación nunca se presenta como causa del hueco',
+    [noFinRes, incompleto, estudio].every((f) => /Sin dato en esta fuente/.test(pinta(f))
+      && !/fuera de esta fuente|Actualmente no está financiado|por eso/i.test(pinta(f))));
+  ok('«sin datos de financiación» y la ausencia de índice no añaden línea',
+    [fin({ sindato: 2 }), null, undefined].every((f) => !/Financiación actual/.test(pinta(f))));
+  ok('sin financiación el texto neutro sigue completo',
+    /Que no figure no permite saber cuánto se usa/.test(pinta(null)));
   ok('ninguna rama vuelve a conjeturar la causa',
-    ['no', null].every((e) => !/Puede deberse|consumo muy bajo/.test(pinta(e))));
+    [noFinRes, null].every((f) => !/Puede deberse|consumo muy bajo/.test(pinta(f))));
   ok('todas las ramas avisan de no leerlo como ausencia de uso',
-    ['no', null].every((e) => /No debe leerse como ausencia de uso/.test(pinta(e))));
+    [noFinRes, null].every((f) => /No debe leerse como ausencia de uso/.test(pinta(f))));
   ok('el grupo y su salida aparecen debajo del aviso',
     /<REPARTO\/>/.test(noFin) && /data-util-vista="J01CA"/.test(noFin));
-  const hosp = pinta('no', 'Uso Hospitalario');
+  const hosp = pinta(noFinRes, 'Uso Hospitalario');
   ok('MUTANTE: el canal hospitalario manda sobre la financiación',
-    /Medicamento de uso hospitalario/.test(hosp) && !/no está financiado/.test(hosp));
+    /Medicamento de uso hospitalario/.test(hosp) && !/Financiación actual/.test(hosp));
   ok('sin grupo no pinta reparto ni botón',
     !/<REPARTO\/>|data-util-vista/.test(vista.renderUtilizacionHtml('Z99ZZ99', { ...arbol.meta, ...ausSinNada }, '')));
 
-  const estado = metodo(app, 'async _utilEstadoFinanciacion(nregistro) {');
+  const estado = metodo(app, 'async _utilFinanciacionActual(nregistro) {');
   ok('la financiación se lee solo del índice, nunca en vivo CN a CN',
     /_financingSummaryFromIndex/.test(estado) && !/_fetchFinancingByCns/.test(estado));
   ok('y ante cualquier fallo devuelve null (texto neutro)', /catch \(_\) \{\s*return null;/.test(estado));
