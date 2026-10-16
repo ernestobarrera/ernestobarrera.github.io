@@ -22803,6 +22803,12 @@ ${ftFechaDocsHtml}
         const container = document.getElementById('evidence-content');
         if (!container || container.dataset.loaded) return;
         container.dataset.loaded = '1';
+        // Una ficha nueva invalida todo lo que la anterior dejó en vuelo: recuentos, gráfica y
+        // alcance. Los ids del DOM son los mismos de ficha a ficha, así que sin esto una
+        // respuesta tardía de la ficha A se pintaba en la B (revisión de Codex, 17/10).
+        this._evidenceCountCycle = (this._evidenceCountCycle || 0) + 1;
+        this._evSparklineCycle = (this._evSparklineCycle || 0) + 1;
+        this._evScopeCycle = (this._evScopeCycle || 0) + 1;
 
         // Identidad de sustancia unificada (fase 1, contraste Claude↔Codex). Términos por destino:
         //  - pubmedTerm: variantes ES+EN (AND entre componentes en combinaciones), SIN comillas. Campo editable.
@@ -23123,6 +23129,8 @@ ${ftFechaDocsHtml}
             }
             evDateDebounce = setTimeout(() => {
                 evDateDebounce = null;
+                if (!container.isConnected) return;
+                cargado = true;   // la carga inicial diferida ya no debe repetirla
                 lastTerm = getCurrentTerm();
                 this._loadEvidenceFiltersAndCount(lastTerm, filterDefs, getCurrentDays());
                 this._updateEvidenceCombineBar();
@@ -23218,6 +23226,9 @@ ${ftFechaDocsHtml}
         };
         const aplicarDecision = (d, alcance) => {
             if (!viaCheck || viaTocada || !container.isConnected) return;
+            // Una decisión que llega tarde para un alcance que ya no está elegido se descarta: la
+            // del principio activo no puede desactivar la vía que acaba de activar el grupo.
+            if ((grupoRadio?.checked ? 'grupo' : 'pa') !== alcance) return;
             viaCheck.checked = d.activar;
             pintarMotivo(d, alcance);
         };
@@ -23290,15 +23301,16 @@ ${ftFechaDocsHtml}
             else reloadTerm();
         });
 
-        // Carga inicial de PubMed (5 años), cuando ya se sabe si la vía viene activada. Si el
-        // médico ha lanzado ya una búsqueda mientras tanto, no se repite.
+        // Carga inicial de PubMed, cuando ya se sabe si la vía viene activada. Con el rango que
+        // haya EN PANTALLA (pudo moverse el deslizador mientras CIMA respondía), y si el médico
+        // ya lanzó una búsqueda entretanto, no se repite.
         const arrancar = () => {
             if (!container.isConnected) return;
             const t = getCurrentTerm();
             if (cargado && t === lastTerm) return;
             cargado = true;
             lastTerm = t;
-            this._loadEvidenceFiltersAndCount(t, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
+            this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
         };
         decidirViaSustancia().finally(arrancar);
 
@@ -23674,7 +23686,10 @@ ${ftFechaDocsHtml}
         // Todo lo que describe ESTA búsqueda se captura aquí, antes del primer await: leerlo del
         // DOM después mezclaría el estado de una búsqueda posterior (revisión de Codex, 17/10).
         const conAcotacion = !!document.getElementById('evidence-acotar-input')?.value.trim();
-        const vigente = () => this._evidenceCountCycle === cycleId;
+        // Vigente = misma búsqueda Y misma ficha: el contenedor en el que nació sigue en pantalla.
+        const contenedor = document.getElementById('evidence-content');
+        const vigente = () => this._evidenceCountCycle === cycleId
+            && !!contenedor?.isConnected && document.getElementById('evidence-content') === contenedor;
 
         // Actualizar enlace "total" inmediatamente (sin filtro que cargar)
         const totalQuery = drugTerm + DATE_SUFFIX;
@@ -23879,6 +23894,9 @@ ${ftFechaDocsHtml}
                 el.innerHTML = `<span class="${cls}">${count.toLocaleString('es-ES')}</span>`;
             }
         } catch {
+            // También el fallo respeta el ciclo: un reintento viejo que falla tarde no puede
+            // sustituir por el botón de error el recuento correcto de la búsqueda actual.
+            if (this._evidenceCountCycle !== cycle) return;
             if (el) el.innerHTML = this._evCountErrorHtml(id);
         }
     }
