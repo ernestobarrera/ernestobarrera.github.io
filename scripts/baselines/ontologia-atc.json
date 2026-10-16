@@ -1,0 +1,16 @@
+{
+  "_doc": "Contradicciones ACEPTADAS entre un sinónimo-fármaco de clinical-ontology.json y los códigos ATC de su propia entrada. Lo lee scripts/medcheck-audit-ontologia-atc.mjs. Cada excepción lleva su motivo: aceptar es una decisión humana, no un silencio. Una excepción que deja de darse se avisa como caducada, para que esta lista no crezca sin control.",
+  "revisado": "2026-10-17",
+  "excepciones": [
+    {
+      "entrada": "náuseas del embarazo",
+      "sinonimo": "doxilamina",
+      "motivo": "La entrada apunta a propósito a R06AA59 (doxilamina + piridoxina, la asociación indicada en las náuseas del embarazo). La doxilamina sola (R06AA09) es un hipnótico y no debe entrar."
+    },
+    {
+      "entrada": "vacuna BCG",
+      "sinonimo": "bcg",
+      "motivo": "La entrada es la vacuna (J07AN). La BCG de L03AX03 es la intravesical del cáncer de vejiga: otro producto con el mismo nombre."
+    }
+  ]
+}
