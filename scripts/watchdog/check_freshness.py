@@ -40,24 +40,28 @@ from pathlib import Path
 SOURCES = [
     {
         "key": "biomarkers:meta",
+        "workflow": "etl-biomarkers.yml",
         "label": "Biomarcadores PGx (AEMPS)",
         "date_fields": ["generated_at", "list_prescription_date"],
         "max_age_days": 4,
     },
     {
         "key": "sns-catalog:meta",
+        "workflow": "etl-sns-catalog.yml",
         "label": "Nomenclator SNS (Min. Sanidad)",
         "date_fields": ["generated_at", "download_date"],
         "max_age_days": 40,
     },
     {
         "key": "bifimed:meta",
+        "workflow": "etl-bifimed.yml",
         "label": "BIFIMED financiacion (SNS)",
         "date_fields": ["generated_at", "download_date"],
         "max_age_days": 40,
     },
     {
         "key": "packs:meta",
+        "workflow": "etl-packs.yml",
         "label": "Indice de envases (CIMA)",
         "date_fields": ["generated_at"],
         "max_age_days": 40,
@@ -70,6 +74,7 @@ SOURCES = [
     # asi que 40 dias es el mismo margen que sus hermanos.
     {
         "key": "materiales:meta",
+        "workflow": "etl-materiales.yml",
         "label": "Catalogo de materiales informativos (AEMPS)",
         "date_fields": ["generated_at"],
         "max_age_days": 40,
@@ -83,6 +88,7 @@ SOURCES = [
     # seguiria verde para siempre aunque el Ministerio dejase de publicar años nuevos.
     {
         "key": "utilizacion:meta",
+        "workflow": "etl-utilizacion.yml",
         "label": "Utilizacion observada (recetas SNS por ATC)",
         "date_fields": ["fuente_fecha"],
         "max_age_days": 400,
@@ -104,6 +110,25 @@ SOURCES = [
 REPO = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO / "assets" / "data"
 MANIFEST = DATA_DIR / "_fuentes.json"
+
+ACTIONS_URL = "https://github.com/ernestobarrera/ernestobarrera.github.io/actions"
+
+
+def _que_hacer(workflow: str | None) -> str:
+    """Que significa un dato viejo y donde mirar.
+
+    Un aviso que solo dice «N problema(s)» se lee como falso positivo y se archiva. Paso el
+    16/10/2026: el indice de envases llevaba once dias sin renovarse porque su ETL aborto el
+    05/10 por un guardarrail, se corrigio el umbral ese mismo dia y nadie relanzo el ETL.
+    """
+    if not workflow:
+        return "Su ETL no lo ha renovado; revisa los workflows en " + ACTIONS_URL
+    nombre = Path(workflow).name
+    return (
+        f"Su ETL ({nombre}) no lo ha renovado: mira su ultima ejecucion en "
+        f"{ACTIONS_URL}/workflows/{nombre} . Si fallo o aborto por un guardarrail, corrige la "
+        "causa y relanzalo a mano (Run workflow); si no, el dato sigue viejo hasta la proxima pasada."
+    )
 
 
 def _dig(obj, ruta):
@@ -175,7 +200,10 @@ def check_repo_data(now):
 
         age_days = (now - dt).total_seconds() / 86400
         if age_days > umbral:
-            problems.append(f"{nombre}: {age_days:.1f} dias (umbral {umbral}; {campo})")
+            problems.append(
+                f"{nombre}: {age_days:.1f} dias (umbral {umbral}; {campo}). "
+                + _que_hacer(decl.get("workflow"))
+            )
             estado = "OBSOLETO"
         else:
             estado = "OK"
@@ -223,7 +251,8 @@ def check_repo_data(now):
                     if dias > desfase:
                         problems.append(
                             f"{nombre}: el DATO tiene {dias:.1f} dias "
-                            f"(desfase maximo {desfase}; {campo_fuente})"
+                            f"(desfase maximo {desfase}; {campo_fuente}). "
+                            + _que_hacer(decl.get("workflow"))
                         )
                         estado_dato = "DATO VIEJO"
                     else:
@@ -516,7 +545,8 @@ def main() -> int:
         if age_days > src["max_age_days"]:
             problems.append(
                 f"{src['label']}: {age_days:.1f} dias "
-                f"(umbral {src['max_age_days']}; {used_field}={meta.get(used_field)})"
+                f"(umbral {src['max_age_days']}; {used_field}={meta.get(used_field)}). "
+                + _que_hacer(src.get("workflow"))
             )
             status = "OBSOLETO"
         else:
@@ -602,12 +632,15 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001
             print(f"::warning::No se pudo enviar el email de aviso: {exc}", file=sys.stderr)
     else:
-        print(
-            "::warning::RESEND_API_KEY o ALERT_EMAIL_TO no configurados; "
-            "se omite el email (queda el fallo del workflow como aviso).",
-            file=sys.stderr,
-        )
+        # Sin Resend, el aviso es el correo NATIVO de GitHub por el fallo del run, que recoge
+        # las anotaciones. Por eso esto ya no se anota: un aviso amarillo de configuracion en
+        # ese correo tapaba el problema real y lo hacia pasar por ruido.
+        print("Resend no configurado: el aviso es el correo de GitHub por el fallo del workflow.")
 
+    # Una anotacion POR PROBLEMA, con su significado y donde mirar. Antes solo se anotaba el
+    # asunto («N problema(s)»), y eso era todo lo que llegaba en el correo de GitHub.
+    for prob in problems:
+        print(f"::error title=MedCheck watchdog::{prob}")
     print(f"::error::{subject}")
     return 1
 
