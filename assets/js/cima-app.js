@@ -20925,7 +20925,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-search',
                         action: { type: 'modalTab', tab: 'evidence' },
                         body: `
-                            <p>MedCheck prepara el término desde la identidad de la sustancia, con sus variantes. Puedes editarlo para ajustar la búsqueda bibliográfica.</p>
+                            <p>MedCheck prepara el término desde la identidad de la sustancia, con sus variantes. Puedes editarlo, ampliarlo a su grupo ATC o acotarlo con AND por indicación o patología (en inglés, con sugerencias MeSH).</p>
                             <p>Este campo controla PubMed. Los registros REec, ClinicalTrials.gov y OMS conservan el término de la sustancia con el que se abrió la pestaña.</p>
                         `,
                     },
@@ -22453,6 +22453,152 @@ ${ftFechaDocsHtml}
         return partes.join(' ');
     }
 
+    /**
+     * Término que va a PubMed: el del fármaco (o su grupo) y, si hay algo en el campo de acotar,
+     * cruzado con AND. Los dos lados van entre paréntesis: el término del grupo es una cadena de
+     * OR y lo escrito a mano puede traer sus propios operadores, así que no se confía en que
+     * PubMed evalúe de izquierda a derecha. Los saltos de línea del <textarea> son espacios.
+     */
+    _evidenceComposeTerm(drug, extra) {
+        const limpio = s => String(s ?? '').replace(/\s+/g, ' ').trim();
+        const d = limpio(drug);
+        const e = limpio(extra);
+        if (!d) return '';
+        return e ? `(${d}) AND (${e})` : d;
+    }
+
+    /** Término efectivo leído de los dos campos de la pestaña Evidencia. */
+    _evidenceEffectiveTerm(fallback = '') {
+        const drug = document.getElementById('evidence-drug-input')?.value || fallback;
+        const extra = document.getElementById('evidence-acotar-input')?.value || '';
+        return this._evidenceComposeTerm(drug.trim() ? drug : fallback, extra);
+    }
+
+    /** Ajusta la altura de un <textarea> a su contenido (el tope lo pone el CSS con max-height). */
+    _evidenceAutosize(el) {
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = `${el.scrollHeight}px`;
+    }
+
+    /**
+     * Parte del campo de acotar sobre la que se piden sugerencias: lo escrito tras el último
+     * operador booleano. Si ese trozo ya lleva sintaxis de PubMed (comillas, corchetes,
+     * paréntesis), no se sugiere nada: quien la escribe ya sabe lo que busca.
+     * @returns {{prefijo: string, trozo: string, sugerible: boolean}}
+     */
+    _evidenceAcotarSegment(texto) {
+        const s = String(texto ?? '');
+        const m = s.match(/^([\s\S]*\s(?:AND|OR|NOT)\s+)?([\s\S]*)$/);
+        const prefijo = m?.[1] || '';
+        const trozo = (m?.[2] || '').trim();
+        return { prefijo, trozo, sugerible: trozo.length >= 3 && !/["()[\]]/.test(trozo) };
+    }
+
+    /**
+     * Descriptores MeSH cuyo nombre contiene el texto, del servicio de consulta de la NLM
+     * (id.nlm.nih.gov, CORS abierto, sin clave). Solo inglés: MeSH no tiene español; la
+     * traducción (DeCS de BIREME) necesita licencia y token y queda para otra fase.
+     */
+    async _meshLookup(texto) {
+        if (!this._meshLookupCache) this._meshLookupCache = new Map();
+        const clave = texto.toLowerCase();
+        if (this._meshLookupCache.has(clave)) return this._meshLookupCache.get(clave);
+        const url = `https://id.nlm.nih.gov/mesh/lookup/descriptor?label=${encodeURIComponent(texto)}&match=contains&limit=8`;
+        const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) throw new Error(`MeSH ${r.status}`);
+        const data = await r.json();
+        const etiquetas = [...new Set((Array.isArray(data) ? data : []).map(d => String(d?.label || '').trim()).filter(Boolean))];
+        this._meshLookupCache.set(clave, etiquetas);
+        return etiquetas;
+    }
+
+    /**
+     * Autocompletado MeSH del campo de acotar. Al elegir, el descriptor sustituye al trozo
+     * escrito, SIN comillas ni etiqueta: así PubMed aplica su mapeo automático y busca el
+     * descriptor y el texto libre (medido el 16/10/2026: «Urinary Bladder, Overactive» da 10.579
+     * citas; con [Mesh], 6.893 — se perdían los artículos aún sin indexar). Es la misma doctrina
+     * que el término del fármaco: sin comillas, aprovechando el ATM.
+     * @returns {{handleEnter: () => boolean}} handleEnter elige la opción activa si la hay
+     */
+    _wireMeshSuggest(campo, caja, alElegir) {
+        const esc = s => this._escapeHtml(String(s ?? ''));
+        let opciones = [];
+        let activa = -1;
+        let ciclo = 0;
+        let espera = null;
+        const cerrar = () => {
+            caja.hidden = true;
+            caja.innerHTML = '';
+            opciones = [];
+            activa = -1;
+            campo.setAttribute('aria-expanded', 'false');
+        };
+        const pintar = (html) => {
+            caja.innerHTML = html;
+            caja.hidden = false;
+            campo.setAttribute('aria-expanded', 'true');
+        };
+        const marcar = () => caja.querySelectorAll('.evidence-mesh-opt').forEach((b, i) => {
+            b.classList.toggle('active', i === activa);
+            b.setAttribute('aria-selected', i === activa ? 'true' : 'false');
+        });
+        const elegir = i => {
+            const etiqueta = opciones[i];
+            if (!etiqueta) return;
+            const { prefijo } = this._evidenceAcotarSegment(campo.value);
+            campo.value = `${prefijo}${etiqueta}`;
+            this._evidenceAutosize(campo);
+            cerrar();
+            alElegir();
+        };
+        const pie = '<p class="evidence-mesh-foot">Descriptores MeSH · NLM. Se añade sin etiqueta: PubMed busca el descriptor y el texto libre.</p>';
+        campo.addEventListener('input', () => {
+            if (espera) clearTimeout(espera);
+            const { trozo, sugerible } = this._evidenceAcotarSegment(campo.value);
+            if (!sugerible) { cerrar(); return; }
+            espera = setTimeout(async () => {
+                const yo = ++ciclo;
+                let etiquetas;
+                try {
+                    etiquetas = await this._meshLookup(trozo);
+                } catch {
+                    if (yo === ciclo) pintar(`<p class="evidence-mesh-empty">No se pudo consultar MeSH (NLM). Puedes escribir el término igualmente.</p>`);
+                    return;
+                }
+                if (yo !== ciclo || !campo.isConnected) return;
+                opciones = etiquetas;
+                activa = -1;
+                if (!etiquetas.length) {
+                    pintar(`<p class="evidence-mesh-empty">Ningún descriptor MeSH contiene «${esc(trozo)}». Escríbelo en inglés o prueba con otra palabra.</p>${pie}`);
+                    return;
+                }
+                pintar(etiquetas.map((e, i) => `<button type="button" class="evidence-mesh-opt" role="option" aria-selected="false" data-i="${i}">${esc(e)}</button>`).join('') + pie);
+            }, 350);
+        });
+        caja.addEventListener('mousedown', e => e.preventDefault());   // que el campo no pierda el foco antes del clic
+        caja.addEventListener('click', e => {
+            const b = e.target.closest('.evidence-mesh-opt');
+            if (b) elegir(Number(b.dataset.i));
+        });
+        campo.addEventListener('keydown', e => {
+            if (caja.hidden) return;
+            if (e.key === 'Escape') { e.preventDefault(); cerrar(); return; }
+            if (!opciones.length || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
+            e.preventDefault();
+            activa = (activa + (e.key === 'ArrowDown' ? 1 : -1) + opciones.length) % opciones.length;
+            marcar();
+        });
+        campo.addEventListener('blur', () => { if (espera) clearTimeout(espera); ciclo++; cerrar(); });
+        return {
+            handleEnter: () => {
+                if (caja.hidden || activa < 0) return false;
+                elegir(activa);
+                return true;
+            },
+        };
+    }
+
     renderEvidenceTab(med) {
         const container = document.getElementById('evidence-content');
         if (!container || container.dataset.loaded) return;
@@ -22533,7 +22679,7 @@ ${ftFechaDocsHtml}
             .forEach(el => {
                 el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
             });
-        const getCurrentTerm = () => document.getElementById('evidence-drug-input')?.value.trim() || pubmedTerm;
+        const getCurrentTerm = () => this._evidenceEffectiveTerm(pubmedTerm);
         const getCurrentDays = () => {
             const s = document.getElementById('evidence-date-slider');
             const idx = s ? parseInt(s.value, 10) : EV_RANGE_DEFAULT;
@@ -22556,12 +22702,11 @@ ${ftFechaDocsHtml}
                         <h4 class="evidence-section-title">Literatura científica · PubMed</h4>
                         <div class="evidence-drug-row" title="Edita para ajustar el término de búsqueda en PubMed">
                             <label class="evidence-drug-label" for="evidence-drug-input"><i class="fas fa-search"></i></label>
-                            <input type="text" id="evidence-drug-input" class="evidence-drug-input"
-                                   value="${this._escapeHtml(pubmedTerm)}"
+                            <textarea id="evidence-drug-input" class="evidence-drug-input" rows="1"
                                    placeholder="término PubMed"
                                    spellcheck="false"
                                    autocomplete="off"
-                                   title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo y pulsa Enter o haz clic fuera para recargar.">
+                                   title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo y pulsa Enter o haz clic fuera para recargar (Mayús+Enter: salto de línea).">${this._escapeHtml(pubmedTerm)}</textarea>
                             <i class="fas fa-pen evidence-drug-edit-hint" aria-hidden="true"></i>
                         </div>
                         <div class="evidence-scope consult-scope" role="radiogroup" aria-label="Alcance de la búsqueda en PubMed">
@@ -22569,6 +22714,17 @@ ${ftFechaDocsHtml}
                             <label class="consult-scope-opt${atc4 ? '' : ' is-disabled'}" id="ev-scope-grupo-opt" title="${atc4 ? 'OR de los principios activos de su grupo ATC comercializados en España' : 'Este medicamento no tiene grupo ATC de nivel 4 en CIMA'}"><input type="radio" name="ev-scope" value="grupo"${atc4 ? '' : ' disabled'}><span>${atc4 ? `Su grupo (${this._escapeHtml(atc4.codigo)})` : 'Su grupo'}</span></label>
                         </div>
                         <p class="evidence-scope-note" id="evidence-scope-note" aria-live="polite" hidden></p>
+                        <div class="evidence-acotar">
+                            <div class="evidence-drug-row evidence-acotar-row" title="Se cruza con AND con el término de arriba. PubMed indexa en inglés.">
+                                <label class="evidence-drug-label evidence-acotar-label" for="evidence-acotar-input">AND</label>
+                                <textarea id="evidence-acotar-input" class="evidence-drug-input" rows="1"
+                                       placeholder="acotar por indicación o patología, en inglés (p. ej. overactive)"
+                                       spellcheck="false"
+                                       autocomplete="off"
+                                       role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="evidence-mesh-suggest"></textarea>
+                            </div>
+                            <div class="evidence-mesh-suggest" id="evidence-mesh-suggest" role="listbox" aria-label="Descriptores MeSH" hidden></div>
+                        </div>
                     </div>
                     <div class="evidence-date-range" title="Rango temporal de búsqueda. Mueve el deslizador para ampliar o estrechar.">
                         <input type="range" id="evidence-date-slider" class="evidence-date-slider"
@@ -22752,7 +22908,8 @@ ${ftFechaDocsHtml}
             }
             evDateDebounce = setTimeout(() => {
                 evDateDebounce = null;
-                this._loadEvidenceFiltersAndCount(getCurrentTerm(), filterDefs, getCurrentDays());
+                lastTerm = getCurrentTerm();
+                this._loadEvidenceFiltersAndCount(lastTerm, filterDefs, getCurrentDays());
                 this._updateEvidenceCombineBar();
             }, 1200);
         };
@@ -22785,25 +22942,42 @@ ${ftFechaDocsHtml}
 
         // Campo editable — controla SOLO PubMed (Codex). REEC/ClinicalTrials/WHO/UpToDate quedan fijados
         // al término canónico del render y NO reaccionan a lo que el usuario teclee para PubMed (otra sintaxis).
-        if (input) {
-            input.addEventListener('change', () => {
-                const t = getCurrentTerm();
-                if (!t) return;
-                resetCounts();
-                this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
-                this._updateEvidenceCombineBar();
+        // Los dos campos son <textarea> que crecen con el contenido (2026-10-16): el término de un
+        // grupo ATC no cabía en una línea. Enter recarga, como hacía el <input>; Mayús+Enter salta
+        // de línea. Como `change` vuelve a dispararse al salir del campo, la recarga se salta si
+        // el término efectivo no ha cambiado.
+        const acotar = document.getElementById('evidence-acotar-input');
+        let lastTerm = pubmedTerm;
+        const reloadTerm = () => {
+            const t = getCurrentTerm();
+            if (!t || t === lastTerm) return;
+            lastTerm = t;
+            resetCounts();
+            this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
+            this._updateEvidenceCombineBar();
+        };
+        [input, acotar].forEach(el => {
+            if (!el) return;
+            this._evidenceAutosize(el);
+            el.addEventListener('input', () => this._evidenceAutosize(el));
+            el.addEventListener('change', reloadTerm);
+            el.addEventListener('keydown', e => {
+                if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+                if (el === acotar && this._evMeshSuggest?.handleEnter()) { e.preventDefault(); return; }
+                e.preventDefault();
+                reloadTerm();
             });
-        }
+        });
+        // Sugerencias MeSH en el campo de acotar. Al elegir, se recarga.
+        if (acotar) this._evMeshSuggest = this._wireMeshSuggest(acotar, document.getElementById('evidence-mesh-suggest'), reloadTerm);
 
         // Alcance: principio activo ↔ su grupo ATC4. Solo reescribe el campo de PubMed; el resto
         // de la pestaña (REec, ClinicalTrials, MedyNut) se queda con la sustancia, como el campo.
         const scopeNote = document.getElementById('evidence-scope-note');
         const grupoOpt = document.getElementById('ev-scope-grupo-opt');
         const applyScopeTerm = t => {
-            if (input) input.value = t;
-            resetCounts();
-            this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
-            this._updateEvidenceCombineBar();
+            if (input) { input.value = t; this._evidenceAutosize(input); }
+            reloadTerm();
         };
         container.querySelectorAll('input[name="ev-scope"]').forEach(radio => {
             radio.addEventListener('change', async () => {
@@ -23360,7 +23534,7 @@ ${ftFechaDocsHtml}
         const el = document.getElementById(`evcount-${id}`);
         const req = this._evidenceCountRequests?.[id];
         if (!req || !req.query) {
-            const term = document.getElementById('evidence-drug-input')?.value.trim();
+            const term = this._evidenceEffectiveTerm();
             const slider = document.getElementById('evidence-date-slider');
             const days = parseInt(slider?.dataset.days ?? '0', 10);
             if (id !== 'total' && term && this._evFilterDefs) {
@@ -23669,7 +23843,7 @@ ${ftFechaDocsHtml}
         }
         bar.classList.remove('hidden');
 
-        const drugTerm = document.getElementById('evidence-drug-input')?.value.trim();
+        const drugTerm = this._evidenceEffectiveTerm();
         if (!drugTerm) return;
 
         const slider = document.getElementById('evidence-date-slider');

@@ -114,6 +114,23 @@ check('la nota nombra el perímetro (comercializados en España)', nota.includes
 check('la nota dice que REec y ClinicalTrials siguen con el principio', nota.includes('REec y ClinicalTrials.gov siguen con el principio activo'), true);
 check('la nota de un grupo inviable da el motivo', app._evidenceGroupNoteHtml(amplio, { codigo: 'L01XX', nombre: '' }).includes('máximo 15'), true);
 
+// ─── Acotar con AND (2026-10-16) ──────────────────────────────────────────────
+// Los dos lados entre paréntesis: el grupo es una cadena de OR y lo escrito a mano puede traer
+// operadores propios. Sin acotación, el término queda como estaba (mismas claves de caché).
+check('sin acotar, el término no cambia', app._evidenceComposeTerm('mirabegron', ''), 'mirabegron');
+check('sin acotar, solo espacios tampoco', app._evidenceComposeTerm('mirabegron', '  \n '), 'mirabegron');
+check('acotado: paréntesis a los dos lados', app._evidenceComposeTerm('a OR b OR c', 'overactive bladder'), '(a OR b OR c) AND (overactive bladder)');
+check('los saltos de línea del textarea son espacios', app._evidenceComposeTerm('a OR\nb', 'x\n  y'), '(a OR b) AND (x y)');
+check('sin término de fármaco no hay consulta', app._evidenceComposeTerm('', 'overactive'), '');
+
+// ─── Trozo sobre el que se piden sugerencias MeSH ─────────────────────────────
+check('texto simple: todo es el trozo', app._evidenceAcotarSegment('overact'), { prefijo: '', trozo: 'overact', sugerible: true });
+check('tras el último operador', app._evidenceAcotarSegment('elderly AND noctur'), { prefijo: 'elderly AND ', trozo: 'noctur', sugerible: true });
+check('con varios operadores, el último', app._evidenceAcotarSegment('a OR b NOT inco'), { prefijo: 'a OR b NOT ', trozo: 'inco', sugerible: true });
+check('menos de 3 letras no se sugiere', app._evidenceAcotarSegment('ov').sugerible, false);
+check('con sintaxis PubMed no se sugiere', app._evidenceAcotarSegment('"heart failure"[mh]').sugerible, false);
+check('«and» en minúscula no es operador (PubMed tampoco lo trata así)', app._evidenceAcotarSegment('heart and lung').prefijo, '');
+
 if (failures) {
     console.log(`\n${failures} fallo(s)`);
     process.exit(1);
