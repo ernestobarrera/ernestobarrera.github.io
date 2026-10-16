@@ -10862,6 +10862,24 @@ mark.ev51-disp { text-decoration: underline dotted #94a3b8 2px; text-underline-o
     pointer-events: none;
 }
 
+/* Alcance de PubMed: principio activo · su grupo ATC4 (2026-10-16). Reutiliza .consult-scope-opt. */
+.evidence-scope {
+    margin-top: 0.4rem;
+}
+
+.evidence-scope .consult-scope-opt {
+    font-size: 0.76rem;
+    padding: 0.22rem 0.6rem;
+}
+
+.evidence-scope-note {
+    margin: 0.4rem 0 0;
+    font-size: 0.76rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
 .evidence-date-range {
     display: flex;
     flex-direction: column;

@@ -22368,6 +22368,91 @@ ${ftFechaDocsHtml}
         });
     }
 
+    /**
+     * Término PubMed de GRUPO (ATC4) para la pestaña Evidencia (2026-10-16). Es la OR de los
+     * principios activos del grupo, cada uno con sus variantes de `_substanceIdentity`: la misma
+     * identidad que usa el modo principio activo, así que un fármaco no se escribe de dos maneras.
+     *
+     * No se traduce el grupo a MeSH. Un ATC4 agrupa por indicación y una acción farmacológica de
+     * MeSH agrupa por mecanismo: G04BD reúne antimuscarínicos y agonistas beta-3, y
+     * "Adrenergic beta-3 Receptor Agonists"[pa] solo recoge los segundos (medido el 16/10/2026:
+     * 5.276 citas el OR del grupo frente a 1.526 el [pa]). La NLM no publica una
+     * correspondencia ATC→MeSH, así que cualquier equivalencia sería un juicio de quien la escribe.
+     *
+     * Perímetro: los principios de los medicamentos que CIMA devuelve para ese ATC4. Lo que no
+     * está comercializado en España no entra, y la interfaz lo dice: el campo sigue siendo editable.
+     * Las asociaciones no aportan término propio: el grupo es la OR de monocomponentes.
+     *
+     * Devuelve `estado`:
+     *   ok           hay término de grupo
+     *   vacio        CIMA no devolvió nada para el código
+     *   asociaciones el grupo solo tiene asociaciones (C09BA y similares): no hay OR que construir
+     *   unico        solo hay un principio: el grupo coincide con el modo principio activo
+     *   amplio       más de `max` principios: la consulta y el enlace a PubMed dejan de ser manejables
+     *
+     * @param {Object[]} meds - medicamentos del ATC4 (salida de `searchByATC`)
+     * @param {string[]} [primero] - `baseEs` del medicamento abierto: van delante en el término
+     */
+    _evidenceGroupTerm(meds, primero = [], { max = 15 } = {}) {
+        const porBase = new Map();
+        let asociaciones = 0;
+        for (const m of Array.isArray(meds) ? meds : []) {
+            const id = this._substanceIdentity(m);
+            if (id.components.length !== 1) { asociaciones++; continue; }
+            const c = id.components[0];
+            if (!c.variants?.length || porBase.has(c.baseEs)) continue;
+            porBase.set(c.baseEs, c);
+        }
+        const principios = [...porBase.keys()].sort((a, b) =>
+            (primero.includes(b) - primero.includes(a)) || a.localeCompare(b, 'es'));
+        const base = { term: '', principios, sinVerificar: [], asociaciones, max };
+        if (!principios.length) return { ...base, estado: asociaciones ? 'asociaciones' : 'vacio' };
+        if (principios.length === 1) return { ...base, estado: 'unico' };
+        if (principios.length > max) return { ...base, estado: 'amplio' };
+        const variantes = [...new Set(principios.flatMap(p => porBase.get(p).variants))];
+        return {
+            ...base,
+            estado: 'ok',
+            term: variantes.join(' OR '),
+            sinVerificar: principios.filter(p => porBase.get(p).verificationStatus === 'unverified'),
+        };
+    }
+
+    /** Medicamentos comercializados de un ATC4, con caché de sesión (un grupo no cambia en minutos). */
+    async _evidenceGroupMeds(atc4) {
+        if (!this._evGroupMedsCache) this._evGroupMedsCache = new Map();
+        if (!this._evGroupMedsCache.has(atc4)) {
+            // Sin `comercializados`: por defecto searchByATC pide comerc=1, que es el perímetro que
+            // rotula la nota. No se lee la casilla de Indicaciones: aquí no hay casilla.
+            const p = this.api.searchByATC(atc4, { noTrack: true })
+                .then(r => r?.resultados || []);
+            this._evGroupMedsCache.set(atc4, p);
+            p.catch(() => this._evGroupMedsCache.delete(atc4));
+        }
+        return this._evGroupMedsCache.get(atc4);
+    }
+
+    /** Línea bajo el selector de alcance: dice qué entra en el OR y qué no. */
+    _evidenceGroupNoteHtml(g, atc4) {
+        const esc = s => this._escapeHtml(String(s ?? ''));
+        const grupo = `<strong>${esc(atc4.codigo)}</strong>${atc4.nombre ? ` ${esc(atc4.nombre.toLowerCase())}` : ''}`;
+        const motivos = {
+            vacio: 'CIMA no devuelve medicamentos comercializados de este grupo.',
+            asociaciones: 'este grupo solo contiene asociaciones; busca por principio activo o edita el término.',
+            unico: 'en España este grupo solo tiene comercializado este principio activo: la búsqueda sería la misma.',
+            amplio: `el grupo tiene ${g.principios.length} principios comercializados (máximo ${g.max}); la consulta dejaría de ser manejable. Edita el término a mano.`,
+        };
+        if (g.estado !== 'ok') return `${grupo}: ${motivos[g.estado] || 'no se pudo construir el término de grupo.'}`;
+        const partes = [
+            `${grupo} · ${g.principios.length} principios comercializados en España (CIMA): ${esc(g.principios.join(', '))}.`,
+            'Lo que no se comercializa aquí no entra; añádelo en el campo si lo necesitas.',
+        ];
+        if (g.sinVerificar.length) partes.push(`Pasan tal cual, sin traducción comprobada: ${esc(g.sinVerificar.join(', '))}.`);
+        if (g.asociaciones) partes.push('Las asociaciones del grupo no se añaden como término propio.');
+        partes.push('REec y ClinicalTrials.gov siguen con el principio activo.');
+        return partes.join(' ');
+    }
+
     renderEvidenceTab(med) {
         const container = document.getElementById('evidence-content');
         if (!container || container.dataset.loaded) return;
@@ -22389,6 +22474,8 @@ ${ftFechaDocsHtml}
         const pubmedTerm = identity.pubmed || fallbackBrand;
         const canonicalEsTerm = identity.canonicalEs || fallbackBrand;
         const canonicalEnTerm = identity.canonicalEn || fallbackBrand;
+        // Grupo para el selector de alcance. Siempre por nivel, nunca `atcs[0]` (que es el nivel 3).
+        const atc4 = (Array.isArray(med.atcs) ? med.atcs : []).find(a => a?.nivel === 4 && a.codigo) || null;
 
         const enc = q => encodeURIComponent(q);
         const reecTerm = q => this._buildReecSearchTerm(q);
@@ -22477,6 +22564,11 @@ ${ftFechaDocsHtml}
                                    title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo y pulsa Enter o haz clic fuera para recargar.">
                             <i class="fas fa-pen evidence-drug-edit-hint" aria-hidden="true"></i>
                         </div>
+                        <div class="evidence-scope consult-scope" role="radiogroup" aria-label="Alcance de la búsqueda en PubMed">
+                            <label class="consult-scope-opt"><input type="radio" name="ev-scope" value="pa" checked><span>Principio activo</span></label>
+                            <label class="consult-scope-opt${atc4 ? '' : ' is-disabled'}" id="ev-scope-grupo-opt" title="${atc4 ? 'OR de los principios activos de su grupo ATC comercializados en España' : 'Este medicamento no tiene grupo ATC de nivel 4 en CIMA'}"><input type="radio" name="ev-scope" value="grupo"${atc4 ? '' : ' disabled'}><span>${atc4 ? `Su grupo (${this._escapeHtml(atc4.codigo)})` : 'Su grupo'}</span></label>
+                        </div>
+                        <p class="evidence-scope-note" id="evidence-scope-note" aria-live="polite" hidden></p>
                     </div>
                     <div class="evidence-date-range" title="Rango temporal de búsqueda. Mueve el deslizador para ampliar o estrechar.">
                         <input type="range" id="evidence-date-slider" class="evidence-date-slider"
@@ -22702,6 +22794,55 @@ ${ftFechaDocsHtml}
                 this._updateEvidenceCombineBar();
             });
         }
+
+        // Alcance: principio activo ↔ su grupo ATC4. Solo reescribe el campo de PubMed; el resto
+        // de la pestaña (REec, ClinicalTrials, MedyNut) se queda con la sustancia, como el campo.
+        const scopeNote = document.getElementById('evidence-scope-note');
+        const grupoOpt = document.getElementById('ev-scope-grupo-opt');
+        const applyScopeTerm = t => {
+            if (input) input.value = t;
+            resetCounts();
+            this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
+            this._updateEvidenceCombineBar();
+        };
+        container.querySelectorAll('input[name="ev-scope"]').forEach(radio => {
+            radio.addEventListener('change', async () => {
+                if (!radio.checked) return;
+                const cycle = (this._evScopeCycle = (this._evScopeCycle || 0) + 1);
+                if (radio.value !== 'grupo' || !atc4) {
+                    if (scopeNote) scopeNote.hidden = true;
+                    applyScopeTerm(pubmedTerm);
+                    return;
+                }
+                if (scopeNote) { scopeNote.hidden = false; scopeNote.textContent = `Buscando en CIMA los principios de ${atc4.codigo}…`; }
+                let g;
+                try {
+                    const meds = await this._evidenceGroupMeds(atc4.codigo);
+                    g = this._evidenceGroupTerm(meds, identity.components.map(c => c.baseEs));
+                } catch {
+                    g = null;
+                }
+                if (cycle !== this._evScopeCycle || !container.isConnected) return;
+                if (g?.estado === 'ok') {
+                    if (scopeNote) scopeNote.innerHTML = this._evidenceGroupNoteHtml(g, atc4);
+                    applyScopeTerm(g.term);
+                    return;
+                }
+                // Sin término de grupo: se vuelve a principio activo y la opción queda desactivada
+                // con su motivo a la vista. Un fallo de red, en cambio, no la desactiva: se puede reintentar.
+                const pa = container.querySelector('input[name="ev-scope"][value="pa"]');
+                if (pa) pa.checked = true;
+                if (g) {
+                    radio.disabled = true;
+                    grupoOpt?.classList.add('is-disabled');
+                }
+                if (scopeNote) {
+                    scopeNote.innerHTML = g
+                        ? this._evidenceGroupNoteHtml(g, atc4)
+                        : 'No se pudo consultar CIMA para construir el grupo. Inténtalo de nuevo.';
+                }
+            });
+        });
 
         // Checkboxes de combinación
         container.querySelectorAll('.evidence-filter-check-input').forEach(cb => {
