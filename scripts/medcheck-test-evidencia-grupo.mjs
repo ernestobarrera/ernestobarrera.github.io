@@ -99,7 +99,46 @@ check('lo curado (diccionario o regla) no se declara', g.sinVerificar, []);
 
 // ─── Casos sin término de grupo ───────────────────────────────────────────────
 check('vacío', app._evidenceGroupTerm([], []).estado, 'vacio');
-check('solo asociaciones', app._evidenceGroupTerm([med('enalapril + hidroclorotiazida'), med('lisinopril + hidroclorotiazida')], []).estado, 'asociaciones');
+// ─── Grupo de asociaciones (G03FA, C09BA…): OR de asociaciones, cada una con AND (2026-10-16) ───
+const asoc = app._evidenceGroupTerm(
+    [med('lisinopril + hidroclorotiazida'), med('enalapril + hidroclorotiazida'), med('hidroclorotiazida + enalapril', 1)],
+    ['enalapril', 'hidroclorotiazida']);
+check('solo asociaciones: ya no se desactiva', asoc.estado, 'ok');
+check('es de tipo asociaciones', asoc.tipo, 'asociaciones');
+check('la asociación es la misma en cualquier orden, y la propia va primero', asoc.principios, ['enalapril + hidroclorotiazida', 'hidroclorotiazida + lisinopril']);
+const v = n => app._substanceIdentity(med(n)).components[0].variants.join(' OR ');
+// Dentro de cada AND, el orden es el del primer producto visto: en un AND no cambia nada.
+check('término: OR de asociaciones, cada una con AND entre componentes', asoc.term,
+    `((${v('enalapril')}) AND (${v('hidroclorotiazida')})) OR ((${v('lisinopril')}) AND (${v('hidroclorotiazida')}))`);
+check('una sola asociación en el grupo: la búsqueda sería la misma', app._evidenceGroupTerm([med('enalapril + hidroclorotiazida')], []).estado, 'unico');
+
+// ─── Filtro por vía en el grupo ───────────────────────────────────────────────
+const conVia = (vtm, ids, i = 0) => ({ ...med(vtm, i), viasAdministracion: ids.map(id => ({ id, nombre: `VÍA ${id}` })) });
+const g03ca = [conVia('promestrieno', [67]), conVia('estriol', [67]), conVia('estriol', [48], 1), conVia('estradiol', [62]), conVia('estradiol', [67], 1)];
+const vag = app._evidenceGroupTerm(g03ca, ['promestrieno'], { viaIds: [67] });
+check('con vía vaginal entran los que tienen presentación vaginal', vag.principios, ['promestrieno', 'estradiol', 'estriol']);
+check('sin vía, el grupo entero', app._evidenceGroupTerm(g03ca, ['promestrieno']).principios, ['promestrieno', 'estradiol', 'estriol']);
+check('con una vía que solo tiene uno, «unico»', app._evidenceGroupTerm(g03ca, [], { viaIds: [62] }).estado, 'unico');
+check('con una vía que no tiene nadie, «vacio»', app._evidenceGroupTerm(g03ca, [], { viaIds: [45] }).estado, 'vacio');
+
+// ─── Vía del medicamento abierto ──────────────────────────────────────────────
+app._consultVia = MedCheckApp.prototype._consultVia;
+const viaVag = app._evidenceViaDeMed({ viasAdministracion: [{ id: 67, nombre: 'VÍA VAGINAL' }] });
+check('vaginal: local, activada por defecto', [viaVag.etiqueta, viaVag.local, viaVag.ids], ['vaginal', true, [67]]);
+check('vaginal: descriptor MeSH + texto libre', viaVag.pubmed, '"Administration, Intravaginal"[Mesh] OR vaginal[tiab] OR intravaginal[tiab]');
+check('oral: sistémica, desactivada por defecto', app._evidenceViaDeMed({ viasAdministracion: [{ id: 48, nombre: 'VÍA ORAL' }] }).local, false);
+const ivim = app._evidenceViaDeMed({ viasAdministracion: [{ id: 42, nombre: 'VÍA INTRAVENOSA' }, { id: 30, nombre: 'VÍA INTRAMUSCULAR' }] });
+check('varias vías: OR de bloques', [ivim.etiqueta, ivim.pubmed.startsWith('(') && ivim.pubmed.includes(') OR (')], ['intravenosa, intramuscular', true]);
+check('una vía sin equivalencia se declara', app._evidenceViaDeMed({ viasAdministracion: [{ id: 127000, nombre: 'INFILTRACIÓN' }] }).sinEquivalencia, ['infiltración']);
+check('sin vías, nada', app._evidenceViaDeMed({}), null);
+// Cada bloque de la tabla: comillas pares, paréntesis equilibrados, solo [Mesh] y [tiab].
+const malas = Object.entries(MedCheckApp._EV_VIAS).filter(([, e]) =>
+    (e.pubmed.match(/"/g) || []).length % 2 || /\[(?!Mesh\]|tiab\])/.test(e.pubmed) || !e.etiqueta);
+check('tabla de vías bien formada', malas.map(([id]) => id), []);
+
+// ─── Composición en bloques: (fármaco) AND (vía) AND (acotación) ──────────────
+check('fármaco y vía', app._evidenceComposeTerm('a OR b', '', 'vaginal[tiab]'), '(a OR b) AND (vaginal[tiab])');
+check('fármaco, vía y acotación: la acotación la última', app._evidenceComposeTerm('a', 'x', 'v'), '(a) AND (v) AND (x)');
 check('un único principio (varios medicamentos)', app._evidenceGroupTerm([med('paracetamol'), med('paracetamol', 1), med('paracetamol + codeina')], ['paracetamol']).estado, 'unico');
 const muchos = Array.from({ length: 16 }, (_, i) => med(`farmaco${String.fromCharCode(97 + i)}`));
 const amplio = app._evidenceGroupTerm(muchos, []);
