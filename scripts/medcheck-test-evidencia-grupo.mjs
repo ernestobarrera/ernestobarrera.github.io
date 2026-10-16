@@ -131,6 +131,32 @@ check('menos de 3 letras no se sugiere', app._evidenceAcotarSegment('ov').sugeri
 check('con sintaxis PubMed no se sugiere', app._evidenceAcotarSegment('"heart failure"[mh]').sugerible, false);
 check('«and» en minúscula no es operador (PubMed tampoco lo trata así)', app._evidenceAcotarSegment('heart and lung').prefijo, '');
 
+// ─── Interpretación de PubMed (querytranslation), respuestas REALES del 16/10/2026 ─────────────
+const FECHA = '"2021/10/17 00:00":"3000/01/01 05:00"[Date - Publication]';
+const MIRA = '("mirabegron"[Supplementary Concept] OR "mirabegron"[All Fields])';
+const interp = (traduccion, conAcotacion, extra = {}) => app._evidenceInterpretacion({ traduccion, errorlist: null, warninglist: null, ...extra }, conAcotacion);
+
+check('top-level AND respeta paréntesis y comillas',
+    app._splitTopLevelAnd(`${MIRA} AND ("vejiga"[All Fields] AND "hiperactiva"[All Fields]) AND ${FECHA}`).length, 3);
+check('«vejiga hiperactiva» queda como texto libre (el caso que motivó esto)',
+    interp(`${MIRA} AND ("vejiga"[All Fields] AND "hiperactiva"[All Fields]) AND ${FECHA}`, true).acotacionLibre, ['vejiga', 'hiperactiva']);
+check('una palabra suelta sin paréntesis también',
+    interp(`${MIRA} AND "nicturia"[All Fields] AND ${FECHA}`, true).acotacionLibre, ['nicturia']);
+check('«elderly» mapea a aged: sin aviso',
+    interp(`${MIRA} AND ("aged"[MeSH Terms] OR "aged"[All Fields] OR "elderly"[All Fields]) AND ${FECHA}`, true).acotacionLibre, null);
+check('el descriptor insertado mapea: sin aviso',
+    interp(`${MIRA} AND ("urinary bladder, overactive"[MeSH Terms] OR ("urinary"[All Fields] AND "bladder"[All Fields])) AND ${FECHA}`, true).acotacionLibre, null);
+check('sin acotación no se evalúa el último bloque (sería el fármaco)',
+    interp(`"nicturia"[All Fields] AND ${FECHA}`, false).acotacionLibre, null);
+check('sin fecha, el último bloque sigue siendo la acotación',
+    interp(`${MIRA} AND "nicturia"[All Fields]`, true).acotacionLibre, ['nicturia']);
+check('etiqueta propia del usuario ([Title/Abstract]) no se marca como libre',
+    interp(`${MIRA} AND "nicturia"[Title/Abstract]`, true).acotacionLibre, null);
+check('lo descartado por PubMed se declara (desfesoterodina en el grupo)',
+    interp(`${MIRA} AND ${FECHA}`, false, { errorlist: { phrasesnotfound: ['desfesoterodina'], fieldsnotfound: [] } }).descartados, ['desfesoterodina']);
+check('«No items found» no es un descarte',
+    interp(`${MIRA}`, false, { warninglist: { phrasesignored: [], quotedphrasesnotfound: [], outputmessages: ['No items found.'] } }).descartados, []);
+
 if (failures) {
     console.log(`\n${failures} fallo(s)`);
     process.exit(1);

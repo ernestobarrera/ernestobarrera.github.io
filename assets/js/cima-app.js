@@ -22467,6 +22467,80 @@ ${ftFechaDocsHtml}
         return e ? `(${d}) AND (${e})` : d;
     }
 
+    /** Parte una expresión booleana por los AND de nivel superior (fuera de paréntesis y comillas). */
+    _splitTopLevelAnd(s) {
+        const texto = String(s ?? '');
+        const partes = [];
+        let nivel = 0;
+        let comillas = false;
+        let inicio = 0;
+        for (let i = 0; i < texto.length; i++) {
+            const c = texto[i];
+            if (c === '"') comillas = !comillas;
+            else if (!comillas && c === '(') nivel++;
+            else if (!comillas && c === ')') nivel--;
+            else if (!comillas && nivel === 0 && texto.startsWith(' AND ', i)) {
+                partes.push(texto.slice(inicio, i).trim());
+                inicio = i + 5;
+                i += 4;
+            }
+        }
+        partes.push(texto.slice(inicio).trim());
+        return partes.filter(Boolean);
+    }
+
+    /**
+     * Lectura de la interpretación de ESearch para el clínico (2026-10-16, contraste con Codex).
+     * Una consulta puede ejecutarse sin un solo aviso y aun así buscar otra cosa: «vejiga
+     * hiperactiva» se busca como dos palabras sueltas en español (13 citas con mirabegrón; el
+     * descriptor inglés da 677). Se detectan dos casos, y solo esos:
+     *   - `descartados`: lo que PubMed declara no encontrado o ignorado (p. ej. «desfesoterodina»);
+     *   - `acotacionLibre`: lo escrito para acotar no se ha asociado a NINGÚN término de
+     *     vocabulario (todo su bloque es [All Fields]). Es el último bloque de nivel superior que
+     *     no es la fecha, porque la consulta se compone como (fármaco) AND (acotación) [AND fecha].
+     * Que no haya aviso no certifica que la búsqueda sea la adecuada; solo que no cae en estos dos.
+     */
+    _evidenceInterpretacion(diag, conAcotacion = false) {
+        const traduccion = diag?.traduccion || '';
+        const el = diag?.errorlist || {};
+        const wl = diag?.warninglist || {};
+        const lista = v => (Array.isArray(v) ? v : []).filter(x => typeof x === 'string' && x.trim());
+        const descartados = [...new Set([
+            ...lista(el.phrasesnotfound), ...lista(el.fieldsnotfound),
+            ...lista(wl.phrasesignored), ...lista(wl.quotedphrasesnotfound),
+        ])];
+        let acotacionLibre = null;
+        if (conAcotacion && traduccion) {
+            const bloques = this._splitTopLevelAnd(traduccion).filter(b => !/\[(Date - [^\]]+|dp)\]/i.test(b));
+            const bloque = bloques.length > 1 ? bloques[bloques.length - 1] : '';
+            const campos = [...bloque.matchAll(/\[([^\]]+)\]/g)].map(m => m[1].toLowerCase());
+            if (campos.length && campos.every(c => c === 'all fields')) {
+                acotacionLibre = [...new Set([...bloque.matchAll(/"([^"]+)"\[All Fields\]/gi)].map(m => m[1]))];
+            }
+        }
+        return { traduccion, descartados, acotacionLibre };
+    }
+
+    /** Pinta bajo los campos lo que hay que saber de la interpretación de PubMed. `null` lo oculta. */
+    _renderEvidenceInterp(diag, conAcotacion = false) {
+        const caja = document.getElementById('evidence-interp');
+        if (!caja) return;
+        if (!diag) { caja.hidden = true; caja.innerHTML = ''; return; }
+        const esc = s => this._escapeHtml(String(s ?? ''));
+        const comillas = arr => arr.map(x => `«${esc(x)}»`).join(', ');
+        const i = this._evidenceInterpretacion(diag, conAcotacion);
+        const avisos = [];
+        if (i.acotacionLibre?.length) {
+            avisos.push(`PubMed no ha asociado ${comillas(i.acotacionLibre)} a ningún término MeSH: lo busca como texto libre. Si está en español, escríbelo en inglés.`);
+        }
+        if (i.descartados.length) {
+            avisos.push(`PubMed ha descartado ${comillas(i.descartados)}: no lo encuentra en su índice y no cuenta en la búsqueda.`);
+        }
+        caja.innerHTML = avisos.map(a => `<p class="evidence-interp-aviso"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> ${a}</p>`).join('')
+            + (i.traduccion ? `<details class="evidence-interp-detalle"><summary>Cómo ha interpretado PubMed la búsqueda</summary><code>${esc(i.traduccion)}</code></details>` : '');
+        caja.hidden = !caja.innerHTML;
+    }
+
     /** Término efectivo leído de los dos campos de la pestaña Evidencia. */
     _evidenceEffectiveTerm(fallback = '') {
         const drug = document.getElementById('evidence-drug-input')?.value || fallback;
@@ -22725,6 +22799,7 @@ ${ftFechaDocsHtml}
                             </div>
                             <div class="evidence-mesh-suggest" id="evidence-mesh-suggest" role="listbox" aria-label="Descriptores MeSH" hidden></div>
                         </div>
+                        <div class="evidence-interp" id="evidence-interp" aria-live="polite" hidden></div>
                     </div>
                     <div class="evidence-date-range" title="Rango temporal de búsqueda. Mueve el deslizador para ampliar o estrechar.">
                         <input type="range" id="evidence-date-slider" class="evidence-date-slider"
@@ -23466,11 +23541,22 @@ ${ftFechaDocsHtml}
             if (loaded[i].query) this._evFilterQueryById[f.id] = loaded[i].query;
         });
 
+        // Interpretación de PubMed: viaja en la petición de «Todas las citas» (ver
+        // _fetchPubmedCount). Un recuento en caché sin diagnóstico guardado se vuelve a pedir:
+        // diagnóstico ausente es «no comprobado», nunca «todo bien».
+        if (!this._evidenceDiagCache) this._evidenceDiagCache = new Map();
+        const conAcotacion = !!document.getElementById('evidence-acotar-input')?.value.trim();
+        this._renderEvidenceInterp(null);
+
         // Lanzar todas las peticiones: el espaciado y los reintentos los gobierna la cola
         // compartida de _fetchPubmedCount (_enqueueNcbi). Encolarlas aquí, ANTES que la sparkline,
         // les da prioridad en la cola compartida.
         for (const req of countRequests) {
             if (this._evidenceCountCycle !== cycleId) break;
+            const esTotal = req.id === 'total';
+            if (esTotal && req.query && this._evidenceCountCache.has(req.query) && this._evidenceDiagCache.has(req.query)) {
+                this._renderEvidenceInterp(this._evidenceDiagCache.get(req.query), conAcotacion);
+            }
 
             if (!req.query) {
                 // El fichero del filtro (.txt) no cargó: ofrecer reintento, no un "–" mudo.
@@ -23480,7 +23566,7 @@ ${ftFechaDocsHtml}
             }
 
             // Caché hit — actualizar inmediatamente sin delay
-            if (this._evidenceCountCache.has(req.query)) {
+            if (this._evidenceCountCache.has(req.query) && (!esTotal || this._evidenceDiagCache.has(req.query))) {
                 const el = document.getElementById(`evcount-${req.id}`);
                 if (el) {
                     const n = this._evidenceCountCache.get(req.query);
@@ -23493,9 +23579,15 @@ ${ftFechaDocsHtml}
             // Petición a la cola; el backoff interno absorbe los 429 transitorios.
             (async (r, cycle) => {
                 try {
-                    const count = await this._fetchPubmedCount(r.query, () => this._evidenceCountCycle === cycle);
-                    if (count == null) return; // cancelado durante el reintento o ciclo invalidado
+                    const valido = () => this._evidenceCountCycle === cycle;
+                    const respuesta = await this._fetchPubmedCount(r.query, valido, { diagnostico: r.id === 'total' });
+                    if (respuesta == null) return; // cancelado durante el reintento o ciclo invalidado
+                    const count = r.id === 'total' ? respuesta.count : respuesta;
                     this._evidenceCountCache.set(r.query, count);
+                    if (r.id === 'total') {
+                        this._evidenceDiagCache.set(r.query, respuesta.diag);
+                        if (valido()) this._renderEvidenceInterp(respuesta.diag, conAcotacion);
+                    }
                     if (this._evidenceCountCycle !== cycle) return;
                     const el = document.getElementById(`evcount-${r.id}`);
                     if (el) {
@@ -23772,13 +23864,20 @@ ${ftFechaDocsHtml}
     // varios filtros largos. Content-Type application/x-www-form-urlencoded no dispara CORS
     // preflight. isStillValid: callback que devuelve false si el ciclo se ha invalidado
     // (cambio de término/fecha/selección durante el reintento).
-    async _fetchPubmedCount(query, isStillValid = () => true) {
-        return this._enqueueNcbi(() => this._fetchPubmedCountAttempts(query, isStillValid), isStillValid);
+    //
+    // `diagnostico: true` (2026-10-16) pide la MISMA petición sin `rettype=count`, que es el modo
+    // en que ESearch devuelve, además del recuento, cómo ha interpretado la consulta
+    // (`querytranslation`) y lo que ha descartado (`errorlist`, `warninglist`). No añade
+    // peticiones: se usa solo en la fila «Todas las citas». Devuelve entonces { count, diag }.
+    async _fetchPubmedCount(query, isStillValid = () => true, opts = {}) {
+        return this._enqueueNcbi(() => this._fetchPubmedCountAttempts(query, isStillValid, opts), isStillValid);
     }
 
-    async _fetchPubmedCountAttempts(query, isStillValid) {
+    async _fetchPubmedCountAttempts(query, isStillValid, { diagnostico = false } = {}) {
         const endpoint = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
-        const body = `db=pubmed&rettype=count&retmode=json&term=${encodeURIComponent(query)}`;
+        const body = diagnostico
+            ? `db=pubmed&retmax=0&retmode=json&term=${encodeURIComponent(query)}`
+            : `db=pubmed&rettype=count&retmode=json&term=${encodeURIComponent(query)}`;
         const tryOnce = async () => {
             const res = await fetch(endpoint, {
                 method: 'POST',
@@ -23792,7 +23891,19 @@ ${ftFechaDocsHtml}
             const errMsg = data?.esearchresult?.ERROR;
             if (errMsg && /rate|limit|busy|too many/i.test(errMsg)) return { rateLimited: true };
             if (errMsg) throw new Error('ncbi-error');
-            return { count: parseInt(data.esearchresult.count, 10) };
+            const r = data.esearchresult;
+            const count = parseInt(r.count, 10);
+            if (!diagnostico) return { value: count };
+            return {
+                value: {
+                    count,
+                    diag: {
+                        traduccion: typeof r.querytranslation === 'string' ? r.querytranslation : '',
+                        errorlist: r.errorlist || null,
+                        warninglist: r.warninglist || null,
+                    },
+                },
+            };
         };
 
         const MAX_ATTEMPTS = 4;
@@ -23807,7 +23918,7 @@ ${ftFechaDocsHtml}
                 await new Promise(r => setTimeout(r, 600 * Math.pow(2, attempt) + Math.random() * 250));
                 continue;
             }
-            if (!result.rateLimited) return result.count;
+            if (!result.rateLimited) return result.value;
             // 429: backoff exponencial con jitter.
             //
             // La cadena serial anterior daba GRATIS una propiedad valiosa: al haber una sola
