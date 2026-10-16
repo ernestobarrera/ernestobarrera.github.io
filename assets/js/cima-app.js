@@ -22412,39 +22412,96 @@ ${ftFechaDocsHtml}
             const clave = comps.map(c => c.baseEs).sort((a, b) => a.localeCompare(b, 'es')).join(' + ');
             if (!porAsociacion.has(clave)) porAsociacion.set(clave, comps);
         }
-        const asociaciones = porAsociacion.size;
-        const base = { term: '', principios: [], sinVerificar: [], asociaciones, max, tipo: 'principios', conVia: conVia !== meds };
-        const orden = (esPropia) => (a, b) => (esPropia(b) - esPropia(a)) || a.localeCompare(b, 'es');
-
-        // Grupo de monocomponentes: la OR de sus principios. Las asociaciones no aportan término.
-        if (porBase.size) {
-            const principios = [...porBase.keys()].sort(orden(p => primero.includes(p)));
-            if (principios.length === 1) return { ...base, principios, estado: 'unico' };
-            if (principios.length > max) return { ...base, principios, estado: 'amplio' };
-            return {
-                ...base,
-                principios,
-                estado: 'ok',
-                term: [...new Set(principios.flatMap(p => porBase.get(p).variants))].join(' OR '),
-                sinVerificar: principios.filter(p => porBase.get(p).verificationStatus === 'unverified'),
-            };
-        }
-
-        // Grupo hecho solo de asociaciones (G03FA, C09BA…): la OR de las asociaciones que existen,
-        // cada una con sus componentes unidos por AND, como el modo principio activo de una asociación.
-        if (!asociaciones) return { ...base, estado: 'vacio' };
+        // Regla única (revisión de Codex, 17/10): el grupo es la OR de TODOS sus medicamentos
+        // distintos —cada uno, monocomponente o AND de sus componentes— simplificando por
+        // absorción: A OR (A AND B) = A. Una asociación cuyo componente ya está como
+        // monocomponente no añade registros y se quita; una que no lo tiene, se conserva
+        // (antes, con algún monocomponente, se descartaban TODAS y se perdían sus registros).
+        // Nunca A+B → A OR B: metería B solo, que no es del grupo.
+        const absorbida = comps => comps.some(c => porBase.has(c.baseEs));
+        const claves = [...porAsociacion.keys()].filter(k => !absorbida(porAsociacion.get(k)));
+        const absorbidas = porAsociacion.size - claves.length;
         const propia = [...primero].sort((a, b) => a.localeCompare(b, 'es')).join(' + ');
-        const claves = [...porAsociacion.keys()].sort(orden(k => k === propia));
-        const asoc = { ...base, tipo: 'asociaciones', principios: claves };
-        if (claves.length === 1) return { ...asoc, estado: 'unico' };
-        if (claves.length > max) return { ...asoc, estado: 'amplio' };
-        const comps = claves.flatMap(k => porAsociacion.get(k));
+        const orden = (a, b) => ((b === propia) - (a === propia)) || a.localeCompare(b, 'es');
+        const monos = [...porBase.keys()].sort(orden);
+        const asocs = claves.sort(orden);
+        const principios = [...monos, ...asocs];
+        const tipo = !asocs.length ? 'principios' : !monos.length ? 'asociaciones' : 'mixto';
+        const base = { term: '', principios, sinVerificar: [], asociaciones: asocs.length, absorbidas, max, tipo, conVia: conVia !== meds };
+
+        if (!principios.length) return { ...base, estado: 'vacio' };
+        // «La misma búsqueda» solo si el único elemento del grupo ES el medicamento abierto. Abrir
+        // A+B en un grupo cuyo único término es A no es lo mismo: el grupo sí se ofrece.
+        if (principios.length === 1 && principios[0] === propia) return { ...base, estado: 'unico' };
+        if (principios.length > max) return { ...base, estado: 'amplio' };
+
+        const compsDe = k => porBase.has(k) ? [porBase.get(k)] : porAsociacion.get(k);
+        const partes = [
+            ...[...new Set(monos.flatMap(p => porBase.get(p).variants))],
+            ...asocs.map(k => `(${porAsociacion.get(k).map(c => `(${c.variants.join(' OR ')})`).join(' AND ')})`),
+        ];
         return {
-            ...asoc,
+            ...base,
             estado: 'ok',
-            term: claves.map(k => `(${porAsociacion.get(k).map(c => `(${c.variants.join(' OR ')})`).join(' AND ')})`).join(' OR '),
-            sinVerificar: [...new Set(comps.filter(c => c.verificationStatus === 'unverified').map(c => c.baseEs))],
+            term: partes.join(' OR '),
+            sinVerificar: [...new Set(principios.flatMap(compsDe).filter(c => c.verificationStatus === 'unverified').map(c => c.baseEs))],
         };
+    }
+
+    /**
+     * Valor por defecto de la pastilla de vía (decisión de Ernesto, 17/10, opción B del contraste
+     * con Codex). NO se infiere de la farmacología: «local/sistémica» falló con TESTOGEL (cutánea,
+     * efecto sistémico) y BUCCOLAM (bucal, crisis convulsivas). Se decide con datos de CIMA:
+     *
+     *   se ACTIVA si, dentro del alcance elegido, hay medicamentos comercializados por OTRA vía
+     *   (la vía distingue); se DESACTIVA si todo va por la misma vía (acotar solo perdería
+     *   artículos que no la nombran) y SIEMPRE si incluye la oral (casi nunca está en el título).
+     *
+     * Por eso depende del alcance: promestrieno solo es vaginal (principio activo: desactivada),
+     * pero G03CA también es oral y transdérmico (grupo: activada).
+     *
+     * @param {Object[]} meds    medicamentos del alcance (de la sustancia o del grupo)
+     * @param {Object} via       salida de _evidenceViaDeMed
+     * @param {string|null} clave  clave de sustancia (componentes ordenados) para quedarse solo con
+     *                             ella; null en modo grupo
+     * @returns {{activar: boolean, motivo: 'oral'|'distingue'|'unica'|'sin-datos', otras: string[]}}
+     */
+    _evidenceViaPorDefecto(meds, via, clave = null) {
+        if (!via?.ids?.length || via.sinEquivalencia?.length) return { activar: false, motivo: 'sin-datos', otras: [] };
+        if (via.ids.includes(48)) return { activar: false, motivo: 'oral', otras: [] };
+        const lista = Array.isArray(meds) ? meds : [];
+        const delAlcance = clave == null ? lista : lista.filter(m => this._evidenceClaveSustancia(m) === clave);
+        if (!delAlcance.length) return { activar: false, motivo: 'sin-datos', otras: [] };
+        const familia = id => MedCheckApp._EV_VIAS[id]?.familia || String(id);
+        const propias = new Set(via.ids.map(familia));
+        const otras = new Set();
+        for (const m of delAlcance) {
+            for (const v of m.viasAdministracion || []) {
+                if (v?.id == null || propias.has(familia(v.id))) continue;
+                otras.add(MedCheckApp._EV_VIAS[v.id]?.etiqueta || this._consultVia(v.nombre));
+            }
+        }
+        const lista2 = [...otras].sort((a, b) => a.localeCompare(b, 'es'));
+        return { activar: lista2.length > 0, motivo: lista2.length ? 'distingue' : 'unica', otras: lista2 };
+    }
+
+    /** Clave de sustancia de un medicamento: sus componentes, normalizados y ordenados. */
+    _evidenceClaveSustancia(med) {
+        return this._substanceIdentity(med).components.map(c => c.baseEs).sort((a, b) => a.localeCompare(b, 'es')).join(' + ');
+    }
+
+    /** Medicamentos comercializados con un principio activo (para saber por qué vías se vende). Caché de sesión. */
+    async _evidenceSustanciaMeds(nombre) {
+        if (!this._evSustanciaMedsCache) this._evSustanciaMedsCache = new Map();
+        const clave = String(nombre || '').toLowerCase();
+        if (!clave) return [];
+        if (!this._evSustanciaMedsCache.has(clave)) {
+            const p = this.api.searchMedicamentosAll({ practiv1: nombre, comerc: 1 }, { analyticsOptions: { headers: { 'X-MC-Autocomplete': '1' } } })
+                .then(r => r?.resultados || []);
+            this._evSustanciaMedsCache.set(clave, p);
+            p.catch(() => this._evSustanciaMedsCache.delete(clave));
+        }
+        return this._evSustanciaMedsCache.get(clave);
     }
 
     /**
@@ -22453,11 +22510,11 @@ ${ftFechaDocsHtml}
      * porque G03CA reúne estrógenos sistémicos y vaginales y quitar la vía no generaliza la
      * pregunta, la cambia. Medido: G03CA a 5 años, 13.971 citas; con vía vaginal, 636.
      *
-     * Viene ACTIVADA si todas las vías del medicamento son locales y desactivada si alguna es
-     * sistémica: que algo es oral casi nunca está en el título, y acotar por ello hundiría la
-     * recuperación. Si alguna vía no tiene equivalencia en la tabla, no se ofrece (no se acota
-     * por la mitad de las vías de un producto).
-     * @returns {null | {ids:number[], etiqueta:string, pubmed:string, local:boolean, sinEquivalencia:string[]}}
+     * Cuándo viene activada lo decide `_evidenceViaPorDefecto`, con datos de CIMA. Con varias
+     * vías, el bloque es su OR: «cualquiera de las vías autorizadas del producto», no la que se
+     * usó en un caso. Si alguna vía no está en la tabla, no se ofrece acotar (no se acota por la
+     * mitad de las vías de un producto) y se dice cuál falta.
+     * @returns {null | {ids:number[], etiqueta:string, pubmed:string, sinEquivalencia:string[]}}
      */
     _evidenceViaDeMed(med) {
         const vias = (Array.isArray(med?.viasAdministracion) ? med.viasAdministracion : []).filter(v => v && v.id != null);
@@ -22466,11 +22523,12 @@ ${ftFechaDocsHtml}
         const conocidas = vias.filter(v => tabla[v.id]);
         const sinEquivalencia = vias.filter(v => !tabla[v.id]).map(v => this._consultVia(v.nombre));
         const entradas = [...new Map(conocidas.map(v => [tabla[v.id].etiqueta, tabla[v.id]])).values()];
+        // La etiqueta nombra TODAS las vías del producto, también las que no están en la tabla.
+        const etiquetas = [...new Set(vias.map(v => tabla[v.id]?.etiqueta || this._consultVia(v.nombre)))];
         return {
             ids: conocidas.map(v => v.id),
-            etiqueta: entradas.map(e => e.etiqueta).join(', ') || vias.map(v => this._consultVia(v.nombre)).join(', '),
+            etiqueta: etiquetas.join(', '),
             pubmed: entradas.length === 1 ? entradas[0].pubmed : entradas.map(e => `(${e.pubmed})`).join(' OR '),
-            local: entradas.length > 0 && entradas.every(e => e.local),
             sinEquivalencia,
         };
     }
@@ -22494,23 +22552,25 @@ ${ftFechaDocsHtml}
         const esc = s => this._escapeHtml(String(s ?? ''));
         const grupo = `<strong>${esc(atc4.codigo)}</strong>${atc4.nombre ? ` ${esc(atc4.nombre.toLowerCase())}` : ''}`;
         const porVia = via ? ` por vía ${esc(via)}` : '';
-        const unidad = g.tipo === 'asociaciones' ? 'asociaciones' : 'principios';
+        const unidad = { principios: 'principios', asociaciones: 'asociaciones', mixto: 'principios y asociaciones' }[g.tipo] || 'principios';
         const motivos = {
             vacio: via
                 ? `CIMA no devuelve medicamentos comercializados de este grupo${porVia}. Desactiva la vía para ver el grupo entero.`
                 : 'CIMA no devuelve medicamentos comercializados de este grupo.',
-            unico: g.tipo === 'asociaciones'
-                ? `en España este grupo solo tiene comercializada esta asociación${porVia}: la búsqueda sería la misma.`
-                : `en España este grupo solo tiene comercializado este principio activo${porVia}: la búsqueda sería la misma.`,
+            unico: `en España este grupo solo tiene comercializado este mismo medicamento${porVia}: la búsqueda sería la misma.`,
             amplio: `el grupo tiene ${g.principios.length} ${unidad} comercializados${porVia} (máximo ${g.max}); la consulta dejaría de ser manejable. Edita el término a mano.`,
         };
         if (g.estado !== 'ok') return `${grupo}: ${motivos[g.estado] || 'no se pudo construir el término de grupo.'}`;
         const partes = [
-            `${grupo} · ${g.principios.length} ${unidad} comercializad${unidad === 'asociaciones' ? 'as' : 'os'} en España${porVia} (CIMA): ${esc(g.principios.join(g.tipo === 'asociaciones' ? '; ' : ', '))}.`,
+            `${grupo} · ${g.principios.length} ${unidad} comercializados en España${porVia} (CIMA): ${esc(g.principios.join('; '))}.`,
             'Lo que no se comercializa aquí no entra; añádelo en el campo si lo necesitas.',
         ];
+        // La vía hace DOS cosas en modo grupo, y una sola pastilla controla ambas: elige qué
+        // medicamentos entran y exige que el artículo nombre la vía. Se dice.
+        if (via) partes.push(`Con la vía activada solo entran los que se comercializan${porVia}; desactívala para el grupo entero.`);
+        if (g.asociaciones) partes.push('Cada asociación recoge los registros que mencionan todos sus componentes; no acredita que se estudiaran juntos.');
+        if (g.absorbidas) partes.push(`${g.absorbidas === 1 ? 'Una asociación no se añade' : `${g.absorbidas} asociaciones no se añaden`} aparte porque ya la recoge su principio en solitario.`);
         if (g.sinVerificar.length) partes.push(`Pasan tal cual, sin traducción comprobada: ${esc(g.sinVerificar.join(', '))}.`);
-        if (g.tipo === 'principios' && g.asociaciones) partes.push('Las asociaciones del grupo no se añaden como término propio.');
         partes.push('REec y ClinicalTrials.gov siguen con el principio activo.');
         return partes.join(' ');
     }
@@ -22764,9 +22824,13 @@ ${ftFechaDocsHtml}
         const atc4 = (Array.isArray(med.atcs) ? med.atcs : []).find(a => a?.nivel === 4 && a.codigo) || null;
         // Vía del producto: misma doctrina que «Consultar IA» (la vía se conserva).
         const via = this._evidenceViaDeMed(med);
+        // Nace DESACTIVADA: si se activa lo decide _evidenceViaPorDefecto con datos de CIMA, y el
+        // motivo se escribe debajo. «Sin correspondencia configurada» y no «sin equivalencia»:
+        // que una vía no esté en la tabla no significa que PubMed no tenga cómo nombrarla.
         const viaHtml = !via ? '' : via.sinEquivalencia.length
-            ? `<div class="evidence-scope consult-scope evidence-via"><label class="consult-scope-opt is-disabled" title="Sin equivalencia en PubMed para: ${this._escapeHtml(via.sinEquivalencia.join(', '))}. Si la necesitas, escríbela en el campo AND."><input type="checkbox" disabled><span>Vía ${this._escapeHtml(via.etiqueta)}: sin equivalencia</span></label></div>`
-            : `<div class="evidence-scope consult-scope evidence-via"><label class="consult-scope-opt" title="Añade a la búsqueda con AND: ${this._escapeHtml(via.pubmed)}"><input type="checkbox" id="evidence-via-check" data-pubmed="${this._escapeHtml(via.pubmed)}"${via.local ? ' checked' : ''}><span>Acotar a vía ${this._escapeHtml(via.etiqueta)}</span></label></div>`;
+            ? `<div class="evidence-scope consult-scope evidence-via"><label class="consult-scope-opt is-disabled" title="Sin correspondencia configurada para: ${this._escapeHtml(via.sinEquivalencia.join(', '))}. Si la necesitas, escríbela en el campo AND."><input type="checkbox" disabled><span>Vía ${this._escapeHtml(via.etiqueta)}: sin correspondencia configurada para ${this._escapeHtml(via.sinEquivalencia.join(', '))}</span></label></div>`
+            : `<div class="evidence-scope consult-scope evidence-via"><label class="consult-scope-opt" title="Añade a la búsqueda con AND: ${this._escapeHtml(via.pubmed)}"><input type="checkbox" id="evidence-via-check" data-pubmed="${this._escapeHtml(via.pubmed)}"><span>Acotar a vía ${this._escapeHtml(via.etiqueta)}</span></label></div>
+               <p class="evidence-scope-note" id="evidence-via-motivo" aria-live="polite"></p>`;
 
         const enc = q => encodeURIComponent(q);
         const reecTerm = q => this._buildReecSearchTerm(q);
@@ -23023,8 +23087,8 @@ ${ftFechaDocsHtml}
         this._evFilterDefs = filterDefs;
         this._evFilterQueryById = this._evFilterQueryById || {};
 
-        // Carga inicial con rango por defecto (5 años)
-        this._loadEvidenceFiltersAndCount(getCurrentTerm(), filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
+        // La carga inicial de PubMed va al final de este método: antes hay que saber si la vía
+        // viene activada (lo decide una consulta a CIMA), o la primera búsqueda sería otra.
         this._loadReecCount(canonicalEsTerm);
         // MedyNut llega async y se revela sola si hay cobertura; no bloquea el render.
         this._hydrateMedynut(identity, med);
@@ -23099,9 +23163,11 @@ ${ftFechaDocsHtml}
         // el término efectivo no ha cambiado.
         const acotar = document.getElementById('evidence-acotar-input');
         let lastTerm = getCurrentTerm();
+        let cargado = false;
         const reloadTerm = () => {
             const t = getCurrentTerm();
-            if (!t || t === lastTerm) return;
+            if (!t || (cargado && t === lastTerm)) return;
+            cargado = true;
             lastTerm = t;
             resetCounts();
             this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
@@ -23131,21 +23197,64 @@ ${ftFechaDocsHtml}
             reloadTerm();
         };
         const viaCheck = document.getElementById('evidence-via-check');
+        const viaMotivo = document.getElementById('evidence-via-motivo');
         const viaActiva = () => !!(viaCheck?.checked && via?.ids?.length);
         const grupoRadio = container.querySelector('input[name="ev-scope"][value="grupo"]');
+
+        // Valor por defecto de la vía, según el ALCANCE (opción B, 17/10). En cuanto el médico
+        // toca la pastilla, manda su elección y ya no se recalcula al cambiar de alcance.
+        let viaTocada = false;
+        const nombreSustancia = identity.components.map(c => c.baseEs).join(' + ');
+        const claveSustancia = this._evidenceClaveSustancia(med);
+        const pintarMotivo = (d, alcance) => {
+            if (!viaMotivo) return;
+            const ambito = alcance === 'grupo' ? `el grupo ${atc4?.codigo || ''}` : nombreSustancia;
+            viaMotivo.textContent = {
+                distingue: `Activada: en España ${ambito} también se comercializa por vía ${d.otras.join(', ')}. Desactívala para buscar todas las vías.`,
+                unica: `Sin activar: en España ${ambito} solo se comercializa por esta vía, así que acotar solo perdería artículos que no la nombran.`,
+                oral: 'Sin activar: la vía oral casi nunca figura en el título o el resumen.',
+                'sin-datos': 'Sin activar: no se pudo comprobar en CIMA por qué otras vías se comercializa.',
+            }[d.motivo] || '';
+        };
+        const aplicarDecision = (d, alcance) => {
+            if (!viaCheck || viaTocada || !container.isConnected) return;
+            viaCheck.checked = d.activar;
+            pintarMotivo(d, alcance);
+        };
+        const decidirViaSustancia = async () => {
+            if (!viaCheck || viaTocada) return;
+            if (via.ids.includes(48)) { aplicarDecision(this._evidenceViaPorDefecto([], via), 'pa'); return; }
+            if (viaMotivo) viaMotivo.textContent = 'Comprobando en CIMA por qué vías se comercializa…';
+            let d;
+            try {
+                const tope = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000));
+                const meds = await Promise.race([this._evidenceSustanciaMeds(identity.components[0]?.raw || nombreSustancia), tope]);
+                d = this._evidenceViaPorDefecto(meds, via, claveSustancia);
+            } catch {
+                d = { activar: false, motivo: 'sin-datos', otras: [] };
+            }
+            aplicarDecision(d, 'pa');
+        };
+
         const aplicarAlcance = async () => {
             const radio = container.querySelector('input[name="ev-scope"]:checked');
             const cycle = (this._evScopeCycle = (this._evScopeCycle || 0) + 1);
             if (radio?.value !== 'grupo' || !atc4) {
                 if (scopeNote) scopeNote.hidden = true;
+                await decidirViaSustancia();
+                if (cycle !== this._evScopeCycle || !container.isConnected) return;
                 applyScopeTerm(pubmedTerm);
                 return;
             }
             if (scopeNote) { scopeNote.hidden = false; scopeNote.textContent = `Buscando en CIMA los principios de ${atc4.codigo}…`; }
-            const filtroVia = viaActiva();
             let g;
+            let filtroVia = false;
             try {
                 const meds = await this._evidenceGroupMeds(atc4.codigo);
+                if (cycle !== this._evScopeCycle || !container.isConnected) return;
+                // En modo grupo, el valor por defecto mira las vías de TODO el grupo.
+                aplicarDecision(this._evidenceViaPorDefecto(meds, via, null), 'grupo');
+                filtroVia = viaActiva();
                 g = this._evidenceGroupTerm(meds, identity.components.map(c => c.baseEs), { viaIds: filtroVia ? via.ids : null });
             } catch {
                 g = null;
@@ -23175,9 +23284,23 @@ ${ftFechaDocsHtml}
         });
         // La vía cambia también QUIÉN entra en el grupo, así que en modo grupo se reconstruye.
         viaCheck?.addEventListener('change', () => {
+            viaTocada = true;
+            if (viaMotivo) viaMotivo.textContent = '';
             if (grupoRadio?.checked) aplicarAlcance();
             else reloadTerm();
         });
+
+        // Carga inicial de PubMed (5 años), cuando ya se sabe si la vía viene activada. Si el
+        // médico ha lanzado ya una búsqueda mientras tanto, no se repite.
+        const arrancar = () => {
+            if (!container.isConnected) return;
+            const t = getCurrentTerm();
+            if (cargado && t === lastTerm) return;
+            cargado = true;
+            lastTerm = t;
+            this._loadEvidenceFiltersAndCount(t, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
+        };
+        decidirViaSustancia().finally(arrancar);
 
         // Checkboxes de combinación
         container.querySelectorAll('.evidence-filter-check-input').forEach(cb => {
@@ -23548,6 +23671,10 @@ ${ftFechaDocsHtml}
         const enc = q => encodeURIComponent(q);
         const pmBase = 'https://pubmed.ncbi.nlm.nih.gov/?term=';
         const cycleId = (this._evidenceCountCycle = (this._evidenceCountCycle || 0) + 1);
+        // Todo lo que describe ESTA búsqueda se captura aquí, antes del primer await: leerlo del
+        // DOM después mezclaría el estado de una búsqueda posterior (revisión de Codex, 17/10).
+        const conAcotacion = !!document.getElementById('evidence-acotar-input')?.value.trim();
+        const vigente = () => this._evidenceCountCycle === cycleId;
 
         // Actualizar enlace "total" inmediatamente (sin filtro que cargar)
         const totalQuery = drugTerm + DATE_SUFFIX;
@@ -23583,6 +23710,10 @@ ${ftFechaDocsHtml}
         };
 
         const loaded = await Promise.all(filterDefs.map(f => loadFilter(f)));
+        // Si mientras cargaban los filtros empezó otra búsqueda, esta ya no escribe NADA: ni
+        // enlaces, ni registro de reintentos, ni diagnóstico, ni gráfica. Antes el ciclo solo se
+        // miraba al entrar en el bucle de recuentos, después de reescribir los enlaces.
+        if (!vigente()) return;
 
         // Actualizar enlaces y tooltips (solo primera vez, no dependen de fecha)
         filterDefs.forEach((f, i) => {
@@ -23631,7 +23762,6 @@ ${ftFechaDocsHtml}
         // _fetchPubmedCount). Un recuento en caché sin diagnóstico guardado se vuelve a pedir:
         // diagnóstico ausente es «no comprobado», nunca «todo bien».
         if (!this._evidenceDiagCache) this._evidenceDiagCache = new Map();
-        const conAcotacion = !!document.getElementById('evidence-acotar-input')?.value.trim();
         this._renderEvidenceInterp(null);
 
         // Lanzar todas las peticiones: el espaciado y los reintentos los gobierna la cola
@@ -23688,14 +23818,20 @@ ${ftFechaDocsHtml}
             })(req, cycleId);
         }
 
+        if (!vigente()) return;
+
         // Refrescar la barra de combinación si hay ≥2 filtros seleccionados
         // (se ejecuta sin esperar; el método debouncea internamente vía cycle).
         this._updateEvidenceCombineBar();
 
         // Sparkline temporal: sólo se recalcula si el término cambió (no en cambios de slider).
         // No bloquea la UX principal: arranca tras el grid y respeta su propio rate-limit.
-        if (this._lastSparklineTerm !== drugTerm) {
-            this._lastSparklineTerm = drugTerm;
+        // La marca vive en el SVG, no en la app: al cerrar y reabrir la misma ficha el SVG es
+        // nuevo y está vacío aunque el término sea el mismo (antes quedaba sin dibujar). Los
+        // recuentos de los bienios salen de la caché, así que repintar no repite peticiones.
+        const svg = document.getElementById('evidence-sparkline');
+        if (svg && svg.dataset.term !== drugTerm) {
+            svg.dataset.term = drugTerm;
             this._loadEvidenceSparkline(drugTerm);
         }
     }
@@ -23723,10 +23859,21 @@ ${ftFechaDocsHtml}
             return;
         }
         if (el) el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+        // «Todas las citas» trae también la interpretación de PubMed: el reintento cumple el mismo
+        // contrato que la carga inicial. Y si entretanto cambió la búsqueda, no escribe nada.
+        const esTotal = id === 'total';
+        const cycle = this._evidenceCountCycle;
+        const conAcotacion = !!document.getElementById('evidence-acotar-input')?.value.trim();
         try {
-            const count = await this._fetchPubmedCount(req.query);
-            if (count == null) { if (el) el.innerHTML = this._evCountErrorHtml(id); return; }
+            const respuesta = await this._fetchPubmedCount(req.query, () => this._evidenceCountCycle === cycle, { diagnostico: esTotal });
+            if (this._evidenceCountCycle !== cycle) return;
+            if (respuesta == null) { if (el) el.innerHTML = this._evCountErrorHtml(id); return; }
+            const count = esTotal ? respuesta.count : respuesta;
             this._evidenceCountCache.set(req.query, count);
+            if (esTotal) {
+                this._evidenceDiagCache?.set(req.query, respuesta.diag);
+                this._renderEvidenceInterp(respuesta.diag, conAcotacion);
+            }
             if (el) {
                 const cls = count === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
                 el.innerHTML = `<span class="${cls}">${count.toLocaleString('es-ES')}</span>`;
@@ -24505,33 +24652,45 @@ MedCheckApp._VIEW_ANALYTICS_MAP = {
  * ótica va solo con texto libre. Descriptor + [tiab] a propósito: el descriptor solo recoge lo
  * ya indexado, y lo reciente aún no lo está.
  *
- * `local`: la vía define la pregunta (vaginal, oftálmica, inhalada…) y la pastilla viene activada.
- * Las sistémicas vienen desactivadas: «oral» casi nunca está en el título.
+ * Revisión con Codex (17/10): un descriptor que EXISTE no por eso SIGNIFICA la vía. Se retiraron
+ * tres que decían más de lo que rotulan: «Administration, Topical» (su explosión recoge bucal,
+ * vaginal, oftálmica…), «Suppositories» (también vaginales y uretrales) e «Injections, Spinal»
+ * (padre que arrastra la epidural). Se añadieron las variantes que faltaban y que se midieron:
+ * «nebuliz*» y «nebulis*» (100 registros de budesonida fuera del bloque) y «eye drop» en singular.
+ * `topical[tiab]` se queda en cutánea a sabiendas: es como se nombra casi siempre; puede traer
+ * algún uso ocular o mucoso. Y cutánea lleva también `transdermal[tiab]`: CIMA clasifica como
+ * «uso cutáneo» geles de efecto sistémico (TESTOGEL) que la literatura llama «transdermal gel».
+ *
+ * `familia`: vías que CIMA separa pero la literatura no. Cutánea y transdérmica son una sola al
+ * decidir si la vía DISTINGUE: que la testosterona tenga parches no hace distinto a su gel.
+ *
+ * Esta tabla NO dice si la vía viene activada: eso lo decide _evidenceViaPorDefecto con datos de
+ * CIMA. La marca «local/sistémica» que había antes era una inferencia farmacológica y fallaba.
  */
 MedCheckApp._EV_VIAS = {
-    48: { etiqueta: 'oral', local: false, pubmed: '"Administration, Oral"[Mesh] OR oral[tiab]' },
-    42: { etiqueta: 'intravenosa', local: false, pubmed: '"Administration, Intravenous"[Mesh] OR "Injections, Intravenous"[Mesh] OR "Infusions, Intravenous"[Mesh] OR intravenous[tiab]' },
-    58: { etiqueta: 'subcutánea', local: false, pubmed: '"Injections, Subcutaneous"[Mesh] OR subcutaneous[tiab]' },
-    30: { etiqueta: 'intramuscular', local: false, pubmed: '"Injections, Intramuscular"[Mesh] OR intramuscular[tiab]' },
-    62: { etiqueta: 'transdérmica', local: false, pubmed: '"Transdermal Patch"[Mesh] OR transdermal[tiab]' },
-    60: { etiqueta: 'sublingual', local: false, pubmed: '"Administration, Sublingual"[Mesh] OR sublingual[tiab]' },
-    3: { etiqueta: 'cutánea', local: true, pubmed: '"Administration, Cutaneous"[Mesh] OR "Administration, Topical"[Mesh] OR topical[tiab] OR cutaneous[tiab]' },
-    78: { etiqueta: 'inhalatoria', local: true, pubmed: '"Administration, Inhalation"[Mesh] OR "Metered Dose Inhalers"[Mesh] OR "Dry Powder Inhalers"[Mesh] OR "Nebulizers and Vaporizers"[Mesh] OR inhaled[tiab] OR inhalation[tiab] OR inhaler[tiab] OR inhalers[tiab]' },
-    47: { etiqueta: 'oftálmica', local: true, pubmed: '"Administration, Ophthalmic"[Mesh] OR "Ophthalmic Solutions"[Mesh] OR ophthalmic[tiab] OR "eye drops"[tiab]' },
-    45: { etiqueta: 'nasal', local: true, pubmed: '"Administration, Intranasal"[Mesh] OR intranasal[tiab] OR "nasal spray"[tiab]' },
-    2: { etiqueta: 'bucal', local: true, pubmed: '"Administration, Buccal"[Mesh] OR buccal[tiab] OR oromucosal[tiab]' },
-    69: { etiqueta: 'bucal', local: true, pubmed: '"Administration, Buccal"[Mesh] OR buccal[tiab] OR oromucosal[tiab]' },
-    54: { etiqueta: 'rectal', local: true, pubmed: '"Administration, Rectal"[Mesh] OR "Suppositories"[Mesh] OR rectal[tiab] OR suppository[tiab] OR suppositories[tiab]' },
-    67: { etiqueta: 'vaginal', local: true, pubmed: '"Administration, Intravaginal"[Mesh] OR vaginal[tiab] OR intravaginal[tiab]' },
-    49: { etiqueta: 'bucofaríngea', local: true, pubmed: '"Mouthwashes"[Mesh] OR oropharyngeal[tiab] OR mouthwash[tiab] OR lozenge[tiab] OR lozenges[tiab]' },
-    1: { etiqueta: 'ótica', local: true, pubmed: 'otic[tiab] OR "ear drops"[tiab]' },
-    85: { etiqueta: 'intravítrea', local: true, pubmed: '"Intravitreal Injections"[Mesh] OR intravitreal[tiab]' },
-    14: { etiqueta: 'intraarticular', local: true, pubmed: '"Injections, Intra-Articular"[Mesh] OR intraarticular[tiab] OR intra-articular[tiab]' },
-    8: { etiqueta: 'epidural', local: true, pubmed: '"Injections, Epidural"[Mesh] OR epidural[tiab]' },
-    37: { etiqueta: 'intratecal', local: true, pubmed: '"Injections, Spinal"[Mesh] OR intrathecal[tiab]' },
-    43: { etiqueta: 'intravesical', local: true, pubmed: '"Administration, Intravesical"[Mesh] OR intravesical[tiab]' },
-    15: { etiqueta: 'intrauterina', local: true, pubmed: '"Intrauterine Devices, Medicated"[Mesh] OR intrauterine[tiab]' },
-    23: { etiqueta: 'intradérmica', local: true, pubmed: '"Injections, Intradermal"[Mesh] OR intradermal[tiab]' },
+    48: { etiqueta: 'oral', pubmed: '"Administration, Oral"[Mesh] OR oral[tiab]' },
+    42: { etiqueta: 'intravenosa', pubmed: '"Administration, Intravenous"[Mesh] OR "Injections, Intravenous"[Mesh] OR "Infusions, Intravenous"[Mesh] OR intravenous[tiab] OR intravenously[tiab]' },
+    58: { etiqueta: 'subcutánea', pubmed: '"Injections, Subcutaneous"[Mesh] OR subcutaneous[tiab] OR subcutaneously[tiab]' },
+    30: { etiqueta: 'intramuscular', pubmed: '"Injections, Intramuscular"[Mesh] OR intramuscular[tiab] OR intramuscularly[tiab]' },
+    62: { etiqueta: 'transdérmica', familia: 'piel', pubmed: '"Transdermal Patch"[Mesh] OR transdermal[tiab] OR transdermally[tiab]' },
+    60: { etiqueta: 'sublingual', pubmed: '"Administration, Sublingual"[Mesh] OR sublingual[tiab] OR sublingually[tiab]' },
+    3: { etiqueta: 'cutánea', familia: 'piel', pubmed: '"Administration, Cutaneous"[Mesh] OR cutaneous[tiab] OR dermal[tiab] OR topical[tiab] OR transdermal[tiab]' },
+    78: { etiqueta: 'inhalatoria', pubmed: '"Administration, Inhalation"[Mesh] OR "Metered Dose Inhalers"[Mesh] OR "Dry Powder Inhalers"[Mesh] OR "Nebulizers and Vaporizers"[Mesh] OR inhaled[tiab] OR inhalation[tiab] OR inhaler[tiab] OR inhalers[tiab] OR nebuliz*[tiab] OR nebulis*[tiab]' },
+    47: { etiqueta: 'oftálmica', pubmed: '"Administration, Ophthalmic"[Mesh] OR "Ophthalmic Solutions"[Mesh] OR ophthalmic[tiab] OR "eye drops"[tiab] OR "eye drop"[tiab]' },
+    45: { etiqueta: 'nasal', pubmed: '"Administration, Intranasal"[Mesh] OR intranasal[tiab] OR intranasally[tiab] OR "nasal spray"[tiab]' },
+    2: { etiqueta: 'bucal', pubmed: '"Administration, Buccal"[Mesh] OR buccal[tiab] OR oromucosal[tiab]' },
+    69: { etiqueta: 'bucal', pubmed: '"Administration, Buccal"[Mesh] OR buccal[tiab] OR oromucosal[tiab]' },
+    54: { etiqueta: 'rectal', pubmed: '"Administration, Rectal"[Mesh] OR rectal[tiab] OR rectally[tiab]' },
+    67: { etiqueta: 'vaginal', pubmed: '"Administration, Intravaginal"[Mesh] OR vaginal[tiab] OR intravaginal[tiab] OR vaginally[tiab]' },
+    49: { etiqueta: 'bucofaríngea', pubmed: '"Mouthwashes"[Mesh] OR oropharyngeal[tiab] OR mouthwash[tiab] OR lozenge[tiab] OR lozenges[tiab]' },
+    1: { etiqueta: 'ótica', pubmed: 'otic[tiab] OR "ear drops"[tiab] OR "ear drop"[tiab]' },
+    85: { etiqueta: 'intravítrea', pubmed: '"Intravitreal Injections"[Mesh] OR intravitreal[tiab]' },
+    14: { etiqueta: 'intraarticular', pubmed: '"Injections, Intra-Articular"[Mesh] OR intraarticular[tiab] OR intra-articular[tiab]' },
+    8: { etiqueta: 'epidural', pubmed: '"Injections, Epidural"[Mesh] OR epidural[tiab]' },
+    37: { etiqueta: 'intratecal', pubmed: 'intrathecal[tiab] OR intrathecally[tiab]' },
+    43: { etiqueta: 'intravesical', pubmed: '"Administration, Intravesical"[Mesh] OR intravesical[tiab]' },
+    15: { etiqueta: 'intrauterina', pubmed: '"Intrauterine Devices, Medicated"[Mesh] OR intrauterine[tiab]' },
+    23: { etiqueta: 'intradérmica', pubmed: '"Injections, Intradermal"[Mesh] OR intradermal[tiab]' },
 };
 
 MedCheckApp._CONTEXT_ANALYTICS_MAP = {

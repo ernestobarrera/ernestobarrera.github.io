@@ -84,7 +84,7 @@ const g = app._evidenceGroupTerm(g04bd, ['mirabegron']);
 check('estado ok', g.estado, 'ok');
 check('principio abierto primero, resto alfabético, sin repetidos', g.principios,
     ['mirabegron', 'fesoterodina', 'oxibutinina', 'propiverina', 'solifenacina', 'tolterodina']);
-check('asociación contada y fuera del OR', g.asociaciones, 1);
+check('asociación con un componente ya incluido: absorbida (A OR (A AND B) = A)', [g.absorbidas, g.asociaciones], [1, 0]);
 check('término = OR de las variantes de _substanceIdentity, en orden', g.term,
     ['mirabegron', 'fesoterodina', 'oxibutinina', 'propiverina', 'solifenacina', 'tolterodina']
         .flatMap(p => app._substanceIdentity(med(p)).components[0].variants).join(' OR '));
@@ -110,7 +110,17 @@ const v = n => app._substanceIdentity(med(n)).components[0].variants.join(' OR '
 // Dentro de cada AND, el orden es el del primer producto visto: en un AND no cambia nada.
 check('término: OR de asociaciones, cada una con AND entre componentes', asoc.term,
     `((${v('enalapril')}) AND (${v('hidroclorotiazida')})) OR ((${v('lisinopril')}) AND (${v('hidroclorotiazida')}))`);
-check('una sola asociación en el grupo: la búsqueda sería la misma', app._evidenceGroupTerm([med('enalapril + hidroclorotiazida')], []).estado, 'unico');
+check('una sola asociación en el grupo, la abierta: la búsqueda sería la misma', app._evidenceGroupTerm([med('enalapril + hidroclorotiazida')], ['hidroclorotiazida', 'enalapril']).estado, 'unico');
+
+// ─── Grupos mixtos: regla única con absorción (revisión de Codex, 17/10) ──────
+// Patrón N02BE: paracetamol solo y asociaciones que lo contienen. Abrir la asociación NO es
+// «la misma búsqueda» que el grupo: el grupo es paracetamol y se ofrece.
+const n02be = app._evidenceGroupTerm([med('paracetamol'), med('paracetamol + ibuprofeno')], ['ibuprofeno', 'paracetamol']);
+check('abierta A+B en un grupo cuyo único término es A: se ofrece', [n02be.estado, n02be.principios], ['ok', ['paracetamol']]);
+const mixto = app._evidenceGroupTerm([med('paracetamol'), med('paracetamol + codeina'), med('ibuprofeno + arginina')], ['paracetamol']);
+check('mixto: se conserva la asociación sin componente incluido', [mixto.tipo, mixto.principios, mixto.absorbidas], ['mixto', ['paracetamol', 'arginina + ibuprofeno'], 1]);
+check('mixto: el término lleva el monocomponente y la asociación con AND', /((.*ibuprof.*) AND (.*))|((.*arginin.*) AND (.*))/.test(mixto.term) && mixto.term.startsWith('paracetamol'), true);
+check('mixto: la asociación absorbida no entra (codeína)', /codein/.test(mixto.term), false);
 
 // ─── Filtro por vía en el grupo ───────────────────────────────────────────────
 const conVia = (vtm, ids, i = 0) => ({ ...med(vtm, i), viasAdministracion: ids.map(id => ({ id, nombre: `VÍA ${id}` })) });
@@ -118,15 +128,36 @@ const g03ca = [conVia('promestrieno', [67]), conVia('estriol', [67]), conVia('es
 const vag = app._evidenceGroupTerm(g03ca, ['promestrieno'], { viaIds: [67] });
 check('con vía vaginal entran los que tienen presentación vaginal', vag.principios, ['promestrieno', 'estradiol', 'estriol']);
 check('sin vía, el grupo entero', app._evidenceGroupTerm(g03ca, ['promestrieno']).principios, ['promestrieno', 'estradiol', 'estriol']);
-check('con una vía que solo tiene uno, «unico»', app._evidenceGroupTerm(g03ca, [], { viaIds: [62] }).estado, 'unico');
+check('con una vía que solo tiene el abierto, «unico»', app._evidenceGroupTerm(g03ca, ['estradiol'], { viaIds: [62] }).estado, 'unico');
 check('con una vía que no tiene nadie, «vacio»', app._evidenceGroupTerm(g03ca, [], { viaIds: [45] }).estado, 'vacio');
 
 // ─── Vía del medicamento abierto ──────────────────────────────────────────────
 app._consultVia = MedCheckApp.prototype._consultVia;
 const viaVag = app._evidenceViaDeMed({ viasAdministracion: [{ id: 67, nombre: 'VÍA VAGINAL' }] });
-check('vaginal: local, activada por defecto', [viaVag.etiqueta, viaVag.local, viaVag.ids], ['vaginal', true, [67]]);
-check('vaginal: descriptor MeSH + texto libre', viaVag.pubmed, '"Administration, Intravaginal"[Mesh] OR vaginal[tiab] OR intravaginal[tiab]');
-check('oral: sistémica, desactivada por defecto', app._evidenceViaDeMed({ viasAdministracion: [{ id: 48, nombre: 'VÍA ORAL' }] }).local, false);
+check('vaginal: etiqueta e ids', [viaVag.etiqueta, viaVag.ids], ['vaginal', [67]]);
+check('vaginal: descriptor MeSH + texto libre', viaVag.pubmed, '"Administration, Intravaginal"[Mesh] OR vaginal[tiab] OR intravaginal[tiab] OR vaginally[tiab]');
+
+// ─── Valor por defecto de la vía: datos de CIMA, no farmacología (opción B, 17/10) ────────────
+// Promestrieno solo es vaginal → en principio activo no se activa; G03CA tiene oral y
+// transdérmica → en grupo sí. TESTOGEL o BUCCOLAM ya no se activan por ser «locales».
+const promes = [conVia('promestrieno', [67]), conVia('promestrieno', [67], 1)];
+const claveProm = app._evidenceClaveSustancia(med('promestrieno'));
+check('sustancia con una sola vía: sin activar', app._evidenceViaPorDefecto(promes, viaVag, claveProm), { activar: false, motivo: 'unica', otras: [] });
+check('grupo con otras vías: activada y dice cuáles', app._evidenceViaPorDefecto(g03ca, viaVag, null), { activar: true, motivo: 'distingue', otras: ['oral', 'transdérmica'] });
+check('solo cuenta la MISMA sustancia en modo principio activo',
+    app._evidenceViaPorDefecto([...promes, conVia('estradiol', [48])], viaVag, claveProm).activar, false);
+const viaOral = app._evidenceViaDeMed({ viasAdministracion: [{ id: 48, nombre: 'VÍA ORAL' }] });
+check('la oral nunca se activa sola', app._evidenceViaPorDefecto(g03ca, viaOral, null), { activar: false, motivo: 'oral', otras: [] });
+const viaRara = app._evidenceViaDeMed({ viasAdministracion: [{ id: 127000, nombre: 'INFILTRACIÓN' }] });
+check('vía sin correspondencia: sin activar', app._evidenceViaPorDefecto(g03ca, viaRara, null).motivo, 'sin-datos');
+check('sin datos de CIMA: sin activar', app._evidenceViaPorDefecto([], viaVag, claveProm).motivo, 'sin-datos');
+// TESTOGEL (17/10): CIMA dice «cutánea»; la testosterona también tiene parches («transdérmica») e
+// inyectables. Los parches NO distinguen el gel (misma familia); los inyectables sí.
+const viaCut = app._evidenceViaDeMed({ viasAdministracion: [{ id: 3, nombre: 'USO CUTÁNEO' }] });
+const testo = [conVia('testosterona', [3]), conVia('testosterona', [62], 1), conVia('testosterona', [30], 2)];
+check('cutánea y transdérmica son la misma familia al decidir', app._evidenceViaPorDefecto(testo, viaCut, app._evidenceClaveSustancia(med('testosterona'))).otras, ['intramuscular']);
+check('solo parches como otra vía: no distingue', app._evidenceViaPorDefecto(testo.slice(0, 2), viaCut, app._evidenceClaveSustancia(med('testosterona'))).motivo, 'unica');
+check('el bloque cutáneo recoge «transdermal» (gel de efecto sistémico)', /transdermal\[tiab\]/.test(viaCut.pubmed), true);
 const ivim = app._evidenceViaDeMed({ viasAdministracion: [{ id: 42, nombre: 'VÍA INTRAVENOSA' }, { id: 30, nombre: 'VÍA INTRAMUSCULAR' }] });
 check('varias vías: OR de bloques', [ivim.etiqueta, ivim.pubmed.startsWith('(') && ivim.pubmed.includes(') OR (')], ['intravenosa, intramuscular', true]);
 check('una vía sin equivalencia se declara', app._evidenceViaDeMed({ viasAdministracion: [{ id: 127000, nombre: 'INFILTRACIÓN' }] }).sinEquivalencia, ['infiltración']);
