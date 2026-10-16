@@ -10862,6 +10862,21 @@ mark.ev51-disp { text-decoration: underline dotted #94a3b8 2px; text-underline-o
     pointer-events: none;
 }
 
+/* Cabecera de PubMed: título y deslizador de años en una fila; los campos van debajo, a todo el
+   ancho (2026-10-16). En pantallas estrechas el deslizador baja a su propia línea. */
+.evidence-section-header--pubmed {
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.evidence-pubmed-controls {
+    margin-bottom: 0.75rem;
+}
+
+.evidence-pubmed-controls > .evidence-drug-row:first-child {
+    margin-top: 0;
+}
+
 /* Alcance de PubMed: principio activo · su grupo ATC4 (2026-10-16). Reutiliza .consult-scope-opt. */
 .evidence-scope {
     margin-top: 0.4rem;

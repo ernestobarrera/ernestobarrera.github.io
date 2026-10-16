@@ -22770,36 +22770,10 @@ ${ftFechaDocsHtml}
             ${this._acordeonFT51Html()}
 
             <div class="evidence-section">
-                <div class="evidence-section-header">
+                <div class="evidence-section-header evidence-section-header--pubmed">
                     <i class="fas fa-book-medical"></i>
                     <div class="evidence-section-header-text">
                         <h4 class="evidence-section-title">Literatura científica · PubMed</h4>
-                        <div class="evidence-drug-row" title="Edita para ajustar el término de búsqueda en PubMed">
-                            <label class="evidence-drug-label" for="evidence-drug-input"><i class="fas fa-search"></i></label>
-                            <textarea id="evidence-drug-input" class="evidence-drug-input" rows="1"
-                                   placeholder="término PubMed"
-                                   spellcheck="false"
-                                   autocomplete="off"
-                                   title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo y pulsa Enter o haz clic fuera para recargar (Mayús+Enter: salto de línea).">${this._escapeHtml(pubmedTerm)}</textarea>
-                            <i class="fas fa-pen evidence-drug-edit-hint" aria-hidden="true"></i>
-                        </div>
-                        <div class="evidence-scope consult-scope" role="radiogroup" aria-label="Alcance de la búsqueda en PubMed">
-                            <label class="consult-scope-opt"><input type="radio" name="ev-scope" value="pa" checked><span>Principio activo</span></label>
-                            <label class="consult-scope-opt${atc4 ? '' : ' is-disabled'}" id="ev-scope-grupo-opt" title="${atc4 ? 'OR de los principios activos de su grupo ATC comercializados en España' : 'Este medicamento no tiene grupo ATC de nivel 4 en CIMA'}"><input type="radio" name="ev-scope" value="grupo"${atc4 ? '' : ' disabled'}><span>${atc4 ? `Su grupo (${this._escapeHtml(atc4.codigo)})` : 'Su grupo'}</span></label>
-                        </div>
-                        <p class="evidence-scope-note" id="evidence-scope-note" aria-live="polite" hidden></p>
-                        <div class="evidence-acotar">
-                            <div class="evidence-drug-row evidence-acotar-row" title="Se cruza con AND con el término de arriba. PubMed indexa en inglés.">
-                                <label class="evidence-drug-label evidence-acotar-label" for="evidence-acotar-input">AND</label>
-                                <textarea id="evidence-acotar-input" class="evidence-drug-input" rows="1"
-                                       placeholder="acotar por indicación o patología, en inglés (p. ej. overactive)"
-                                       spellcheck="false"
-                                       autocomplete="off"
-                                       role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="evidence-mesh-suggest"></textarea>
-                            </div>
-                            <div class="evidence-mesh-suggest" id="evidence-mesh-suggest" role="listbox" aria-label="Descriptores MeSH" hidden></div>
-                        </div>
-                        <div class="evidence-interp" id="evidence-interp" aria-live="polite" hidden></div>
                     </div>
                     <div class="evidence-date-range" title="Rango temporal de búsqueda. Mueve el deslizador para ampliar o estrechar.">
                         <input type="range" id="evidence-date-slider" class="evidence-date-slider"
@@ -22810,6 +22784,36 @@ ${ftFechaDocsHtml}
                         </div>
                         <span class="evidence-date-range-label" id="evidence-date-label">${EV_RANGES[EV_RANGE_DEFAULT].label}</span>
                     </div>
+                </div>
+                <!-- Campos a todo el ancho, bajo la cabecera (2026-10-16): el término de un grupo
+                     ATC y la acotación necesitan sitio, y el deslizador cabe junto al título. -->
+                <div class="evidence-pubmed-controls">
+                    <div class="evidence-drug-row" title="Edita para ajustar el término de búsqueda en PubMed">
+                        <label class="evidence-drug-label" for="evidence-drug-input"><i class="fas fa-search"></i></label>
+                        <textarea id="evidence-drug-input" class="evidence-drug-input" rows="1"
+                               placeholder="término PubMed"
+                               spellcheck="false"
+                               autocomplete="off"
+                               title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo y pulsa Enter o haz clic fuera para recargar (Mayús+Enter: salto de línea).">${this._escapeHtml(pubmedTerm)}</textarea>
+                        <i class="fas fa-pen evidence-drug-edit-hint" aria-hidden="true"></i>
+                    </div>
+                    <div class="evidence-scope consult-scope" role="radiogroup" aria-label="Alcance de la búsqueda en PubMed">
+                        <label class="consult-scope-opt"><input type="radio" name="ev-scope" value="pa" checked><span>Principio activo</span></label>
+                        <label class="consult-scope-opt${atc4 ? '' : ' is-disabled'}" id="ev-scope-grupo-opt" title="${atc4 ? 'OR de los principios activos de su grupo ATC comercializados en España' : 'Este medicamento no tiene grupo ATC de nivel 4 en CIMA'}"><input type="radio" name="ev-scope" value="grupo"${atc4 ? '' : ' disabled'}><span>${atc4 ? `Su grupo (${this._escapeHtml(atc4.codigo)})` : 'Su grupo'}</span></label>
+                    </div>
+                    <p class="evidence-scope-note" id="evidence-scope-note" aria-live="polite" hidden></p>
+                    <div class="evidence-acotar">
+                        <div class="evidence-drug-row evidence-acotar-row" title="Se cruza con AND con el término de arriba. PubMed indexa en inglés.">
+                            <label class="evidence-drug-label evidence-acotar-label" for="evidence-acotar-input">AND</label>
+                            <textarea id="evidence-acotar-input" class="evidence-drug-input" rows="1"
+                                   placeholder="acotar por indicación o patología, en inglés (p. ej. overactive)"
+                                   spellcheck="false"
+                                   autocomplete="off"
+                                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="evidence-mesh-suggest"></textarea>
+                        </div>
+                        <div class="evidence-mesh-suggest" id="evidence-mesh-suggest" role="listbox" aria-label="Descriptores MeSH" hidden></div>
+                    </div>
+                    <div class="evidence-interp" id="evidence-interp" aria-live="polite" hidden></div>
                 </div>
                 <div class="evidence-filter-list">
                     <a class="evidence-filter-item evidence-filter-item--total" id="evlink-total" href="#" target="_blank" rel="noopener">
