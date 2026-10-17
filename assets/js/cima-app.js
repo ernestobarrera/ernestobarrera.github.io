@@ -22894,16 +22894,28 @@ ${ftFechaDocsHtml}
         //  - canonicalEsTerm: español base, para REEC (registro español).
         //  - canonicalEnTerm: inglés simple, para ClinicalTrials/WHO/UpToDate (mejor recall; medido).
         //    No se reutiliza el término PubMed con OR/AND, que esos buscadores no entienden igual.
+        // Las dos esperas de abajo vuelven a renderizar cuando termina la carga, y para entonces el
+        // médico pudo abrir otra ficha. `renderEvidenceTab` busca el contenedor por id: sin esta
+        // comprobación, la ficha A se montaba dentro de la B y la dejaba marcada como cargada
+        // (Codex, P1, 17/10, reproducido en Chromium). Solo se reanuda si siguen siendo los mismos.
+        const reanudar = () => {
+            const vigente = container.isConnected
+                && document.getElementById('evidence-content') === container
+                && (!this.currentMed || String(this.currentMed.nregistro) === String(med.nregistro));
+            if (!vigente) return;
+            container.dataset.loaded = '';
+            this.renderEvidenceTab(med);
+        };
         // Esperar al diccionario INN (normalmente ya precargado) antes de construir los términos.
         if (window.innDict && !window.innDict.loaded) {
             // Esperar de verdad: salir sin construir términos (map vacío) y re-renderizar al cargar (Codex).
-            window.innDict.load().then(() => { container.dataset.loaded = ''; this.renderEvidenceTab(med); });
+            window.innDict.load().then(reanudar);
             return;
         }
         // Lo mismo con la ontología, de la que sale la clase clínica (normalmente ya precargada;
         // si no carga, falla en abierto y simplemente no se ofrece la clase).
         if (this.api && !this.api._clinicalOntologyLoaded && typeof this.api._loadClinicalOntology === 'function') {
-            this.api._loadClinicalOntology().then(() => { container.dataset.loaded = ''; this.renderEvidenceTab(med); });
+            this.api._loadClinicalOntology().then(reanudar);
             return;
         }
         const identity = this._substanceIdentity(med);

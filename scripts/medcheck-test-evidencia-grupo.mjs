@@ -261,6 +261,39 @@ check('sin ficha de detalle, solo el VTM', app._evidenceConsultasSustancia(med('
     check('una nota de grupo ATC4 no cambia', /clase clínica/.test(app._evidenceGroupNoteHtml(desdeDabi, { codigo: 'B01AF', nombre: 'Inhibidores directos del factor Xa' })), false);
 }
 
+// ─── Esperas de carga y cambio de ficha (Codex, P1, 17/10) ────────────────────
+// Si la ontología (o el diccionario INN) termina de cargar después de pasar de la ficha A a la B,
+// la continuación no puede montar A en el contenedor de B. Solo se reanuda en la misma ficha.
+{
+    const caja = () => ({ isConnected: true, dataset: {} });
+    const escenario = async ({ espera, cambiar }) => {
+        let soltar;
+        const pendiente = new Promise(r => { soltar = r; });
+        const A = caja(), B = caja();
+        let actual = A;
+        sandbox.document.getElementById = id => (id === 'evidence-content' ? actual : null);
+        const innPrevio = sandbox.window.innDict;
+        if (espera === 'inn') sandbox.window.innDict = { loaded: false, load: () => pendiente };
+        const ap = Object.create(MedCheckApp.prototype);
+        ap.api = espera === 'ontologia' ? { _clinicalOntologyLoaded: false, _loadClinicalOntology: () => pendiente } : { _clinicalOntologyLoaded: true };
+        const medA = { nregistro: 'A1' }, medB = { nregistro: 'B1' };
+        ap.currentMed = medA;
+        ap.renderEvidenceTab(medA);
+        const llamadas = [];
+        ap.renderEvidenceTab = m => llamadas.push(m.nregistro);
+        if (cambiar) { A.isConnected = false; actual = B; ap.currentMed = medB; }
+        soltar();
+        await pendiente; await null; await null;
+        sandbox.window.innDict = innPrevio;
+        sandbox.document.getElementById = () => null;
+        return { llamadas, B: B.dataset.loaded || '' };
+    };
+    check('ontología tardía tras cambiar de ficha: B queda intacta', await escenario({ espera: 'ontologia', cambiar: true }), { llamadas: [], B: '' });
+    check('INN tardío tras cambiar de ficha: B queda intacta', await escenario({ espera: 'inn', cambiar: true }), { llamadas: [], B: '' });
+    check('ontología que llega en la misma ficha: se reanuda', (await escenario({ espera: 'ontologia', cambiar: false })).llamadas, ['A1']);
+    check('INN que llega en la misma ficha: se reanuda', (await escenario({ espera: 'inn', cambiar: false })).llamadas, ['A1']);
+}
+
 // ─── Composición en bloques: (fármaco) AND (vía) AND (acotación) ──────────────
 check('fármaco y vía', app._evidenceComposeTerm('a OR b', '', 'vaginal[tiab]'), '(a OR b) AND (vaginal[tiab])');
 check('fármaco, vía y acotación: la acotación la última', app._evidenceComposeTerm('a', 'x', 'v'), '(a) AND (v) AND (x)');
