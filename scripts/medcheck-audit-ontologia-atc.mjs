@@ -62,7 +62,7 @@ export function excepcionValida(x) {
 export function contradicciones(terms, sustancias, excepciones = []) {
     const encontradas = [];
     const ausentes = [];
-    const vistasEnEntrada = new Set();
+    const avisadas = new Set();
     const fuera = (codigos, claves) => {
         const atcs = [...new Set(claves.flatMap(k => [...sustancias.get(k)]))].sort();
         return atcs.some(a => codigos.some(c => a.startsWith(c))) ? null : atcs;
@@ -75,8 +75,9 @@ export function contradicciones(terms, sustancias, excepciones = []) {
             const claves = [...sustancias.keys()].filter(k => k === s || k.split(' ')[0] === s);
             if (!claves.length) continue;
             const atcs = fuera(codigos, claves);
-            vistasEnEntrada.add(`${entrada}|${s}`);
-            if (atcs) encontradas.push({ entrada, sinonimo, origen: 'sinonimo', atcEntrada: codigos, atcSustancia: atcs });
+            if (!atcs) continue;
+            avisadas.add(`${entrada}|${s}`);
+            encontradas.push({ entrada, sinonimo, origen: 'sinonimo', atcEntrada: codigos, atcSustancia: atcs });
         }
         for (const vigilada of Array.isArray(e.watchSubstances) ? e.watchSubstances : []) {
             const s = norm(vigilada);
@@ -84,10 +85,11 @@ export function contradicciones(terms, sustancias, excepciones = []) {
                 ausentes.push({ entrada, sustancia: vigilada });
                 continue;
             }
-            // Si el mismo nombre ya se evaluó como sinónimo, no se cuenta dos veces.
-            if (vistasEnEntrada.has(`${entrada}|${s}`)) continue;
+            // Siempre con su regla EXACTA, aunque el mismo nombre se evaluara ya como sinónimo: el
+            // heurístico de primera palabra pudo reunir otro VTM que cae dentro y tapar que este no
+            // (Codex, P3, 17/10). Solo se deduplica el aviso, si el sinónimo ya lo dio.
             const atcs = fuera(codigos, [s]);
-            if (atcs) encontradas.push({ entrada, sinonimo: vigilada, origen: 'vigilada', atcEntrada: codigos, atcSustancia: atcs });
+            if (atcs && !avisadas.has(`${entrada}|${s}`)) encontradas.push({ entrada, sinonimo: vigilada, origen: 'vigilada', atcEntrada: codigos, atcSustancia: atcs });
         }
     }
     const clave = x => `${x.entrada}|${norm(x.sinonimo)}`;

@@ -82,6 +82,13 @@ check('normalización: tildes y mayúsculas', norm('  Dabigatrán  ETEXILATO '),
     check('vigilado que ya no está en el censo: AUSENTE (edoxabán)', x.ausentes.map(a => a.sustancia), ['edoxabán']);
     check('vigilado fuera de los códigos de su entrada: NUEVA (sirolimus en L04AH)', x.nuevas.map(n => [n.sinonimo, n.origen]), [['sirolimus', 'vigilada']]);
     check('vigilado dentro: sin aviso (dabigatrán en B01AE07)', x.nuevas.some(n => n.sinonimo === 'dabigatrán'), false);
+    // Codex, P3 (17/10): el sinónimo «x» casa también con «x sal» (primera palabra), que está dentro;
+    // el VTM exacto «x» está fuera y, como vigilado, tiene que avisarse igualmente.
+    const p3 = contradicciones({ t: { atc: ['A'], synonyms: ['x'], watchSubstances: ['x'] } },
+        new Map([['x', new Set(['B'])], ['x sal', new Set(['A'])]]), []);
+    check('un sinónimo heurístico no tapa al vigilado exacto', p3.nuevas.map(n => [n.sinonimo, n.origen]), [['x', 'vigilada']]);
+    const dup = contradicciones({ t: { atc: ['A'], synonyms: ['x'], watchSubstances: ['x'] } }, new Map([['x', new Set(['B'])]]), []);
+    check('si el sinónimo ya lo avisó, el vigilado no lo repite', dup.nuevas.length, 1);
     check('el vigilado casa por nombre EXACTO, no por primera palabra', contradicciones({ t: { atc: ['X'], watchSubstances: ['micofenolato'] } }, censo, []).ausentes.length, 1);
 }
 

@@ -320,9 +320,10 @@ class CimaAPI {
      * con tamanioPagina>100 cuando se necesite el conjunto completo.
      * @param {Object} params - Mismos params que searchMedicamentos (sin pagina/tamanioPagina)
      * @param {Object} options - { analyticsOptions, maxPages } (maxPages default 10 = hasta 2000 resultados)
-     * `totalDeclarado` es el `totalFilas` tal y como lo dio CIMA, o null si no vino legible; quien
-     * necesite AFIRMAR que tiene el conjunto entero compara contra él, no contra `totalFilas`, que
-     * a falta de dato vale el número de filas recibidas (revisión de Codex, 17/10/2026).
+     * `totalDeclarado` es el `totalFilas` tal y como lo dio CIMA, o null si alguna página no lo
+     * trajo legible o no trajo el MISMO que la primera; quien necesite AFIRMAR que tiene el
+     * conjunto entero compara contra él, no contra `totalFilas`, que a falta de dato vale el número
+     * de filas recibidas (revisión de Codex, 17/10/2026).
      * @returns {Promise<{resultados: Array, totalFilas: number, totalDeclarado: (number|null)}>}
      */
     async searchMedicamentosAll(params, options = {}) {
@@ -331,7 +332,7 @@ class CimaAPI {
 
         const first = await this.searchMedicamentos({ ...params, tamanioPagina: pageSize, pagina: 1 }, analyticsOptions);
         let allResults = [...(first?.resultados || [])];
-        const totalDeclarado = Number.isInteger(first?.totalFilas) && first.totalFilas >= 0 ? first.totalFilas : null;
+        let totalDeclarado = Number.isInteger(first?.totalFilas) && first.totalFilas >= 0 ? first.totalFilas : null;
         const totalFilas = first?.totalFilas || allResults.length;
         const actualPageSize = allResults.length || pageSize;
 
@@ -339,6 +340,7 @@ class CimaAPI {
             const totalPages = Math.min(Math.ceil(totalFilas / actualPageSize), maxPages);
             for (let pagina = 2; pagina <= totalPages; pagina += 1) {
                 const page = await this.searchMedicamentos({ ...params, tamanioPagina: pageSize, pagina }, analyticsOptions);
+                if (page?.totalFilas !== totalDeclarado) totalDeclarado = null;
                 if (page?.resultados?.length) allResults = allResults.concat(page.resultados);
             }
         }

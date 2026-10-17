@@ -22533,7 +22533,8 @@ ${ftFechaDocsHtml}
                         return true;
                     });
                     const total = r?.totalDeclarado;
-                    if (meds.length) return { meds, completo: Number.isInteger(total) && vistos.size === meds.length && meds.length >= total };
+                    // Igualdad, no `>=`: más medicamentos que los declarados es un recuento contradictorio.
+                    if (meds.length) return { meds, completo: Number.isInteger(total) && vistos.size === meds.length && meds.length === total };
                 }
                 return { meds: [], completo: true };
             })();

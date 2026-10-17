@@ -207,6 +207,17 @@ check('sin ficha de detalle, solo el VTM', app._evidenceConsultasSustancia(med('
     check('sin totalFilas: completo = false', await completo([{ resultados: [atr] }]), [1, false]);
     check('dos páginas con dos únicos y total 2: completo = true',
         await completo([{ resultados: [atr], totalFilas: 2 }, { resultados: [otro], totalFilas: 2 }]), [2, true]);
+    // Recuentos contradictorios (segunda revisión de Codex, 17/10): reproducidos con completo=true.
+    const tercero = { nregistro: '82145', vtm: { nombre: 'bromuro ipratropio' } };
+    check('total que cambia entre páginas (2 → 3): completo = false',
+        await completo([{ resultados: [atr], totalFilas: 2 }, { resultados: [otro], totalFilas: 3 }]), [2, false]);
+    check('segunda página sin total: completo = false',
+        await completo([{ resultados: [atr], totalFilas: 2 }, { resultados: [otro] }]), [2, false]);
+    check('más únicos que los declarados (declara 1, trae 2): completo = false',
+        await completo([{ resultados: [atr, otro], totalFilas: 1 }]), [2, false]);
+    check('declara 0 y trae un registro: completo = false', await completo([{ resultados: [atr], totalFilas: 0 }]), [1, false]);
+    check('tres páginas coherentes: completo = true',
+        await completo([{ resultados: [atr], totalFilas: 3 }, { resultados: [otro], totalFilas: 3 }, { resultados: [tercero], totalFilas: 3 }]), [3, true]);
     check('el helper expone el total declarado, o null si falta',
         [(await transporte([{ resultados: [atr], totalFilas: 1 }]).searchMedicamentosAll({})).totalDeclarado,
             (await transporte([{ resultados: [atr] }]).searchMedicamentosAll({})).totalDeclarado], [1, null]);
