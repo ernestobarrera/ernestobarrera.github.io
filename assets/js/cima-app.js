@@ -22490,14 +22490,43 @@ ${ftFechaDocsHtml}
         return this._substanceIdentity(med).components.map(c => c.baseEs).sort((a, b) => a.localeCompare(b, 'es')).join(' + ');
     }
 
-    /** Medicamentos comercializados con un principio activo (para saber por qué vías se vende). Caché de sesión. */
-    async _evidenceSustanciaMeds(nombre) {
+    /**
+     * Consultas a CIMA para saber por qué vías se comercializa el principio activo del medicamento,
+     * de la más fiable a la menos. El nombre del VTM NO es un nombre válido de `practiv1`
+     * (revisión de Codex, 17/10): «bromuro ipratropio», «insulina regular» y «vacuna anti
+     * neumococo» devolvían 0 aunque sus medicamentos existen. El id del principio activo de la
+     * ficha sí resuelve (`idpractiv1=1067` → 12), y el nombre oficial de CIMA casi siempre.
+     */
+    _evidenceConsultasSustancia(med, identity) {
+        const pa = Array.isArray(med?.principiosActivos) ? med.principiosActivos.find(p => p?.orden === 1) || med.principiosActivos[0] : null;
+        const consultas = [];
+        if (pa?.id != null) consultas.push({ idpractiv1: pa.id });
+        if (pa?.nombre) consultas.push({ practiv1: pa.nombre });
+        const vtm = identity?.components?.[0]?.raw;
+        if (vtm && vtm !== pa?.nombre) consultas.push({ practiv1: vtm });
+        return consultas;
+    }
+
+    /**
+     * Medicamentos comercializados con el principio activo (caché de sesión). Prueba las consultas
+     * en orden y se queda con la primera que devuelve algo. `completo` es falso si CIMA cortó el
+     * resultado (el helper pagina hasta 10 páginas): con un conjunto truncado no se puede afirmar
+     * que la sustancia «solo» se venda por una vía.
+     * @returns {Promise<{meds: Object[], completo: boolean}>}
+     */
+    async _evidenceSustanciaMeds(consultas) {
         if (!this._evSustanciaMedsCache) this._evSustanciaMedsCache = new Map();
-        const clave = String(nombre || '').toLowerCase();
-        if (!clave) return [];
+        const clave = JSON.stringify(consultas || []);
+        if (!consultas?.length) return { meds: [], completo: false };
         if (!this._evSustanciaMedsCache.has(clave)) {
-            const p = this.api.searchMedicamentosAll({ practiv1: nombre, comerc: 1 }, { analyticsOptions: { headers: { 'X-MC-Autocomplete': '1' } } })
-                .then(r => r?.resultados || []);
+            const p = (async () => {
+                for (const params of consultas) {
+                    const r = await this.api.searchMedicamentosAll({ ...params, comerc: 1 }, { analyticsOptions: { headers: { 'X-MC-Autocomplete': '1' } } });
+                    const meds = r?.resultados || [];
+                    if (meds.length) return { meds, completo: meds.length >= (r?.totalFilas || 0) };
+                }
+                return { meds: [], completo: true };
+            })();
             this._evSustanciaMedsCache.set(clave, p);
             p.catch(() => this._evSustanciaMedsCache.delete(clave));
         }
@@ -23239,8 +23268,10 @@ ${ftFechaDocsHtml}
             let d;
             try {
                 const tope = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000));
-                const meds = await Promise.race([this._evidenceSustanciaMeds(identity.components[0]?.raw || nombreSustancia), tope]);
+                const { meds, completo } = await Promise.race([this._evidenceSustanciaMeds(this._evidenceConsultasSustancia(med, identity)), tope]);
                 d = this._evidenceViaPorDefecto(meds, via, claveSustancia);
+                // Con un conjunto truncado, «solo se vende por esta vía» no está comprobado.
+                if (!completo && d.motivo === 'unica') d = { activar: false, motivo: 'sin-datos', otras: [] };
             } catch {
                 d = { activar: false, motivo: 'sin-datos', otras: [] };
             }

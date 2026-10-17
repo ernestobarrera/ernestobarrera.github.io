@@ -167,6 +167,23 @@ const malas = Object.entries(MedCheckApp._EV_VIAS).filter(([, e]) =>
     (e.pubmed.match(/"/g) || []).length % 2 || /\[(?!Mesh\]|tiab\])/.test(e.pubmed) || !e.etiqueta);
 check('tabla de vías bien formada', malas.map(([id]) => id), []);
 
+// ─── Consulta por identidad a CIMA (revisión de Codex, 17/10) ─────────────────
+// El VTM no es un nombre válido de practiv1: «bromuro ipratropio» devolvía 0. Se consulta primero
+// por el id del principio activo de la ficha, luego por su nombre oficial, y el VTM al final.
+const atrov = { vtm: { nombre: 'bromuro ipratropio' }, principiosActivos: [{ id: 1067, nombre: 'IPRATROPIO BROMURO', orden: 1 }] };
+check('orden de consultas: id, nombre oficial, VTM',
+    app._evidenceConsultasSustancia(atrov, app._substanceIdentity(atrov)),
+    [{ idpractiv1: 1067 }, { practiv1: 'IPRATROPIO BROMURO' }, { practiv1: 'bromuro ipratropio' }]);
+check('sin ficha de detalle, solo el VTM', app._evidenceConsultasSustancia(med('estriol'), app._substanceIdentity(med('estriol'))), [{ practiv1: 'estriol' }]);
+{
+    const pedidas = [];
+    app.api = { searchMedicamentosAll: async p => { pedidas.push(p); return p.idpractiv1 ? { resultados: [], totalFilas: 0 } : { resultados: [med('ipratropio')], totalFilas: 3 }; } };
+    app._evSustanciaMedsCache = null;
+    const r = await app._evidenceSustanciaMeds([{ idpractiv1: 1067 }, { practiv1: 'IPRATROPIO BROMURO' }]);
+    check('si una consulta devuelve 0, prueba la siguiente', pedidas.map(p => Object.keys(p)[0]), ['idpractiv1', 'practiv1']);
+    check('resultado truncado (1 de 3): completo = false', [r.meds.length, r.completo], [1, false]);
+}
+
 // ─── Composición en bloques: (fármaco) AND (vía) AND (acotación) ──────────────
 check('fármaco y vía', app._evidenceComposeTerm('a OR b', '', 'vaginal[tiab]'), '(a OR b) AND (vaginal[tiab])');
 check('fármaco, vía y acotación: la acotación la última', app._evidenceComposeTerm('a', 'x', 'v'), '(a) AND (v) AND (x)');
