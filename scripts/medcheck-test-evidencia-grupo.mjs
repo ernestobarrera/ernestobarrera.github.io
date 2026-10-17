@@ -177,11 +177,39 @@ check('orden de consultas: id, nombre oficial, VTM',
 check('sin ficha de detalle, solo el VTM', app._evidenceConsultasSustancia(med('estriol'), app._substanceIdentity(med('estriol'))), [{ practiv1: 'estriol' }]);
 {
     const pedidas = [];
-    app.api = { searchMedicamentosAll: async p => { pedidas.push(p); return p.idpractiv1 ? { resultados: [], totalFilas: 0 } : { resultados: [med('ipratropio')], totalFilas: 3 }; } };
+    app.api = { searchMedicamentosAll: async p => { pedidas.push(p); return p.idpractiv1 ? { resultados: [], totalFilas: 0, totalDeclarado: 0 } : { resultados: [med('ipratropio')], totalFilas: 3, totalDeclarado: 3 }; } };
     app._evSustanciaMedsCache = null;
     const r = await app._evidenceSustanciaMeds([{ idpractiv1: 1067 }, { practiv1: 'IPRATROPIO BROMURO' }]);
     check('si una consulta devuelve 0, prueba la siguiente', pedidas.map(p => Object.keys(p)[0]), ['idpractiv1', 'practiv1']);
     check('resultado truncado (1 de 3): completo = false', [r.meds.length, r.completo], [1, false]);
+}
+
+// ─── Completitud con el paginador REAL (revisión de Codex, P2, 17/10) ─────────
+// `searchMedicamentosAll` de cima-api.js con un transporte controlado. Antes, una segunda página
+// que repetía la primera daba completo=true, y un total ausente también (el helper lo sustituía
+// por las filas recibidas). Ahora cuentan nregistros únicos contra el total que DECLARA CIMA.
+{
+    const apiBox = { window: {}, console: { log() {}, warn() {}, error() {} }, fetch: () => Promise.reject(new Error('sin red')), setTimeout, clearTimeout, Date, Math, JSON, Promise, Map, Set, RegExp, AbortController: class { abort() {} }, navigator: {} };
+    vm.createContext(apiBox);
+    vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8')}\n;window.__CimaAPIClass = CimaAPI;`, apiBox, { filename: 'cima-api.js' });
+    const helper = apiBox.window.__CimaAPIClass.prototype.searchMedicamentosAll;
+    const transporte = paginas => ({ searchMedicamentosAll: helper, searchMedicamentos: async p => paginas[p.pagina - 1] || { resultados: [] } });
+    const atr = { nregistro: '61184', vtm: { nombre: 'bromuro ipratropio' } };
+    const otro = { nregistro: '73561', vtm: { nombre: 'bromuro ipratropio' } };
+    const completo = async paginas => {
+        app.api = transporte(paginas);
+        app._evSustanciaMedsCache = null;
+        const r = await app._evidenceSustanciaMeds([{ idpractiv1: 1067 }]);
+        return [r.meds.length, r.completo];
+    };
+    check('página repetida (Atrovent dos veces, total 2): 1 único, completo = false',
+        await completo([{ resultados: [atr], totalFilas: 2 }, { resultados: [atr], totalFilas: 2 }]), [1, false]);
+    check('sin totalFilas: completo = false', await completo([{ resultados: [atr] }]), [1, false]);
+    check('dos páginas con dos únicos y total 2: completo = true',
+        await completo([{ resultados: [atr], totalFilas: 2 }, { resultados: [otro], totalFilas: 2 }]), [2, true]);
+    check('el helper expone el total declarado, o null si falta',
+        [(await transporte([{ resultados: [atr], totalFilas: 1 }]).searchMedicamentosAll({})).totalDeclarado,
+            (await transporte([{ resultados: [atr] }]).searchMedicamentosAll({})).totalDeclarado], [1, null]);
 }
 
 // ─── Composición en bloques: (fármaco) AND (vía) AND (acotación) ──────────────

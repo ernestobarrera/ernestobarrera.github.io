@@ -273,6 +273,28 @@ check('resolver sin matches → none', api.resolveIndicationCandidates([]).mode 
         original !== reversed ? 'difiere invertida' : 'difiere barajada');
 }
 
+// --- watchSubstances no interviene en el matching (2026-10-17) ---
+// Es la lista que vigila el guardián ontología-ATC. Si el matcher la leyera, teclear «fingolimod»
+// devolvería la entrada de esclerosis múltiple: un efecto de producto que nadie ha decidido.
+{
+    const vigiladas = [...new Set(Object.values(terms).flatMap((e) => e.watchSubstances || []))];
+    const snapshot = () => [...vigiladas, ...Object.keys(terms)].map((q) => JSON.stringify([
+        real(q).map((m) => [m.term, m.score]),
+        sug(q).map((m) => [m.term, m.score]),
+    ])).join('\n');
+    const con = snapshot();
+    CimaAPI.CLINICAL_DICTIONARY = Object.fromEntries(Object.entries(terms).map(([t, e]) => {
+        const { watchSubstances, ...resto } = e;
+        return [t, resto];
+    }));
+    const sin = snapshot();
+    CimaAPI.CLINICAL_DICTIONARY = terms; // restaurar
+    check(`watchSubstances no cambia ninguna búsqueda (${vigiladas.length} vigiladas + todos los términos)`,
+        vigiladas.length > 0 && con === sin, vigiladas.length ? 'difiere' : 'no hay vigiladas en la ontología');
+    check('«fingolimod» (solo vigilado) no ejecuta esclerosis múltiple',
+        !real('fingolimod').some((m) => m.term === 'esclerosis múltiple'), top(real('fingolimod')));
+}
+
 // --- Resumen ---
 if (failures > 0) {
     console.log(`\n${failures} caso(s) en rojo.`);

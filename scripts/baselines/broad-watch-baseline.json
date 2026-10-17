@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-05",
+  "version": "2026-10-17",
   "generatedBy": "medcheck-audit-ontology --update-vigilancia-broad",
   "_doc": "Vigilancia de los prefijos ATC declarados `broad` en clinical-ontology.json. Responde a una pregunta que --cobertura-atc no puede hacerse: bajo un prefijo broad, ¿ha aparecido un código que no estaba cuando se revisó la entrada? --cobertura-atc excluye los broad por contrato (un prefijo aprobaría siempre) y el efecto lateral era que bajo un prefijo nadie vigilaba lo que entra. EL UNIVERSO LO FIJA LA ONTOLOGÍA, NO ESTE ARCHIVO: todo prefijo broad declarado tiene que estar adjudicado aquí, y uno sin adjudicar —o uno que sobra y ya no reclama ninguna entrada— BLOQUEA. Antes el universo salía de las claves de este mismo archivo, así que una línea base incompleta se aprobaba a sí misma (revisión cruzada, P1, 2026-09-05). Niveles de vigilancia (`watch`): 'watched' = COMPLETA, se consulta cada hoja y se adjudica en `leaves` cuál tiene producto comercializado; es la única que ve una hoja vieja estrenando producto, y cuesta una llamada por hoja. 'codigos' = BARATA, solo se compara el conjunto de códigos hoja contra el inventario `codes`; detecta que la clasificación crece bajo el paraguas por una sola llamada de maestra. 'waived' = renuncia explícita, exige `reason` y `reviewedBy`. Cualquier otro valor bloquea por esquema. Estados de hoja en 'watched': 'review' bloquea siempre (estar aquí no es haber revisado); 'accepted' es el único que silencia y solo con `reason` y `reviewedBy` no vacíos. El inventario `codes` sí es descriptivo (es lo que dice la maestra, no un juicio) y --update-vigilancia-broad lo absorbe; la firma humana es haber tecleado el flag DESPUÉS de leer el informe, que nombra uno a uno los códigos nuevos antes de absorberlos. Una pasada inconclusa (exit 2) nunca escribe. Coste medido 2026-09-05: 63 prefijos, 2.326 hojas; la pasada completa del gate tarda ~2 s porque solo L01XL va en 'watched'. Poner los 63 en 'watched' costaría ~2.400 llamadas. Comandos: `--vigilar-broad` (el gate) · `--vigilar-broad=PREFIJO` (pasada focalizada, NO es el gate) · `--update-vigilancia-broad` (siembra/refresca).",
   "prefixes": {
@@ -34,7 +34,7 @@
         "A04AD97",
         "A04AD98"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "A06": {
       "watch": "codigos",
@@ -112,7 +112,7 @@
         "A06AX06",
         "A06AX07"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "A06AD": {
       "watch": "codigos",
@@ -141,7 +141,7 @@
         "A06AD65",
         "A06AD91"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "A07AA": {
       "watch": "codigos",
@@ -168,7 +168,7 @@
         "A07AA54",
         "A07AA56"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "A07E": {
       "watch": "codigos",
@@ -192,7 +192,7 @@
         "A07EC03",
         "A07EC04"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "A10BK": {
       "watch": "codigos",
@@ -207,7 +207,7 @@
         "A10BK03",
         "A10BK04"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "A11CC04": {
       "watch": "codigos",
@@ -219,7 +219,7 @@
       "codes": [
         "A11CC04"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "B01AC": {
       "watch": "codigos",
@@ -258,7 +258,7 @@
         "B01AC91",
         "B01AC93"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "B03A": {
       "watch": "codigos",
@@ -315,7 +315,7 @@
         "B03AE04",
         "B03AE10"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "B03B": {
       "watch": "codigos",
@@ -335,7 +335,7 @@
         "B03BB01",
         "B03BB51"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "B03X": {
       "watch": "codigos",
@@ -351,7 +351,7 @@
         "B03XA05",
         "B03XA06"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "B03XA": {
       "watch": "codigos",
@@ -367,7 +367,7 @@
         "B03XA05",
         "B03XA06"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "B05D": {
       "watch": "codigos",
@@ -382,7 +382,7 @@
         "B05DB91",
         "B05DB92"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "B05Z": {
       "watch": "codigos",
@@ -395,7 +395,7 @@
         "B05ZA91",
         "B05ZB91"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "C01D": {
       "watch": "codigos",
@@ -450,7 +450,7 @@
         "C01DX53",
         "C01DX54"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "C03": {
       "watch": "codigos",
@@ -539,7 +539,7 @@
         "C03XA02",
         "C03XW91"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "C03C": {
       "watch": "codigos",
@@ -560,7 +560,7 @@
         "C03CD01",
         "C03CX01"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "C03DA05": {
       "watch": "codigos",
@@ -572,7 +572,7 @@
       "codes": [
         "C03DA05"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "C07": {
       "watch": "codigos",
@@ -650,7 +650,7 @@
         "C07FX01",
         "C07FX06"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "C08": {
       "watch": "codigos",
@@ -691,7 +691,7 @@
         "C08GA01",
         "C08GA02"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "C10": {
       "watch": "codigos",
@@ -814,7 +814,7 @@
         "C10BX23",
         "C10BX24"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "D01": {
       "watch": "codigos",
@@ -886,7 +886,7 @@
         "D01BA01",
         "D01BA02"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "D05": {
       "watch": "codigos",
@@ -920,7 +920,7 @@
         "D05BX90",
         "D05BX91"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "D06": {
       "watch": "codigos",
@@ -976,7 +976,7 @@
         "D06BX03",
         "D06C"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "D07": {
       "watch": "codigos",
@@ -1078,7 +1078,61 @@
         "D07XC93",
         "D07XD"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
+    },
+    "D07A": {
+      "watch": "codigos",
+      "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
+      "reviewedBy": "Claude, sesión 88 (2026-10-17): adjudicación pendiente desde que se creó la entrada «corticoides tópicos» (2026-09-10)",
+      "owners": [
+        "corticoides tópicos"
+      ],
+      "codes": [
+        "D07AA01",
+        "D07AA02",
+        "D07AA03",
+        "D07AB01",
+        "D07AB02",
+        "D07AB03",
+        "D07AB04",
+        "D07AB05",
+        "D07AB06",
+        "D07AB07",
+        "D07AB08",
+        "D07AB09",
+        "D07AB10",
+        "D07AB11",
+        "D07AB19",
+        "D07AB21",
+        "D07AB30",
+        "D07AB91",
+        "D07AB92",
+        "D07AC01",
+        "D07AC02",
+        "D07AC03",
+        "D07AC04",
+        "D07AC05",
+        "D07AC06",
+        "D07AC07",
+        "D07AC08",
+        "D07AC09",
+        "D07AC10",
+        "D07AC11",
+        "D07AC12",
+        "D07AC13",
+        "D07AC14",
+        "D07AC15",
+        "D07AC16",
+        "D07AC17",
+        "D07AC18",
+        "D07AC19",
+        "D07AC21",
+        "D07AC30",
+        "D07AC91",
+        "D07AD01",
+        "D07AD02"
+      ],
+      "codesReviewedAt": "2026-10-17"
     },
     "D11AH": {
       "watch": "codigos",
@@ -1101,7 +1155,7 @@
         "D11AH11",
         "D11AH12"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "H01AC01": {
       "watch": "codigos",
@@ -1113,15 +1167,13 @@
       "codes": [
         "H01AC01"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "H02": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
       "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
-        "lupus",
-        "trasplante",
         "inmunosupresión"
       ],
       "codes": [
@@ -1153,7 +1205,37 @@
         "H02CA01",
         "H02CA02"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
+    },
+    "H02AB": {
+      "watch": "codigos",
+      "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
+      "reviewedBy": "Claude, sesión 88 (2026-10-17): alta del prefijo al corregir la ontología frente al ATC",
+      "owners": [
+        "lupus",
+        "trasplante"
+      ],
+      "codes": [
+        "H02AB01",
+        "H02AB02",
+        "H02AB03",
+        "H02AB04",
+        "H02AB05",
+        "H02AB06",
+        "H02AB07",
+        "H02AB08",
+        "H02AB09",
+        "H02AB10",
+        "H02AB11",
+        "H02AB12",
+        "H02AB13",
+        "H02AB14",
+        "H02AB15",
+        "H02AB16",
+        "H02AB17",
+        "H02AB18"
+      ],
+      "codesReviewedAt": "2026-10-17"
     },
     "H05BX": {
       "watch": "codigos",
@@ -1169,7 +1251,7 @@
         "H05BX04",
         "H05BX05"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J01": {
       "watch": "codigos",
@@ -1461,7 +1543,7 @@
         "J01XX11",
         "J01XX13"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J02": {
       "watch": "codigos",
@@ -1488,7 +1570,7 @@
         "J02AX07",
         "J02AX08"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J05": {
       "watch": "codigos",
@@ -1618,7 +1700,7 @@
         "J05AX91",
         "J05AX92"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J05AF": {
       "watch": "codigos",
@@ -1647,7 +1729,7 @@
         "J05AF93",
         "J05AF94"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J05AP": {
       "watch": "codigos",
@@ -1673,7 +1755,7 @@
         "J05AP56",
         "J05AP57"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J06BA": {
       "watch": "codigos",
@@ -1686,7 +1768,7 @@
         "J06BA01",
         "J06BA02"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J06BB": {
       "watch": "codigos",
@@ -1716,7 +1798,7 @@
         "J06BB21",
         "J06BB30"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J06BC": {
       "watch": "codigos",
@@ -1731,7 +1813,7 @@
         "J06BC03",
         "J06BC04"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J06BD": {
       "watch": "codigos",
@@ -1753,7 +1835,7 @@
         "J06BD10",
         "J06BD11"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J07": {
       "watch": "codigos",
@@ -1862,7 +1944,7 @@
         "J07CA91",
         "J07XA01"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "J07CA": {
       "watch": "codigos",
@@ -1887,7 +1969,24 @@
         "J07CA13",
         "J07CA91"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
+    },
+    "L01AA01": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "lupus"
+      ],
+      "leaves": {
+        "L01AA01": {
+          "status": "accepted",
+          "nombre": "Ciclofosfamida",
+          "reason": "LES: ciclofosfamida; LES grave/nefritis lúpica en la ficha comprobada y en EULAR 2023. Es también oncológica.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
     },
     "L01F": {
       "watch": "codigos",
@@ -1970,7 +2069,24 @@
         "L01FY01",
         "L01FY02"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
+    },
+    "L01FA03": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "lupus"
+      ],
+      "leaves": {
+        "L01FA03": {
+          "status": "accepted",
+          "nombre": "L01FA03- Obinutuzumab",
+          "reason": "LES: obinutuzumab; su 4.1 incluye nefritis lúpica activa III/IV. El resto del producto es oncológico.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
     },
     "L01FG": {
       "watch": "codigos",
@@ -1983,7 +2099,7 @@
         "L01FG01",
         "L01FG02"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "L01XL": {
       "owners": [
@@ -2070,42 +2186,75 @@
         "L03AB60",
         "L03AB61"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
-    "L03AX": {
-      "watch": "codigos",
-      "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
+    "L03AB07": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
       "owners": [
         "esclerosis múltiple"
       ],
-      "codes": [
-        "L03AX01",
-        "L03AX02",
-        "L03AX03",
-        "L03AX04",
-        "L03AX05",
-        "L03AX07",
-        "L03AX08",
-        "L03AX09",
-        "L03AX10",
-        "L03AX11",
-        "L03AX12",
-        "L03AX13",
-        "L03AX14",
-        "L03AX15",
-        "L03AX16",
-        "L03AX17",
-        "L03AX22",
-        "L03AX24",
-        "L03AX25",
-        "L03AX91",
-        "L03AX92",
-        "L03AX93",
-        "L03AX94",
-        "L03AX95"
+      "leaves": {
+        "L03AB07": {
+          "status": "accepted",
+          "nombre": "Interferon beta-1a",
+          "reason": "Esclerosis múltiple: interferón beta-1a, modificador de la enfermedad.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L03AB08": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "leaves": {
+        "L03AB08": {
+          "status": "accepted",
+          "nombre": "Interferon beta-1b",
+          "reason": "Esclerosis múltiple: interferón beta-1b, modificador de la enfermedad.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L03AB13": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L03AB13": {
+          "status": "accepted",
+          "nombre": "Peginterferon beta-1a",
+          "reason": "Esclerosis múltiple: peginterferón beta-1a, modificador de la enfermedad.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L03AX13": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L03AX13": {
+          "status": "accepted",
+          "nombre": "Glatiramero, acetato de",
+          "reason": "Esclerosis múltiple: acetato de glatiramero, modificador de la enfermedad.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
     },
     "L04": {
       "watch": "codigos",
@@ -2202,6 +2351,7 @@
         "L04AC24",
         "L04AC25",
         "L04AC27",
+        "L04AC28",
         "L04AD01",
         "L04AD02",
         "L04AD03",
@@ -2266,18 +2416,15 @@
         "L04AX11",
         "L04AX92"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "L04AA": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
       "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
-        "esclerosis múltiple",
         "espondiloartritis",
-        "artritis psoriásica",
-        "lupus",
-        "trasplante"
+        "artritis psoriásica"
       ],
       "codes": [
         "L04AA01",
@@ -2335,7 +2482,93 @@
         "L04AA62",
         "L04AA90"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
+    },
+    "L04AA04": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "trasplante"
+      ],
+      "leaves": {
+        "L04AA04": {
+          "status": "accepted",
+          "nombre": "Inmunoglobulina antitimocitica (conejo)",
+          "reason": "Trasplante de órgano sólido: inmunoglobulina antitimocítica de conejo (incluye Grafalon; no todo es Timoglobulina).",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AA06": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "lupus",
+        "trasplante"
+      ],
+      "leaves": {
+        "L04AA06": {
+          "status": "accepted",
+          "nombre": "Acido micofenolico",
+          "reason": "LES y trasplante: micofenolato (mofetilo y ácido micofenólico). En LES por uso clínico (EULAR), sin atribuirle indicación autorizada; en trasplante, indicación de ficha.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AA28": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "trasplante"
+      ],
+      "leaves": {
+        "L04AA28": {
+          "status": "accepted",
+          "nombre": "Belatacept",
+          "reason": "Trasplante de órgano sólido: belatacept (trasplante renal).",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AA40": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AA40": {
+          "status": "accepted",
+          "nombre": "Cladribina",
+          "reason": "Esclerosis múltiple: cladribina oral (no la oncológica, que es L01BB04).",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AA41": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "trasplante"
+      ],
+      "leaves": {
+        "L04AA41": {
+          "status": "accepted",
+          "nombre": "Imlifidasa",
+          "reason": "Trasplante de órgano sólido: imlifidasa, desensibilización en trasplante renal (no mantenimiento).",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
     },
     "L04AB": {
       "watch": "codigos",
@@ -2353,7 +2586,7 @@
         "L04AB05",
         "L04AB06"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "L04AC": {
       "watch": "codigos",
@@ -2386,23 +2619,146 @@
         "L04AC23",
         "L04AC24",
         "L04AC25",
-        "L04AC27"
+        "L04AC27",
+        "L04AC28"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
-    "L04AD": {
-      "watch": "codigos",
-      "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
+    "L04AC02": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
       "owners": [
         "trasplante"
       ],
-      "codes": [
-        "L04AD01",
-        "L04AD02",
-        "L04AD03"
+      "leaves": {
+        "L04AC02": {
+          "status": "accepted",
+          "nombre": "Basiliximab",
+          "reason": "Trasplante de órgano sólido: basiliximab, inducción.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AD01": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "trasplante"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "leaves": {
+        "L04AD01": {
+          "status": "accepted",
+          "nombre": "Ciclosporina",
+          "reason": "Trasplante de órgano sólido: ciclosporina.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AD02": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "trasplante"
+      ],
+      "leaves": {
+        "L04AD02": {
+          "status": "accepted",
+          "nombre": "Tacrolimus",
+          "reason": "Trasplante de órgano sólido: tacrolimus sistémico.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AD03": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "lupus"
+      ],
+      "leaves": {
+        "L04AD03": {
+          "status": "accepted",
+          "nombre": "Voclosporina",
+          "reason": "LES: voclosporina; nefritis lúpica en su 4.1, combinada con micofenolato. Retirada de trasplante.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AE01": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AE01": {
+          "status": "accepted",
+          "nombre": "Fingolimod",
+          "reason": "Esclerosis múltiple: fingolimod, modulador S1P.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AE02": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AE02": {
+          "status": "accepted",
+          "nombre": "Ozanimod",
+          "reason": "Esclerosis múltiple: ozanimod, modulador S1P (también tiene indicación de colitis ulcerosa, sin que eso invalide EM).",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AE03": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AE03": {
+          "status": "accepted",
+          "nombre": "Siponimod",
+          "reason": "Esclerosis múltiple: siponimod, modulador S1P.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AE04": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AE04": {
+          "status": "accepted",
+          "nombre": "Ponesimod",
+          "reason": "Esclerosis múltiple: ponesimod, modulador S1P.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
     },
     "L04AG": {
       "watch": "codigos",
@@ -2431,30 +2787,246 @@
         "L04AG18",
         "L04AG19"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
-    "L04AX": {
-      "watch": "codigos",
-      "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
+    "L04AG03": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AG03": {
+          "status": "accepted",
+          "nombre": "Natalizumab",
+          "reason": "Esclerosis múltiple: natalizumab.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AG04": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "lupus"
+      ],
+      "leaves": {
+        "L04AG04": {
+          "status": "accepted",
+          "nombre": "Belimumab",
+          "reason": "LES: belimumab; LES y nefritis lúpica en su 4.1.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AG06": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AG06": {
+          "status": "accepted",
+          "nombre": "Alemtuzumab",
+          "reason": "Esclerosis múltiple: alemtuzumab.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AG08": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AG08": {
+          "status": "accepted",
+          "nombre": "Ocrelizumab",
+          "reason": "Esclerosis múltiple: ocrelizumab, anti-CD20.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AG11": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "lupus"
+      ],
+      "leaves": {
+        "L04AG11": {
+          "status": "accepted",
+          "nombre": "Anifrolumab",
+          "reason": "LES: anifrolumab; LES en su 4.1.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AG12": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AG12": {
+          "status": "accepted",
+          "nombre": "Ofatumumab",
+          "reason": "Esclerosis múltiple: ofatumumab, anti-CD20.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AG14": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AG14": {
+          "status": "accepted",
+          "nombre": "Ublituximab",
+          "reason": "Esclerosis múltiple: ublituximab, anti-CD20.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AH01": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
       "owners": [
         "trasplante"
       ],
-      "codes": [
-        "L04AX01",
-        "L04AX02",
-        "L04AX03",
-        "L04AX04",
-        "L04AX05",
-        "L04AX06",
-        "L04AX07",
-        "L04AX08",
-        "L04AX09",
-        "L04AX10",
-        "L04AX11",
-        "L04AX92"
+      "leaves": {
+        "L04AH01": {
+          "status": "accepted",
+          "nombre": "Sirolimus",
+          "reason": "Trasplante de órgano sólido: sirolimus (inhibidor de mTOR; pasó a L04AH en la reorganización de L04A de 2024).",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AH02": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "trasplante"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "leaves": {
+        "L04AH02": {
+          "status": "accepted",
+          "nombre": "Everolimus",
+          "reason": "Trasplante de órgano sólido: everolimus. RUIDO CONOCIDO: el código trae Everolimus Accord 5 y 10 mg (83446, 83447), oncológicos, declarado en la nota de la entrada.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AK02": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AK02": {
+          "status": "accepted",
+          "nombre": "Teriflunomida",
+          "reason": "Esclerosis múltiple: teriflunomida.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AX01": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "lupus",
+        "trasplante"
+      ],
+      "leaves": {
+        "L04AX01": {
+          "status": "accepted",
+          "nombre": "Azatioprina",
+          "reason": "LES y trasplante: azatioprina; la ficha revisada incluye LES y trasplante.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AX03": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "lupus"
+      ],
+      "leaves": {
+        "L04AX03": {
+          "status": "accepted",
+          "nombre": "Metotrexato",
+          "reason": "LES: metotrexato por uso clínico (EULAR 2023: LES no controlado y afectación cutánea), sin atribuirle indicación autorizada.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AX07": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AX07": {
+          "status": "accepted",
+          "nombre": "Dimetil fumarato",
+          "reason": "Esclerosis múltiple: dimetilfumarato. RUIDO CONOCIDO: el código trae Skilarence 30 y 120 mg (psoriasis en placas), declarado en la nota de la entrada.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
+    },
+    "L04AX09": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
+      "owners": [
+        "esclerosis múltiple"
+      ],
+      "leaves": {
+        "L04AX09": {
+          "status": "accepted",
+          "nombre": "Fumarato de diroximel",
+          "reason": "Esclerosis múltiple: fumarato de diroximel.",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
     },
     "M01A": {
       "watch": "codigos",
@@ -2557,7 +3129,7 @@
         "M01AX74",
         "M01AX93"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "N02": {
       "watch": "codigos",
@@ -2712,7 +3284,7 @@
         "N02CX06",
         "N02CX07"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "N02A": {
       "watch": "codigos",
@@ -2775,7 +3347,7 @@
         "N02AX52",
         "N02AX91"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "N05": {
       "watch": "codigos",
@@ -2988,7 +3560,7 @@
         "N05CX91",
         "N05CX92"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "N07B": {
       "watch": "codigos",
@@ -3015,41 +3587,24 @@
         "N07BC06",
         "N07BC51"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
-    "N07XX": {
-      "watch": "codigos",
-      "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
+    "N07XX07": {
+      "watch": "watched",
+      "watchReason": "ATC5 de una entrada reconstruida fármaco a fármaco (2026-10-17). Vigilancia completa: una llamada de maestra y otra de recuento por pasada. Avisa si la OMS crea hojas nuevas bajo el código; que el código se quede sin producto solo se informa aquí, y lo avisa el guardián medcheck-audit-ontologia-atc.mjs por la sustancia vigilada (watchSubstances).",
       "owners": [
         "esclerosis múltiple"
       ],
-      "codes": [
-        "N07XX01",
-        "N07XX02",
-        "N07XX03",
-        "N07XX04",
-        "N07XX05",
-        "N07XX06",
-        "N07XX07",
-        "N07XX08",
-        "N07XX10",
-        "N07XX11",
-        "N07XX12",
-        "N07XX15",
-        "N07XX16",
-        "N07XX17",
-        "N07XX18",
-        "N07XX19",
-        "N07XX21",
-        "N07XX22",
-        "N07XX24",
-        "N07XX25",
-        "N07XX26",
-        "N07XX27",
-        "N07XX91"
-      ],
-      "codesReviewedAt": "2026-09-05"
+      "leaves": {
+        "N07XX07": {
+          "status": "accepted",
+          "nombre": "Fampridina",
+          "reason": "Esclerosis múltiple: fampridina, sintomática de la marcha (no modificadora).",
+          "detectedAt": "2026-10-17",
+          "reviewedAt": "2026-10-17",
+          "reviewedBy": "Ernesto Barrera (lista ATC5 ratificada en la sesión 87, 2026-10-17; revisada por Codex)"
+        }
+      }
     },
     "P01B": {
       "watch": "codigos",
@@ -3089,7 +3644,7 @@
         "P01BF09",
         "P01BX01"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "P01BA": {
       "watch": "codigos",
@@ -3105,7 +3660,7 @@
         "P01BA05",
         "P01BA06"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "R01A": {
       "watch": "codigos",
@@ -3173,7 +3728,7 @@
         "R01AX30",
         "R01AX91"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "S01LA": {
       "watch": "codigos",
@@ -3193,7 +3748,7 @@
         "S01LA08",
         "S01LA09"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     },
     "V03AE": {
       "watch": "codigos",
@@ -3212,7 +3767,7 @@
         "V03AE09",
         "V03AE10"
       ],
-      "codesReviewedAt": "2026-09-05"
+      "codesReviewedAt": "2026-10-17"
     }
   }
 }

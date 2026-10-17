@@ -166,6 +166,17 @@ for (const [term, entry] of entries) {
   if (entry.status === 'needsSection41Filter' && !(entry.section41Filter || entry.sectionFilter)) {
     problems.push(`${term}: needsSection41Filter sin filtro`);
   }
+  // `watchSubstances`: VTM de CIMA que vigila scripts/medcheck-audit-ontologia-atc.mjs. No entra en
+  // el matching (solo lo lee el guardián), así que aquí solo se valida su forma.
+  if (entry.watchSubstances !== undefined) {
+    const vigiladas = entry.watchSubstances;
+    if (!Array.isArray(vigiladas) || !vigiladas.length) problems.push(`${term}: watchSubstances tiene que ser una lista no vacía`);
+    else {
+      if (vigiladas.some(v => typeof v !== 'string' || !v.trim())) problems.push(`${term}: watchSubstances con un elemento vacío o no textual`);
+      const normalizadas = vigiladas.map(v => normalize(v));
+      if (new Set(normalizadas).size !== normalizadas.length) warnings.push(`${term}: watchSubstances con sustancias repetidas`);
+    }
+  }
 
   addDuplicateKey(term, term, `term:${term}`);
   for (const synonym of entry.synonyms || []) addDuplicateKey(synonym, term, `synonym:${term}`);

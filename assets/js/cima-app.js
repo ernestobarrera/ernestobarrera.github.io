@@ -22511,7 +22511,9 @@ ${ftFechaDocsHtml}
      * Medicamentos comercializados con el principio activo (caché de sesión). Prueba las consultas
      * en orden y se queda con la primera que devuelve algo. `completo` es falso si CIMA cortó el
      * resultado (el helper pagina hasta 10 páginas): con un conjunto truncado no se puede afirmar
-     * que la sustancia «solo» se venda por una vía.
+     * que la sustancia «solo» se venda por una vía. Se cuentan nregistros ÚNICOS contra el total
+     * DECLARADO por CIMA: una página repetida no completa nada, y sin total no hay completitud
+     * (revisión de Codex, 17/10).
      * @returns {Promise<{meds: Object[], completo: boolean}>}
      */
     async _evidenceSustanciaMeds(consultas) {
@@ -22522,8 +22524,16 @@ ${ftFechaDocsHtml}
             const p = (async () => {
                 for (const params of consultas) {
                     const r = await this.api.searchMedicamentosAll({ ...params, comerc: 1 }, { analyticsOptions: { headers: { 'X-MC-Autocomplete': '1' } } });
-                    const meds = r?.resultados || [];
-                    if (meds.length) return { meds, completo: meds.length >= (r?.totalFilas || 0) };
+                    const vistos = new Set();
+                    const meds = (r?.resultados || []).filter(m => {
+                        const n = m?.nregistro;
+                        if (n == null) return true;
+                        if (vistos.has(n)) return false;
+                        vistos.add(n);
+                        return true;
+                    });
+                    const total = r?.totalDeclarado;
+                    if (meds.length) return { meds, completo: Number.isInteger(total) && vistos.size === meds.length && meds.length >= total };
                 }
                 return { meds: [], completo: true };
             })();

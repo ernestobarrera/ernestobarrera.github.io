@@ -45,7 +45,7 @@ class CimaAPI {
      * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
      * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
      */
-    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260914a') {
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20261017a') {
         if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
         if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
         this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
@@ -320,7 +320,10 @@ class CimaAPI {
      * con tamanioPagina>100 cuando se necesite el conjunto completo.
      * @param {Object} params - Mismos params que searchMedicamentos (sin pagina/tamanioPagina)
      * @param {Object} options - { analyticsOptions, maxPages } (maxPages default 10 = hasta 2000 resultados)
-     * @returns {Promise<{resultados: Array, totalFilas: number}>}
+     * `totalDeclarado` es el `totalFilas` tal y como lo dio CIMA, o null si no vino legible; quien
+     * necesite AFIRMAR que tiene el conjunto entero compara contra él, no contra `totalFilas`, que
+     * a falta de dato vale el número de filas recibidas (revisión de Codex, 17/10/2026).
+     * @returns {Promise<{resultados: Array, totalFilas: number, totalDeclarado: (number|null)}>}
      */
     async searchMedicamentosAll(params, options = {}) {
         const { analyticsOptions = {}, maxPages = 10 } = options;
@@ -328,6 +331,7 @@ class CimaAPI {
 
         const first = await this.searchMedicamentos({ ...params, tamanioPagina: pageSize, pagina: 1 }, analyticsOptions);
         let allResults = [...(first?.resultados || [])];
+        const totalDeclarado = Number.isInteger(first?.totalFilas) && first.totalFilas >= 0 ? first.totalFilas : null;
         const totalFilas = first?.totalFilas || allResults.length;
         const actualPageSize = allResults.length || pageSize;
 
@@ -339,7 +343,7 @@ class CimaAPI {
             }
         }
 
-        return { resultados: allResults, totalFilas };
+        return { resultados: allResults, totalFilas, totalDeclarado };
     }
 
     /**
