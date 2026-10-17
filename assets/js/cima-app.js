@@ -22587,30 +22587,69 @@ ${ftFechaDocsHtml}
         return this._evGroupMedsCache.get(atc4);
     }
 
-    /** Línea bajo el selector de alcance: dice qué entra en el OR y qué no. */
+    /**
+     * Clase clínica del medicamento para el selector de alcance (2026-10-17, decisión 3 del
+     * contraste con Codex). Solo las entradas de `_EV_CLASES`, y con los códigos que fija la
+     * ontología: desde dabigatrán (B01AE07) y desde un anti-Xa (B01AF) sale la misma clase.
+     * @returns {null | {clave: string, codigo: string, codigos: string[], clase: true}}
+     */
+    _evidenceClaseDeMed(med, dict = typeof CimaAPI !== 'undefined' ? CimaAPI.CLINICAL_DICTIONARY : null) {
+        const atc5 = (Array.isArray(med?.atcs) ? med.atcs : []).find(a => a?.nivel === 5 && a.codigo)?.codigo;
+        if (!atc5 || !dict) return null;
+        for (const clave of MedCheckApp._EV_CLASES) {
+            const e = dict[clave];
+            const codigos = [].concat(e?.atc || []).map(String).filter(Boolean);
+            if (codigos.some(c => atc5.startsWith(c))) return { clave, codigo: e.label || clave, codigos, clase: true };
+        }
+        return null;
+    }
+
+    /** Medicamentos comercializados de todos los códigos de una clase, sin repetir registro. */
+    async _evidenceClaseMeds(codigos) {
+        const listas = await Promise.all(codigos.map(c => this._evidenceGroupMeds(c)));
+        const vistos = new Set();
+        return listas.flat().filter(m => {
+            if (m?.nregistro == null) return true;
+            if (vistos.has(m.nregistro)) return false;
+            vistos.add(m.nregistro);
+            return true;
+        });
+    }
+
+    /**
+     * Línea bajo el selector de alcance: dice qué entra en el OR y qué no. `atc4` es el ámbito: el
+     * grupo ATC4 ({codigo, nombre}) o la clase clínica (salida de `_evidenceClaseDeMed`).
+     */
     _evidenceGroupNoteHtml(g, atc4, via = null) {
         const esc = s => this._escapeHtml(String(s ?? ''));
-        const grupo = `<strong>${esc(atc4.codigo)}</strong>${atc4.nombre ? ` ${esc(atc4.nombre.toLowerCase())}` : ''}`;
+        const grupo = atc4.clase
+            ? `<strong>${esc(atc4.codigo)}</strong> (clase clínica de MedCheck: ${esc(atc4.codigos.join(' + '))})`
+            : `<strong>${esc(atc4.codigo)}</strong>${atc4.nombre ? ` ${esc(atc4.nombre.toLowerCase())}` : ''}`;
         const porVia = via ? ` por vía ${esc(via)}` : '';
+        const este = atc4.clase ? 'esta clase' : 'este grupo';
+        const el = atc4.clase ? 'la clase' : 'el grupo';
+        const entero = atc4.clase ? 'la clase entera' : 'el grupo entero';
         const unidad = { principios: 'principios', asociaciones: 'asociaciones', mixto: 'principios y asociaciones' }[g.tipo] || 'principios';
         const motivos = {
             vacio: via
-                ? `CIMA no devuelve medicamentos comercializados de este grupo${porVia}. Desactiva la vía para ver el grupo entero.`
-                : 'CIMA no devuelve medicamentos comercializados de este grupo.',
-            unico: `en España este grupo solo tiene comercializado este mismo medicamento${porVia}: la búsqueda sería la misma.`,
-            amplio: `el grupo tiene ${g.principios.length} ${unidad} comercializados${porVia} (máximo ${g.max}); la consulta dejaría de ser manejable. Edita el término a mano.`,
+                ? `CIMA no devuelve medicamentos comercializados de ${este}${porVia}. Desactiva la vía para ver ${entero}.`
+                : `CIMA no devuelve medicamentos comercializados de ${este}.`,
+            unico: `en España ${este} solo tiene comercializado este mismo medicamento${porVia}: la búsqueda sería la misma.`,
+            amplio: `${el} tiene ${g.principios.length} ${unidad} comercializados${porVia} (máximo ${g.max}); la consulta dejaría de ser manejable. Edita el término a mano.`,
         };
-        if (g.estado !== 'ok') return `${grupo}: ${motivos[g.estado] || 'no se pudo construir el término de grupo.'}`;
+        if (g.estado !== 'ok') return `${grupo}: ${motivos[g.estado] || 'no se pudo construir el término.'}`;
         const partes = [
             `${grupo} · ${g.principios.length} ${unidad} comercializados en España${porVia} (CIMA): ${esc(g.principios.join('; '))}.`,
             'Lo que no se comercializa aquí no entra; añádelo en el campo si lo necesitas.',
         ];
         // La vía hace DOS cosas en modo grupo, y una sola pastilla controla ambas: elige qué
         // medicamentos entran y exige que el artículo nombre la vía. Se dice.
-        if (via) partes.push(`Con la vía activada solo entran los que se comercializan${porVia}; desactívala para el grupo entero.`);
+        if (via) partes.push(`Con la vía activada solo entran los que se comercializan${porVia}; desactívala para ${entero}.`);
         if (g.asociaciones) partes.push('Cada asociación recoge los registros que mencionan todos sus componentes; no acredita que se estudiaran juntos.');
         if (g.absorbidas) partes.push(`${g.absorbidas === 1 ? 'Una asociación no se añade' : `${g.absorbidas} asociaciones no se añaden`} aparte porque ya la recoge su principio en solitario.`);
         if (g.sinVerificar.length) partes.push(`Pasan tal cual, sin traducción comprobada: ${esc(g.sinVerificar.join(', '))}.`);
+        // La clase no es un código ATC: la fija la búsqueda por indicación (clinical-ontology.json).
+        if (atc4.clase) partes.push('La clase es la misma que usa la búsqueda por indicación de MedCheck; el ATC la reparte en varios grupos.');
         partes.push('REec y ClinicalTrials.gov siguen con el principio activo.');
         return partes.join(' ');
     }
@@ -22861,6 +22900,12 @@ ${ftFechaDocsHtml}
             window.innDict.load().then(() => { container.dataset.loaded = ''; this.renderEvidenceTab(med); });
             return;
         }
+        // Lo mismo con la ontología, de la que sale la clase clínica (normalmente ya precargada;
+        // si no carga, falla en abierto y simplemente no se ofrece la clase).
+        if (this.api && !this.api._clinicalOntologyLoaded && typeof this.api._loadClinicalOntology === 'function') {
+            this.api._loadClinicalOntology().then(() => { container.dataset.loaded = ''; this.renderEvidenceTab(med); });
+            return;
+        }
         const identity = this._substanceIdentity(med);
         const fallbackBrand = (med.nombre || '').split(/\s*\d/)[0].trim().toLowerCase();
         const pubmedTerm = identity.pubmed || fallbackBrand;
@@ -22868,6 +22913,9 @@ ${ftFechaDocsHtml}
         const canonicalEnTerm = identity.canonicalEn || fallbackBrand;
         // Grupo para el selector de alcance. Siempre por nivel, nunca `atcs[0]` (que es el nivel 3).
         const atc4 = (Array.isArray(med.atcs) ? med.atcs : []).find(a => a?.nivel === 4 && a.codigo) || null;
+        // Clase clínica (ACOD…), si el medicamento pertenece a una de la lista cerrada. Si no, la
+        // opción no se pinta: una opción siempre desactivada sería ruido en casi todas las fichas.
+        const clase = this._evidenceClaseDeMed(med);
         // Vía del producto: misma doctrina que «Consultar IA» (la vía se conserva).
         const via = this._evidenceViaDeMed(med);
         // Nace DESACTIVADA: si se activa lo decide _evidenceViaPorDefecto con datos de CIMA, y el
@@ -22981,6 +23029,7 @@ ${ftFechaDocsHtml}
                     <div class="evidence-scope consult-scope" role="radiogroup" aria-label="Alcance de la búsqueda en PubMed">
                         <label class="consult-scope-opt"><input type="radio" name="ev-scope" value="pa" checked><span>Principio activo</span></label>
                         <label class="consult-scope-opt${atc4 ? '' : ' is-disabled'}" id="ev-scope-grupo-opt" title="${atc4 ? 'OR de los principios activos de su grupo ATC comercializados en España' : 'Este medicamento no tiene grupo ATC de nivel 4 en CIMA'}"><input type="radio" name="ev-scope" value="grupo"${atc4 ? '' : ' disabled'}><span>${atc4 ? `Su grupo (${this._escapeHtml(atc4.codigo)})` : 'Su grupo'}</span></label>
+                        ${clase ? `<label class="consult-scope-opt" title="OR de los principios activos comercializados en España de la clase ${this._escapeHtml(clase.codigo)} (${this._escapeHtml(clase.codigos.join(' + '))}), la misma que usa la búsqueda por indicación"><input type="radio" name="ev-scope" value="clase"><span>Su clase clínica (${this._escapeHtml(clase.codigo)})</span></label>` : ''}
                     </div>
                     <p class="evidence-scope-note" id="evidence-scope-note" aria-live="polite" hidden></p>
                     ${viaHtml}
@@ -23236,7 +23285,7 @@ ${ftFechaDocsHtml}
         // Sugerencias MeSH en el campo de acotar. Al elegir, se recarga.
         if (acotar) this._evMeshSuggest = this._wireMeshSuggest(acotar, document.getElementById('evidence-mesh-suggest'), reloadTerm);
 
-        // Alcance: principio activo ↔ su grupo ATC4. Solo reescribe el campo de PubMed; el resto
+        // Alcance: principio activo ↔ su grupo ATC4 ↔ su clase clínica. Solo reescribe el campo de PubMed; el resto
         // de la pestaña (REec, ClinicalTrials, MedyNut) se queda con la sustancia, como el campo.
         const scopeNote = document.getElementById('evidence-scope-note');
         const grupoOpt = document.getElementById('ev-scope-grupo-opt');
@@ -23247,7 +23296,7 @@ ${ftFechaDocsHtml}
         const viaCheck = document.getElementById('evidence-via-check');
         const viaMotivo = document.getElementById('evidence-via-motivo');
         const viaActiva = () => !!(viaCheck?.checked && via?.ids?.length);
-        const grupoRadio = container.querySelector('input[name="ev-scope"][value="grupo"]');
+        const alcanceActual = () => container.querySelector('input[name="ev-scope"]:checked')?.value || 'pa';
 
         // Valor por defecto de la vía, según el ALCANCE (opción B, 17/10). En cuanto el médico
         // toca la pastilla, manda su elección y ya no se recalcula al cambiar de alcance.
@@ -23256,7 +23305,7 @@ ${ftFechaDocsHtml}
         const claveSustancia = this._evidenceClaveSustancia(med);
         const pintarMotivo = (d, alcance) => {
             if (!viaMotivo) return;
-            const ambito = alcance === 'grupo' ? `el grupo ${atc4?.codigo || ''}` : nombreSustancia;
+            const ambito = alcance === 'grupo' ? `el grupo ${atc4?.codigo || ''}` : alcance === 'clase' ? `la clase ${clase?.codigo || ''}` : nombreSustancia;
             viaMotivo.textContent = {
                 distingue: `Activada: en España ${ambito} también se comercializa por vía ${d.otras.join(', ')}. Desactívala para buscar todas las vías.`,
                 unica: `Sin activar: en España ${ambito} solo se comercializa por esta vía, así que acotar solo perdería artículos que no la nombran.`,
@@ -23268,7 +23317,7 @@ ${ftFechaDocsHtml}
             if (!viaCheck || viaTocada || !container.isConnected) return;
             // Una decisión que llega tarde para un alcance que ya no está elegido se descarta: la
             // del principio activo no puede desactivar la vía que acaba de activar el grupo.
-            if ((grupoRadio?.checked ? 'grupo' : 'pa') !== alcance) return;
+            if (alcanceActual() !== alcance) return;
             viaCheck.checked = d.activar;
             pintarMotivo(d, alcance);
         };
@@ -23292,28 +23341,32 @@ ${ftFechaDocsHtml}
         const aplicarAlcance = async () => {
             const radio = container.querySelector('input[name="ev-scope"]:checked');
             const cycle = (this._evScopeCycle = (this._evScopeCycle || 0) + 1);
-            if (radio?.value !== 'grupo' || !atc4) {
+            // Ámbito del OR: el grupo ATC4 o la clase clínica, con el mismo constructor de término.
+            const ambito = radio?.value === 'grupo' && atc4 ? { ...atc4, cargar: () => this._evidenceGroupMeds(atc4.codigo) }
+                : radio?.value === 'clase' && clase ? { ...clase, cargar: () => this._evidenceClaseMeds(clase.codigos) }
+                    : null;
+            if (!ambito) {
                 if (scopeNote) scopeNote.hidden = true;
                 await decidirViaSustancia();
                 if (cycle !== this._evScopeCycle || !container.isConnected) return;
                 applyScopeTerm(pubmedTerm);
                 return;
             }
-            if (scopeNote) { scopeNote.hidden = false; scopeNote.textContent = `Buscando en CIMA los principios de ${atc4.codigo}…`; }
+            if (scopeNote) { scopeNote.hidden = false; scopeNote.textContent = `Buscando en CIMA los principios de ${ambito.codigo}…`; }
             let g;
             let filtroVia = false;
             try {
-                const meds = await this._evidenceGroupMeds(atc4.codigo);
+                const meds = await ambito.cargar();
                 if (cycle !== this._evScopeCycle || !container.isConnected) return;
-                // En modo grupo, el valor por defecto mira las vías de TODO el grupo.
-                aplicarDecision(this._evidenceViaPorDefecto(meds, via, null), 'grupo');
+                // En grupo o clase, el valor por defecto mira las vías de TODOS sus medicamentos.
+                aplicarDecision(this._evidenceViaPorDefecto(meds, via, null), radio.value);
                 filtroVia = viaActiva();
                 g = this._evidenceGroupTerm(meds, identity.components.map(c => c.baseEs), { viaIds: filtroVia ? via.ids : null });
             } catch {
                 g = null;
             }
             if (cycle !== this._evScopeCycle || !container.isConnected) return;
-            const nota = g && this._evidenceGroupNoteHtml(g, atc4, filtroVia ? via.etiqueta : null);
+            const nota = g && this._evidenceGroupNoteHtml(g, ambito, filtroVia ? via.etiqueta : null);
             if (g?.estado === 'ok') {
                 if (scopeNote) scopeNote.innerHTML = nota;
                 applyScopeTerm(g.term);
@@ -23326,20 +23379,20 @@ ${ftFechaDocsHtml}
             const pa = container.querySelector('input[name="ev-scope"][value="pa"]');
             if (pa) pa.checked = true;
             if (g && !filtroVia) {
-                grupoRadio.disabled = true;
-                grupoOpt?.classList.add('is-disabled');
+                radio.disabled = true;
+                (radio.value === 'grupo' ? grupoOpt : radio.closest('label'))?.classList.add('is-disabled');
             }
-            if (scopeNote) scopeNote.innerHTML = nota || 'No se pudo consultar CIMA para construir el grupo. Inténtalo de nuevo.';
+            if (scopeNote) scopeNote.innerHTML = nota || `No se pudo consultar CIMA para construir ${radio.value === 'clase' ? 'la clase' : 'el grupo'}. Inténtalo de nuevo.`;
             applyScopeTerm(pubmedTerm);
         };
         container.querySelectorAll('input[name="ev-scope"]').forEach(radio => {
             radio.addEventListener('change', () => { if (radio.checked) aplicarAlcance(); });
         });
-        // La vía cambia también QUIÉN entra en el grupo, así que en modo grupo se reconstruye.
+        // La vía cambia también QUIÉN entra en el grupo o la clase, así que ahí se reconstruye.
         viaCheck?.addEventListener('change', () => {
             viaTocada = true;
             if (viaMotivo) viaMotivo.textContent = '';
-            if (grupoRadio?.checked) aplicarAlcance();
+            if (alcanceActual() !== 'pa') aplicarAlcance();
             else reloadTerm();
         });
 
@@ -24727,6 +24780,15 @@ MedCheckApp._VIEW_ANALYTICS_MAP = {
  * Esta tabla NO dice si la vía viene activada: eso lo decide _evidenceViaPorDefecto con datos de
  * CIMA. La marca «local/sistémica» que había antes era una inferencia farmacológica y fallaba.
  */
+/**
+ * Clases clínicas que Evidencia ofrece como alcance «Su clase clínica» (2026-10-17, decisión 3 del
+ * contraste con Codex): claves de clinical-ontology.json cuyos códigos forman una clase de fármacos
+ * que el ATC reparte en varios grupos. Lista CERRADA y curada a mano: una entrada de la ontología no
+ * es por sí misma una clase (una enfermedad no lo es), y una amplia daría una OR inmanejable. Los
+ * códigos NO se copian aquí: salen de la ontología, que sigue siendo la única fuente.
+ */
+MedCheckApp._EV_CLASES = ['acod'];
+
 MedCheckApp._EV_VIAS = {
     48: { etiqueta: 'oral', pubmed: '"Administration, Oral"[Mesh] OR oral[tiab]' },
     42: { etiqueta: 'intravenosa', pubmed: '"Administration, Intravenous"[Mesh] OR "Injections, Intravenous"[Mesh] OR "Infusions, Intravenous"[Mesh] OR intravenous[tiab] OR intravenously[tiab]' },

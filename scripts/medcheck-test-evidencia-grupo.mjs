@@ -223,6 +223,44 @@ check('sin ficha de detalle, solo el VTM', app._evidenceConsultasSustancia(med('
             (await transporte([{ resultados: [atr] }]).searchMedicamentosAll({})).totalDeclarado], [1, null]);
 }
 
+// ─── Clase clínica (ACOD) desde la ontología REAL (decisión 3 de Codex, 17/10) ─
+// Desde dabigatrán y desde un anti-Xa sale la misma clase y el mismo conjunto de cuatro principios;
+// argatrobán y bivalirudina (B01AE03/06) no son ACOD y no la tienen; la nota declara el perímetro.
+{
+    const ontologia = JSON.parse(readFileSync(join(ROOT, 'assets/data/clinical-ontology.json'), 'utf8')).terms;
+    const conAtc = (vtm, atc5, n) => ({ ...med(vtm, n), atcs: [{ nivel: 4, codigo: atc5.slice(0, 5) }, { nivel: 5, codigo: atc5 }] });
+    const dabi = conAtc('dabigatrán', 'B01AE07', 1);
+    const riva = conAtc('rivaroxabán', 'B01AF01', 2);
+    const clDabi = app._evidenceClaseDeMed(dabi, ontologia);
+    check('dabigatrán pertenece a la clase ACOD', clDabi && [clDabi.clave, clDabi.codigo, clDabi.codigos], ['acod', 'ACOD', ['B01AF', 'B01AE07']]);
+    check('rivaroxabán, a la misma', app._evidenceClaseDeMed(riva, ontologia)?.codigos, ['B01AF', 'B01AE07']);
+    check('argatrobán (B01AE03) no es ACOD', app._evidenceClaseDeMed(conAtc('argatrobán', 'B01AE03', 3), ontologia), null);
+    check('un fármaco fuera de toda clase no la ofrece', app._evidenceClaseDeMed(conAtc('estriol', 'G03CA04', 4), ontologia), null);
+    check('sin ontología cargada, no hay clase', app._evidenceClaseDeMed(dabi, null), null);
+
+    // Miembros: lo que CIMA devuelve por cada código; un registro repetido entre códigos, una vez.
+    const porCodigo = {
+        B01AF: [riva, conAtc('apixabán', 'B01AF02', 5), conAtc('edoxabán', 'B01AF03', 6)],
+        B01AE07: [dabi, dabi],
+    };
+    app._evGroupMedsCache = null;
+    app.api = { searchByATC: async c => ({ resultados: porCodigo[c] || [] }) };
+    const miembros = await app._evidenceClaseMeds(clDabi.codigos);
+    check('los miembros de la clase se unen sin repetir registro', miembros.length, 4);
+    const desdeDabi = app._evidenceGroupTerm(miembros, app._substanceIdentity(dabi).components.map(c => c.baseEs));
+    const desdeRiva = app._evidenceGroupTerm(miembros, app._substanceIdentity(riva).components.map(c => c.baseEs));
+    check('mismo conjunto de cuatro principios desde dabigatrán y desde rivaroxabán',
+        [[...desdeDabi.principios].sort(), [...desdeRiva.principios].sort(), desdeDabi.estado],
+        [['apixaban', 'dabigatran', 'edoxaban', 'rivaroxaban'], ['apixaban', 'dabigatran', 'edoxaban', 'rivaroxaban'], 'ok']);
+    check('el abierto va primero en el término', desdeDabi.principios[0], 'dabigatran');
+    const nota = app._evidenceGroupNoteHtml(desdeDabi, clDabi);
+    check('la nota dice que es la clase de MedCheck, con sus códigos, en España y comercializados',
+        [/clase clínica de MedCheck: B01AF \+ B01AE07/.test(nota), /comercializados en España/.test(nota), /búsqueda por indicación/.test(nota), /REec y ClinicalTrials\.gov siguen con el principio activo/.test(nota)],
+        [true, true, true, true]);
+    check('sin MeSH en el término de la clase', /\[mesh\]|\[pa\]/i.test(desdeDabi.term), false);
+    check('una nota de grupo ATC4 no cambia', /clase clínica/.test(app._evidenceGroupNoteHtml(desdeDabi, { codigo: 'B01AF', nombre: 'Inhibidores directos del factor Xa' })), false);
+}
+
 // ─── Composición en bloques: (fármaco) AND (vía) AND (acotación) ──────────────
 check('fármaco y vía', app._evidenceComposeTerm('a OR b', '', 'vaginal[tiab]'), '(a OR b) AND (vaginal[tiab])');
 check('fármaco, vía y acotación: la acotación la última', app._evidenceComposeTerm('a', 'x', 'v'), '(a) AND (v) AND (x)');
