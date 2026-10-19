@@ -1900,9 +1900,9 @@ filtros estructurados para profesionales sanitarios
         "Mide atención, no calidad metodológica ni relevancia clínica. " +
         "Se suma con AND a todo lo demás: con revistas de Atención Primaria o de especialidades " +
         "pequeñas puede dejar muy pocos resultados, y con un filtro de fecha solo quedan los " +
-        "trending publicados en ese periodo. Los recuentos de esta página son orientativos (≈): " +
-        "salen de la API de PubMed, que calcula Trending con otra lista que la web, así que al " +
-        "abrir la búsqueda verás otra cifra.";
+        "trending publicados en ese periodo. Las cifras de esta página no coincidirán con las de " +
+        "PubMed: calcula los artículos en tendencia de una forma para esta página y de otra para " +
+        "su web. Las dos cifras son reales.";
       // Sin el CDN de tippy, el título nativo; una excepción aquí cortaría el resto de la inicialización
       if (typeof tippy !== "function") {
         btnTrending.title = trendingAyuda;
@@ -1910,7 +1910,7 @@ filtros estructurados para profesionales sanitarios
         content: trendingAyuda
           .replace("Trending · PubMed. ", "<strong>Trending · PubMed</strong><br>")
           .replace(" Se suma", "<br>Se suma")
-          .replace(" Los recuentos", "<br>Los recuentos"),
+          .replace(" Las cifras de esta página", "<br>Las cifras de esta página"),
         placement: "bottom",
         arrow: true,
         theme: "custom",
@@ -2309,7 +2309,7 @@ filtros estructurados para profesionales sanitarios
             {
               element: document.querySelector("#btn_trending"),
               intro:
-                "<strong>Trending · PubMed</strong> <i class='fa-solid fa-arrow-trend-up'></i>: añade <code>trending[sb]</code> con AND a tu búsqueda para quedarte con los artículos que están recibiendo más visitas en PubMed estos días. Es una señal de atención, no de calidad: úsalo para explorar novedades, no para decidir qué es relevante. Con Trending, los recuentos de esta página llevan ≈: la web de PubMed usa otra lista y mostrará otra cifra.",
+                "<strong>Trending · PubMed</strong> <i class='fa-solid fa-arrow-trend-up'></i>: añade <code>trending[sb]</code> con AND a tu búsqueda para quedarte con los artículos que están recibiendo más visitas en PubMed estos días. Es una señal de atención, no de calidad: úsalo para explorar novedades, no para decidir qué es relevante. Con Trending, la cifra de esta página no coincidirá con la de PubMed: calcula los artículos en tendencia de una forma para esta página y de otra para su web. Las dos son reales.",
               position: "bottom",
             },
             {

@@ -25,8 +25,10 @@
   function conTrending(query) {
     return /trending\[(sb|filter)\]/i.test(query || '');
   }
-  const AVISO_TRENDING = 'Con Trending, esta cifra es la de la API de PubMed (E-utilities). La web de PubMed ' +
-    'calcula Trending con otra lista: al abrir la búsqueda verás otra cifra y, en parte, otros artículos.';
+  // Texto para el público: la cifra es real, no aproximada; lo que cambia es cómo se calcula Trending.
+  const AVISO_TRENDING = 'PubMed calcula los artículos en tendencia de una forma para esta página y de otra ' +
+    'para su web. Por eso, al abrir la búsqueda en PubMed verás otra cifra y, en parte, otros artículos. ' +
+    'Las dos cifras son reales.';
 
   /**
    * -----------------------------------------------------------------------
@@ -251,7 +253,7 @@
         if (isShowingTotal) {
           persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} artículos en PubMed`;
         } else if (conTrending(mainQuery)) {
-          persistentSearchCountDisplay.textContent = `≈ ${formatNumber(result.count)} resultados · con Trending, PubMed mostrará otra cifra`;
+          persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} resultados · con Trending, en PubMed verás otra cifra`;
           persistentSearchCountDisplay.title = AVISO_TRENDING;
         } else {
           persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} resultados encontrados`;
@@ -330,11 +332,10 @@
 
       if (filteredCount !== null) {
         // Formato descriptivo similar al contador principal
-        const aprox = conTrending(fullQuery) ? '≈ ' : '';
         if (baseCount !== null && baseCount > 0) {
-          journalsCounterText.textContent = `${aprox}${formatNumber(filteredCount)} resultados en revistas seleccionadas, de ${aprox}${formatNumber(baseCount)} en total`;
+          journalsCounterText.textContent = `${formatNumber(filteredCount)} resultados en revistas seleccionadas, de ${formatNumber(baseCount)} en total`;
         } else {
-          journalsCounterText.textContent = `${aprox}${formatNumber(filteredCount)} resultados en revistas seleccionadas`;
+          journalsCounterText.textContent = `${formatNumber(filteredCount)} resultados en revistas seleccionadas`;
         }
       } else {
         journalsCounterText.textContent = '';
@@ -620,7 +621,7 @@
     });
   }
 
-  function updateCounterDisplay(button, value, aproximado = false) {
+  function updateCounterDisplay(button, value) { /* ... sin cambios ... */
     const counter = button.querySelector(".result-counter");
     if (!counter) return;
 
@@ -632,7 +633,7 @@
     else if (value === "?") { counter.classList.add("error"); counter.textContent = "?"; }
     else if (value === "Aborted") { counter.classList.add("loading"); counter.textContent = "…"; counter.classList.remove("visible"); }
     else if (typeof value === "number" && !isNaN(value)) {
-      counter.textContent = (aproximado ? "≈" : "") + formatCount(value);
+      counter.textContent = formatCount(value);
       if (value === 0) counter.classList.add("zero");
       else if (value >= 10000) counter.classList.add("high");
       else if (value >= 1000) counter.classList.add("med");
@@ -721,7 +722,7 @@
       const requestPromise = requestQueue.add(requestId, fullQuery, cycleId, signal)
         .then(({ count, cycleId: resultCycleId }) => { /* ... manejo resultado ... */
           if (resultCycleId === currentUpdateCycleId && button.querySelector(".result-counter")) {
-            updateCounterDisplay(button, count, conTrending(fullQuery));
+            updateCounterDisplay(button, count);
           } // else { console.log(`Resultado descartado del ciclo ${resultCycleId}...`); }
         })
         .catch(({ error, cycleId: resultCycleId, aborted }) => { /* ... manejo error ... */
