@@ -18,6 +18,19 @@
   }
 
   /**
+   * Con trending[sb] el recuento de la API (ESearch) no es el de la web: PubMed calcula Trending con
+   * otra lista en cada sitio. Medido el 2026-10-19: trending[sb] 1167 en la API y 1000 en la web;
+   * diabetes AND trending[sb] 85 y 70, con solo 14 PMID en común. Sin Trending coinciden exactos.
+   */
+  function conTrending(query) {
+    return /trending\[(sb|filter)\]/i.test(query || '');
+  }
+  // Texto para el público: la cifra es real, no aproximada; lo que cambia es cómo se calcula Trending.
+  const AVISO_TRENDING = 'PubMed calcula los artículos en tendencia de una forma para esta página y de otra ' +
+    'para su web. Por eso, al abrir la búsqueda en PubMed verás otra cifra y, en parte, otros artículos. ' +
+    'Las dos cifras son reales.';
+
+  /**
    * -----------------------------------------------------------------------
    * Configuración y Estado del Módulo
    * -----------------------------------------------------------------------
@@ -235,9 +248,13 @@
       }
 
       // INICIO DE LA SECCIÓN MODIFICADA
+      persistentSearchCountDisplay.title = '';
       if (typeof result.count === 'number' && !isNaN(result.count)) {
         if (isShowingTotal) {
           persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} artículos en PubMed`;
+        } else if (conTrending(mainQuery)) {
+          persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} resultados · con Trending, en PubMed verás otra cifra`;
+          persistentSearchCountDisplay.title = AVISO_TRENDING;
         } else {
           persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} resultados encontrados`;
         }
@@ -336,45 +353,11 @@
    * Construye query excluyendo filtros de journals
    */
   function buildQueryWithoutJournals(term) {
-    if (typeof constructQuery !== 'function' || !categories) return '';
-
-    // Obtener filtros activos excluyendo journals
-    const activeButtons = document.querySelectorAll('.filter-button.active:not(.journals)');
-    if (activeButtons.length === 0 && !term) {
-      // Si no hay término ni otros filtros, devolver vacío (o solo trending[sb] si está activo)
-      return typeof window.aplicarTrending === 'function' ? window.aplicarTrending('') : '';
-    }
-
-    // Usamos constructQuery pero primero desactivamos temporalmente los journals
-    // Alternativa más simple: construir manualmente sin journals
-    let query = term || '';
-
-    const categoryKeys = Object.keys(categories).filter(cat => cat !== 'journals');
-
-    categoryKeys.forEach(cat => {
-      const activeInCat = [];
-      document.querySelectorAll(`.filter-button.${cat === 'methodology' ? 'methodological' : cat}.active`).forEach(btn => {
-        const filterQuery = btn.dataset.query || filterMap?.[btn.dataset.type] || filterMap?.[btn.dataset.base + '_sensible'];
-        if (filterQuery) activeInCat.push(filterQuery);
-      });
-
-      if (activeInCat.length > 0) {
-        const catQuery = `(${activeInCat.join(' OR ')})`;
-        query = query ? `(${query}) AND ${catQuery}` : catQuery;
-      }
-    });
-
-    // Trending va en las dos consultas que se comparan, igual que en constructQuery
-    if (typeof window.aplicarTrending === 'function') query = window.aplicarTrending(query);
-
-    // Añadir filtro de fecha si existe
-    const dateValue = dateRange?.value;
-    if (dateValue) {
-      const dateFilter = `("last ${dateValue} days"[dp])`;
-      query = query ? `(${query}) AND ${dateFilter}` : dateFilter;
-    }
-
-    return query.trim();
+    if (typeof constructQuery !== 'function') return '';
+    // La misma constructQuery sin la categoría de revistas. La reconstrucción a mano que había aquí
+    // unía siempre con OR y metía los NOT dentro del grupo, así que el «de N en total» no era la
+    // consulta real cuando una categoría iba con AND o había una exclusión.
+    return constructQuery(term, { sinRevistas: true });
   }
   /**
    * -----------------------------------------------------------------------
@@ -781,9 +764,8 @@
     };
   }
 
-  function triggerImmediateUpdate(options = {}) {
-    const { skipJournalsCounter = false } = options;
-    console.log("%cTriggering PubMed Counter Update...", "color: blue; font-weight: bold;", skipJournalsCounter ? "(sin contador revistas)" : "");
+  function triggerImmediateUpdate() {
+    console.log("%cTriggering PubMed Counter Update...", "color: blue; font-weight: bold;");
 
     // 1. Verificar dependencia crítica
     if (typeof constructQuery !== "function") {
@@ -806,11 +788,10 @@
     setTimeout(() => {
       if (!signal.aborted) {
         updatePersistentMainCounter(cycleToRun, signal);
-        // Solo actualizar el contador de revistas si no se indica lo contrario
-        // (se omite cuando cambian filtros que no son de revistas)
-        if (!skipJournalsCounter) {
-          updateJournalsComparativeCounter(cycleToRun, signal);
-        }
+        // Siempre: cualquier filtro cambia las dos cifras que compara. Si no hay revistas activas,
+        // la función sale sin consultar. Antes se omitía al cambiar un filtro que no era de revistas
+        // y la cifra se quedaba con el valor anterior (o en ⏳, si este ciclo abortaba el suyo).
+        updateJournalsComparativeCounter(cycleToRun, signal);
       }
     }, 0);
 
