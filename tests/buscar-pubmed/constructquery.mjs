@@ -236,6 +236,35 @@ if (!hayTrending) {
   const sinT = terminosEutils.filter((t) => !/trending\[sb\]/i.test(t));
   comprobar('T13', terminosEutils.length > 0 && sinT.length === 0,
     `las ${terminosEutils.length} consultas de los contadores llevan Trending${sinT.length ? `; sin él: ${JSON.stringify(sinT)}` : ''}`);
+
+  // Con Trending, la API y la web de PubMed no dan la misma cifra: los recuentos se marcan con ≈
+  const textos = await page.evaluate(() => ({
+    principal: document.getElementById('persistentSearchCountText').textContent,
+    revistas: document.getElementById('journalsCounterText').textContent,
+  }));
+  comprobar('T14', textos.principal.startsWith('≈') && textos.revistas.startsWith('≈'),
+    `con Trending los recuentos van marcados como aproximados: «${textos.principal}» / «${textos.revistas}»`);
+  await pulsar('#btn_trending');
+  await page.waitForTimeout(2500);
+  const principalSinT = await page.$eval('#persistentSearchCountText', (el) => el.textContent);
+  comprobar('T15', !principalSinT.includes('≈'), `sin Trending, sin marca: «${principalSinT}»`);
+}
+
+// 3. Contador comparativo de revistas: su «de N en total» es la consulta real sin revistas.
+// La revista va primero para que ninguna consulta intermedia del contador principal coincida ya con la
+// esperada; el término es único para no leerla de la caché de contadores.
+{
+  const conRevista = { termino: 'gout flare', operadores: { methodology: 'AND' },
+    filtros: ['jnl_cardiology', 'metaanalysis', 'gpc', 'humans'] };
+  terminosEutils.length = 0;
+  await aplicar(conRevista);
+  await page.waitForTimeout(3000);
+  const enviados = [...terminosEutils];
+  await aplicar({ ...conRevista, filtros: conRevista.filtros.filter((f) => !f.startsWith('jnl_')) });
+  const sinRevistas = (await leer()).consulta;
+  comprobar('C1', enviados.includes(sinRevistas),
+    `con AND y una exclusión NOT, el total comparado es la consulta sin revistas, y se recalcula al pulsar filtros que no son de revistas: ${sinRevistas}${
+      enviados.includes(sinRevistas) ? '' : `\n      enviadas: ${JSON.stringify(enviados)}`}`);
 }
 
 await browser.close();

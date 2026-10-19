@@ -1762,10 +1762,8 @@ filtros estructurados para profesionales sanitarios
               }
               updateFilterCounterDisplay();
               mostrarQueryFinal();
-              // Actualizar contadores: si NO es filtro de journals, omitir el contador de revistas
               if (typeof window.triggerPubMedCounterUpdate === "function") {
-                const isJournalsFilter = button.classList.contains("journals");
-                window.triggerPubMedCounterUpdate({ skipJournalsCounter: !isJournalsFilter });
+                window.triggerPubMedCounterUpdate();
               }
             }
           });
@@ -1795,9 +1793,8 @@ filtros estructurados para profesionales sanitarios
             }
             updateFilterCounterDisplay();
             mostrarQueryFinal();
-            // Actualizar contadores: filtros con toggle nunca son de journals, omitir contador revistas
             if (typeof window.triggerPubMedCounterUpdate === "function") {
-              window.triggerPubMedCounterUpdate({ skipJournalsCounter: true });
+              window.triggerPubMedCounterUpdate();
             }
           });
           var radios = btn.querySelectorAll('input[type="radio"]');
@@ -1827,7 +1824,9 @@ filtros estructurados para profesionales sanitarios
 
       // 9. Funciones de construcción de consultas
 
-      function constructQuery(term) {
+      // opciones.sinRevistas: la misma consulta sin la categoría de revistas. La usa el contador
+      // comparativo de revistas, para que su «de N en total» respete operadores y exclusiones NOT.
+      function constructQuery(term, opciones = {}) {
         // Elimina las líneas que empiezan con "#"
         term = term
           .split("\n")
@@ -1838,6 +1837,7 @@ filtros estructurados para profesionales sanitarios
         let query = term;
 
         Object.keys(categories).forEach(function (cat) {
+          if (opciones.sinRevistas && cat === "journals") return;
           const operator = categoryOperators[cat];
           const activeInCat = categories[cat]
             .filter((f) => activeFilters.has(f))
@@ -1875,12 +1875,10 @@ filtros estructurados para profesionales sanitarios
       window.constructQuery = constructQuery;
 
       // Añade trending[sb] con AND si el botón está activo y la consulta no lo lleva ya escrito.
-      // La usa también counters-buscar-pubmed.js, que reconstruye la consulta sin revistas.
       function aplicarTrending(query) {
         if (!trendingActive || /trending\[sb\]/i.test(query)) return query;
         return query ? `(${query}) AND trending[sb]` : "trending[sb]";
       }
-      window.aplicarTrending = aplicarTrending;
 
       function setTrending(activo) {
         trendingActive = activo;
@@ -1902,14 +1900,17 @@ filtros estructurados para profesionales sanitarios
         "Mide atención, no calidad metodológica ni relevancia clínica. " +
         "Se suma con AND a todo lo demás: con revistas de Atención Primaria o de especialidades " +
         "pequeñas puede dejar muy pocos resultados, y con un filtro de fecha solo quedan los " +
-        "trending publicados en ese periodo.";
+        "trending publicados en ese periodo. Los recuentos de esta página son orientativos (≈): " +
+        "salen de la API de PubMed, que calcula Trending con otra lista que la web, así que al " +
+        "abrir la búsqueda verás otra cifra.";
       // Sin el CDN de tippy, el título nativo; una excepción aquí cortaría el resto de la inicialización
       if (typeof tippy !== "function") {
         btnTrending.title = trendingAyuda;
       } else tippy(btnTrending, {
         content: trendingAyuda
           .replace("Trending · PubMed. ", "<strong>Trending · PubMed</strong><br>")
-          .replace(" Se suma", "<br>Se suma"),
+          .replace(" Se suma", "<br>Se suma")
+          .replace(" Los recuentos", "<br>Los recuentos"),
         placement: "bottom",
         arrow: true,
         theme: "custom",
@@ -1994,15 +1995,16 @@ filtros estructurados para profesionales sanitarios
         select.addEventListener("change", function () {
           categoryOperators[this.dataset.category] = this.value;
           mostrarQueryFinal();
-          // Actualizar contadores: omitir contador de revistas si no es cambio en journals
           if (typeof window.triggerPubMedCounterUpdate === "function") {
-            const isJournalsOperator = this.dataset.category === "journals";
-            window.triggerPubMedCounterUpdate({ skipJournalsCounter: !isJournalsOperator });
+            window.triggerPubMedCounterUpdate();
           }
         });
       });
       // 13. Diagrama de Venn
       function updateVennDiagram() {
+        // Sin d3 o venn.js (CDN caído o bloqueado por la red) no hay diagrama, pero no puede lanzar:
+        // mostrarQueryFinal lo llama antes de pedir los contadores, y estos se quedaban con la cifra anterior.
+        if (typeof d3 === "undefined" || typeof venn === "undefined") return;
         const methodologyFilters = Array.from(
           document.querySelectorAll(".filter-button.methodological.active")
         ).map((btn) => ({
@@ -2307,7 +2309,7 @@ filtros estructurados para profesionales sanitarios
             {
               element: document.querySelector("#btn_trending"),
               intro:
-                "<strong>Trending · PubMed</strong> <i class='fa-solid fa-arrow-trend-up'></i>: añade <code>trending[sb]</code> con AND a tu búsqueda para quedarte con los artículos que están recibiendo más visitas en PubMed estos días. Es una señal de atención, no de calidad: úsalo para explorar novedades, no para decidir qué es relevante.",
+                "<strong>Trending · PubMed</strong> <i class='fa-solid fa-arrow-trend-up'></i>: añade <code>trending[sb]</code> con AND a tu búsqueda para quedarte con los artículos que están recibiendo más visitas en PubMed estos días. Es una señal de atención, no de calidad: úsalo para explorar novedades, no para decidir qué es relevante. Con Trending, los recuentos de esta página llevan ≈: la web de PubMed usa otra lista y mostrará otra cifra.",
               position: "bottom",
             },
             {
