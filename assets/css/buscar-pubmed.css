@@ -1148,3 +1148,22 @@ body {
     padding: 0.4rem 0.3rem;
   }
 }
+/* Trending · PubMed: conmutador en la barra de iconos. Apagado se ve atenuado para no confundirse con
+   un estado activo; encendido, el amarillo de la barra con un halo. */
+.search-header-icons button.trending-toggle {
+  opacity: 0.55;
+  border-radius: 8px;
+  padding: 0 0.3rem;
+  transition: opacity 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-header-icons button.trending-toggle:hover,
+.search-header-icons button.trending-toggle:focus-visible {
+  opacity: 1;
+}
+
+.search-header-icons button.trending-toggle.active {
+  opacity: 1;
+  background: rgba(255, 215, 0, 0.18);
+  box-shadow: 0 0 0 1px #ffd700;
+}

@@ -1,0 +1,18 @@
+{
+  "vacio": "",
+  "solo-termino": "heart failure",
+  "termino-con-comentario": "asthma[tiab]",
+  "metodologia-una": "(asthma) AND ((metaanalysis[tw]))",
+  "metodologia-dos-or": "(asthma) AND ((gpc[tw]) OR (metaanalysis[tw]))",
+  "metodologia-dos-and": "(asthma) AND ((gpc[tw]) AND (metaanalysis[tw]))",
+  "clinico-sensible": "(copd) AND ((treatment_sensible[tw]))",
+  "clinico-especifico": "(copd) AND ((treatment_especifico[tw]))",
+  "ambito-ap-y-geriatria": "(falls) AND ((primary_sensible[tw]) OR (geriatrics_especifico[tw]))",
+  "exclusion-sola": "(sepsis) NOT (humans[tw])",
+  "exclusion-y-regular": "((sepsis) AND ((pediatrics[tw]))) NOT (humans[tw])",
+  "revista-sola": "((jnl_cardiology[tw]))",
+  "revistas-dos": "(atrial fibrillation) AND ((jnl_top_publications[tw]) OR (jnl_cardiology[tw]))",
+  "solo-fecha": "",
+  "todo-junto": "((((((semaglutide) AND ((metaanalysis[tw]))) AND ((treatment_sensible[tw]))) AND ((primary_sensible[tw]))) NOT (adults[tw])) AND ((jnl_endocrinology[tw]))) AND (\"last 30 days\"[dp])",
+  "termino-ya-trending": "trending[sb]"
+}

@@ -341,8 +341,8 @@
     // Obtener filtros activos excluyendo journals
     const activeButtons = document.querySelectorAll('.filter-button.active:not(.journals)');
     if (activeButtons.length === 0 && !term) {
-      // Si no hay término ni otros filtros, devolver vacío
-      return term || '';
+      // Si no hay término ni otros filtros, devolver vacío (o solo trending[sb] si está activo)
+      return typeof window.aplicarTrending === 'function' ? window.aplicarTrending('') : '';
     }
 
     // Usamos constructQuery pero primero desactivamos temporalmente los journals
@@ -363,6 +363,9 @@
         query = query ? `(${query}) AND ${catQuery}` : catQuery;
       }
     });
+
+    // Trending va en las dos consultas que se comparan, igual que en constructQuery
+    if (typeof window.aplicarTrending === 'function') query = window.aplicarTrending(query);
 
     // Añadir filtro de fecha si existe
     const dateValue = dateRange?.value;

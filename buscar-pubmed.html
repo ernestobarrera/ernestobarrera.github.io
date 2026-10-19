@@ -112,6 +112,10 @@ filtros estructurados para profesionales sanitarios
               <i class="fas fa-upload"></i>
             </button>
           </div>
+          <button id="btn_trending" type="button" class="trending-toggle" aria-pressed="false"
+            aria-label="Trending · PubMed: limitar a artículos con un aumento reciente de visitas">
+            <i class="fa-solid fa-arrow-trend-up"></i>
+          </button>
           <button id="toggleCountersBtn" title="Cargando contadores..." disabled style="cursor: default; color: #888">
             <i class="fas fa-spinner fa-spin"></i>
           </button>
@@ -984,6 +988,10 @@ filtros estructurados para profesionales sanitarios
       /*         var internalOperator = document.getElementById("internalOperator");
        */
       var activeFilters = new Set();
+      // Trending · PubMed: modificador global, no un filtro de categoría. Se añade con AND a toda la
+      // consulta; dentro de una categoría quedaría unido con OR y recuperaría la unión, no la intersección.
+      var trendingActive = false;
+      var btnTrending = document.getElementById("btn_trending");
       var filterMap = {};
       window.filterMap = filterMap;
       var filterTooltips = {};
@@ -1040,6 +1048,7 @@ filtros estructurados para profesionales sanitarios
             fecha: dateRange.value,
             orden: sortMode.value,
             operadores: operadores, // Añadimos los operadores
+            trending: trendingActive,
           };
 
           const búsquedas = obtenerBúsquedasGuardadas();
@@ -1096,6 +1105,7 @@ filtros estructurados para profesionales sanitarios
           autoResizeTextarea.call(searchTerm);
           dateRange.value = estado.fecha || "";
           sortMode.value = estado.orden || "date";
+          setTrending(estado.trending === true); // Las guardadas antes de Trending no tienen el campo
 
           // Restaurar operadores si existen
           if (estado.operadores) {
@@ -1692,9 +1702,9 @@ filtros estructurados para profesionales sanitarios
         const buttonFilterCount = activeFilters.size; // Número de filtros de botón activos
         const isDateFilterActive = dateRange.value !== ""; // ¿Hay un filtro de fecha seleccionado? (' !== "" ' significa que cualquier opción excepto "Sin Filtro" está seleccionada)
 
-        // Calcula el total de filtros activos (botones + fecha)
+        // Calcula el total de filtros activos (botones + fecha + Trending)
         const totalActiveFilters =
-          buttonFilterCount + (isDateFilterActive ? 1 : 0);
+          buttonFilterCount + (isDateFilterActive ? 1 : 0) + (trendingActive ? 1 : 0);
 
         // Actualiza el texto del contador
         filterCount.textContent = totalActiveFilters;
@@ -1823,7 +1833,7 @@ filtros estructurados para profesionales sanitarios
           .split("\n")
           .filter((line) => !line.trim().startsWith("#"))
           .join(" ");
-        if (!term && activeFilters.size === 0) return "";
+        if (!term && activeFilters.size === 0 && !trendingActive) return "";
 
         let query = term;
 
@@ -1853,6 +1863,8 @@ filtros estructurados para profesionales sanitarios
           }
         });
 
+        query = aplicarTrending(query);
+
         if (dateRange.value) {
           const dateFilter = `("last ${dateRange.value} days"[dp])`;
           query = query ? `(${query}) AND ${dateFilter}` : dateFilter;
@@ -1861,6 +1873,53 @@ filtros estructurados para profesionales sanitarios
         return query.trim();
       }
       window.constructQuery = constructQuery;
+
+      // Añade trending[sb] con AND si el botón está activo y la consulta no lo lleva ya escrito.
+      // La usa también counters-buscar-pubmed.js, que reconstruye la consulta sin revistas.
+      function aplicarTrending(query) {
+        if (!trendingActive || /trending\[sb\]/i.test(query)) return query;
+        return query ? `(${query}) AND trending[sb]` : "trending[sb]";
+      }
+      window.aplicarTrending = aplicarTrending;
+
+      function setTrending(activo) {
+        trendingActive = activo;
+        btnTrending.setAttribute("aria-pressed", String(activo));
+        btnTrending.classList.toggle("active", activo);
+      }
+
+      btnTrending.addEventListener("click", function () {
+        setTrending(!trendingActive);
+        updateFilterCounterDisplay();
+        mostrarQueryFinal();
+        if (typeof window.triggerPubMedCounterUpdate === "function") {
+          window.triggerPubMedCounterUpdate();
+        }
+      });
+
+      var trendingAyuda =
+        "Trending · PubMed. Limita la búsqueda a artículos con un aumento reciente de visitas en PubMed. " +
+        "Mide atención, no calidad metodológica ni relevancia clínica. " +
+        "Se suma con AND a todo lo demás: con revistas de Atención Primaria o de especialidades " +
+        "pequeñas puede dejar muy pocos resultados, y con un filtro de fecha solo quedan los " +
+        "trending publicados en ese periodo.";
+      // Sin el CDN de tippy, el título nativo; una excepción aquí cortaría el resto de la inicialización
+      if (typeof tippy !== "function") {
+        btnTrending.title = trendingAyuda;
+      } else tippy(btnTrending, {
+        content: trendingAyuda
+          .replace("Trending · PubMed. ", "<strong>Trending · PubMed</strong><br>")
+          .replace(" Se suma", "<br>Se suma"),
+        placement: "bottom",
+        arrow: true,
+        theme: "custom",
+        animation: "shift-away",
+        delay: [200, 0],
+        maxWidth: 360,
+        allowHTML: true,
+        trigger: "mouseenter focus",
+        touch: ["hold", 500],
+      });
       function mostrarQueryFinal() {
         var built = constructQuery(searchTerm.value.trim());
         finalQueryBox.textContent = built;
@@ -1897,6 +1956,7 @@ filtros estructurados para profesionales sanitarios
       // 11. Event listener para reset
       resetButton.addEventListener("click", function () {
         activeFilters.clear();
+        setTrending(false);
         searchTerm.value = "";
         dateRange.value = "";
         sortMode.value = "date";
@@ -2243,6 +2303,12 @@ filtros estructurados para profesionales sanitarios
               intro:
                 "Este botón <i class='fas fa-eye-slash'></i> (ojo tachado) o <i class='fas fa-eye'></i> (ojo visible) te permite <strong>mostrar u ocultar los contadores de resultados individuales</strong> que aparecen en cada botón de filtro. Cuando están visibles, estos pequeños números te indican cuántos artículos recupera cada filtro específico (combinado con tu término de búsqueda principal y el filtro de fecha). ¡Muy útil para refinar tu estrategia!",
               position: "bottom", // O 'left'/'right' dependiendo de su posición final en #mainIconsContainer
+            },
+            {
+              element: document.querySelector("#btn_trending"),
+              intro:
+                "<strong>Trending · PubMed</strong> <i class='fa-solid fa-arrow-trend-up'></i>: añade <code>trending[sb]</code> con AND a tu búsqueda para quedarte con los artículos que están recibiendo más visitas en PubMed estos días. Es una señal de atención, no de calidad: úsalo para explorar novedades, no para decidir qué es relevante.",
+              position: "bottom",
             },
             {
               element: document.querySelector("#btn_chatgpt"),
