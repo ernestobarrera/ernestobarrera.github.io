@@ -17,18 +17,8 @@
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }
 
-  /**
-   * Con trending[sb] el recuento de la API (ESearch) no es el de la web: PubMed calcula Trending con
-   * otra lista en cada sitio. Medido el 2026-10-19: trending[sb] 1167 en la API y 1000 en la web;
-   * diabetes AND trending[sb] 85 y 70, con solo 14 PMID en común. Sin Trending coinciden exactos.
-   */
-  function conTrending(query) {
-    return /trending\[(sb|filter)\]/i.test(query || '');
-  }
-  // Texto para el público: la cifra es real, no aproximada; lo que cambia es cómo se calcula Trending.
-  const AVISO_TRENDING = 'PubMed calcula los artículos en tendencia de una forma para esta página y de otra ' +
-    'para su web. Por eso, al abrir la búsqueda en PubMed verás otra cifra y, en parte, otros artículos. ' +
-    'Las dos cifras son reales.';
+  // trending[sb] no lleva aviso: el 2026-10-19 la API y la web daban cifras y PMID distintos, pero el
+  // 2026-10-20 ya coincidían (diabetes 69/69 PMID en común; primary care 57/57; base 1000/1000).
 
   /**
    * -----------------------------------------------------------------------
@@ -252,9 +242,6 @@
       if (typeof result.count === 'number' && !isNaN(result.count)) {
         if (isShowingTotal) {
           persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} artículos en PubMed`;
-        } else if (conTrending(mainQuery)) {
-          persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} resultados · con Trending, en PubMed verás otra cifra`;
-          persistentSearchCountDisplay.title = AVISO_TRENDING;
         } else {
           persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} resultados encontrados`;
         }

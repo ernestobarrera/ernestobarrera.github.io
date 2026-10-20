@@ -237,15 +237,15 @@ if (!hayTrending) {
   comprobar('T13', terminosEutils.length > 0 && sinT.length === 0,
     `las ${terminosEutils.length} consultas de los contadores llevan Trending${sinT.length ? `; sin él: ${JSON.stringify(sinT)}` : ''}`);
 
-  // Con Trending, la página y la web de PubMed no dan la misma cifra: el contador principal lo avisa
+  // Desde el 2026-10-20 la API y la web de PubMed coinciden también con Trending: ya no hay aviso
   const leerPrincipal = () => page.$eval('#persistentSearchCountText', (el) => ({ texto: el.textContent, title: el.title }));
-  const conAviso = await leerPrincipal();
-  comprobar('T14', /otra cifra/.test(conAviso.texto) && /Las dos cifras son reales/.test(conAviso.title),
-    `con Trending el contador principal avisa de que PubMed dará otra cifra: «${conAviso.texto}»`);
+  const principalT = await leerPrincipal();
+  comprobar('T14', /resultados encontrados/.test(principalT.texto) && !/otra cifra/.test(principalT.texto) && principalT.title === '',
+    `con Trending el contador principal no avisa de otra cifra: «${principalT.texto}»`);
   await pulsar('#btn_trending');
   await page.waitForTimeout(2500);
-  const sinAviso = await leerPrincipal();
-  comprobar('T15', !/otra cifra/.test(sinAviso.texto) && sinAviso.title === '', `sin Trending, sin aviso: «${sinAviso.texto}»`);
+  const sinT2 = await leerPrincipal();
+  comprobar('T15', /resultados encontrados/.test(sinT2.texto) && sinT2.title === '', `sin Trending, mismo formato: «${sinT2.texto}»`);
 }
 
 // 3. Contador comparativo de revistas: su «de N en total» es la consulta real sin revistas.
