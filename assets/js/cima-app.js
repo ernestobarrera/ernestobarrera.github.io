@@ -6935,15 +6935,29 @@ class MedCheckApp {
         return prompt;
     }
 
+    /**
+     * Analítica de un envío de Consultar IA: alcance × destino. Desde el panel de Indicaciones el
+     * alcance es «resultados» (el grupo filtrado en pantalla); desde la ficha, el radio elegido.
+     * Nunca viaja la pregunta ni las casillas.
+     */
+    _trackConsultEnvio(source, destino) {
+        const alcance = source === 'grupo'
+            ? 'resultados'
+            : (document.querySelector('#tab-consult input[name="consult-scope"]:checked')?.value || 'producto');
+        this._trackUi('ia_envio', `${alcance}.${destino}`);
+    }
+
     openConsultEngine(engine, source = 'ficha') {
         const prompt = this._buildConsultPrompt(source);
         if (!prompt) return;
+        this._trackConsultEnvio(source, engine);
         this._openAiEngine(engine, prompt);
     }
 
     async copyConsultPrompt(source = 'ficha') {
         const prompt = this._buildConsultPrompt(source);
         if (!prompt) return;
+        this._trackConsultEnvio(source, 'copiar');
         try {
             await navigator.clipboard.writeText(prompt);
             this.showToast('Prompt copiado — pégalo en la IA que prefieras', 'success');
@@ -10038,6 +10052,40 @@ class MedCheckApp {
     }
 
     /**
+     * Uso de una función DENTRO de una pestaña (2026-10-20): alcance y vía de Evidencia, AND, MeSH,
+     * aviso de PubMed, envío de Consultar IA, guía, copiar y compartir. Hasta entonces la analítica
+     * solo sabía qué pestaña se abría.
+     *
+     * `evento` y `valor` salen siempre de un enumerado cerrado que el Worker valida (`UI_EVENTOS`):
+     * nunca texto que haya escrito el médico, ni nregistro, ni contexto clínico. Un valor que el
+     * Worker no conozca se pierde con un 400; lo vigila scripts/medcheck-test-vistas-analitica.mjs.
+     * Fallo silencioso: la analítica no puede romper ni frenar la consulta.
+     */
+    _trackUi(evento, valor, paso = null) {
+        if (!this.api?.cloudflareProxy || !evento || !valor) return;
+        try {
+            fetch(`${this.api.cloudflareProxy}/track`, {
+                method: 'POST',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event: 'ui', evento, valor: String(valor), ...(paso ? { paso } : {}) }),
+            }).catch(() => {});
+        } catch (_) { /* sin red o sin fetch: no se registra */ }
+    }
+
+    /**
+     * Igual que `_trackUi`, pero una sola vez por ficha abierta: lo que se repite en cada recarga
+     * (el aviso de PubMed, la acotación AND) cuenta «se usó en esta ficha», no cuántas recargas.
+     */
+    _trackUiUnaVez(evento, valor) {
+        const clave = `${this.currentMed?.nregistro || ''}|${evento}|${valor}`;
+        if (!this._uiTrackVistos) this._uiTrackVistos = new Set();
+        if (this._uiTrackVistos.has(clave)) return;
+        this._uiTrackVistos.add(clave);
+        this._trackUi(evento, valor);
+    }
+
+    /**
      * Abre la ficha del medicamento.
      *
      * `options.focusContext` es la clave del contexto de paciente que originó la apertura
@@ -11708,6 +11756,8 @@ ${ftFechaDocsHtml}
         // se queda en el ancla del apartado (ver `_ftUrlSeccion`).
         const ancla = fragmento ? texto.split(/\s+/).slice(0, 8).join(' ') : null;
         const url = this._ftUrlSeccion(med, seccion, ancla) || '';
+        const secUi = MedCheckApp._UI_SECCION_COPIA[containerId];
+        if (secUi) this._trackUi('compartir', `${secUi}.${fragmento ? 'fragmento' : 'entera'}`);
         this._compartir({
             titulo: `${med?.nombre || ''} — ${seccionLabel}${fragmento ? ' (fragmento)' : ''}`,
             texto,
@@ -11825,6 +11875,8 @@ ${ftFechaDocsHtml}
         try {
             await navigator.clipboard.writeText(text);
             this.showToast(fragmento ? 'Fragmento copiado con su fuente' : 'Copiado con su fuente', 'success');
+            const secUi = MedCheckApp._UI_SECCION_COPIA[containerId];
+            if (secUi) this._trackUi('copiar', `${secUi}.${fragmento ? 'fragmento' : 'entera'}`);
         } catch (_) {
             this.showToast('No se pudo copiar', 'error');
         }
@@ -21907,6 +21959,7 @@ ${ftFechaDocsHtml}
         await this._prepareGuideTour(this.guideTour);
         this.guideActive = true;
         this.guideStep = 0;
+        this._trackUi('guia_inicio', this.guideTour);
         await this._renderGuideStep();
         this._guideKeyHandler = (e) => {
             if (!this.guideActive) return;
@@ -22991,8 +23044,10 @@ ${ftFechaDocsHtml}
         if (i.descartados.length) {
             avisos.push(`PubMed ha descartado ${comillas(i.descartados)}: no lo encuentra en su índice y no cuenta en la búsqueda.`);
         }
+        if (i.acotacionLibre?.length) this._trackUiUnaVez('ev_aviso', 'texto_libre');
+        if (i.descartados.length) this._trackUiUnaVez('ev_aviso', 'descartado');
         caja.innerHTML = avisos.map(a => `<p class="evidence-interp-aviso"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> ${a}</p>`).join('')
-            + (i.traduccion ? `<details class="evidence-interp-detalle"><summary>Cómo ha interpretado PubMed la búsqueda</summary><code>${esc(i.traduccion)}</code></details>` : '');
+            + (i.traduccion ? `<details class="evidence-interp-detalle" ontoggle="if (this.open) app._trackUiUnaVez('ev_aviso', 'detalle_abierto')"><summary>Cómo ha interpretado PubMed la búsqueda</summary><code>${esc(i.traduccion)}</code></details>` : '');
         caja.hidden = !caja.innerHTML;
     }
 
@@ -23538,6 +23593,7 @@ ${ftFechaDocsHtml}
             if (!t || (cargado && t === lastTerm)) return;
             cargado = true;
             lastTerm = t;
+            if (acotar?.value.trim()) this._trackUiUnaVez('ev_and', 'usada');
             resetCounts();
             this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
             this._updateEvidenceCombineBar();
@@ -23555,7 +23611,10 @@ ${ftFechaDocsHtml}
             });
         });
         // Sugerencias MeSH en el campo de acotar. Al elegir, se recarga.
-        if (acotar) this._evMeshSuggest = this._wireMeshSuggest(acotar, document.getElementById('evidence-mesh-suggest'), reloadTerm);
+        if (acotar) this._evMeshSuggest = this._wireMeshSuggest(acotar, document.getElementById('evidence-mesh-suggest'), () => {
+            this._trackUi('ev_mesh', 'aceptada');
+            reloadTerm();
+        });
 
         // Alcance: principio activo ↔ su grupo ATC4 ↔ su clase clínica. Solo reescribe el campo de PubMed; el resto
         // de la pestaña (REec, ClinicalTrials, MedyNut) se queda con la sustancia, como el campo.
@@ -23658,10 +23717,15 @@ ${ftFechaDocsHtml}
             applyScopeTerm(pubmedTerm);
         };
         container.querySelectorAll('input[name="ev-scope"]').forEach(radio => {
-            radio.addEventListener('change', () => { if (radio.checked) aplicarAlcance(); });
+            radio.addEventListener('change', () => {
+                if (!radio.checked) return;
+                this._trackUi('ev_alcance', radio.value);
+                aplicarAlcance();
+            });
         });
         // La vía cambia también QUIÉN entra en el grupo o la clase, así que ahí se reconstruye.
         viaCheck?.addEventListener('change', () => {
+            this._trackUi('ev_via', viaCheck.checked ? 'activar' : 'desactivar');
             viaTocada = true;
             if (viaMotivo) viaMotivo.textContent = '';
             if (alcanceActual() !== 'pa') aplicarAlcance();
@@ -24628,7 +24692,14 @@ ${ftFechaDocsHtml}
         return parts.length ? parts.join(' · ') : null;
     }
 
-    endGuide() {
+    /** @param {boolean} [completada] true solo al pulsar «Siguiente» en el último paso. */
+    endGuide(completada = false) {
+        // Analítica: terminada, o abandonada en qué paso (1 = el primero). Solo si estaba en marcha.
+        if (this.guideActive) {
+            const tour = this.guideTour || 'core';
+            if (completada) this._trackUi('guia_fin', tour);
+            else this._trackUi('guia_salida', tour, (this.guideStep || 0) + 1);
+        }
         this._clearGuideLayout();
         this.guideActive = false;
         if ((this.guideTour || 'core') === 'core') this._markGuideSeen();
@@ -24670,7 +24741,7 @@ ${ftFechaDocsHtml}
                 this.guideStep++;
                 await this._renderGuideStep();
             } else {
-                this.endGuide();
+                this.endGuide(true);
             }
         } finally {
             this._guideBusy = false;
@@ -25036,6 +25107,18 @@ MedCheckApp._VIEW_ANALYTICS_MAP = {
  * códigos NO se copian aquí: salen de la ontología, que sigue siendo la única fuente.
  */
 MedCheckApp._EV_CLASES = ['acod'];
+
+/**
+ * Contenedor de «Copiar» / «Compartir» → sección que se registra en la analítica de funciones
+ * (2026-10-20). Un botón nuevo de copiar tiene que darse de alta aquí y en `SECCIONES_COPIA` del
+ * Worker; lo comprueba scripts/medcheck-test-vistas-analitica.mjs.
+ */
+MedCheckApp._UI_SECCION_COPIA = {
+    'indications-section-text': '4.1',
+    'posology-section-text':    '4.2',
+    'qt-section-text':          'qt',
+    'ev51-texto':               '5.1',
+};
 
 MedCheckApp._EV_VIAS = {
     48: { etiqueta: 'oral', pubmed: '"Administration, Oral"[Mesh] OR oral[tiab]' },
