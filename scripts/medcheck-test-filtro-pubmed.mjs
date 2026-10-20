@@ -212,6 +212,58 @@ for (const v of VARIANTES_HUMANOS) {
     check('  combinaciones: nada salió con AND (NOT', enviados.some(exclusionTrasAnd), false);
 }
 
+// ─── 5. Fila de revistas: especialidad por ATC y unión de categorías ───────────────────────
+console.log('\n5. Revistas: especialidad por ATC y unión de categorías');
+{
+    const app = nuevaApp();
+    const conAtc = (...codigos) => ({ atcs: codigos.map(c => ({ codigo: c, nivel: c.length >= 7 ? 5 : c.length === 5 ? 4 : c.length === 4 ? 3 : c.length === 3 ? 2 : 1 })) });
+    check('metformina (A10BA02) → diabetes y endocrinología', app._evidenceJournalSpecialties(conAtc('A10', 'A10BA', 'A10BA02')),
+        { prefijo: 'A10', ids: ['jnl_diabetes', 'jnl_endocrinology'] });
+    check('se mira el ATC de nivel 5, no atcs[0]', app._evidenceJournalSpecialties(conAtc('A10', 'N06AB04'))?.prefijo, 'N06A');
+    check('gana el prefijo más largo (N02CC → N02C, no N02 ni N)', app._evidenceJournalSpecialties(conAtc('N02CC01'))?.prefijo, 'N02C');
+    check('sin entrada en la tabla → null', app._evidenceJournalSpecialties(conAtc('V07AB01')), null);
+    check('sin ATC → null', app._evidenceJournalSpecialties({}), null);
+    check('por defecto: Top, especialidad y AP, sin repetir', app._evidenceJournalDefault(conAtc('A10BA02')),
+        ['jnl_top_publications', 'jnl_diabetes', 'jnl_endocrinology', 'jnl_primary_health_care']);
+    check('sin especialidad: Top y AP', app._evidenceJournalDefault(conAtc('V07AB01')), ['jnl_top_publications', 'jnl_primary_health_care']);
+    const ids = [...new Set([...Object.values(MedCheckApp._EV_REVISTAS_ATC).flat(), ...MedCheckApp._EV_REVISTAS_GENERALES])];
+    check('todos los ids de la tabla tienen forma de lista de revistas', ids.filter(id => !/^jnl_[a-z0-9_]+$/.test(id)), []);
+
+    const lista = id => `# Filtro: journals/${id}\n\n(${id.slice(4)}A[JO]|${id.slice(4)}B[JO])\n\n@@@FILTER_METADATA@@@\n{"type":"journals"}\n`;
+    const consulta = id => `(${id.slice(4)}A[JO]|${id.slice(4)}B[JO])`;
+    servidos = Object.fromEntries(['jnl_top_publications', 'jnl_diabetes', 'jnl_primary_health_care']
+        .map(id => [`${BASE_URL}journals/${id}.txt`, lista(id)]));
+    const uno = await app._fetchEvidenceFilter({ id: 'journals', cat: 'journals' });
+    check('sin lists: Top tal cual (combinaciones no cambia)', uno.query, consulta('jnl_top_publications'));
+    const tres = await app._fetchEvidenceFilter({ id: 'journals', cat: 'journals', lists: ['jnl_top_publications', 'jnl_diabetes', 'jnl_primary_health_care'] });
+    check('varias: unión con OR', tres.query,
+        `((${consulta('jnl_top_publications')}) OR (${consulta('jnl_diabetes')}) OR (${consulta('jnl_primary_health_care')}))`);
+    check('el ⓘ nombra las categorías y dice qué mide', /Top Publications, Diabetes, Primary Health Care.*no calidad/.test(tres.tooltip), true);
+    const rota = await app._fetchEvidenceFilter({ id: 'journals', cat: 'journals', lists: ['jnl_top_publications', 'jnl_oncology'] });
+    check('si falla una lista, la fila no se cuenta con las demás', rota.query, null);
+    servidos[`${BASE_URL}journals/jnl_oncology.txt`] = lista('jnl_oncology');
+    const reintento = await app._fetchEvidenceFilter({ id: 'journals', cat: 'journals', lists: ['jnl_top_publications', 'jnl_oncology'] });
+    check('el fallo no queda en caché: el reintento la recupera', !!reintento.query, true);
+
+    // Por el camino real de la pestaña: la fila cuenta y enlaza la unión.
+    const enviados = [];
+    app._fetchPubmedCount = async (q, _v, opts) => { enviados.push(q); return opts?.diagnostico ? { count: 1, diag: null } : 1; };
+    elementos = { 'evidence-content': elemento(), 'evlink-total': elemento(), 'evlink-journals': elemento(), 'evinfo-journals': elemento() };
+    await app._loadEvidenceFiltersAndCount('metformin', [{ id: 'journals', cat: 'journals', label: 'Revistas', icon: 'fa-star', lists: ['jnl_top_publications', 'jnl_diabetes'] }], 0);
+    const esperado = `metformin AND (((${consulta('jnl_top_publications')}) OR (${consulta('jnl_diabetes')})))`;
+    check('fila: el recuento es el de la unión', app._evidenceCountRequests?.journals?.query, esperado);
+    check('fila: el enlace abre la misma unión', decodificar(elementos['evlink-journals'].href), esperado);
+
+    // Panel: lo marcado sale marcado y lo sugerido no se repite en «Todas».
+    const catalogo = ['jnl_top_publications', 'jnl_diabetes', 'jnl_endocrinology', 'jnl_primary_health_care', 'jnl_health_medical_sciences_general', 'jnl_oncology']
+        .map(id => ({ id, name: app._evidenceJournalNombre(id) }));
+    const html = app._evidenceJournalPanelHtml(catalogo, new Set(['jnl_top_publications', 'jnl_diabetes']), { prefijo: 'A10', ids: ['jnl_diabetes', 'jnl_endocrinology'] });
+    check('panel: cada categoría aparece una sola vez', (html.match(/data-jid="jnl_diabetes"/g) || []).length, 1);
+    check('panel: lo elegido sale marcado', /data-jid="jnl_diabetes" checked/.test(html) && !/data-jid="jnl_endocrinology" checked/.test(html), true);
+    check('panel: «Todas» lleva solo lo no sugerido ni general', /Todas las categorías \(6\)[\s\S]*data-jid="jnl_oncology"/.test(html), true);
+    check('panel: sin catálogo lo dice y ofrece sugeridas y generales', /No se ha podido cargar el catálogo/.test(app._evidenceJournalPanelHtml(null, new Set(), null)), true);
+}
+
 // ─── 4. --canonico: paridad con pubmed-filters (solo en local) ─────────────────────────────
 let inconcluso = false;
 if (process.argv.includes('--canonico')) {
@@ -226,7 +278,17 @@ if (process.argv.includes('--canonico')) {
         const catalogo = JSON.parse(readFileSync(join(repo, 'filters', 'catalog.json'), 'utf8'));
         const exclusionDe = new Map([...(catalogo.filters || []), ...(catalogo.journal_lists || [])].map(f => [f.path, f.exclusion === true]));
         const app = nuevaApp();
-        for (const f of MedCheckApp.prototype._evidenceFilterDefs.call(app)) {
+        // La fila de revistas no es un fichero: son listas del catálogo. Toda lista que MedCheck
+        // pueda pedir (la tabla ATC, las generales) debe existir allí y leerse igual.
+        const listas = new Map((catalogo.journal_lists || []).map(l => [l.id, l.path]));
+        const pedibles = [...new Set([...Object.values(MedCheckApp._EV_REVISTAS_ATC).flat(), ...MedCheckApp._EV_REVISTAS_GENERALES])];
+        check(`las ${pedibles.length} listas que MedCheck puede pedir están en el catálogo`, pedibles.filter(id => !listas.has(id)), []);
+        for (const id of pedibles.filter(id => listas.has(id))) {
+            const txt = readFileSync(join(repo, listas.get(id)), 'utf8');
+            const q = app._parseEvidenceFilter(txt).query;
+            if (q !== parseFilter(txt) || !q || app._isEvidenceExclusion(q)) check(`${id}: se lee como parseFilter() y no es exclusión`, false, true);
+        }
+        for (const f of MedCheckApp.prototype._evidenceFilterDefs.call(app).filter(f => f.cat !== 'journals')) {
             const path = `filters/${f.cat}/${f.id}.txt`;
             const fichero = join(repo, path);
             if (!existsSync(fichero)) { check(`${path} existe en pubmed-filters`, false, true); continue; }

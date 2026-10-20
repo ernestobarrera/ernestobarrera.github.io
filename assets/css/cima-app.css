@@ -11104,6 +11104,117 @@ textarea.evidence-drug-input {
     background: rgba(14, 165, 233, 0.05);
 }
 
+/* ── Fila de revistas: selector de categorías h5 (2026-10-20) ──
+   Botón hermano del enlace (no dentro: un control interactivo dentro de un <a> abriría PubMed) y
+   panel debajo de la fila. Las opciones reutilizan las pastillas .consult-scope-opt. */
+.evidence-journals-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-secondary, #64748b);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.evidence-journals-toggle:hover,
+.evidence-journals-toggle[aria-expanded="true"] {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.evidence-journals-toggle .fa-chevron-down {
+    font-size: 0.65rem;
+    transition: transform 0.15s;
+}
+
+.evidence-journals-toggle[aria-expanded="true"] .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.evidence-journals-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0 0 0.2rem 1.6rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.evidence-journals-panel[hidden],
+.evidence-journals-group[hidden],
+.evidence-journal-opt[hidden] {
+    display: none;
+}
+
+.evidence-journals-head,
+.evidence-journals-aviso {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-secondary, #64748b);
+}
+
+.evidence-journals-search {
+    width: 100%;
+    padding: 0.35rem 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+}
+
+.evidence-journals-group-title {
+    margin: 0 0 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-secondary, #64748b);
+}
+
+.evidence-journals-opts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.evidence-journals-opts--todas {
+    max-height: 11rem;
+    overflow-y: auto;
+}
+
+.evidence-journal-opt {
+    padding: 0.2rem 0.55rem;
+    font-size: 0.75rem;
+}
+
+.evidence-journals-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.evidence-journals-cuenta {
+    font-size: 0.72rem;
+    color: var(--text-secondary, #64748b);
+}
+
+@media (max-width: 480px) {
+    .evidence-journals-panel { margin-left: 0; }
+    /* Solo la cifra: con la palabra, el nombre de la fila se partía en tres líneas. */
+    .evidence-journals-n-txt { display: none; }
+}
+
 /* ── Registros de ensayos: chips de estadísticas y lista de estudios enlazados ──
    Las clases nacieron para REec y las comparte ClinicalTrials.gov desde 2026-08-17
    (#evidence-ctgov-stats). El nombre se conserva para no tocar dos capas por estética. */

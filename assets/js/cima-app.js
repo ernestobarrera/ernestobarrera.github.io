@@ -7097,7 +7097,9 @@ class MedCheckApp {
             { id: 'geriatrics_sensible', cat: 'scope',      label: 'Geriatría',                      icon: 'fa-user-clock' },
             { id: 'economic_especifico', cat: 'scope',      label: 'Evaluaciones económicas',        icon: 'fa-coins' },
             { id: 'primary_sensible',   cat: 'scope',      label: 'Atención Primaria',               icon: 'fa-stethoscope' },
-            { id: 'jnl_top_publications', cat: 'journals', label: 'Revistas de referencia',          icon: 'fa-star' },
+            // Una sola fila para las listas de revistas: la unión (OR) de las categorías elegidas.
+            // Sin `lists`, Top Publications; la pestaña Evidencia la siembra por ATC.
+            { id: 'journals',            cat: 'journals',   label: 'Revistas · índice h5',           icon: 'fa-star' },
             { id: 'humans',              cat: 'scope',      label: 'Humanos',                        icon: 'fa-user', defaultChecked: true },
         ];
     }
@@ -7142,6 +7144,7 @@ class MedCheckApp {
      * Devuelve { query, tooltip }. Compartido entre el modal y combo (mismo `_evidenceFilterQueryCache`).
      */
     async _fetchEvidenceFilter(f) {
+        if (f.cat === 'journals') return this._fetchEvidenceJournals(f.lists);
         if (!this._evidenceFilterQueryCache) this._evidenceFilterQueryCache = new Map();
         if (this._evidenceFilterQueryCache.has(f.id)) return this._evidenceFilterQueryCache.get(f.id);
         const url = `https://ernestobarrera.github.io/pubmed-filters/filters/${f.cat}/${f.id}.txt`;
@@ -7159,6 +7162,199 @@ class MedCheckApp {
             this._evidenceFilterQueryCache.set(f.id, result);
             return result;
         }
+    }
+
+    /**
+     * Fila de revistas (2026-10-20): unión con OR de las listas de pubmed-filters elegidas. Cada
+     * lista son las 20 revistas de mayor índice h5 de una categoría de Google Scholar; para el
+     * router son un carril editorial paralelo, nunca una restricción del núcleo, y varias listas
+     * son un mismo conjunto de revistas: OR. Una sola lista devuelve su consulta tal cual (la de
+     * siempre, así no cambian caché ni enlaces de combinaciones). Si falla UNA lista, la fila no
+     * se cuenta con las demás: un recuento de otra unión parecería el de la elegida. Los fallos no
+     * se guardan en caché, para que el reintento vuelva a pedirlos.
+     * @returns {Promise<{query: string|null, tooltip: string|null}>}
+     */
+    async _fetchEvidenceJournals(ids) {
+        const lista = Array.isArray(ids) && ids.length ? ids : ['jnl_top_publications'];
+        if (!this._evidenceJournalCache) this._evidenceJournalCache = new Map();
+        const leer = async id => {
+            if (this._evidenceJournalCache.has(id)) return this._evidenceJournalCache.get(id);
+            try {
+                const res = await fetch(`https://ernestobarrera.github.io/pubmed-filters/filters/journals/${id}.txt`,
+                    { signal: AbortSignal.timeout(8000) });
+                if (!res.ok) return null;
+                const { query } = this._parseEvidenceFilter(await res.text());
+                if (!query) return null;
+                this._evidenceJournalCache.set(id, query);
+                return query;
+            } catch {
+                return null;
+            }
+        };
+        const partes = await Promise.all(lista.map(leer));
+        if (partes.some(p => !p)) return { query: null, tooltip: null };
+        const query = partes.length === 1 ? partes[0] : `(${partes.map(p => `(${p})`).join(' OR ')})`;
+        const tooltip = `Google Scholar · índice h5: las 20 revistas de mayor índice en ${lista.map(id => this._evidenceJournalNombre(id)).join(', ')}. `
+            + 'Mide impacto bibliométrico, no calidad ni relevancia clínica.';
+        return { query, tooltip };
+    }
+
+    /** Nombre de una lista de revistas: el del catálogo si ya está cargado; si no, el del id. */
+    _evidenceJournalNombre(id) {
+        const delCatalogo = this._pfJournalCatalog?.find(l => l.id === id)?.name;
+        if (delCatalogo) return delCatalogo;
+        return String(id).replace(/^jnl_/, '').split('_').filter(Boolean)
+            .map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+    }
+
+    /**
+     * Listas de revistas del catálogo de pubmed-filters (`filters/catalog.json`, `journal_lists`).
+     * Fichero estático de su web: no gasta consultas a PubMed. Se pide al abrir el selector y una
+     * vez por sesión; si falla se puede reintentar al volver a abrirlo.
+     * @returns {Promise<Array<{id: string, name: string}>|null>}
+     */
+    async _loadPubmedFiltersCatalog() {
+        if (this._pfJournalCatalog) return this._pfJournalCatalog;
+        if (!this._pfCatalogPromise) {
+            this._pfCatalogPromise = fetch('https://ernestobarrera.github.io/pubmed-filters/filters/catalog.json',
+                { signal: AbortSignal.timeout(8000) })
+                .then(r => (r.ok ? r.json() : null))
+                .then(c => (Array.isArray(c?.journal_lists)
+                    ? c.journal_lists.filter(l => l && typeof l.id === 'string' && typeof l.name === 'string')
+                    : null))
+                .catch(() => null);
+        }
+        const listas = await this._pfCatalogPromise;
+        this._pfCatalogPromise = null;
+        if (listas?.length) this._pfJournalCatalog = listas;
+        return this._pfJournalCatalog || null;
+    }
+
+    /**
+     * Especialidad sugerida por el ATC del medicamento (tabla `MedCheckApp._EV_REVISTAS_ATC`,
+     * gana el prefijo más largo). Se mira el ATC de nivel 5, nunca `atcs[0]`.
+     * @returns {{prefijo: string, ids: string[]}|null}
+     */
+    _evidenceJournalSpecialties(med) {
+        const atcs = Array.isArray(med?.atcs) ? med.atcs : [];
+        const codigo = (atcs.find(a => a?.nivel === 5 && a.codigo)
+            || [...atcs].filter(a => a?.codigo).sort((a, b) => (b.nivel || 0) - (a.nivel || 0))[0])?.codigo;
+        if (!codigo) return null;
+        const tabla = MedCheckApp._EV_REVISTAS_ATC;
+        const prefijo = Object.keys(tabla).filter(p => codigo.startsWith(p)).sort((a, b) => b.length - a.length)[0];
+        return prefijo ? { prefijo, ids: [...tabla[prefijo]] } : null;
+    }
+
+    /**
+     * Selección por defecto: la pasada editorial que el router de pubmed-filters prescribe para
+     * temas clínicos (`primary_care_policy.default_editorial_passes_for_clinical_topics`): Top,
+     * la especialidad y Atención Primaria.
+     */
+    _evidenceJournalDefault(med) {
+        const espec = this._evidenceJournalSpecialties(med)?.ids || [];
+        return [...new Set(['jnl_top_publications', ...espec, 'jnl_primary_health_care'])];
+    }
+
+    /** HTML del panel del selector de categorías de revistas. */
+    _evidenceJournalPanelHtml(catalogo, seleccion, espec) {
+        const esc = s => this._escapeHtml(String(s ?? ''));
+        const sugeridas = espec?.ids || [];
+        const generales = MedCheckApp._EV_REVISTAS_GENERALES.filter(id => !sugeridas.includes(id));
+        const vistas = new Set([...sugeridas, ...generales]);
+        const nombre = id => this._evidenceJournalNombre(id);
+        const todas = (catalogo || []).map(l => l.id).filter(id => !vistas.has(id))
+            .sort((a, b) => nombre(a).localeCompare(nombre(b), 'en'));
+        const opcion = id => `<label class="consult-scope-opt evidence-journal-opt" data-nombre="${esc(nombre(id).toLowerCase())}"><input type="checkbox" data-jid="${esc(id)}"${seleccion.has(id) ? ' checked' : ''}><span>${esc(nombre(id))}</span></label>`;
+        const grupo = (titulo, ids, extra = '') => (ids.length
+            ? `<div class="evidence-journals-group"><p class="evidence-journals-group-title">${titulo}</p><div class="evidence-journals-opts${extra}">${ids.map(opcion).join('')}</div></div>`
+            : '');
+        return `
+            <p class="evidence-journals-head">Categorías de Google Scholar: las 20 revistas con mayor índice h5 de cada una. Mide impacto bibliométrico, no calidad ni relevancia clínica. Las que elijas se suman (OR) en una sola fila.</p>
+            ${catalogo ? '<input type="search" class="evidence-journals-search" placeholder="Buscar categoría (nombres en inglés)" aria-label="Buscar categoría de revistas">' : ''}
+            ${espec ? grupo(`Sugeridas por su ATC (${esc(espec.prefijo)})`, sugeridas) : ''}
+            ${grupo('Generales', generales)}
+            ${catalogo
+                ? grupo(`Todas las categorías (${catalogo.length})`, todas, ' evidence-journals-opts--todas')
+                : '<p class="evidence-journals-aviso">No se ha podido cargar el catálogo de pubmed-filters: solo aparecen las sugeridas y las generales. Vuelve a abrir el selector para reintentarlo.</p>'}
+            <div class="evidence-journals-actions">
+                <span class="evidence-journals-cuenta" aria-live="polite"></span>
+                <button type="button" class="btn btn-sm btn-primary evidence-journals-apply" disabled>Aplicar</button>
+            </div>`;
+    }
+
+    /**
+     * Selector de categorías de la fila de revistas. Los cambios se acumulan y solo «Aplicar»
+     * recarga: una consulta a PubMed por aplicación, no una por casilla.
+     * @param {Function} recargar  vuelve a pedir los recuentos con el término y el rango actuales
+     */
+    _wireEvidenceJournals(container, filterDefs, espec, recargar) {
+        const def = filterDefs.find(f => f.cat === 'journals');
+        const boton = container.querySelector('#evidence-journals-toggle');
+        const panel = container.querySelector('#evidence-journals-panel');
+        if (!def || !boton || !panel) return;
+        const MAX = MedCheckApp._EV_REVISTAS_MAX;
+        let pendiente = new Set(def.lists);
+
+        const pintarBoton = () => {
+            const n = def.lists.length;
+            const texto = boton.querySelector('.evidence-journals-n');
+            if (texto) texto.innerHTML = `${n}<span class="evidence-journals-n-txt"> ${n === 1 ? 'categoría' : 'categorías'}</span>`;
+            boton.title = `Categorías: ${def.lists.map(id => this._evidenceJournalNombre(id)).join(', ')}. Pulsa para cambiarlas.`;
+        };
+        const elegidas = () => [...panel.querySelectorAll('input[data-jid]:checked')].map(i => i.dataset.jid);
+        const actualizar = () => {
+            const n = pendiente.size;
+            panel.querySelectorAll('input[data-jid]').forEach(i => {
+                i.disabled = !i.checked && n >= MAX;
+                i.closest('label')?.classList.toggle('is-disabled', i.disabled);
+            });
+            const cambia = n > 0 && (n !== def.lists.length || def.lists.some(id => !pendiente.has(id)));
+            const aplicar = panel.querySelector('.evidence-journals-apply');
+            if (aplicar) aplicar.disabled = !cambia;
+            const cuenta = panel.querySelector('.evidence-journals-cuenta');
+            if (cuenta) {
+                cuenta.textContent = n === 0 ? 'Elige al menos una categoría.'
+                    : `${n} de ${MAX} como máximo${cambia ? ' · al aplicar, 1 consulta a PubMed' : ''}`;
+            }
+        };
+        const cerrar = () => { boton.setAttribute('aria-expanded', 'false'); panel.hidden = true; };
+
+        boton.addEventListener('click', async () => {
+            if (boton.getAttribute('aria-expanded') === 'true') { cerrar(); return; }
+            boton.setAttribute('aria-expanded', 'true');
+            panel.hidden = false;
+            pendiente = new Set(def.lists);
+            panel.innerHTML = '<p class="evidence-journals-aviso"><i class="fas fa-circle-notch fa-spin"></i> Cargando las categorías…</p>';
+            const catalogo = await this._loadPubmedFiltersCatalog();
+            if (!panel.isConnected || panel.hidden) return;
+            panel.innerHTML = this._evidenceJournalPanelHtml(catalogo, pendiente, espec);
+            pintarBoton(); // con el catálogo ya hay nombres reales
+            actualizar();
+        });
+        panel.addEventListener('change', e => {
+            const cb = e.target.closest?.('input[data-jid]');
+            if (!cb) return;
+            if (cb.checked) pendiente.add(cb.dataset.jid); else pendiente.delete(cb.dataset.jid);
+            actualizar();
+        });
+        panel.addEventListener('input', e => {
+            if (!e.target.classList?.contains('evidence-journals-search')) return;
+            const q = e.target.value.trim().toLowerCase();
+            panel.querySelectorAll('.evidence-journal-opt').forEach(l => { l.hidden = !!q && !l.dataset.nombre.includes(q); });
+            panel.querySelectorAll('.evidence-journals-group').forEach(g => {
+                g.hidden = ![...g.querySelectorAll('.evidence-journal-opt')].some(l => !l.hidden);
+            });
+        });
+        panel.addEventListener('click', e => {
+            if (!e.target.closest?.('.evidence-journals-apply')) return;
+            const nuevas = elegidas();
+            if (!nuevas.length) return;
+            def.lists = nuevas;
+            pintarBoton();
+            cerrar();
+            recargar();
+        });
+        pintarBoton();
     }
 
     /**
@@ -23057,7 +23253,12 @@ ${ftFechaDocsHtml}
             return EV_RANGES[idx]?.days ?? 1825;
         };
 
-        const filterDefs = this._evidenceFilterDefs();
+        // La fila de revistas nace con la pasada editorial por defecto del router: Top, la
+        // especialidad que sugiere el ATC y Atención Primaria. Copia propia de la definición:
+        // el selector la cambia y no debe tocar la de combinaciones.
+        const espRevistas = this._evidenceJournalSpecialties(med);
+        const filterDefs = this._evidenceFilterDefs()
+            .map(f => (f.cat === 'journals' ? { ...f, lists: this._evidenceJournalDefault(med) } : f));
 
         // El apartado 5.1 de la ficha va primero y aparte: es texto oficial de CIMA, no un recurso
         // externo, y se lee antes de salir a buscar literatura. Nadie más reescribe este
@@ -23142,7 +23343,9 @@ ${ftFechaDocsHtml}
                                 <span class="evidence-filter-count" id="evcount-${f.id}"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
                                 <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                             </a>
+                            ${f.cat === 'journals' ? `<button type="button" class="evidence-journals-toggle" id="evidence-journals-toggle" aria-expanded="false" aria-controls="evidence-journals-panel"><span class="evidence-journals-n"></span><i class="fas fa-chevron-down" aria-hidden="true"></i></button>` : ''}
                         </div>
+                        ${f.cat === 'journals' ? '<div class="evidence-journals-panel" id="evidence-journals-panel" hidden></div>' : ''}
                     `).join('')}
                 </div>
                 <div class="evidence-combine-bar hidden" id="evidence-combine-bar" aria-live="polite">
@@ -23489,6 +23692,14 @@ ${ftFechaDocsHtml}
                 if (row) row.classList.toggle('selected', cb.checked);
                 this._updateEvidenceCombineBar();
             });
+        });
+
+        // Selector de categorías de revistas: al aplicar solo cambia la consulta de esa fila; las
+        // demás salen de la caché de recuentos y no vuelven a PubMed.
+        this._wireEvidenceJournals(container, filterDefs, espRevistas, () => {
+            const el = document.getElementById('evcount-journals');
+            if (el) el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+            this._loadEvidenceFiltersAndCount(getCurrentTerm(), filterDefs, getCurrentDays());
         });
 
         // Toggle AND/OR
@@ -23868,11 +24079,12 @@ ${ftFechaDocsHtml}
         // miraba al entrar en el bucle de recuentos, después de reescribir los enlaces.
         if (!vigente()) return;
 
-        // Actualizar enlaces y tooltips (solo primera vez, no dependen de fecha)
+        // Actualizar enlaces y tooltips (solo primera vez, no dependen de fecha; el de revistas
+        // sí se rehace, porque nombra las categorías elegidas)
         filterDefs.forEach((f, i) => {
             const { query, tooltip } = loaded[i];
             const infoEl = document.getElementById(`evinfo-${f.id}`);
-            if (infoEl && tooltip && !infoEl.dataset.set) {
+            if (infoEl && tooltip && (!infoEl.dataset.set || f.cat === 'journals')) {
                 infoEl.innerHTML = `<i class="fas fa-info-circle evidence-info-icon" title="${this._escapeHtml(tooltip)}"></i>`;
                 infoEl.dataset.set = '1';
             }
@@ -24850,6 +25062,68 @@ MedCheckApp._EV_VIAS = {
     15: { etiqueta: 'intrauterina', pubmed: '"Intrauterine Devices, Medicated"[Mesh] OR intrauterine[tiab]' },
     23: { etiqueta: 'intradérmica', pubmed: '"Injections, Intradermal"[Mesh] OR intradermal[tiab]' },
 };
+
+/**
+ * Categoría de revistas que se sugiere por el ATC del medicamento (2026-10-20). Las claves son
+ * prefijos ATC (gana el más largo); los valores, ids de las listas de pubmed-filters
+ * (`filters/catalog.json`, `journal_lists`: 20 revistas por índice h5 de cada categoría de Google
+ * Scholar). Es una SUGERENCIA de carril editorial, no un juicio sobre dónde está la evidencia: el
+ * clínico la cambia en el selector. `medcheck-test-filtro-pubmed.mjs --canonico` comprueba que
+ * cada id existe en el catálogo. Sin entrada (p. ej. V), solo Top y Atención Primaria.
+ */
+MedCheckApp._EV_REVISTAS_ATC = {
+    A: ['jnl_gastroenterology_hepatology'],
+    A01: ['jnl_dentistry'],
+    A08: ['jnl_obesity'],
+    A10: ['jnl_diabetes', 'jnl_endocrinology'],
+    A11: ['jnl_nutrition_science'],
+    A12: ['jnl_nutrition_science'],
+    B: ['jnl_hematology'],
+    B01: ['jnl_hematology', 'jnl_vascular_medicine'],
+    B05: ['jnl_critical_care'],
+    C: ['jnl_cardiology', 'jnl_vascular_medicine'],
+    D: ['jnl_dermatology'],
+    G: ['jnl_gynecology_obstetrics'],
+    G03: ['jnl_gynecology_obstetrics', 'jnl_reproductive_health'],
+    G04: ['jnl_urology_nephrology'],
+    H: ['jnl_endocrinology'],
+    J: ['jnl_communicable_diseases'],
+    J05: ['jnl_virology', 'jnl_communicable_diseases'],
+    J06: ['jnl_immunology'],
+    J07: ['jnl_communicable_diseases', 'jnl_public_health'],
+    L01: ['jnl_oncology'],
+    L02: ['jnl_oncology'],
+    L03: ['jnl_immunology', 'jnl_oncology'],
+    L04: ['jnl_immunology', 'jnl_rheumatology'],
+    M: ['jnl_rheumatology', 'jnl_orthopedic_medicine_surgery'],
+    M01: ['jnl_rheumatology', 'jnl_pain_pain_management'],
+    M05: ['jnl_rheumatology', 'jnl_endocrinology'],
+    N: ['jnl_neurology'],
+    N01: ['jnl_anesthesiology'],
+    N02: ['jnl_pain_pain_management'],
+    N02C: ['jnl_neurology', 'jnl_pain_pain_management'],
+    N05: ['jnl_psychiatry'],
+    N06A: ['jnl_psychiatry'],
+    N06B: ['jnl_psychiatry'],
+    N06D: ['jnl_neurology', 'jnl_gerontology_geriatric_medicine'],
+    N07B: ['jnl_addiction'],
+    P: ['jnl_tropical_medicine_parasitology'],
+    P03: ['jnl_dermatology'],
+    R: ['jnl_pulmonology'],
+    R01: ['jnl_otolaryngology'],
+    R02: ['jnl_otolaryngology'],
+    R06: ['jnl_immunology'],
+    S01: ['jnl_ophthalmology_optometry'],
+    S02: ['jnl_otolaryngology'],
+    V03AB: ['jnl_toxicology'],
+    V08: ['jnl_radiology_medical_imaging'],
+    V09: ['jnl_nuclear_medicine_radiotherapy_molecular_imaging'],
+    V10: ['jnl_nuclear_medicine_radiotherapy_molecular_imaging'],
+};
+MedCheckApp._EV_REVISTAS_GENERALES = ['jnl_top_publications', 'jnl_health_medical_sciences_general', 'jnl_primary_health_care'];
+// Tope de categorías a la vez: cada lista ocupa ~500 caracteres en el enlace, y la web de PubMed
+// abre hasta ~16.000 (medido el 20/10/2026: 16.040 → 200, 24.040 → 414).
+MedCheckApp._EV_REVISTAS_MAX = 8;
 
 MedCheckApp._CONTEXT_ANALYTICS_MAP = {
     pregnancy: 'embarazo',
