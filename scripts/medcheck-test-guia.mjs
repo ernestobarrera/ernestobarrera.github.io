@@ -351,6 +351,22 @@ await test('Evidencia: el paso de filtros no señala el nuevo acordeón 5.1', ()
     assert.equal(tour.steps.find(s => /Combinar filtros/.test(s.title)).target, '#tab-evidence .evidence-filter-row');
     assert.equal(app._guideTours().core.steps[1].target, '#search-input');
 });
+await test('Evidencia: la guía enseña el alcance, la vía y el aviso de interpretación de PubMed', () => {
+    const { app } = setup();
+    const fuente = src;
+    const pasos = app._guideTours().evidence.steps;
+    const alcance = pasos.find(s => s.target === '#tab-evidence .evidence-scope[role="radiogroup"]');
+    const acotar = pasos.find(s => s.target === '#tab-evidence .evidence-acotar');
+    assert.ok(alcance && /clase clínica/.test(alcance.body) && /Acotar a vía/.test(alcance.body));
+    assert.ok(acotar && /Cómo ha interpretado PubMed la búsqueda/.test(acotar.body));
+    // Los destinos existen en la pestaña que pinta la app, no solo en la guía.
+    assert.ok(fuente.includes('class="evidence-scope consult-scope" role="radiogroup"'));
+    assert.ok(fuente.includes('<div class="evidence-acotar">'));
+    assert.ok(fuente.includes('<summary>Cómo ha interpretado PubMed la búsqueda</summary>'));
+    // El recorrido inicial nombra Evidencia y su aviso, sin añadir un paso.
+    const ficha = app._guideTours().core.steps.find(s => s.title === '5. Abrir la ficha');
+    assert.ok(/Evidencia/.test(ficha.body) && /lo avisa/.test(ficha.body));
+});
 await test('5.1: abre el acordeón real y espera su carga antes de señalar las medidas', async () => {
     const { app } = setup(); const details = { open: false, dataset: {} }; let loads = 0;
     elements.set('ev51', details); app._guideStepNotice = '';

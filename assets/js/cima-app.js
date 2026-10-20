@@ -20538,6 +20538,7 @@ ${ftFechaDocsHtml}
                         body: `
                             <p>La ficha concentra la lectura profunda: información, indicaciones, posología, interacciones, reacciones, seguridad, ficha y prospecto, documentación —los <span class="guide-highlight">IPT</span> de la AEMPS y los materiales—, evidencia y utilización.</p>
                             <p>Algunas pestañas <span class="guide-highlight">solo aparecen si hay algo que enseñar</span>: Alertas AEMPS, PGx, Financiación, Utilización y QT. Que no estén significa que ese medicamento no tiene ese contenido; no hay que buscarlas.</p>
+                            <p>En <span class="guide-key">Evidencia</span>, si PubMed no reconoce un término —pasa al escribirlo en español—, <span class="guide-highlight">lo avisa</span>: un recuento bajo puede ser de idioma, no de evidencia.</p>
                             <p>La guía abre un medicamento de ejemplo para recorrer la ficha con datos reales.</p>
                         `,
                     },
@@ -20895,7 +20896,7 @@ ${ftFechaDocsHtml}
             },
             evidence: {
                 label: 'Evidencia y ensayos',
-                desc: 'Construir una búsqueda PubMed y distinguir literatura de registros de ensayos.',
+                desc: 'Construir la búsqueda PubMed, comprobar cómo la lee PubMed y distinguir literatura de registros de ensayos.',
                 icon: 'fa-book-medical',
                 steps: [
                     {
@@ -20925,8 +20926,31 @@ ${ftFechaDocsHtml}
                         icon: 'fa-search',
                         action: { type: 'modalTab', tab: 'evidence' },
                         body: `
-                            <p>MedCheck prepara el término desde la identidad de la sustancia, con sus variantes. Puedes editarlo, ampliarlo a su grupo ATC o acotarlo con AND por indicación o patología (en inglés, con sugerencias MeSH).</p>
+                            <p>MedCheck prepara el término desde la identidad de la sustancia, con sus variantes. Puedes editarlo: <span class="guide-key">Enter</span> recarga y <span class="guide-key">Mayús+Enter</span> salta de línea.</p>
                             <p>Este campo controla PubMed. Los registros REec, ClinicalTrials.gov y OMS conservan el término de la sustancia con el que se abrió la pestaña.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-evidence .evidence-scope[role="radiogroup"]',
+                        title: 'Ampliar a su grupo o a su clase, y acotar la vía',
+                        icon: 'fa-sitemap',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p><span class="guide-key">Principio activo</span> busca la sustancia. <span class="guide-key">Su grupo</span> la sustituye por los principios activos comercializados en España de su ATC de nivel 4, unidos con OR. Si el medicamento pertenece a una <span class="guide-highlight">clase clínica</span> definida en MedCheck —hoy, los ACOD—, aparece una tercera opción que une varios ATC. La nota de debajo lista qué principios han entrado; un alcance que no se puede construir queda desactivado.</p>
+                            <p><span class="guide-key">Acotar a vía</span> añade con AND la vía del producto. Se activa sola cuando, dentro del alcance elegido, también se comercializa por otra vía —nunca para la oral— y debajo dice por qué. Si la tocas, manda tu elección.</p>
+                            <p class="guide-case"><strong>Caso</strong>Una crema vaginal de estrógenos: en su grupo, sin acotar, la búsqueda se llena de terapia hormonal sistémica; con la vía vaginal quedan los estudios de la vía que vas a prescribir.</p>
+                            <p>Ampliar el alcance cambia qué se busca, no afirma que los fármacos del grupo o de la clase sean intercambiables.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-evidence .evidence-acotar',
+                        title: 'Acotar por patología y ver cómo lo ha leído PubMed',
+                        icon: 'fa-language',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p>El campo <span class="guide-key">AND</span> cruza la búsqueda con una indicación o patología. PubMed indexa en inglés: al escribir, MedCheck sugiere descriptores MeSH de la NLM y los inserta sin etiqueta, para que cuenten también los artículos aún no indexados.</p>
+                            <p>Tras cargar los recuentos, <span class="guide-highlight">un aviso</span> indica si PubMed ha descartado algún término o ha buscado la acotación como texto libre, y el desplegable «Cómo ha interpretado PubMed la búsqueda» muestra la consulta tal como la ejecutó.</p>
+                            <p class="guide-case"><strong>Caso</strong>Acotas mirabegrón con «vejiga hiperactiva» y salen muy pocas citas, con el aviso de texto libre. Con el descriptor «Urinary Bladder, Overactive» la cifra se multiplica: el recuento bajo era de idioma, no de evidencia.</p>
                         `,
                     },
                     {
