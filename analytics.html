@@ -1275,6 +1275,30 @@ const CONTEXTS = {
     hepatic:   { label: 'Insuf. hepática',    icon: 'fa-disease',        color: '#fb923c', section: '4.2/4.4' },
 };
 
+// Funciones dentro de las pestañas (tabla ui_eventos, desde el 20/10/2026). Cada evento del cliente
+// tiene que estar aquí: lo comprueba scripts/medcheck-test-vistas-analitica.mjs.
+const UI_EVENT_LABELS = {
+    ev_alcance:  { label: 'Evidencia · alcance elegido', valores: { pa: 'Vuelve a principio activo', grupo: 'Sube a su grupo ATC', clase: 'Sube a su clase clínica' } },
+    ev_via:      { label: 'Evidencia · vía tocada a mano', valores: { activar: 'Activa «Acotar a vía»', desactivar: 'Desactiva «Acotar a vía»' } },
+    ev_and:      { label: 'Evidencia · acotación AND', valores: { usada: 'Acota con AND (fichas)' } },
+    ev_mesh:     { label: 'Evidencia · sugerencia MeSH', valores: { aceptada: 'Acepta una sugerencia MeSH' } },
+    ev_aviso:    { label: 'Evidencia · aviso de PubMed', valores: { descartado: 'Ve «PubMed ha descartado…» (fichas)', texto_libre: 'Ve «…lo busca como texto libre» (fichas)', detalle_abierto: 'Abre «Cómo ha interpretado PubMed»' } },
+    ia_envio:    { label: 'Consultar IA · envío (alcance × destino)' },
+    guia_inicio: { label: 'Guía · recorridos iniciados' },
+    guia_fin:    { label: 'Guía · recorridos completados' },
+    guia_salida: { label: 'Guía · recorridos abandonados' },
+    copiar:      { label: 'Copiar con fuente' },
+    compartir:   { label: 'Compartir' },
+};
+const UI_IA_ALCANCES = { producto: 'Este medicamento', pa: 'Principio activo', grupo: 'Su grupo', clase: 'Su clase', resultados: 'Panel de Indicaciones' };
+const UI_IA_DESTINOS = { perplexity: 'Perplexity', chatgpt: 'ChatGPT', copiar: 'Copiar' };
+const UI_GUIA_TOURS = {
+    core: 'Recorrido rápido', modal: 'Ficha de medicamento', search: 'Búsqueda y navegación', consult: 'Consultas a IA', evidence: 'Evidencia y ensayos',
+    profile: 'Mi vademécum', pgx: 'Farmacogenómica', utilization: 'Utilización', materials: 'Materiales',
+    indications: 'Indicaciones', combo: 'Fármacos (combinación)', equivalences: 'Equivalencias', supply: 'Suministro', alerts: 'Alertas',
+};
+const UI_SECCIONES = { '4.1': '4.1 Indicaciones', '4.2': '4.2 Posología', '4.5': '4.5 Interacciones', '4.8': '4.8 Reacciones', qt: 'Intervalo QT', '5.1': '5.1 Farmacodinamia' };
+
 // Ontología de secciones de Ficha Técnica (CIMA/ICH) — para analítica de modal
 const FT_SECTIONS = {
     '4.1': { label: 'Indicaciones terapéuticas',           ely: 'Indicaciones, fármaco de elección',          color: '#34d399', icon: 'fa-stethoscope'         },
@@ -1836,6 +1860,106 @@ function renderModalExploration(data) {
             ? '<div class="chart-wrap" style="height:340px"><canvas id="modalviews-chart"></canvas></div>'
             : '<div class="empty-state"><i class="fas fa-window-restore"></i><p>Sin datos de pestañas del modal en el periodo</p></div>'
         }
+    </div>`;
+}
+
+// ─── RENDER: Funciones dentro de las pestañas (ui_eventos) ─────────────────────────────────────
+// Qué se hace DENTRO de Evidencia, Consultar IA, la guía y los botones de copiar. Los porcentajes
+// se calculan sobre las aperturas de la pestaña (modal_tab), que ya se registraban antes.
+function renderUiFunciones(data) {
+    const filas = data.ui_eventos || [];
+    const titulo = '<div class="chart-card-title"><i class="fas fa-hand-pointer"></i> Funciones dentro de las pestañas</div>';
+    if (!filas.length) return `
+    <div class="chart-card" id="sec-ui-funciones">
+        ${titulo}
+        <p class="chart-subtitle">Requiere la tabla <code>ui_eventos</code> en D1 y el Worker y la app del 20/10/2026 o posteriores.</p>
+        <div class="empty-state"><i class="fas fa-hand-pointer"></i><p>Sin eventos de función en el periodo</p></div>
+    </div>`;
+
+    const n = (ev, v) => filas.find(f => f.evento === ev && f.valor === v)?.n || 0;
+    const deEvento = ev => filas.filter(f => f.evento === ev);
+    const aperturas = vista => getModalViews(data).find(v => v.vista === vista)?.consultas || 0;
+    const pct = (x, total) => total ? ` <span class="text-muted">(${Math.round(x / total * 100)}%)</span>` : '';
+    const vacio = '<tr><td colspan="2" class="text-muted">Sin datos</td></tr>';
+
+    // Aviso de periodo: si el registro empezó dentro del periodo, las aperturas anteriores no podían
+    // dejar eventos de función y los porcentajes salen por debajo.
+    const desde = data.ui_desde ? new Date(data.ui_desde) : null;
+    const inicioPeriodo = Date.now() - (data.periodo_dias || 30) * 864e5;
+    const avisoDesde = desde
+        ? `<p class="chart-subtitle">Registro de funciones desde el <strong>${desde.toLocaleDateString('es-ES')}</strong>.${desde.getTime() > inicioPeriodo ? ' El periodo empieza antes: los porcentajes sobre aperturas salen por debajo de lo real.' : ''} Nunca se registra texto, medicamento ni contexto clínico.</p>`
+        : '';
+
+    // Evidencia
+    const abEv = aperturas('modal-evidence');
+    const evRows = ['ev_alcance', 'ev_via', 'ev_and', 'ev_mesh', 'ev_aviso'].flatMap(ev =>
+        Object.entries(UI_EVENT_LABELS[ev].valores).map(([v, label]) => [label, n(ev, v)])
+    ).filter(([, x]) => x > 0);
+    const evHtml = evRows.length
+        ? evRows.map(([label, x]) => `<tr><td>${escapeHtml(label)}</td><td style="text-align:right"><strong>${x}</strong>${pct(x, abEv)}</td></tr>`).join('')
+        : vacio;
+
+    // Consultar IA: alcance × destino
+    const abIa = aperturas('modal-consult');
+    const ia = deEvento('ia_envio');
+    const iaTotal = ia.reduce((s, f) => s + f.n, 0);
+    const iaHtml = ia.length
+        ? Object.entries(UI_IA_ALCANCES).map(([a, aLabel]) => {
+            const celdas = Object.keys(UI_IA_DESTINOS).map(d => `<td style="text-align:right">${n('ia_envio', `${a}.${d}`) || '<span class="text-muted">·</span>'}</td>`).join('');
+            const fila = Object.keys(UI_IA_DESTINOS).reduce((s, d) => s + n('ia_envio', `${a}.${d}`), 0);
+            return fila ? `<tr><td>${escapeHtml(aLabel)}</td>${celdas}</tr>` : '';
+        }).join('')
+        : '<tr><td colspan="4" class="text-muted">Sin datos</td></tr>';
+
+    // Guía: embudo por recorrido y paso de abandono más frecuente
+    const pasos = data.guia_pasos || [];
+    const guiaHtml = Object.entries(UI_GUIA_TOURS).map(([t, label]) => {
+        const ini = n('guia_inicio', t), fin = n('guia_fin', t), sal = n('guia_salida', t);
+        if (!ini && !fin && !sal) return '';
+        const moda = pasos.filter(p => p.valor === t).sort((a, b) => b.n - a.n)[0];
+        return `<tr><td>${escapeHtml(label)}</td><td style="text-align:right">${ini}</td><td style="text-align:right">${fin}${pct(fin, ini)}</td><td style="text-align:right">${sal}</td><td style="text-align:right">${moda ? `paso ${moda.paso} <span class="text-muted">(${moda.n})</span>` : '—'}</td></tr>`;
+    }).join('') || '<tr><td colspan="5" class="text-muted">Sin datos</td></tr>';
+
+    // Copiar y compartir por sección
+    const copiaHtml = Object.entries(UI_SECCIONES).map(([s, label]) => {
+        const c = [n('copiar', `${s}.fragmento`), n('copiar', `${s}.entera`), n('compartir', `${s}.fragmento`), n('compartir', `${s}.entera`)];
+        if (!c.some(Boolean)) return '';
+        return `<tr><td>${escapeHtml(label)}</td>${c.map(x => `<td style="text-align:right">${x || '<span class="text-muted">·</span>'}</td>`).join('')}</tr>`;
+    }).join('') || '<tr><td colspan="5" class="text-muted">Sin datos</td></tr>';
+
+    return `
+    <div class="chart-card" id="sec-ui-funciones">
+        ${titulo}
+        <p class="chart-subtitle">Qué se usa una vez dentro de la pestaña. Sin esto solo se sabe que la pestaña se abrió, no si alguien amplía Evidencia a su grupo, envía la consulta a una IA o termina la guía.</p>
+        ${avisoDesde}
+        <div class="charts-grid-equal">
+            <div style="overflow-x:auto">
+                <table class="data-table" style="width:100%">
+                    <thead><tr><th>Evidencia <span class="text-muted">· ${abEv} aperturas</span></th><th style="text-align:right">Veces</th></tr></thead>
+                    <tbody>${evHtml}</tbody>
+                </table>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="data-table" style="width:100%">
+                    <thead><tr><th>Consultar IA <span class="text-muted">· ${iaTotal} envíos / ${abIa} aperturas</span></th>${Object.values(UI_IA_DESTINOS).map(d => `<th style="text-align:right">${d}</th>`).join('')}</tr></thead>
+                    <tbody>${iaHtml}</tbody>
+                </table>
+            </div>
+        </div>
+        <div class="charts-grid-equal">
+            <div style="overflow-x:auto">
+                <table class="data-table" style="width:100%">
+                    <thead><tr><th>Guía</th><th style="text-align:right">Iniciadas</th><th style="text-align:right">Completadas</th><th style="text-align:right">Abandonadas</th><th style="text-align:right">Abandono más frecuente</th></tr></thead>
+                    <tbody>${guiaHtml}</tbody>
+                </table>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="data-table" style="width:100%">
+                    <thead><tr><th>Sección</th><th style="text-align:right">Copiar fragm.</th><th style="text-align:right">Copiar entera</th><th style="text-align:right">Compartir fragm.</th><th style="text-align:right">Compartir entera</th></tr></thead>
+                    <tbody>${copiaHtml}</tbody>
+                </table>
+            </div>
+        </div>
     </div>`;
 }
 
@@ -3370,6 +3494,7 @@ function renderDashboard(data) {
         <!-- TAB: PATRONES DE USO -->
         <div class="tab-panel" id="tab-uso">
             ${renderModalExploration(data)}
+            ${renderUiFunciones(data)}
             ${renderFinancingSignal(data)}
             ${renderUserSearchTypePanel(data)}
             ${renderSeccionesFT(data)}

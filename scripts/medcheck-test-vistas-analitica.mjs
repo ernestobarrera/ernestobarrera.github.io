@@ -89,6 +89,87 @@ if (!existsSync(rutaWorker)) {
   for (const v of vistasEmitidas) ok(`el Worker acepta la vista ${v}`, validas.has(v), 'se guardaría nula');
 }
 
+// ─── Funciones dentro de las pestañas (`_trackUi`, 2026-10-20) ────────────────────────────────
+// Se reconstruye del código del cliente TODO lo que puede emitir —literales y valores que salen de
+// radios, recorridos de la guía o del mapa de copiar— y se manda al Worker REAL con una D1 falsa.
+// Un valor que el Worker no conozca daría 400 y se perdería en silencio: aquí da FALLO.
+{
+  const uniq = arr => [...new Set(arr)];
+  const llamadas = uniq([...APP.matchAll(/_trackUi(?:UnaVez)?\('([a-z_]+)'/g)].map(m => m[1]));
+  ok(`se localizan los eventos de función del cliente (${llamadas.length})`, llamadas.length >= 10, llamadas.join(','));
+
+  const radios = nombre => uniq([...APP.matchAll(new RegExp(`name="${nombre}" value="([a-z]+)"`, 'g'))].map(m => m[1]));
+  const literales = ev => uniq([...APP.matchAll(new RegExp(`_trackUi(?:UnaVez)?\\('${ev}', '([^']+)'`, 'g'))].map(m => m[1]));
+  const consultaTxt = cuerpoMetodo('    renderConsultAiTab(med) {') || '';
+  const alcancesIa = [...uniq([...consultaTxt.matchAll(/kind: '([a-z]+)'/g)].map(m => m[1])), 'resultados'];
+  const destinosIa = [...uniq([...APP.matchAll(/openConsultEngine\('([a-z]+)'/g)].map(m => m[1])), 'copiar'];
+  const toursTxt = cuerpoMetodo('    _guideTours() {') || '';
+  const tours = [...toursTxt.matchAll(/^ {12}([a-z]+): \{$/gm)].map(m => m[1]);
+  const seccionesTxt = (APP.match(/MedCheckApp\._UI_SECCION_COPIA = \{([\s\S]*?)\};/) || [])[1] || '';
+  const seccionCopia = Object.fromEntries([...seccionesTxt.matchAll(/'([a-z0-9-]+)':\s*'([a-z0-9.]+)'/g)].map(m => [m[1], m[2]]));
+  const viaTxt = (APP.match(/_trackUi\('ev_via', [^;]*/) || [''])[0];
+  const x = (as, bs) => as.flatMap(a => bs.map(b => `${a}.${b}`));
+  const modos = ['fragmento', 'entera'];
+
+  ok(`se localizan los recorridos de la guía (${tours.length})`, tours.length >= 14, tours.join(','));
+  ok('se localiza el mapa de copiar', Object.keys(seccionCopia).length >= 4);
+  // Todo botón de Copiar o Compartir de la ficha tiene que estar en el mapa, o no se contaría.
+  const contenedores = uniq([...APP.matchAll(/(?:copyTabContent|_botonCompartir)\('([a-z0-9-]+)'/g)].map(m => m[1]));
+  for (const c of contenedores) ok(`Copiar/Compartir de «${c}» está en _UI_SECCION_COPIA`, c in seccionCopia);
+
+  const dominio = {
+    ev_alcance: radios('ev-scope'),
+    ev_via: [...viaTxt.matchAll(/'(activar|desactivar)'/g)].map(m => m[1]),
+    ev_and: literales('ev_and'),
+    ev_mesh: literales('ev_mesh'),
+    ev_aviso: uniq([...literales('ev_aviso'), ...[...APP.matchAll(/app\._trackUiUnaVez\('ev_aviso', '([a-z_]+)'\)/g)].map(m => m[1])]),
+    ia_envio: x(alcancesIa, destinosIa),
+    guia_inicio: tours,
+    guia_fin: tours,
+    guia_salida: tours,
+    copiar: x(uniq(Object.values(seccionCopia)), modos),
+    compartir: x(uniq(Object.values(seccionCopia)), modos),
+  };
+  for (const ev of llamadas) ok(`el evento ${ev} tiene dominio conocido en este test`, (dominio[ev] || []).length > 0, 'añádelo al test');
+  ok('ev_alcance incluye pa, grupo y clase', ['pa', 'grupo', 'clase'].every(v => dominio.ev_alcance.includes(v)), dominio.ev_alcance.join(','));
+  ok('ev_aviso incluye detalle_abierto', dominio.ev_aviso.includes('detalle_abierto'), dominio.ev_aviso.join(','));
+
+  // analytics.html rotula cada evento.
+  const etiquetasTxt = (ANALYTICS.match(/const UI_EVENT_LABELS = \{([\s\S]*?)\n\};/) || [])[1] || '';
+  for (const ev of llamadas) ok(`analytics.html rotula el evento ${ev}`, new RegExp(`^\\s*${ev}\\s*:`, 'm').test(etiquetasTxt));
+
+  const rutaW = join(RAIZ, '..', 'medcheck-worker', 'index.js');
+  if (!existsSync(rutaW)) {
+    inconclusos++;
+    console.log('INCONCLUSO: no está el repo hermano `medcheck-worker`, así que UI_EVENTOS NO se comprueba aquí');
+  } else {
+    const { pathToFileURL } = await import('node:url');
+    const worker = (await import(pathToFileURL(rutaW).href)).default;
+    const filas = [];
+    const DB = { prepare: sql => ({ bind: (...a) => ({ run: async () => { filas.push({ sql, a }); return {}; } }) }) };
+    const enviar = async body => (await worker.fetch(new Request('https://medcheck-proxy.medtools.workers.dev/track', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://ernestobarrera.github.io' },
+      body: JSON.stringify(body),
+    }), { DB }, { waitUntil() {} })).status;
+    let total = 0;
+    for (const [ev, valores] of Object.entries(dominio)) {
+      for (const valor of valores) {
+        total++;
+        const st = await enviar({ event: 'ui', evento: ev, valor, ...(ev === 'guia_salida' ? { paso: 1 } : {}) });
+        ok(`el Worker acepta ${ev}=${valor}`, st === 200, `status ${st}: /track lo rechazaría`);
+      }
+    }
+    ok(`cada aceptado se guarda en ui_eventos (${filas.length}/${total})`, filas.length === total && filas.every(f => /ui_eventos/.test(f.sql)));
+    // Paso: la guía más larga tiene que caber en el tope del Worker.
+    const pasosMax = Math.max(...tours.map(t => {
+      const i = toursTxt.search(new RegExp(`^ {12}${t}: \\{$`, 'm'));
+      const tramo = toursTxt.slice(i, i + 200000).split(/^ {12}\}/m)[0];
+      return (tramo.match(/^ {24}title:/gm) || []).length;
+    }));
+    ok(`la guía más larga (${pasosMax} pasos) cabe en el paso que admite el Worker`, pasosMax > 0 && await enviar({ event: 'ui', evento: 'guia_salida', valor: 'core', paso: pasosMax }) === 200);
+  }
+}
+
 // ─── Vista de analítica al cerrar la ficha ────────────────────────────────────────────────────
 {
   const cuerpo = cuerpoMetodo('    closeModal() {');
