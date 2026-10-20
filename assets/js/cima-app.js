@@ -7103,6 +7103,41 @@ class MedCheckApp {
     }
 
     /**
+     * Lee un fichero de pubmed-filters. Espejo de `parseFilter()` y `parseMetadata()` de
+     * pubmed-filters/scripts/parse-filter.mjs, que es la lectura canónica: corte en la LÍNEA
+     * exacta del marcador (la plantilla lo menciona dentro de comentarios, y cortar por subcadena
+     * trunca ahí), sin líneas vacías ni comentarios, y las líneas unidas por un espacio.
+     * Lo fija scripts/medcheck-test-filtro-pubmed.mjs (con `--canonico`, contra el parser real).
+     * @returns {{query: string, meta: object|null}}
+     */
+    _parseEvidenceFilter(txt) {
+        const lines = String(txt ?? '').split(/\r?\n/);
+        const end = lines.findIndex(l => l.trim() === '@@@FILTER_METADATA@@@');
+        const query = (end === -1 ? lines : lines.slice(0, end))
+            .filter(l => l.trim() !== '' && !l.trimStart().startsWith('#'))
+            .map(l => l.trim())
+            .join(' ');
+        let meta = null;
+        if (end !== -1) { try { meta = JSON.parse(lines.slice(end + 1).join('\n').trim()); } catch {} }
+        return { query, meta };
+    }
+
+    /**
+     * Un filtro que empieza por la palabra NOT es una exclusión: va detrás del término SIN `AND`.
+     * Espejo de `isNegation()` de pubmed-filters, que es lo que su comprobación K3 garantiza.
+     * `fármaco AND (NOT(x))` PubMed lo lee como `fármaco AND (x)`: devuelve justo lo excluido
+     * (medido el 20/10/2026: 4.963 estudios en animales frente a 33.353 en humanos, sin error).
+     */
+    _isEvidenceExclusion(query) {
+        return /^NOT\b/i.test(String(query ?? '').trim());
+    }
+
+    /** Compone base y filtro según su naturaleza. El sufijo (fecha) va siempre al final. */
+    _composeEvidenceFilter(base, query, suffix = '') {
+        return this._isEvidenceExclusion(query) ? `${base} ${query}${suffix}` : `${base} AND (${query})${suffix}`;
+    }
+
+    /**
      * Carga (con caché de sesión) la query PubMed de un filtro desde el repo pubmed-filters.
      * Devuelve { query, tooltip }. Compartido entre el modal y combo (mismo `_evidenceFilterQueryCache`).
      */
@@ -7113,11 +7148,9 @@ class MedCheckApp {
         try {
             const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
             if (!res.ok) throw new Error('fetch-error');
-            const txt = await res.text();
-            const [filterPart, metaPart] = txt.split('@@@FILTER_METADATA@@@');
-            const query = filterPart.split('\n').filter(l => !l.trim().startsWith('#')).join('\n').trim();
+            const { query, meta } = this._parseEvidenceFilter(await res.text());
             let tooltip = null;
-            if (metaPart) { try { tooltip = this._buildEvidenceTooltip(JSON.parse(metaPart.trim())); } catch {} }
+            if (meta) { try { tooltip = this._buildEvidenceTooltip(meta); } catch {} }
             const result = { query, tooltip };
             this._evidenceFilterQueryCache.set(f.id, result);
             return result;
@@ -7157,7 +7190,7 @@ class MedCheckApp {
 
     /**
      * Carga el conteo PubMed de la combinación POR CADA FILTRO (mismo comportamiento que el grid del
-     * modal de Evidencia): total + base AND (cada uno de los 12 filtros validados), con su enlace.
+     * modal de Evidencia): total + base AND (cada uno de los 12 filtros de pubmed-filters), con su enlace.
      * Serie con espaciado 400 ms (límite NCBI 3 req/s) y guard por ciclo para abortar si cambian los
      * campos. Solo recupera y muestra; sin ranking ni semáforo (el 0 se atenúa, nada más).
      */
@@ -7193,8 +7226,7 @@ class MedCheckApp {
         filterDefs.forEach((f, i) => {
             const q = loaded[i].query;
             if (!q) { requests.push({ id: f.id, query: null }); return; }
-            const isNot = q.trimStart().startsWith('NOT ');
-            const full = isNot ? `${base} ${q}${dateSuffix}` : `${base} AND (${q})${dateSuffix}`;
+            const full = this._composeEvidenceFilter(base, q, dateSuffix);
             requests.push({ id: f.id, query: full });
             const link = document.getElementById(`combo-evlink-${f.id}`);
             if (link) link.href = pmBase + enc(full);
@@ -20728,7 +20760,7 @@ ${ftFechaDocsHtml}
                         body: `
                             <p>Evidencia empieza por el apartado oficial <strong>5.1</strong>, con medidas y términos resaltados para leer los resultados en contexto. Después prepara búsquedas y accesos a fuentes externas:</p>
                             <ul class="guide-features">
-                                <li><i class="fas fa-database"></i> PubMed con filtros validados</li>
+                                <li><i class="fas fa-database"></i> PubMed con filtros de la literatura y de elaboración propia</li>
                                 <li><i class="fas fa-compass"></i> consulta clínica de referencia</li>
                                 <li><i class="fas fa-vials"></i> REec y ClinicalTrials.gov</li>
                                 <li><i class="fas fa-utensils"></i> repercusión nutricional (MedyNut · SENPE)</li>
@@ -23126,9 +23158,10 @@ ${ftFechaDocsHtml}
                 </div>
                 <p class="evidence-note">
                     <i class="fas fa-info-circle"></i>
-                    Filtros validados del repositorio
-                    <a href="https://ernestobarrera.github.io/buscar-pubmed.html" target="_blank">pubmed-filters</a>.
-                    Pasa el cursor sobre <i class="fas fa-info-circle" style="color:var(--primary)"></i> para ver fuente y métricas.
+                    Filtros de
+                    <a href="https://ernestobarrera.github.io/buscar-pubmed.html" target="_blank">pubmed-filters</a>:
+                    derivados de filtros publicados o de elaboración propia.
+                    Pasa el cursor sobre <i class="fas fa-info-circle" style="color:var(--primary)"></i> para ver el origen y las métricas de cada uno.
                 </p>
             </div>
 
@@ -23827,35 +23860,9 @@ ${ftFechaDocsHtml}
         const totalLink = document.getElementById('evlink-total');
         if (totalLink) totalLink.href = pmBase + enc(totalQuery);
 
-        // Cargar ficheros de filtro del repo (con caché de sesión)
-        const loadFilter = async (f) => {
-            if (this._evidenceFilterQueryCache.has(f.id)) {
-                return this._evidenceFilterQueryCache.get(f.id);
-            }
-            const url = `https://ernestobarrera.github.io/pubmed-filters/filters/${f.cat}/${f.id}.txt`;
-            try {
-                const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-                if (!res.ok) throw new Error('fetch-error');
-                const txt = await res.text();
-                const [filterPart, metaPart] = txt.split('@@@FILTER_METADATA@@@');
-                const query = filterPart.split('\n')
-                    .filter(l => !l.trim().startsWith('#'))
-                    .join('\n').trim();
-                let tooltip = null;
-                if (metaPart) {
-                    try { tooltip = this._buildEvidenceTooltip(JSON.parse(metaPart.trim())); } catch {}
-                }
-                const result = { query, tooltip };
-                this._evidenceFilterQueryCache.set(f.id, result);
-                return result;
-            } catch {
-                const result = { query: null, tooltip: null };
-                this._evidenceFilterQueryCache.set(f.id, result);
-                return result;
-            }
-        };
-
-        const loaded = await Promise.all(filterDefs.map(f => loadFilter(f)));
+        // Cargar ficheros de filtro del repo (con caché de sesión). Un solo lector para la pestaña
+        // y para combinaciones: había una copia aquí, y dos lectores acaban divergiendo.
+        const loaded = await Promise.all(filterDefs.map(f => this._fetchEvidenceFilter(f)));
         // Si mientras cargaban los filtros empezó otra búsqueda, esta ya no escribe NADA: ni
         // enlaces, ni registro de reintentos, ni diagnóstico, ni gráfica. Antes el ciclo solo se
         // miraba al entrar en el bucle de recuentos, después de reescribir los enlaces.
@@ -23871,10 +23878,7 @@ ${ftFechaDocsHtml}
             }
             const linkEl = document.getElementById(`evlink-${f.id}`);
             if (linkEl && query) {
-                const isNot = query.trimStart().startsWith('NOT ');
-                linkEl.href = pmBase + enc(
-                    isNot ? `${drugTerm} ${query}${DATE_SUFFIX}` : `${drugTerm} AND (${query})${DATE_SUFFIX}`
-                );
+                linkEl.href = pmBase + enc(this._composeEvidenceFilter(drugTerm, query, DATE_SUFFIX));
             }
         });
 
@@ -23884,11 +23888,7 @@ ${ftFechaDocsHtml}
             ...filterDefs.map((f, i) => {
                 const q = loaded[i].query;
                 if (!q) return { id: f.id, query: null };
-                const isNot = q.trimStart().startsWith('NOT ');
-                return {
-                    id: f.id,
-                    query: isNot ? `${drugTerm} ${q}${DATE_SUFFIX}` : `${drugTerm} AND (${q})${DATE_SUFFIX}`,
-                };
+                return { id: f.id, query: this._composeEvidenceFilter(drugTerm, q, DATE_SUFFIX) };
             })
         ];
 
@@ -24355,8 +24355,8 @@ ${ftFechaDocsHtml}
         }
 
         const mode = this._evCombineMode || 'AND';
-        const notQueries  = queries.filter(q => q.trimStart().startsWith('NOT '));
-        const mainQueries = queries.filter(q => !q.trimStart().startsWith('NOT '));
+        const notQueries  = queries.filter(q => this._isEvidenceExclusion(q));
+        const mainQueries = queries.filter(q => !this._isEvidenceExclusion(q));
         let finalQuery = drugTerm;
         if (mainQueries.length > 0) {
             const combinedFilter = mode === 'AND'
