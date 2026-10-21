@@ -14465,6 +14465,23 @@ a.ipt-item:hover {
         max-width: 100%;
     }
 
+    /* Barra de resultados más compacta: sus casillas no se esconden (ninguna es prescindible:
+       «Comercializado» tiene que verse siempre), pero se apiñan. La sección lleva `gap` en línea
+       en la plantilla, y solo `!important` lo alcanza; y el grupo de financiación deja de ser un
+       bloque indivisible que mandaba «Comercializado» a una fila para él solo. */
+    .results-control-bar .control-section {
+        row-gap: 0 !important;
+        column-gap: var(--space-md) !important;
+    }
+
+    .results-control-bar .search-option {
+        min-height: 32px;
+    }
+
+    .fin-filter-group:not([hidden]) {
+        display: contents;
+    }
+
     /* — Zonas táctiles y letra mínima de 12 px — */
     .route-chip,
     .pa-chip,
@@ -14645,6 +14662,25 @@ a.ipt-item:hover {
 @media (max-width: 340px) {
     .brand-name {
         display: none;
+    }
+}
+
+/* Bandas de chips (vía, principio activo, dosis) en el móvil: una fila desplazable por banda
+   en vez de hasta cuatro filas cada una (medido a 360 px: 294 px de chips antes del primer
+   resultado). El chip cortado en el borde es la señal de que hay más. */
+@media (max-width: 600px) {
+    .route-filter-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .route-filter-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    .route-filter-chips > * {
+        flex: 0 0 auto;
     }
 }
 
