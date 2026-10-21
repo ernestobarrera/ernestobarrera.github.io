@@ -11,7 +11,13 @@
  * Qué comprueba (FALLO = exit 1, no se publica):
  *   1. que la rama contiene origin/main recién traído (si no, rebasa y repite los bancos);
  *   2. que cada recurso versionado que cambia respecto a main lleva una versión MAYOR que la
- *      publicada, y que la VERSION de sw.js también sube.
+ *      publicada —y también las referencias que lo arrastran (packs → app, ontología → api…)—, y
+ *      que la VERSION de sw.js también sube;
+ *   3. que no cambia ningún fichero que se pida con `?v=` y no esté mapeado aquí: la cobertura es
+ *      completa por construcción (revisión de Codex, 21/10: medynut, packs y financiación pasaban
+ *      sin bump porque esta tabla no los conocía).
+ * INCONCLUSO (exit 2): si no se puede traer origin/main, o con --sin-red. Sin lo publicado delante
+ * no se puede afirmar «se puede publicar»; no poder mirar nunca aprueba.
  * Qué avisa (no bloquea): otros worktrees —con cambios aún sin commitear— y ramas remotas vivas
  * que tocan los mismos ficheros. Es lo que hay que mirar antes de pisar trabajo ajeno.
  *
@@ -22,7 +28,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { TARGETS, compararVersion, versionEn, ficheroEnRevision } from './medcheck-bump-version.mjs';
+import { TARGETS, IMPLICA, compararVersion, versionEn, ficheroEnRevision } from './medcheck-bump-version.mjs';
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 const ROOT = git(['rev-parse', '--show-toplevel'], process.cwd());
@@ -43,11 +49,23 @@ const RECURSO = {
   'assets/js/inn-dict.js': 'dict',
   'assets/data/clinical-ontology.json': 'ontology',
   'assets/data/inn-es-en.json': 'innjson',
+  'assets/data/packs-index.json': 'packs',
+  'assets/data/medynut-index.json': 'medynut',
+  'assets/data/financiacion-index.json': 'financiacion',
 };
+// Ficheros donde viven las referencias `?v=`: cualquier ruta que aparezca ahí está versionada.
+const CON_REFERENCIAS = [...new Set(Object.values(TARGETS).map(t => t.file).filter(f => f !== 'sw.js'))];
 
+let inconcluso = '';
 console.log('1. Base');
-if (!process.argv.includes('--sin-red')) {
-  try { git(['fetch', '-q', 'origin', 'main'], ROOT); ok('origin/main traído'); } catch { aviso('no se pudo traer origin/main: se compara con la copia local'); }
+if (process.argv.includes('--sin-red')) {
+  inconcluso = 'con --sin-red no se compara con lo publicado de verdad, sino con la última copia traída';
+  aviso(inconcluso);
+} else {
+  try { git(['fetch', '-q', 'origin', 'main'], ROOT); ok('origin/main traído'); } catch {
+    inconcluso = 'no se pudo traer origin/main: lo que se compara puede no ser lo publicado';
+    aviso(inconcluso);
+  }
 }
 const rama = git(['rev-parse', '--abbrev-ref', 'HEAD'], ROOT);
 try {
@@ -64,7 +82,18 @@ const mios = [...new Set([...lineas(git(['diff', '--name-only', 'origin/main...H
 console.log('\n2. Versiones de caché frente a lo publicado');
 const local = t => versionEn(readFileSync(join(ROOT, TARGETS[t].file), 'utf8'), TARGETS[t]);
 const publicada = t => versionEn(ficheroEnRevision('origin/main', TARGETS[t].file), TARGETS[t]);
-const objetivos = [...new Set(mios.filter(f => RECURSO[f]).map(f => RECURSO[f]))];
+// Un recurso arrastra la referencia que lo contiene (IMPLICA): cambiar packs sin subir app no llega.
+const conCadena = t => (IMPLICA[t] ? [t, ...conCadena(IMPLICA[t])] : [t]);
+const objetivos = [...new Set(mios.filter(f => RECURSO[f]).flatMap(f => conCadena(RECURSO[f])))];
+// Cobertura por construcción: lo que se pide con `?v=` y cambia tiene que estar en RECURSO.
+const versionados = new Set(CON_REFERENCIAS.flatMap(f => {
+  try {
+    return [...readFileSync(join(ROOT, f), 'utf8').matchAll(/([\w./-]+\.(?:js|css|json))\?v=/g)].map(m => m[1].replace(/^\.?\//, ''));
+  } catch { return []; }
+}));
+for (const f of mios) {
+  if (versionados.has(f) && !RECURSO[f]) fallo(`${f} se pide con ?v= pero no está en RECURSO de este script ni en TARGETS del bump: añádelo a los dos`);
+}
 if (!objetivos.length) ok('ningún recurso versionado cambia respecto a main');
 for (const t of objetivos) {
   const [l, p] = [local(t), publicada(t)];
@@ -110,5 +139,8 @@ for (const l of lineas(git(['for-each-ref', '--format=%(refname:short) %(committ
 }
 if (!solapes) ok('ningún otro worktree ni rama viva toca estos ficheros');
 
-console.log(`\n${fallos ? `${fallos} FALLO(S): no publiques todavía` : 'Se puede publicar'}${solapes ? ` · ${solapes} aviso(s) de trabajo paralelo: míralos antes` : ''}`);
-process.exit(fallos ? 1 : 0);
+const veredicto = fallos ? `${fallos} FALLO(S): no publiques todavía`
+  : inconcluso ? `INCONCLUSO: ${inconcluso}. No acredita que se pueda publicar; repítelo con red`
+  : 'Se puede publicar';
+console.log(`\n${veredicto}${solapes ? ` · ${solapes} aviso(s) de trabajo paralelo: míralos antes` : ''}`);
+process.exit(fallos ? 1 : inconcluso ? 2 : 0);
