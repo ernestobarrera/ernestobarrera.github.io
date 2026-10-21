@@ -14286,3 +14286,406 @@ a.ipt-item:hover {
     opacity: 0.35;
     cursor: default;
 }
+
+/* ============================================
+   Capa móvil y táctil (21/10/2026)
+   ============================================
+   Todo va dentro de consultas de pantalla estrecha o de puntero táctil: el escritorio no
+   cambia (comprobado con capturas antes/después a 1440 y 1024 px). Va al final para ganar por
+   orden a las reglas móviles antiguas, que ENCOGÍAN letra y botones (0,6-0,75 rem, pestañas de
+   22 px de alto) en vez de agrandarlos. La parte de JS está en «MÓVIL Y TÁCTIL» de cima-app.js;
+   `_esMovil()` usa la misma consulta que la ficha a pantalla completa de aquí. */
+
+/* Piezas que crea `setupMovil`: fuera del móvil no se ven. */
+.contexto-movil,
+.volver-arriba {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* — Cabecera: marca, ayuda y «Contexto» en una sola fila — */
+    .app-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .header-brand {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .contexto-movil {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex: 0 1 auto;
+        /* Sin `min-width: 0` el botón crece con «Embarazo, I.Renal…» y saca la fila de la pantalla. */
+        min-width: 0;
+        margin-left: auto;
+        min-height: 40px;
+        padding: 0 0.75rem;
+        background: transparent;
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        color: var(--text-secondary);
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .contexto-movil span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .contexto-movil.has-active {
+        background: var(--warning-light);
+        border-color: var(--warning);
+        color: var(--warning);
+    }
+
+    .contexto-movil-flecha {
+        font-size: 0.7rem;
+        transition: transform var(--transition-fast);
+    }
+
+    .app-header.contexto-abierto .contexto-movil-flecha {
+        transform: rotate(180deg);
+    }
+
+    /* La barra de contexto se pliega tras el botón y se despliega con rótulos: en táctil no hay
+       tooltip, y un icono de gota no dice «insuficiencia renal». La guía la abre al señalarla. */
+    .patient-context {
+        display: none;
+    }
+
+    .app-header.contexto-abierto .patient-context,
+    body:has(#guide-overlay.active) .patient-context {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-sm);
+        width: 100%;
+    }
+
+    .patient-context .context-label {
+        display: none;
+    }
+
+    .context-toggles {
+        justify-content: flex-start;
+        gap: 0.4rem;
+    }
+
+    .context-toggle {
+        min-height: 40px;
+        padding: 0 0.7rem;
+        font-size: 0.85rem;
+    }
+
+    .context-toggle span {
+        display: inline;
+    }
+
+    .context-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .context-action,
+    .context-clear {
+        flex: 0 0 auto;
+        min-height: 40px;
+        padding: 0 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    /* — Navegación: icono y rótulo, las diez vistas a la vista (dos filas en un móvil) — */
+    .app-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 2px;
+        padding: var(--space-xs);
+        overflow-x: visible;
+    }
+
+    .nav-tab {
+        position: relative;
+        flex: 1 0 auto;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+        min-height: 48px;
+        padding: 4px 6px;
+        font-size: 0.75rem;
+        line-height: 1.15;
+    }
+
+    .nav-tab > span:not(.nav-tab-badge) {
+        display: block;
+    }
+
+    .nav-tab i {
+        font-size: 1rem;
+    }
+
+    /* — Buscador y barra de resultados: nada se sale por la derecha — */
+    .search-options {
+        flex-wrap: wrap;
+        row-gap: 0;
+        padding: 0;
+    }
+
+    .search-option {
+        min-height: 36px;
+    }
+
+    .search-option input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+    }
+
+    .control-section {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .control-section .control-select {
+        flex: 1 1 8rem;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .more-filters {
+        max-width: 100%;
+    }
+
+    /* — Zonas táctiles y letra mínima de 12 px — */
+    .route-chip,
+    .pa-chip,
+    .dose-chip {
+        min-height: 36px;
+    }
+
+    .card-act {
+        height: 36px;
+    }
+
+    .badge,
+    .med-detail-tag,
+    .route-chip .route-count,
+    .filter-chip .chip-count,
+    .app-status,
+    .status-left,
+    .status-center,
+    .status-right {
+        font-size: 0.75rem;
+    }
+
+    /* — Botón flotante «Arriba» (ver `setupMovil`) — */
+    .volver-arriba {
+        display: flex;
+        position: fixed;
+        right: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        z-index: 900;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-default);
+        border-radius: 50%;
+        color: var(--text-primary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        cursor: pointer;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(8px);
+        transition: opacity var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .volver-arriba.visible {
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+    }
+}
+
+/* Ficha a pantalla completa: móvil, y tableta táctil en vertical (a 820 px el panel lateral de
+   650 px dejaba una franja de 170 px de página inservible). Misma consulta que `_esMovil()`. */
+@media (max-width: 768px), (pointer: coarse) and (max-width: 1100px) and (orientation: portrait) {
+    #med-modal.modal-overlay-flyout {
+        background: rgba(0, 0, 0, 0.6);
+        pointer-events: auto;
+    }
+
+    #med-modal .modal-content {
+        width: 100%;
+        padding: 0 var(--space-md) var(--space-xl);
+        /* El desplazamiento de la ficha no arrastra la lista de detrás (medido: de 1.500 a 3.998 px). */
+        overscroll-behavior: contain;
+    }
+
+    /* Sin transformación en reposo, la X fija se ancla a la pantalla y no al texto que se mueve. */
+    #med-modal:not(.hidden) .modal-content {
+        transform: none;
+    }
+
+    #med-modal .modal-resize-handle {
+        display: none;
+    }
+
+    #med-modal .modal-close {
+        position: fixed;
+        top: 6px;
+        right: 6px;
+        z-index: 3;
+        width: 44px;
+        height: 44px;
+    }
+
+    #med-modal .modal-header {
+        padding-top: var(--space-md);
+        padding-right: 52px;
+    }
+
+    /* Pestañas: una sola fila con desplazamiento lateral, pegada arriba al bajar por el texto.
+       Antes eran cinco filas (~290 px) que desaparecían con el scroll junto con la X. */
+    #med-modal .modal-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 0;
+        margin: 0 calc(-1 * var(--space-md)) var(--space-md);
+        padding: 0 56px 0 var(--space-sm);
+        background: var(--bg-surface);
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    #med-modal .modal-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    #med-modal .modal-tab {
+        flex: 0 0 auto;
+        min-height: 48px;
+        padding: 0 0.75rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Con el dedo: sin Ctrl, sin arrastrar marcadores y con botones que se aciertan. */
+@media (hover: none) and (pointer: coarse) {
+    .pa-filter-hint {
+        font-size: 0;
+    }
+
+    .pa-filter-hint kbd {
+        display: none;
+    }
+
+    .pa-filter-hint::after {
+        content: "Toca varios para combinarlos (OR)";
+        font-size: 0.75rem;
+    }
+
+    .context-action-bookmarklet {
+        display: none;
+    }
+
+    .modal-pos-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 0.85rem;
+    }
+
+    /* Tableta: las diez vistas en dos filas en lugar de una fila que se cortaba sin aviso, y las
+       casillas del buscador bajan de línea en vez de salirse (a 820 px se cortaba la última). */
+    .app-nav,
+    .search-row-main,
+    .search-options {
+        flex-wrap: wrap;
+    }
+}
+
+/* Fila de la marca en los móviles más estrechos: a 360 px no caben a la vez el icono y el
+   rótulo del botón de contexto; a 320 px tampoco el nombre (queda el logo, que es el inicio). */
+@media (max-width: 400px) {
+    .app-header {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .header-brand {
+        gap: 6px;
+    }
+
+    .header-help-btn {
+        margin-left: 0;
+    }
+
+    .contexto-movil {
+        padding: 0 0.6rem;
+    }
+
+    .contexto-movil > i:first-child {
+        display: none;
+    }
+}
+
+@media (max-width: 340px) {
+    .brand-name {
+        display: none;
+    }
+}
+
+/* Utilización en móvil: el nombre del grupo, entero, encima de su barra. */
+@media (max-width: 480px) {
+    .util-bar-row {
+        grid-template-columns: 1fr auto auto;
+        row-gap: 0.2rem;
+    }
+
+    .util-bar-label {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .util-bar-label,
+    .util-bar-link {
+        white-space: normal;
+    }
+
+    .util-bar-track {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .util-bar-val {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .util-bar-pct {
+        grid-column: 3;
+        grid-row: 1;
+    }
+}
+
+/* iPhone e iPad amplían la página al enfocar un campo con letra de menos de 16 px. */
+@supports (-webkit-touch-callout: none) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+        font-size: max(16px, 1em);
+    }
+}

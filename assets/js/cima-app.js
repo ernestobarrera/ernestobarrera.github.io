@@ -432,6 +432,7 @@ class MedCheckApp {
         this.setupModal();
         this.setupBookmarkletModal();
         this.setupGuide();
+        this.setupMovil();
         this.checkAPIStatus();
         this.updateATCVersion();
         this.updateFavoritesBadge();
@@ -2854,7 +2855,7 @@ class MedCheckApp {
 
                 if (!route) {
                     this.groupingState.routeFilters.clear();
-                } else if (e.ctrlKey || e.metaKey) {
+                } else if (this._multiSeleccion(e)) {
                     if (this.groupingState.routeFilters.has(route)) {
                         this.groupingState.routeFilters.delete(route);
                     } else {
@@ -2880,7 +2881,7 @@ class MedCheckApp {
                 const pa = chip.dataset.pa;
                 if (!pa) {
                     this.groupingState.activeIngredientFilters.clear();
-                } else if (e.ctrlKey || e.metaKey) {
+                } else if (this._multiSeleccion(e)) {
                     if (this.groupingState.activeIngredientFilters.has(pa)) {
                         this.groupingState.activeIngredientFilters.delete(pa);
                     } else {
@@ -10219,6 +10220,11 @@ class MedCheckApp {
         // QT o PGx y cayó a Información, el siguiente que sí las tenga vuelve a abrirlas.
         // Leída antes del spinner, que borra la barra de pestañas.
         let pestanaConservada = false;
+        // La URL de la lista desde la que se abre la ficha: Atrás en móvil vuelve a ella sin
+        // rehacer la búsqueda (ver `_atrasCierraFicha`). Se toma antes de que se escriba ?nregistro.
+        if (this.modal.classList.contains('hidden')) {
+            this._urlListaFicha = new URLSearchParams(location.search).has('nregistro') ? null : location.search;
+        }
         if (!initialTab) {
             const abierto = !this.modal.classList.contains('hidden');
             if (!abierto) this._pestanaPreferida = null;
@@ -10290,7 +10296,8 @@ class MedCheckApp {
             if (!this.isPopstateNavigation) {
                 const modalParams = { view: this.currentView, nregistro: nregistro };
                 if (initialTab && initialTab !== 'info') modalParams.tab = initialTab;
-                this.updateURL(modalParams);
+                // En móvil, pasar al producto vecino (‹ ›) no apila: Atrás cierra la ficha de una vez.
+                this.updateURL(modalParams, { replace: !!options.lateral && this._esMovil() });
             }
 
             // Determine which tab should be active
@@ -10540,8 +10547,10 @@ class MedCheckApp {
                     if (!this.isPopstateNavigation) {
                         const modalParams = { view: this.currentView, nregistro: med.nregistro };
                         if (tab.dataset.tab !== 'info') modalParams.tab = tab.dataset.tab;
-                        this.updateURL(modalParams);
+                        // En móvil la pestaña no apila historial: Atrás es «cerrar la ficha».
+                        this.updateURL(modalParams, { replace: this._esMovil() });
                     }
+                    this._pestanaALaVista(tab);
                     // Materiales e IPT viven en Documentación desde el 30/09/2026.
                     if (tab.dataset.tab === 'documentacion') {
                         if (!document.getElementById('docs-materiales')?.dataset.loaded) this.loadMateriales(med.nregistro);
@@ -10568,6 +10577,8 @@ class MedCheckApp {
                     }
                 });
             });
+
+            this._pestanaALaVista(this.modalBody.querySelector('.modal-tab.active'), { inicial: true });
 
             // Resumen de financiación en la ficha Información (vistazo rápido; carga diferida + caché 24h)
             if (hasCns) this._hydrateFinancingSummary(med);
@@ -11159,7 +11170,7 @@ class MedCheckApp {
         const destino = fuera ? tarjetas[0] : i === -1 ? null : tarjetas[i + paso];
         if (!destino) return false;
         destino.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        this.openMedDetails(destino.dataset.nregistro);
+        this.openMedDetails(destino.dataset.nregistro, undefined, { lateral: true });
         return true;
     }
 
@@ -14059,6 +14070,7 @@ ${ftFechaDocsHtml}
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 qtBtn.classList.add('active');
                 qtTabContent.classList.add('active');
+                this._pestanaALaVista(qtBtn);
                 window._mcCurrentView = 'modal-qt';
                 if (qtTabContent.dataset.analyticsTracked !== '1') {
                     qtTabContent.dataset.analyticsTracked = '1';
@@ -15954,7 +15966,7 @@ ${ftFechaDocsHtml}
                 if (!this.filterState.galenics) this.filterState.galenics = new Set();
                 const set = this.filterState.galenics;
 
-                if (e.ctrlKey || e.metaKey) {
+                if (this._multiSeleccion(e)) {
                     if (set.has(id)) set.delete(id); else set.add(id);
                 } else if (set.size === 1 && set.has(id)) {
                     set.clear();
@@ -16014,7 +16026,7 @@ ${ftFechaDocsHtml}
 
                 if (!dose) {
                     set.clear();
-                } else if (e.ctrlKey || e.metaKey) {
+                } else if (this._multiSeleccion(e)) {
                     if (set.has(dose)) set.delete(dose); else set.add(dose);
                 } else if (set.size === 1 && set.has(dose)) {
                     set.clear();
@@ -16401,7 +16413,7 @@ ${ftFechaDocsHtml}
                 if (!route) {
                     // "All" chip clicked - clear all filters
                     this.groupingState.routeFilters.clear();
-                } else if (e.ctrlKey || e.metaKey) {
+                } else if (this._multiSeleccion(e)) {
                     // Ctrl+click: toggle this route in the multi-selection
                     if (this.groupingState.routeFilters.has(route)) {
                         this.groupingState.routeFilters.delete(route);
@@ -16427,7 +16439,7 @@ ${ftFechaDocsHtml}
                 const pa = chip.dataset.pa;
                 if (!pa) {
                     this.groupingState.activeIngredientFilters.clear();
-                } else if (e.ctrlKey || e.metaKey) {
+                } else if (this._multiSeleccion(e)) {
                     if (this.groupingState.activeIngredientFilters.has(pa)) {
                         this.groupingState.activeIngredientFilters.delete(pa);
                     } else {
@@ -16446,6 +16458,123 @@ ${ftFechaDocsHtml}
     }
 
     // ============================================
+    // MÓVIL Y TÁCTIL
+    // ============================================
+    // Todo lo de este bloque actúa solo en pantalla estrecha o con el dedo: el escritorio no cambia.
+    // «Móvil» es donde la ficha deja de ser panel lateral y ocupa la pantalla entera: hasta 768 px,
+    // y la tableta táctil en vertical («Capa móvil y táctil» en cima-app.css, misma consulta).
+
+    /** La ficha ocupa la pantalla: Atrás significa «cerrarla». */
+    _esMovil() {
+        return !!window.matchMedia?.('(max-width: 768px), (pointer: coarse) and (max-width: 1100px) and (orientation: portrait)')?.matches;
+    }
+
+    /** El dedo como puntero principal (no un portátil táctil que se usa con ratón). */
+    _esTactil() {
+        return !!window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches;
+    }
+
+    /**
+     * Añadir a la selección (OR) en vez de sustituirla. En escritorio es Ctrl/Cmd+clic; con el
+     * dedo no hay Ctrl, así que cada toque añade o quita, como los chips de filtro de cualquier
+     * app móvil. Sin esto, en el móvil no había forma de combinar dos dosis, dos vías o dos PA.
+     */
+    _multiSeleccion(e) {
+        return !!(e.ctrlKey || e.metaKey) || this._esTactil();
+    }
+
+    /**
+     * Atrás (gesto o botón de Android) con la ficha abierta en móvil: se cierra y la lista queda
+     * donde estaba. Antes `processURLParams` rehacía la búsqueda y devolvía al principio de la
+     * lista (medido el 21/10/2026: de 2.000 px a 0). Solo cuando se vuelve a la URL exacta de la
+     * lista desde la que se abrió (`_urlListaFicha`); cualquier otro caso sigue el camino normal.
+     */
+    _atrasCierraFicha() {
+        if (!this._esMovil() || this.modal.classList.contains('hidden')) return false;
+        if (this._urlListaFicha == null || location.search !== this._urlListaFicha) return false;
+        this.closeModal();
+        return true;
+    }
+
+    /**
+     * Pestaña de la ficha a la vista en móvil. La barra es una sola fila con desplazamiento
+     * lateral (CSS), así que la activa se centra; y al cambiar de pestaña con el texto ya bajado
+     * se sube al principio de la nueva, que si no se abría por la mitad.
+     */
+    _pestanaALaVista(tab, { inicial = false } = {}) {
+        if (!tab || !this._esMovil()) return;
+        const barra = tab.closest('.modal-tabs');
+        if (barra && barra.scrollWidth > barra.clientWidth) {
+            barra.scrollLeft = tab.offsetLeft - (barra.clientWidth - tab.offsetWidth) / 2;
+        }
+        if (inicial) return;
+        const panel = this.modal.querySelector('.modal-content');
+        const cabecera = this.modalBody.querySelector('.modal-header');
+        if (!panel || !cabecera) return;
+        const tope = cabecera.offsetTop + cabecera.offsetHeight;
+        if (panel.scrollTop > tope) panel.scrollTop = tope;
+    }
+
+    /**
+     * Piezas que solo se ven en móvil (el CSS las oculta por encima de 768 px):
+     *  - Botón «Contexto» en la fila de la marca, con la barra de contexto plegada tras él. Con
+     *    iconos sin rótulo no se sabía qué era cada uno (en táctil no hay tooltip), y con rótulo
+     *    ocupaban tres filas. El botón dice EN PALABRAS qué contexto está activo.
+     *  - Botón flotante «Arriba» tras pantalla y media de desplazamiento: la cabecera no es fija,
+     *    y desde el resultado 40 volver al buscador o a otra vista exigía deslizar hasta arriba.
+     */
+    setupMovil() {
+        const marca = document.querySelector('.header-brand');
+        const barra = document.getElementById('patient-context');
+        const cabecera = document.querySelector('.app-header');
+        if (marca && barra && cabecera && !document.getElementById('contexto-movil')) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.id = 'contexto-movil';
+            btn.className = 'contexto-movil';
+            btn.setAttribute('aria-controls', 'patient-context');
+            btn.setAttribute('aria-expanded', 'false');
+            marca.appendChild(btn);
+            const pintar = () => {
+                const activos = [...barra.querySelectorAll('.context-toggle.active span')]
+                    .map(s => s.textContent.trim()).filter(Boolean);
+                btn.classList.toggle('has-active', activos.length > 0);
+                btn.title = activos.length ? `Contexto activo: ${activos.join(', ')}` : 'Contexto del paciente';
+                btn.innerHTML = '<i class="fas fa-user-injured" aria-hidden="true"></i>'
+                    + `<span>${activos.length ? this._escapeHtml(activos.join(', ')) : 'Contexto'}</span>`
+                    + '<i class="fas fa-chevron-down contexto-movil-flecha" aria-hidden="true"></i>';
+            };
+            pintar();
+            btn.addEventListener('click', () => {
+                btn.setAttribute('aria-expanded', String(cabecera.classList.toggle('contexto-abierto')));
+            });
+            // Se observa la clase de los botones en vez de engancharse a su lógica: cualquier vía
+            // que active o limpie el contexto (botón, «Limpiar», guía) queda reflejada sin tocarla.
+            new MutationObserver(pintar).observe(barra, { subtree: true, attributes: true, attributeFilter: ['class'] });
+        }
+
+        if (!document.getElementById('volver-arriba')) {
+            const arriba = document.createElement('button');
+            arriba.type = 'button';
+            arriba.id = 'volver-arriba';
+            arriba.className = 'volver-arriba';
+            arriba.setAttribute('aria-label', 'Volver arriba: buscador y vistas');
+            arriba.innerHTML = '<i class="fas fa-arrow-up" aria-hidden="true"></i>';
+            arriba.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            document.body.appendChild(arriba);
+            let pendiente = false;
+            window.addEventListener('scroll', () => {
+                if (pendiente) return;
+                pendiente = true;
+                requestAnimationFrame(() => {
+                    pendiente = false;
+                    arriba.classList.toggle('visible', window.scrollY > window.innerHeight * 1.5);
+                });
+            }, { passive: true });
+        }
+    }
+
+    // ============================================
     // URL ROUTER - GET Parameters & History API
     // ============================================
 
@@ -16456,6 +16585,12 @@ ${ftFechaDocsHtml}
         window.addEventListener('popstate', (event) => {
             // Set flag to prevent URL updates during popstate handling
             this.isPopstateNavigation = true;
+
+            // En móvil, Atrás desde la ficha vuelve a la lista tal como estaba (ver `_atrasCierraFicha`).
+            if (this._atrasCierraFicha()) {
+                setTimeout(() => { this.isPopstateNavigation = false; }, 100);
+                return;
+            }
 
             // Process URL params to restore state
             this.processURLParams();
@@ -20974,6 +21109,7 @@ ${ftFechaDocsHtml}
                     },
                     {
                         target: '#open-bookmarklet-modal',
+                        soloEscritorio: true, // arrastrar a la barra de marcadores no existe en táctil
                         title: 'Buscar desde cualquier página',
                         icon: 'fa-bookmark',
                         body: `
@@ -21800,7 +21936,8 @@ ${ftFechaDocsHtml}
 
     _guideSteps(tourKey = this.guideTour || 'core') {
         const tours = this._guideTours();
-        return (tours[tourKey] || tours.core).steps;
+        // Con el dedo se saltan los pasos de algo que solo existe en escritorio (el atajo, oculto en táctil).
+        return (tours[tourKey] || tours.core).steps.filter(s => !(s.soloEscritorio && this._esTactil()));
     }
 
     setupGuide() {
