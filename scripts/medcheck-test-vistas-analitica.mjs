@@ -18,6 +18,8 @@
  * Los contratos del Worker salen INCONCLUSO si no está el repo hermano, nunca en verde.
  *
  * Uso: node scripts/medcheck-test-vistas-analitica.mjs
+ *      MEDCHECK_WORKER_DIR=<ruta> node scripts/medcheck-test-vistas-analitica.mjs   # otro árbol del Worker
+ *      (por defecto, el repo hermano: con un cambio de Worker y cliente a la vez, apúntalo a su rama)
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -27,6 +29,7 @@ const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const APP = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
 const HTML = readFileSync(join(RAIZ, 'medcheck.html'), 'utf8');
 const ANALYTICS = readFileSync(join(RAIZ, 'analytics.html'), 'utf8');
+const DIR_WORKER = process.env.MEDCHECK_WORKER_DIR || join(RAIZ, '..', 'medcheck-worker');
 
 let fallos = 0;
 let inconclusos = 0;
@@ -76,7 +79,7 @@ for (const v of vistasEmitidas) ok(`analytics.html rotula la vista ${v}`, taxono
 ok('analytics.html ya no llama «Documentos» a la pestaña docs', !/'modal-docs':\s*\{\s*label:\s*'Ficha — Documentos'/.test(ANALYTICS));
 
 // ─── Worker (repo hermano) ────────────────────────────────────────────────────────────────────
-const rutaWorker = join(RAIZ, '..', 'medcheck-worker', 'index.js');
+const rutaWorker = join(DIR_WORKER, 'index.js');
 if (!existsSync(rutaWorker)) {
   inconclusos++;
   console.log('INCONCLUSO: no está el repo hermano `medcheck-worker`, así que VISTAS_VALIDAS NO se comprueba aquí');
@@ -123,6 +126,8 @@ if (!existsSync(rutaWorker)) {
     ev_and: literales('ev_and'),
     ev_mesh: literales('ev_mesh'),
     ev_aviso: uniq([...literales('ev_aviso'), ...[...APP.matchAll(/app\._trackUiUnaVez\('ev_aviso', '([a-z_]+)'\)/g)].map(m => m[1])]),
+    ev_revistas: literales('ev_revistas'),
+    ev_ia_envio: uniq([...APP.matchAll(/openEvidenceAi\('([a-z]+)'\)/g)].map(m => m[1])),
     ia_envio: x(alcancesIa, destinosIa),
     guia_inicio: tours,
     guia_fin: tours,
@@ -138,7 +143,7 @@ if (!existsSync(rutaWorker)) {
   const etiquetasTxt = (ANALYTICS.match(/const UI_EVENT_LABELS = \{([\s\S]*?)\n\};/) || [])[1] || '';
   for (const ev of llamadas) ok(`analytics.html rotula el evento ${ev}`, new RegExp(`^\\s*${ev}\\s*:`, 'm').test(etiquetasTxt));
 
-  const rutaW = join(RAIZ, '..', 'medcheck-worker', 'index.js');
+  const rutaW = join(DIR_WORKER, 'index.js');
   if (!existsSync(rutaW)) {
     inconclusos++;
     console.log('INCONCLUSO: no está el repo hermano `medcheck-worker`, así que UI_EVENTOS NO se comprueba aquí');

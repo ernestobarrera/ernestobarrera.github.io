@@ -1283,6 +1283,8 @@ const UI_EVENT_LABELS = {
     ev_and:      { label: 'Evidencia · acotación AND', valores: { usada: 'Acota con AND (fichas)' } },
     ev_mesh:     { label: 'Evidencia · sugerencia MeSH', valores: { aceptada: 'Acepta una sugerencia MeSH' } },
     ev_aviso:    { label: 'Evidencia · aviso de PubMed', valores: { descartado: 'Ve «PubMed ha descartado…» (fichas)', texto_libre: 'Ve «…lo busca como texto libre» (fichas)', detalle_abierto: 'Abre «Cómo ha interpretado PubMed»' } },
+    ev_revistas: { label: 'Evidencia · categorías de revistas', valores: { aplicar: 'Aplica categorías de revistas (intentos)' } },
+    ev_ia_envio: { label: 'Evidencia · traspaso a IA', valores: { claude: 'Lleva la búsqueda a Claude (intentos)', chatgpt: 'Lleva la búsqueda a ChatGPT (intentos)' } },
     ia_envio:    { label: 'Consultar IA · envío (alcance × destino)' },
     guia_inicio: { label: 'Guía · recorridos iniciados' },
     guia_fin:    { label: 'Guía · recorridos completados' },
@@ -1892,7 +1894,7 @@ function renderUiFunciones(data) {
 
     // Evidencia
     const abEv = aperturas('modal-evidence');
-    const evRows = ['ev_alcance', 'ev_via', 'ev_and', 'ev_mesh', 'ev_aviso'].flatMap(ev =>
+    const evRows = ['ev_alcance', 'ev_via', 'ev_and', 'ev_mesh', 'ev_aviso', 'ev_revistas', 'ev_ia_envio'].flatMap(ev =>
         Object.entries(UI_EVENT_LABELS[ev].valores).map(([v, label]) => [label, n(ev, v)])
     ).filter(([, x]) => x > 0);
     const evHtml = evRows.length

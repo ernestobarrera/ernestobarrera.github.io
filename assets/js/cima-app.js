@@ -7363,6 +7363,8 @@ class MedCheckApp {
         if (b?.pendiente) { this.showToast('Espera a que carguen los filtros marcados', 'warning'); return; }
         const prompt = this._evidenceHandoffPrompt(b);
         if (!prompt) { this.showToast('No hay término de búsqueda para PubMed', 'warning'); return; }
+        // Su propio evento, no `ia_envio`: el denominador de Consultar IA no debe cambiar.
+        this._trackUi('ev_ia_envio', engine);
         this._openAiEngine(engine, prompt);
     }
 
@@ -7577,6 +7579,7 @@ class MedCheckApp {
             const nuevas = elegidas();
             if (!nuevas.length) return;
             def.lists = nuevas;
+            this._trackUi('ev_revistas', 'aplicar');
             pintarBoton();
             cerrar();
             recargar();
