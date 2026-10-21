@@ -6448,8 +6448,8 @@ class MedCheckApp {
     }
 
     /**
-     * Apartados que componen el prompt de «Consultar IA». Una sola lista para los tres alcances
-     * (medicamento, principio activo, grupo): lo que cambia con el alcance es qué va marcado por
+     * Apartados que componen el prompt de «Consultar IA». Una sola lista para todos los alcances
+     * (medicamento, principio activo, grupo, clase): lo que cambia con el alcance es qué va marcado por
      * defecto (`defPor`), no el catálogo.
      *
      * `guias` y `fueraFicha` nacen el 2026-10-03 con la pregunta de grupo. Quien pregunta por una
@@ -6459,8 +6459,8 @@ class MedCheckApp {
     _consultAspects() {
         return [
             { id: 'monitorizacion', label: 'Monitorización', desc: 'qué vigilar, cuándo y con qué umbrales', defPor: ['producto'] },
-            { id: 'guias', label: 'Guías y consenso', desc: 'qué recomiendan, con qué requisitos y cuándo derivar', defPor: ['pa', 'grupo'] },
-            { id: 'fueraFicha', label: 'Guía frente a ficha técnica', desc: 'usos recomendados que la ficha española no autoriza', defPor: ['pa', 'grupo'] },
+            { id: 'guias', label: 'Guías y consenso', desc: 'qué recomiendan, con qué requisitos y cuándo derivar', defPor: ['pa', 'grupo', 'clase'] },
+            { id: 'fueraFicha', label: 'Guía frente a ficha técnica', desc: 'usos recomendados que la ficha española no autoriza', defPor: ['pa', 'grupo', 'clase'] },
             { id: 'eficacia', label: '¿Sirve de verdad? Eficacia en absolutos', desc: 'beneficio absoluto, NNT/NNH, y si la indicación tiene base', defPor: [] },
             { id: 'seguridad', label: 'Seguridad por escenarios', desc: 'embarazo, renal/hepático, mayores frágiles, interacciones', defPor: [] },
             { id: 'comparacion', label: 'Comparación con la 1ª línea', desc: 'no solo frente a placebo', defPor: [] },
@@ -6501,12 +6501,15 @@ class MedCheckApp {
     }
 
     /**
-     * Alcance de la pregunta desde la ficha abierta, en tres niveles:
+     * Alcance de la pregunta desde la ficha abierta, en cuatro niveles:
      *  - `producto`: el medicamento tal cual, con marca y presentación.
      *  - `pa`: el principio activo, sin marca ni presentación.
      *  - `grupo`: su subgrupo ATC de nivel 4 (p. ej. G03CA), sin principio activo concreto.
+     *  - `clase`: su clase clínica, solo si es una de las que ya ofrece Evidencia (`_EV_CLASES`, con
+     *    los mismos códigos). Sin clase no hay alcance: no se inventa una por rellenar el hueco
+     *    (revisión de Codex, 2026-10-21, J2.4).
      *
-     * En `pa` y `grupo` la VÍA se conserva. Dentro de un mismo ATC conviven vías con respuestas
+     * En `pa`, `grupo` y `clase` la VÍA se conserva. Dentro de un mismo ATC conviven vías con respuestas
      * opuestas —G03CA reúne estrógenos sistémicos y vaginales, y la exploración, el progestágeno o el
      * riesgo mamario no se plantean igual—, así que quitar la vía no generaliza la pregunta: la cambia.
      * La FORMA del medicamento de partida viaja como referencia (revisión de Codex, 2026-10-03: con
@@ -6530,6 +6533,10 @@ class MedCheckApp {
         if (kind === 'grupo') {
             const atc4 = nivel(4);
             return atc4 ? { ...base, kind, pas: [], atcs: [atc4] } : null;
+        }
+        if (kind === 'clase') {
+            const clase = this._evidenceClaseDeMed(med);
+            return clase ? { ...base, kind, clase: clase.codigo, pas: [], atcs: clase.codigos.map(codigo => ({ codigo, nombre: '' })) } : null;
         }
         if (kind === 'pa') {
             const pa = this._consultPaDe(med);
@@ -6624,7 +6631,8 @@ class MedCheckApp {
         if (scope.kind === 'grupo' && !scope.total) return 'ningún medicamento con estos filtros';
         const partes = [];
         if (scope.indicacion) partes.push(scope.indicacion);
-        if (scope.atcs.length) partes.push(scope.atcs.map(a => `${a.codigo}${a.nombre ? ` ${a.nombre}` : ''}`).join(' · '));
+        if (scope.clase) partes.push(`clase ${scope.clase} (${scope.atcs.map(a => a.codigo).join(' + ')})`);
+        else if (scope.atcs.length) partes.push(scope.atcs.map(a => `${a.codigo}${a.nombre ? ` ${a.nombre}` : ''}`).join(' · '));
         if (scope.pas.length) partes.push(this._consultListaPas(scope.pas));
         if (scope.formas.length) partes.push(this._consultListaPas(scope.formas, 4));
         if (scope.vias.length) partes.push(scope.vias.length === 1 ? `vía ${scope.vias[0]}` : `vías ${scope.vias.join(', ')}`);
@@ -6644,10 +6652,13 @@ class MedCheckApp {
         const producto = this._consultScopeFromMed(med, 'producto');
         const pa = this._consultScopeFromMed(med, 'pa');
         const grupo = this._consultScopeFromMed(med, 'grupo');
+        const clase = this._consultScopeFromMed(med, 'clase');
         const scopeOpts = [
             { kind: 'producto', label: 'Este medicamento', ok: true },
             { kind: 'pa', label: 'Principio activo', ok: !!pa },
             { kind: 'grupo', label: grupo ? `Su grupo (${grupo.atcs[0].codigo})` : 'Su grupo', ok: !!grupo },
+            // Solo si existe: una casilla «clase» siempre gris prometería algo que casi nunca hay.
+            ...(clase ? [{ kind: 'clase', label: `Su clase clínica (${clase.clase})`, ok: true }] : []),
         ];
         const scopeHtml = scopeOpts.map(o => `<label class="consult-scope-opt${o.ok ? '' : ' is-disabled'}"><input type="radio" name="consult-scope" value="${o.kind}" ${o.kind === 'producto' ? 'checked' : ''} ${o.ok ? '' : 'disabled'}><span>${esc(o.label)}</span></label>`).join('');
         const checkHtml = this._consultChecksHtml(c => c.defPor.includes('producto'));
@@ -6879,7 +6890,8 @@ class MedCheckApp {
                 && scope.consultados.every(c => scope.atcs.some(a => a.codigo === c.codigo));
             if (scope.indicacion) lines.push(`- Búsqueda de origen: ${scope.indicacion}${scope.consultados.length ? ` (ATC consultados: ${scope.consultados.map(c => c.codigo).join(', ')})` : ''}`);
             else if (scope.consultados.length && !mismos) lines.push(`- Búsqueda de origen: ${atcTxt(scope.consultados)}`);
-            if (scope.atcs.length) lines.push(`- ${scope.kind === 'grupo' && scope.consultados.length ? 'ATC en pantalla' : 'Grupo terapéutico (ATC)'}: ${atcTxt(scope.atcs)}`);
+            if (scope.clase) lines.push(`- Clase clínica: ${scope.clase} (ATC ${scope.atcs.map(a => a.codigo).join(' + ')})`);
+            else if (scope.atcs.length) lines.push(`- ${scope.kind === 'grupo' && scope.consultados.length ? 'ATC en pantalla' : 'Grupo terapéutico (ATC)'}: ${atcTxt(scope.atcs)}`);
             if (scope.pas.length) lines.push(`- ${scope.pas.length === 1 ? 'Principio activo' : 'Principios activos (o asociaciones)'}: ${this._consultListaPas(scope.pas)}`);
             if (scope.formas.length) lines.push(scope.formaDeReferencia
                 ? `- Forma del medicamento de partida, como referencia: ${scope.formas[0]}`
@@ -21517,7 +21529,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-bullseye',
                         action: { type: 'modalTab', tab: 'consult' },
                         body: `
-                            <p><span class="guide-key">Este medicamento</span> conserva la marca y presentación. <span class="guide-key">Principio activo</span> pregunta por la sustancia. <span class="guide-key">Su grupo</span> sube al ATC de nivel 4.</p>
+                            <p><span class="guide-key">Este medicamento</span> conserva la marca y presentación. <span class="guide-key">Principio activo</span> pregunta por la sustancia. <span class="guide-key">Su grupo</span> sube al ATC de nivel 4. Si el medicamento pertenece a una clase clínica que el ATC reparte (hoy, los ACOD), aparece además <span class="guide-key">Su clase clínica</span>, la misma que ofrece Evidencia.</p>
                             <p>Principio activo y grupo eliminan la marca y presentación comercial, pero conservan <strong>vía y forma farmacéutica</strong>. Un gel y un óvulo, o un inhalador y una solución para nebulizador, pueden plantear preguntas distintas.</p>
                             <p>Un alcance no disponible se muestra desactivado.</p>
                         `,

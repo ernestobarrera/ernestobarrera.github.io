@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MedCheck — test del alcance de «Consultar IA» (medicamento · principio activo · grupo)
+ * MedCheck — test del alcance de «Consultar IA» (medicamento · principio activo · grupo · clase)
  *
  * PREGUNTA QUE RESPONDE: cuando el clínico pregunta por un GRUPO —desde Indicaciones/ATC o
  * subiendo de nivel en la ficha—, ¿el prompt lleva lo que cambia la respuesta, deja fuera lo
@@ -166,6 +166,27 @@ ok('principio activo: sin marca, con vía y ATC 5', !pPa.includes('OVESTINON') &
 const scGF = app._consultScopeFromMed(med, 'grupo');
 ok('grupo desde la ficha: ATC de nivel 4, no el 3 de atcs[0]', scGF?.atcs[0]?.codigo === 'G03CA', JSON.stringify(scGF?.atcs));
 ok('grupo desde la ficha: sin ATC 4 no hay alcance de grupo', app._consultScopeFromMed({ ...med, atcs: [{ codigo: 'G03CA04', nivel: 5 }] }, 'grupo') === null);
+
+// --- 6b. Clase clínica (2026-10-21): solo la que ya ofrece Evidencia, con sus mismos códigos --
+sandbox.CimaAPI.CLINICAL_DICTIONARY = JSON.parse(readFileSync(join(ROOT, 'assets', 'data', 'clinical-ontology.json'), 'utf8')).terms;
+const eliquis = {
+    nombre: 'ELIQUIS 5 mg COMPRIMIDOS RECUBIERTOS CON PELICULA', vtm: { nombre: 'apixabán' },
+    formaFarmaceutica: { nombre: 'COMPRIMIDO RECUBIERTO CON PELÍCULA' }, viasAdministracion: via('VÍA ORAL'),
+    atcs: [{ codigo: 'B01A', nivel: 3 }, { codigo: 'B01AF', nombre: 'Inhibidores directos del factor Xa', nivel: 4 }, { codigo: 'B01AF02', nombre: 'Apixabán', nivel: 5 }],
+};
+const scClase = app._consultScopeFromMed(eliquis, 'clase');
+const pClase = app._composeConsultPrompt(scClase, { selected: porDefecto('clase') });
+ok('clase: un anti-Xa sale con la clase de la ontología, B01AF + B01AE07', JSON.stringify(scClase?.atcs.map(a => a.codigo)) === '["B01AF","B01AE07"]', JSON.stringify(scClase?.atcs));
+ok('clase: el dabigatrán (B01AE07) cae en la misma clase', app._consultScopeFromMed({ ...eliquis, atcs: [{ codigo: 'B01AE07', nivel: 5 }] }, 'clase')?.clase === 'ACOD');
+ok('clase: el prompt la nombra con sus códigos, sin marca ni cabecera de producto',
+    pClase.includes('- Clase clínica: ACOD (ATC B01AF + B01AE07)') && !/ELIQUIS/.test(pClase) && !pClase.includes('FÁRMACO:'));
+ok('clase: conserva la vía', pClase.includes('- Vía: oral'));
+ok('clase: por defecto, los mismos apartados que el grupo', JSON.stringify(porDefecto('clase')) === JSON.stringify(porDefecto('grupo')));
+ok('clase: «Sobre» dice lo que viaja', app._consultScopeLabel(scClase) === 'clase ACOD (B01AF + B01AE07) — comprimido recubierto con película — vía oral', app._consultScopeLabel(scClase));
+ok('clase: sin clase no hay alcance (no se inventa una)', app._consultScopeFromMed(med, 'clase') === null);
+const tabClase = app.renderConsultAiTab(eliquis);
+ok('clase: la opción aparece solo cuando existe',
+    tabClase.includes('value="clase"') && tabClase.includes('Su clase clínica (ACOD)') && !app.renderConsultAiTab(med).includes('value="clase"'));
 
 // --- 7. La pregunta no se arrastra a otro universo ----------------------------------------
 const U = (atcCode, query) => app._indAiUniverso({ atcCode, query });
