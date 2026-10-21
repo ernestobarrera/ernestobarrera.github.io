@@ -14298,7 +14298,8 @@ a.ipt-item:hover {
 
 /* Piezas que crea `setupMovil`: fuera del móvil no se ven. */
 .contexto-movil,
-.volver-arriba {
+.volver-arriba,
+.ficha-apartado {
     display: none;
 }
 
@@ -14568,35 +14569,159 @@ a.ipt-item:hover {
     }
 
     #med-modal .modal-header {
+        margin-bottom: var(--space-sm);
         padding-top: var(--space-md);
         padding-right: 52px;
     }
 
-    /* Pestañas: una sola fila con desplazamiento lateral, pegada arriba al bajar por el texto.
-       Antes eran cinco filas (~290 px) que desaparecían con el scroll junto con la X. */
-    #med-modal .modal-tabs {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-        gap: 0;
-        margin: 0 calc(-1 * var(--space-md)) var(--space-md);
-        padding: 0 56px 0 var(--space-sm);
-        background: var(--bg-surface);
-        overflow-x: auto;
-        scrollbar-width: none;
+    /* Cabecera compacta: miniatura menor, título a 16 px, y la estrella de «Guardar» (su nombre
+       queda en `title`) en la misma fila que ‹ 1/36 ›. Medido a 360 px: de 226 px de alto a ~130. */
+    #med-modal .med-thumbnail-wrapper {
+        gap: 10px;
     }
 
-    #med-modal .modal-tabs::-webkit-scrollbar {
+    #med-modal .med-thumbnail,
+    #med-modal .med-thumbnail-placeholder {
+        width: 44px;
+        height: 44px;
+        font-size: 1rem;
+    }
+
+    #med-modal .med-header-info {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        column-gap: 8px;
+    }
+
+    #med-modal .modal-title {
+        flex-basis: 100%;
+        font-size: 1rem;
+        line-height: 1.25;
+    }
+
+    #med-modal .modal-subtitle {
+        flex-basis: 100%;
+        font-size: 0.75rem;
+    }
+
+    #med-modal .modal-fav-btn {
+        margin-top: 6px;
+        min-height: 36px;
+        padding: 0 0.75rem;
+    }
+
+    #med-modal .modal-fav-btn span {
         display: none;
     }
 
+    #med-modal .modal-pos-lista {
+        margin-top: 6px;
+        margin-left: auto;
+    }
+
+    #med-modal .modal-pos-label {
+        display: none;
+    }
+
+    /* Pestañas: todas a la vista, sin desplazamiento lateral, como un bloque de botones
+       compactos que rellenan cada fila (el patrón de los selectores de sección cuando no caben
+       en una barra). Sin iconos y a 12 px: con 14 pestañas, cuatro filas a 360 px. Antes de la
+       revisión eran cinco filas de texto suelto; la fila única deslizante se descartó (21/10)
+       porque escondía la mitad de los apartados. */
+    #med-modal .modal-tabs {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 3px;
+        margin: 0 0 var(--space-md);
+        padding: 0 0 var(--space-sm);
+    }
+
     #med-modal .modal-tab {
+        flex: 1 1 auto;
+        min-height: 28px;
+        padding: 0 0.35rem;
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        font-size: 0.72rem;
+        line-height: 1.1;
+    }
+
+    #med-modal .modal-tab.active {
+        background: var(--primary-light);
+        border-color: var(--primary);
+        font-weight: 600;
+    }
+
+    #med-modal .modal-tab i {
+        display: none;
+    }
+
+    /* Barra fina del apartado (ver `setupMovil`): aparece al bajar por el texto, cuando las
+       pestañas ya no se ven. Dice qué fármaco y qué apartado se leen; tocarla sube a las pestañas. */
+    .ficha-apartado {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        padding: 6px 56px 6px var(--space-md);
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-default);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-100%);
+        transition: opacity var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .ficha-apartado.visible {
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+    }
+
+    .ficha-apartado-btn {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        width: 100%;
+        min-height: 44px;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: inherit;
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .ficha-apartado-textos {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .ficha-apartado-med {
+        overflow: hidden;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .ficha-apartado-tab {
+        color: var(--primary);
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    .ficha-apartado-cambiar {
         flex: 0 0 auto;
-        min-height: 48px;
-        padding: 0 0.75rem;
-        font-size: 0.85rem;
+        color: var(--text-secondary);
+        font-size: 0.75rem;
     }
 }
 

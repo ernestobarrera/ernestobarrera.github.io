@@ -16497,22 +16497,45 @@ ${ftFechaDocsHtml}
     }
 
     /**
-     * Pestaña de la ficha a la vista en móvil. La barra es una sola fila con desplazamiento
-     * lateral (CSS), así que la activa se centra; y al cambiar de pestaña con el texto ya bajado
-     * se sube al principio de la nueva, que si no se abría por la mitad.
+     * Pestaña de la ficha en móvil. Al cambiarla con el texto ya bajado se sube a las pestañas,
+     * con el principio de la nueva debajo (si no, se abría por la mitad). Pone al día la barra fina
+     * del apartado y, al pintar un producto, vuelve a vigilar sus pestañas, que son nuevas.
      */
     _pestanaALaVista(tab, { inicial = false } = {}) {
         if (!tab || !this._esMovil()) return;
-        const barra = tab.closest('.modal-tabs');
-        if (barra && barra.scrollWidth > barra.clientWidth) {
-            barra.scrollLeft = tab.offsetLeft - (barra.clientWidth - tab.offsetWidth) / 2;
+        this._pintarBarraApartado(tab);
+        if (inicial) {
+            this._vigilarPestanasFicha();
+            return;
         }
-        if (inicial) return;
         const panel = this.modal.querySelector('.modal-content');
-        const cabecera = this.modalBody.querySelector('.modal-header');
-        if (!panel || !cabecera) return;
-        const tope = cabecera.offsetTop + cabecera.offsetHeight;
+        const pestanas = tab.closest('.modal-tabs');
+        if (!panel || !pestanas) return;
+        const tope = Math.max(0, pestanas.offsetTop - 8);
         if (panel.scrollTop > tope) panel.scrollTop = tope;
+    }
+
+    /** Fármaco y apartado que se leen, en la barra fina de la ficha (ver `setupMovil`). */
+    _pintarBarraApartado(tab) {
+        const barra = document.getElementById('ficha-apartado');
+        if (!barra) return;
+        barra.querySelector('.ficha-apartado-med').textContent = this.currentMed?.nombre || '';
+        barra.querySelector('.ficha-apartado-tab').textContent = tab.textContent.trim();
+    }
+
+    /** La barra fina aparece solo cuando las pestañas han quedado por encima de lo que se ve. */
+    _vigilarPestanasFicha() {
+        this._obsPestanasFicha?.disconnect();
+        const barra = document.getElementById('ficha-apartado');
+        const panel = this.modal.querySelector('.modal-content');
+        const pestanas = this.modalBody.querySelector('.modal-tabs');
+        if (!barra || !panel || !pestanas || typeof IntersectionObserver === 'undefined') return;
+        barra.classList.remove('visible');
+        this._obsPestanasFicha = new IntersectionObserver(([e]) => {
+            const porEncima = e.boundingClientRect.bottom <= (e.rootBounds?.top ?? 0) + 1;
+            barra.classList.toggle('visible', !e.isIntersecting && porEncima);
+        }, { root: panel });
+        this._obsPestanasFicha.observe(pestanas);
     }
 
     /**
@@ -16520,6 +16543,9 @@ ${ftFechaDocsHtml}
      *  - Botón «Contexto» en la fila de la marca, con la barra de contexto plegada tras él. Con
      *    iconos sin rótulo no se sabía qué era cada uno (en táctil no hay tooltip), y con rótulo
      *    ocupaban tres filas. El botón dice EN PALABRAS qué contexto está activo.
+     *  - Barra fina del apartado en la ficha: con el texto bajado dice qué fármaco y qué apartado
+     *    se leen, y tocarla sube a las pestañas. Sustituye a dejar fijas las propias pestañas, que
+     *    en móvil ocupan cuatro filas.
      *  - Botón flotante «Arriba» tras pantalla y media de desplazamiento: la cabecera no es fija,
      *    y desde el resultado 40 volver al buscador o a otra vista exigía deslizar hasta arriba.
      */
@@ -16551,6 +16577,24 @@ ${ftFechaDocsHtml}
             // Se observa la clase de los botones en vez de engancharse a su lógica: cualquier vía
             // que active o limpie el contexto (botón, «Limpiar», guía) queda reflejada sin tocarla.
             new MutationObserver(pintar).observe(barra, { subtree: true, attributes: true, attributeFilter: ['class'] });
+        }
+
+        const panelFicha = this.modal?.querySelector('.modal-content');
+        if (panelFicha && !document.getElementById('ficha-apartado')) {
+            const barraFicha = document.createElement('div');
+            barraFicha.id = 'ficha-apartado';
+            barraFicha.className = 'ficha-apartado';
+            barraFicha.innerHTML = '<button type="button" class="ficha-apartado-btn" aria-label="Volver a las pestañas de la ficha">'
+                + '<span class="ficha-apartado-textos"><span class="ficha-apartado-med"></span><span class="ficha-apartado-tab"></span></span>'
+                + '<span class="ficha-apartado-cambiar">Apartados <i class="fas fa-chevron-up" aria-hidden="true"></i></span></button>';
+            // Fuera de #modal-body, que se repinta con cada producto: así la barra se crea una vez.
+            panelFicha.appendChild(barraFicha);
+            barraFicha.querySelector('button').addEventListener('click', () => {
+                const pestanas = this.modalBody.querySelector('.modal-tabs');
+                if (!pestanas) return;
+                const suave = !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+                panelFicha.scrollTo({ top: Math.max(0, pestanas.offsetTop - 8), behavior: suave ? 'smooth' : 'auto' });
+            });
         }
 
         if (!document.getElementById('volver-arriba')) {
