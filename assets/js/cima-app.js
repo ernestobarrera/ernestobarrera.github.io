@@ -7180,6 +7180,31 @@ class MedCheckApp {
     }
 
     /**
+     * Firma de lo que define la consulta de un filtro: en revistas, las listas elegidas; en el
+     * resto, su id (sus ficheros no cambian dentro de la sesión).
+     */
+    _evidenceFilterFirma(f) {
+        if (!f) return '';
+        return f.cat === 'journals'
+            ? `journals:${(f.lists?.length ? f.lists : ['jnl_top_publications']).join('|')}`
+            : String(f.id);
+    }
+
+    /**
+     * Consulta de un filtro SOLO si se construyó con su selección actual; si no, null (H1, revisión
+     * de Codex del 21/10). Sin esto, tras cambiar las categorías de revistas y fallar la descarga de
+     * una, Combinar seguía contando y enlazando la unión anterior y el traspaso a la IA declaraba
+     * rutas que su consulta no contenía. La firma se toma ANTES de esperar la descarga, así que una
+     * respuesta tardía de otra selección tampoco cuela.
+     */
+    _evidenceFilterQueryVigente(id) {
+        const f = (this._evFilterDefs || []).find(d => d.id === id);
+        const q = this._evFilterQueryById?.[id];
+        if (!f || !q) return null;
+        return this._evFilterFirmaById?.[id] === this._evidenceFilterFirma(f) ? q : null;
+    }
+
+    /**
      * La búsqueda que se lleva a la IA (2026-10-21): la que el clínico tiene en pantalla —término,
      * filtros marcados con su operador y fechas—, con las rutas de pubmed-filters de esos filtros
      * para que el recibo de PubMed exacto compruebe que van tal cual (`filter_fidelity`).
@@ -7189,25 +7214,80 @@ class MedCheckApp {
         const drugTerm = this._evidenceEffectiveTerm();
         if (!drugTerm) return null;
         const ids = [...(this._evSelectedFilters || [])];
-        if (ids.some(id => !this._evFilterQueryById?.[id])) return { pendiente: true };
+        // Solo consultas de la selección ACTUAL: las rutas de abajo salen de ella, y una consulta de
+        // otra selección las contradiría (H1, revisión de Codex del 21/10).
+        const vigentes = ids.map(id => this._evidenceFilterQueryVigente(id));
+        if (vigentes.some(q => !q)) return { pendiente: true };
         const slider = document.getElementById('evidence-date-slider');
         const days = parseInt(slider?.dataset.days ?? '0', 10) || 0;
         const dateSuffix = days ? ` AND ("last ${days} days"[dp])` : '';
-        const query = ids.length
-            ? this._composeEvidenceCombination(drugTerm, ids.map(id => this._evFilterQueryById[id]), this._evCombineMode || 'AND', dateSuffix)
-            : drugTerm + dateSuffix;
-        const paths = ids.flatMap(id => {
+        const componer = sufijo => (ids.length
+            ? this._composeEvidenceCombination(drugTerm, vigentes, this._evCombineMode || 'AND', sufijo)
+            : drugTerm + sufijo);
+        // Un filtro de la selección por cada ruta, con el papel que se sabe sin el catálogo: la
+        // exclusión y las revistas (carril editorial). El resto va sin `role_used`, que es opcional.
+        const filtros = ids.flatMap((id, i) => {
             const f = (this._evFilterDefs || []).find(d => d.id === id);
             if (!f) return [];
-            return f.cat === 'journals'
-                ? (f.lists?.length ? f.lists : ['jnl_top_publications']).map(l => `filters/journals/${l}.txt`)
-                : [`filters/${f.cat}/${f.id}.txt`];
+            if (f.cat === 'journals') {
+                return (f.lists?.length ? f.lists : ['jnl_top_publications']).map(l => ({
+                    path: `filters/journals/${l}.txt`, role: 'editorial',
+                    reason: 'Categoría de revistas elegida en MedCheck: carril editorial por índice h5, no toda la evidencia',
+                }));
+            }
+            return [{
+                path: `filters/${f.cat}/${f.id}.txt`,
+                role: this._isEvidenceExclusion(vigentes[i]) ? 'exclusion' : null,
+                reason: 'Filtro marcado por el clínico en MedCheck',
+            }];
         });
+        // Facetas: lo que define la búsqueda, todo en AND (fármaco, vía, acotación).
+        const viaEl = document.getElementById('evidence-via-check');
+        const via = viaEl?.checked ? (viaEl.closest?.('label')?.textContent || '').replace(/^\s*Acotar a\s*/i, '').trim() : '';
+        const facetas = [
+            ['fármaco', document.getElementById('evidence-drug-input')?.value],
+            ['vía', via],
+            ['acotación', document.getElementById('evidence-acotar-input')?.value],
+        ].map(([k, v]) => [k, String(v ?? '').replace(/\s+/g, ' ').trim()]).filter(([, v]) => v)
+            .map(([k, v]) => ({ facet: `${k}: ${v}`.slice(0, 200), role_in_question: 'core' }));
+        const tocado = slider?.dataset.tocado === '1';
         return {
-            query, paths, days,
+            query: componer(dateSuffix), queryNoDate: componer(''),
+            paths: filtros.map(f => f.path), filtros, facetas, days, tocado,
+            origen: !days ? 'none' : (tocado ? 'user' : 'agent_policy'),
             etiqueta: document.getElementById('evidence-date-label')?.textContent.trim() || '',
-            tocado: slider?.dataset.tocado === '1',
         };
+    }
+
+    /**
+     * Registro de selección de una pasada, con la forma que exige `pubmed_search_exact`
+     * (`facets`, `filters`, `pass`, y `date_window` si hay límite). Lo escribe MedCheck, que sabe
+     * qué filtros hay y de dónde sale la ventana, para que la IA lo pegue y no lo reconstruya
+     * (J5, revisión de Codex del 21/10: con solo las instrucciones, el MCP lo rechazaba).
+     */
+    _evidenceSelectionRecord(b, passId) {
+        const p1 = passId === 'P1';
+        const rec = {
+            plan_ref: `medcheck-evidencia/${String(this.currentMed?.nregistro || 'ficha').slice(0, 40)}`,
+            facets: b.facetas.length ? b.facetas : [{ facet: 'fármaco', role_in_question: 'core' }],
+            filters: b.filtros.map(f => ({ path: f.path, decision: 'used', ...(f.role ? { role_used: f.role } : {}), reason: f.reason })),
+            pass: p1
+                ? { pass_id: 'P1', purpose: 'La búsqueda que el clínico montó en MedCheck', reading_path: 'focused_selection',
+                    selection_reason: 'Los registros más relevantes (orden por relevancia) que se lean de verdad; no es una revisión completa ni representativa del conjunto' }
+                : { pass_id: 'P2', purpose: 'La misma búsqueda sin ventana de fecha, para ver qué deja fuera la de P1', reading_path: 'focused_selection',
+                    selection_reason: 'Solo los registros relevantes que quedan fuera de la ventana de P1, para decir qué se pierde con ella' },
+        };
+        if (p1 && b.days) {
+            rec.date_window = {
+                limit: `"last ${b.days} days"[dp]`,
+                origin: b.origen,
+                ...(b.origen === 'agent_policy' ? { unrestricted_pass_id: 'P2' } : {}),
+                reason: b.origen === 'agent_policy'
+                    ? 'Opción por defecto de MedCheck; el clínico no eligió este límite'
+                    : 'Elegida por el clínico en el deslizador de MedCheck',
+            };
+        }
+        return rec;
     }
 
     /**
@@ -7223,31 +7303,44 @@ class MedCheckApp {
         let inn = '';
         try { inn = this._substanceIdentity(med)?.canonicalEn || ''; } catch { /* sin INN: solo el nombre */ }
         const n = this._evidenceCountCache?.get(b.query);
-        const ventana = !b.days ? { origen: 'none', texto: 'sin límite de fecha.' }
-            : b.tocado ? { origen: 'user', texto: `${b.etiqueta}, elegida por el clínico.` }
-            : { origen: 'agent_policy', texto: `${b.etiqueta}. Es la opción por defecto de MedCheck: el clínico no la ha pedido.` };
+        const ventana = b.origen === 'none' ? 'sin límite de fecha.'
+            : b.origen === 'user' ? `${b.etiqueta}, elegida por el clínico.`
+            : `${b.etiqueta}. Es la opción por defecto de MedCheck: el clínico no la ha pedido, y por eso va también la pasada P2 sin ventana.`;
+        const conP2 = b.origen === 'agent_policy';
+        const revistas = b.filtros.some(f => f.role === 'editorial');
+        const usados = b.paths.length ? b.paths.join(', ') : 'ninguno';
+        const tareas = [
+            'En cada recibo deben salir query_integrity «verified», filter_fidelity «verified» y selection_record «declared». Si alguno no, dilo y no uses ese recuento. Conserva los recibos completos.',
+            'Lee los resúmenes de los registros más relevantes de P1 y agrúpalos por tipo de evidencia. Cita cada afirmación con su PMID. Di por separado cuántos registros encontró PubMed, cuántos PMID recibiste, cuántos resúmenes obtuviste y cuántos documentos usaste.',
+            conP2 ? 'Compara P1 y P2: di qué estudios relevantes quedan fuera de la ventana de P1.' : null,
+            revistas ? 'Las revistas por índice h5 son un subconjunto editorial: no lo presentes como toda la evidencia del fármaco.' : null,
+            'Separa lo que dicen los estudios de tu interpretación. No hagas recomendaciones clínicas ni juicios de seguridad.',
+        ].filter(Boolean);
         const lineas = [
             'Lectura bibliográfica con PubMed exacto (el conector de pubmed-filters). Es una búsqueda de literatura, no una consulta clínica: no hay datos de paciente.',
             '',
             `Medicamento: ${med.nombre || ''}${inn ? ` · principio activo (INN): ${inn}` : ''}`,
+            `Ventana de fecha: ${ventana}`,
             '',
-            'Pasada P1. Ejecútala LITERAL con pubmed_search_exact, sin reescribirla:',
+            'Pasada P1. Ejecútala LITERAL con pubmed_search_exact y sort «relevance», sin reescribirla:',
             b.query,
             n != null ? `MedCheck contó ${n} registros con ESearch para esta misma consulta el ${new Date().toISOString().slice(0, 10)}.` : null,
-            `Filtros de pubmed-filters que contiene (decláralos en filters_used con estas rutas): ${b.paths.length ? b.paths.join(', ') : 'ninguno'}.`,
-            `Ventana de fecha: ${ventana.texto}`,
-            '',
-            `Antes de ejecutar, llama a pubmed_filter_catalog y envía con P1 su selection_record: cada filtro con decision «used» y date_window con origin «${ventana.origen}»${ventana.origen === 'agent_policy' ? ' y unrestricted_pass_id «P2»' : ''}.`,
-            ventana.origen === 'agent_policy'
-                ? 'Pasada P2: la misma consulta sin la ventana de fecha. Mira qué estudios relevantes quedan fuera de P1 antes de apoyarte solo en ella.'
-                : null,
+            `filters_used: ${usados}`,
+            'selection_record de P1 (envíalo tal cual con la pasada, antes de ver sus resultados):',
+            JSON.stringify(this._evidenceSelectionRecord(b, 'P1')),
+            ...(conP2 ? [
+                '',
+                'Pasada P2. La misma consulta sin la ventana de fecha; ejecútala de verdad, también LITERAL:',
+                b.queryNoDate,
+                `filters_used: ${usados}`,
+                'selection_record de P2:',
+                JSON.stringify(this._evidenceSelectionRecord(b, 'P2')),
+            ] : []),
             '',
             'Tareas:',
-            '1. Mira query_integrity y filter_fidelity en el recibo. Si alguno no es «verified», dilo y no uses el recuento.',
-            '2. Lee los resúmenes de los registros más relevantes (orden por relevancia, reading_path «focused_selection» con su motivo) y agrúpalos por tipo de evidencia. Cita cada afirmación con su PMID.',
-            '3. Separa lo que dicen los estudios de tu interpretación. No hagas recomendaciones clínicas ni juicios de seguridad.',
+            ...tareas.map((t, i) => `${i + 1}. ${t}`),
             '',
-            'Si no tienes el conector PubMed exacto, dilo y no simules la búsqueda.',
+            'No cambies las consultas ni reconstruyas filtros o listas de memoria. Si no tienes el conector PubMed exacto, dilo y no simules la búsqueda.',
         ];
         return lineas.filter(l => l !== null).join('\n');
     }
@@ -24093,9 +24186,16 @@ ${ftFechaDocsHtml}
 
         // Selector de categorías de revistas: al aplicar solo cambia la consulta de esa fila; las
         // demás salen de la caché de recuentos y no vuelven a PubMed.
+        // Al aplicar, la fila deja de enseñar la selección anterior en el mismo instante: sin cifra,
+        // sin enlace y sin ⓘ hasta que llegue la nueva (H1). La barra de Combinar lo nota sola,
+        // porque la firma ya no coincide.
         this._wireEvidenceJournals(container, filterDefs, espRevistas, () => {
             const el = document.getElementById('evcount-journals');
             if (el) el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+            document.getElementById('evlink-journals')?.removeAttribute('href');
+            const info = document.getElementById('evinfo-journals');
+            if (info) { info.innerHTML = ''; delete info.dataset.set; }
+            this._updateEvidenceCombineBar();
             this._loadEvidenceFiltersAndCount(getCurrentTerm(), filterDefs, getCurrentDays());
         });
 
@@ -24469,7 +24569,9 @@ ${ftFechaDocsHtml}
         if (totalLink) totalLink.href = pmBase + enc(totalQuery);
 
         // Cargar ficheros de filtro del repo (con caché de sesión). Un solo lector para la pestaña
-        // y para combinaciones: había una copia aquí, y dos lectores acaban divergiendo.
+        // y para combinaciones: había una copia aquí, y dos lectores acaban divergiendo. La firma
+        // de cada selección se toma AQUÍ, antes de esperar: es la de lo que se está descargando.
+        const firmas = filterDefs.map(f => this._evidenceFilterFirma(f));
         const loaded = await Promise.all(filterDefs.map(f => this._fetchEvidenceFilter(f)));
         // Si mientras cargaban los filtros empezó otra búsqueda, esta ya no escribe NADA: ni
         // enlaces, ni registro de reintentos, ni diagnóstico, ni gráfica. Antes el ciclo solo se
@@ -24486,9 +24588,9 @@ ${ftFechaDocsHtml}
                 infoEl.dataset.set = '1';
             }
             const linkEl = document.getElementById(`evlink-${f.id}`);
-            if (linkEl && query) {
-                linkEl.href = pmBase + enc(this._composeEvidenceFilter(drugTerm, query, DATE_SUFFIX));
-            }
+            // Sin consulta, sin enlace: dejar el anterior abriría en PubMed otra selección.
+            if (linkEl && query) linkEl.href = pmBase + enc(this._composeEvidenceFilter(drugTerm, query, DATE_SUFFIX));
+            else if (linkEl) linkEl.removeAttribute('href');
         });
 
         // Preparar peticiones de conteo
@@ -24508,9 +24610,18 @@ ${ftFechaDocsHtml}
 
         // Cachear queries de cada filtro por id para que la barra de combinación pueda leerlas
         // sin re-fetch. _evFilterQueryById ya se inicializa en renderEvidenceTab.
+        // Cada consulta va con la firma de la selección que la produjo; si no llegó, se borra la
+        // anterior en vez de conservarla (H1).
         this._evFilterQueryById = this._evFilterQueryById || {};
+        this._evFilterFirmaById = this._evFilterFirmaById || {};
         filterDefs.forEach((f, i) => {
-            if (loaded[i].query) this._evFilterQueryById[f.id] = loaded[i].query;
+            if (loaded[i].query) {
+                this._evFilterQueryById[f.id] = loaded[i].query;
+                this._evFilterFirmaById[f.id] = firmas[i];
+            } else {
+                delete this._evFilterQueryById[f.id];
+                delete this._evFilterFirmaById[f.id];
+            }
         });
 
         // Interpretación de PubMed: viaja en la petición de «Todas las citas» (ver
@@ -24952,14 +25063,17 @@ ${ftFechaDocsHtml}
         const days = parseInt(slider?.dataset.days ?? '0', 10);
         const dateSuffix = days ? ` AND ("last ${days} days"[dp])` : '';
 
+        // Solo consultas de la selección actual (H1): una de otra selección daría su cifra y su enlace.
         const queries = Array.from(sel)
-            .map(fid => this._evFilterQueryById?.[fid])
+            .map(fid => this._evidenceFilterQueryVigente(fid))
             .filter(Boolean);
 
-        // Si aún no están cacheadas todas las queries de filtros, esperar al siguiente render
+        // Si falta alguna (cargando o fallida), ni cifra ni enlace: se espera al siguiente render.
         if (queries.length < n) {
             const resultEl = document.getElementById('evidence-combine-result');
             if (resultEl) resultEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            document.getElementById('evidence-combine-link')?.removeAttribute('href');
+            this._evCombineCycle = (this._evCombineCycle || 0) + 1; // una cuenta en vuelo ya no escribe
             return;
         }
 

@@ -42,10 +42,20 @@ const BASE_URL = 'https://ernestobarrera.github.io/pubmed-filters/filters/';
 let servidos = {};          // url -> texto que devuelve el fetch simulado
 let elementos = {};         // id -> elemento simulado
 let temporizadoresRapidos = false;
-const elemento = (props = {}) => ({
-    value: '', checked: false, dataset: {}, innerHTML: '', textContent: '', href: '', className: '',
-    isConnected: true, classList: { add() {}, remove() {}, toggle() {} }, ...props,
-});
+// Como en el DOM: innerHTML y textContent son la misma cosa vista de dos maneras (escribir uno
+// sustituye al otro), y quitar el atributo href deja el enlace sin destino. Con dos campos sueltos,
+// un spinner escrito por innerHTML dejaba visible la cifra anterior en textContent.
+const elemento = (props = {}) => {
+    let html = '';
+    const e = {
+        value: '', checked: false, dataset: {}, href: '', className: '', isConnected: true,
+        classList: { add() {}, remove() {}, toggle() {} },
+        removeAttribute(n) { if (n === 'href') this.href = ''; },
+        get innerHTML() { return html; }, set innerHTML(v) { html = String(v); },
+        get textContent() { return html.replace(/<[^>]*>/g, ''); }, set textContent(v) { html = String(v); },
+    };
+    return Object.assign(e, props);
+};
 const sandbox = {
     window: {},
     document: {
@@ -57,9 +67,13 @@ const sandbox = {
     console: { log() {}, warn() {}, error() {} },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
-    fetch: async url => (url in servidos
-        ? { ok: true, status: 200, text: async () => servidos[url] }
-        : { ok: false, status: 404, text: async () => '' }),
+    // Un valor función es una respuesta que llega cuando la prueba la suelta (respuesta tardía).
+    fetch: async url => {
+        const v = typeof servidos[url] === 'function' ? await servidos[url]() : servidos[url];
+        return v != null
+            ? { ok: true, status: 200, text: async () => v }
+            : { ok: false, status: 404, text: async () => '' };
+    },
     AbortSignal,
     setTimeout: (fn, ms, ...a) => setTimeout(fn, temporizadoresRapidos ? 0 : ms, ...a),
     clearTimeout, setInterval, clearInterval,
@@ -189,6 +203,7 @@ for (const v of VARIANTES_HUMANOS) {
         'evidence-combine-link': elemento(), 'evidence-combine-result': elemento(),
     };
     app._evSelectedFilters = new Set(['metaanalysis', 'humans']);
+    app._evFilterDefs = DEFS;
     app._evCombineMode = 'AND';
     app._evCombineCycle = 0;
     await app._updateEvidenceCombineBar();
@@ -271,6 +286,8 @@ console.log('\n6. Traspaso a la IA: la búsqueda en pantalla, sus rutas y el ori
     const HUM = `NOT ${EXCLUSION}`;
     app._evFilterDefs = [...DEFS, { id: 'journals', cat: 'journals', label: 'Revistas', icon: 'fa-star', lists: ['jnl_top_publications', 'jnl_diabetes'] }];
     app._evFilterQueryById = { humans: HUM, metaanalysis: META_QUERY, journals: '((A[JO]) OR (B[JO]))' };
+    // Cada consulta con la firma de su selección, como la deja la carga real.
+    app._evFilterFirmaById = Object.fromEntries(app._evFilterDefs.map(f => [f.id, app._evidenceFilterFirma(f)]));
     app._evSelectedFilters = new Set(['humans']);
     app._evCombineMode = 'AND';
     app.currentMed = { nombre: 'DIANBEN 850 mg', vtm: { nombre: 'metformina' } };
@@ -301,23 +318,47 @@ console.log('\n6. Traspaso a la IA: la búsqueda en pantalla, sus rutas y el ori
     check('un filtro marcado sin cargar: espera, no se lleva otra búsqueda', app._evidenceHandoffSearch(), { pendiente: true });
     app._evSelectedFilters = new Set(['humans']);
 
+    // El registro de selección viaja como JSON en la línea siguiente a su rótulo.
+    const registro = (prompt, pasada) => {
+        const l = prompt.split('\n');
+        const i = l.findIndex(x => x.startsWith(`selection_record de ${pasada}`));
+        return i === -1 ? null : JSON.parse(l[i + 1]);
+    };
     app._evidenceCountCache = new Map([[b.query, 33353]]);
-    const pDefecto = app._evidenceHandoffPrompt(app._evidenceHandoffSearch());
+    const bDef = app._evidenceHandoffSearch();
+    const pDefecto = app._evidenceHandoffPrompt(bDef);
     check('prompt: la consulta va literal en su propia línea', pDefecto.split('\n').includes(b.query), true);
-    check('prompt: declara la ruta en filters_used', /filters_used con estas rutas\): filters\/scope\/humans\.txt\./.test(pDefecto), true);
-    check('prompt: ventana por defecto → agent_policy con pasada P2 sin ventana',
-        /origin «agent_policy» y unrestricted_pass_id «P2»/.test(pDefecto) && /Pasada P2: la misma consulta sin la ventana/.test(pDefecto), true);
+    check('prompt: declara la ruta en filters_used', /^filters_used: filters\/scope\/humans\.txt$/m.test(pDefecto), true);
+    const r1 = registro(pDefecto, 'P1');
+    check('registro P1: con los campos que exige el MCP', !!(r1?.facets?.length && r1.filters?.length && r1.pass?.pass_id === 'P1'), true);
+    check('registro P1: la exclusión declarada como tal', r1?.filters, [{ path: 'filters/scope/humans.txt', decision: 'used', role_used: 'exclusion', reason: 'Filtro marcado por el clínico en MedCheck' }]);
+    check('registro P1: focused_selection lleva su motivo', r1?.pass?.reading_path === 'focused_selection' && (r1?.pass?.selection_reason || '').length > 3, true);
+    check('registro P1: ventana por defecto → agent_policy con P2 y su motivo',
+        r1?.date_window, { limit: '"last 1825 days"[dp]', origin: 'agent_policy', unrestricted_pass_id: 'P2', reason: 'Opción por defecto de MedCheck; el clínico no eligió este límite' });
+    const r2 = registro(pDefecto, 'P2');
+    check('P2: la misma consulta sin la ventana, literal', pDefecto.split('\n').includes(bDef.queryNoDate) && !/last \d+ days/.test(bDef.queryNoDate), true);
+    check('P2: registro propio, sin ventana', r2?.pass?.pass_id === 'P2' && !r2?.date_window, true);
+    check('prompt: pide los tres estados del recibo', /query_integrity «verified», filter_fidelity «verified» y selection_record «declared»/.test(pDefecto), true);
+    check('prompt: separa encontrados, PMID, resúmenes y documentos usados', /cuántos registros encontró PubMed, cuántos PMID recibiste, cuántos resúmenes obtuviste y cuántos documentos usaste/.test(pDefecto), true);
     check('prompt: trae el recuento de MedCheck para contrastarlo', /MedCheck contó 33353 registros/.test(pDefecto), true);
     check('prompt: no simula si falta el conector', /no simules la búsqueda/.test(pDefecto), true);
+    check('prompt: sin revistas no habla del subconjunto editorial', /subconjunto editorial/.test(pDefecto), false);
+
+    app._evSelectedFilters = new Set(['journals', 'humans']);
+    const pRev = app._evidenceHandoffPrompt(app._evidenceHandoffSearch());
+    check('con revistas: role_used editorial y aviso de subconjunto',
+        registro(pRev, 'P1')?.filters.filter(f => f.role_used === 'editorial').length === 2 && /subconjunto editorial/.test(pRev), true);
+    app._evSelectedFilters = new Set(['humans']);
 
     pantalla({ tocado: true });
     app._evidenceCountCache = new Map();
     const pUsuario = app._evidenceHandoffPrompt(app._evidenceHandoffSearch());
-    check('ventana elegida por el clínico → origin user y sin P2', /origin «user»/.test(pUsuario) && !/Pasada P2/.test(pUsuario), true);
+    check('ventana elegida por el clínico → origin user y sin P2',
+        registro(pUsuario, 'P1')?.date_window?.origin === 'user' && !registro(pUsuario, 'P1')?.date_window?.unrestricted_pass_id && !/Pasada P2/.test(pUsuario), true);
     check('sin recuento en caché no se inventa uno', /MedCheck contó/.test(pUsuario), false);
     pantalla({ days: '0', tocado: true });
     const pSin = app._evidenceHandoffPrompt(app._evidenceHandoffSearch());
-    check('sin límite de fecha → origin none', /origin «none»/.test(pSin) && !/last \d+ days/.test(pSin), true);
+    check('sin límite de fecha → sin date_window ni P2', !registro(pSin, 'P1')?.date_window && !/Pasada P2/.test(pSin) && !/last \d+ days/.test(pSin), true);
 
     // Abrir: Claude nunca recibe el prompt por URL (algún parámetro lo envía solo); ChatGPT sí, con tope.
     const abiertas = []; const avisos = [];
@@ -329,7 +370,10 @@ console.log('\n6. Traspaso a la IA: la búsqueda en pantalla, sus rutas y el ori
     app.openEvidenceAi('chatgpt');
     await new Promise(r => setTimeout(r, 0));
     check('Claude: abre claude.ai sin el prompt en la URL', abiertas[0], 'https://claude.ai/new');
-    check('ChatGPT: precarga con ?q=', /^https:\/\/chatgpt\.com\/\?q=/.test(abiertas[1] || ''), true);
+    // Con los registros, el prompt pasa del tope de precarga de ChatGPT: se abre para pegar.
+    const largo = encodeURIComponent(app._evidenceHandoffPrompt(app._evidenceHandoffSearch())).length > 4000;
+    check('ChatGPT: precarga solo si cabe; si no, abre para pegar',
+        largo ? abiertas[1] === 'https://chatgpt.com/' : /^https:\/\/chatgpt\.com\/\?q=/.test(abiertas[1] || ''), true);
     elementos = {};
     app.openEvidenceAi('claude');
     check('sin término: avisa y no abre nada', abiertas.length === 2 && avisos.includes('warning'), true);
@@ -339,6 +383,100 @@ console.log('\n6. Traspaso a la IA: la búsqueda en pantalla, sus rutas y el ori
     check('guía: paso del selector de revistas', pasos.some(s => s.target === '#tab-evidence #evidence-journals-toggle'), true);
     check('guía: paso del traspaso a la IA', pasos.some(s => s.target === '#tab-evidence .evidence-ia-handoff' && /PubMed exacto/.test(s.body)), true);
     check('los destinos de la guía están en la pestaña', src.includes('id="evidence-journals-toggle"') && src.includes('<div class="evidence-ia-handoff">'), true);
+}
+
+// ─── 7. H1: cifra, enlace y traspaso siempre de la selección actual ────────────────────────
+// Revisión de Codex del 21/10: tras cambiar las categorías de revistas y fallar una lista, Combinar
+// seguía con la cifra y el enlace de la unión anterior, y el traspaso declaraba rutas que su consulta
+// no contenía. Recorrido completo: éxito → cambio pendiente → fallo → reintento → respuestas tardías.
+console.log('\n7. H1: la cifra, el enlace y el traspaso son siempre de la selección actual');
+{
+    const app = nuevaApp();
+    const lista = id => `(${id.slice(4)}A[JO]|${id.slice(4)}B[JO])`;
+    const fichero = id => `# journals/${id}\n${lista(id)}\n@@@FILTER_METADATA@@@\n{}\n`;
+    const servirListas = (...ids) => {
+        servidos = { [`${BASE_URL}scope/humans.txt`]: `NOT ${EXCLUSION}`,
+            ...Object.fromEntries(ids.map(id => [`${BASE_URL}journals/${id}.txt`, fichero(id)])) };
+    };
+    const union = ids => `(${ids.map(id => `(${lista(id)})`).join(' OR ')})`;
+    const REV = { id: 'journals', cat: 'journals', label: 'Revistas', icon: 'fa-star', lists: ['jnl_top_publications', 'jnl_diabetes'] };
+    const defs = [REV, { id: 'humans', cat: 'scope', label: 'Humanos', icon: 'fa-user' }];
+    app._evFilterDefs = defs;
+    app._evSelectedFilters = new Set(['journals', 'humans']);
+    app._evCombineMode = 'AND';
+    app._evCombineCycle = 0;
+    app.currentMed = { nombre: 'DISIMET' };
+    app._fetchPubmedCount = async (_q, _v, opts) => (opts?.diagnostico ? { count: 1, diag: null } : 62);
+    elementos = Object.fromEntries(['evidence-content', 'evlink-total', 'evlink-journals', 'evlink-humans', 'evinfo-journals',
+        'evcount-journals', 'evcount-humans', 'evidence-combine-bar', 'evidence-combine-n', 'evidence-combine-link',
+        'evidence-combine-result', 'evidence-acotar-input'].map(k => [k, elemento()]));
+    elementos['evidence-drug-input'] = elemento({ value: 'metformin' });
+    elementos['evidence-date-slider'] = elemento({ dataset: { days: '1825' } });
+    elementos['evidence-date-label'] = elemento({ textContent: 'Últimos 5 años' });
+    const cargar = () => app._loadEvidenceFiltersAndCount('metformin', defs, 1825);
+    const combinar = async () => { await app._updateEvidenceCombineBar(); await new Promise(r => setTimeout(r, 0)); };
+    const cifraCombinar = () => /^\d/.test(elementos['evidence-combine-result'].textContent);
+    const enlaceCombinar = () => decodificar(elementos['evidence-combine-link'].href);
+
+    servirListas('jnl_top_publications', 'jnl_diabetes');
+    await cargar(); await combinar();
+    check('éxito: Combinar cuenta y enlaza la unión elegida',
+        enlaceCombinar().includes(union(['jnl_top_publications', 'jnl_diabetes'])) && elementos['evidence-combine-result'].textContent === '62', true);
+
+    REV.lists = ['jnl_top_publications', 'jnl_oncology'];   // «Aplicar»: la descarga aún no ha empezado
+    await combinar();
+    check('pendiente: Combinar sin la cifra anterior', cifraCombinar(), false);
+    check('pendiente: Combinar sin el enlace anterior', elementos['evidence-combine-link'].href, '');
+    check('pendiente: el traspaso espera', app._evidenceHandoffSearch(), { pendiente: true });
+
+    await cargar(); await combinar();                         // jnl_oncology no se sirve: falla
+    check('fallo: la fila no cuenta', app._evidenceCountRequests.journals.query, null);
+    check('fallo: la fila no enlaza la selección anterior', elementos['evlink-journals'].href, '');
+    check('fallo: no queda la consulta anterior', app._evFilterQueryById.journals, undefined);
+    check('fallo: Combinar sigue sin cifra ni enlace', !cifraCombinar() && elementos['evidence-combine-link'].href === '', true);
+    check('fallo: el traspaso no declara rutas que su consulta no contiene', app._evidenceHandoffSearch(), { pendiente: true });
+
+    servirListas('jnl_top_publications', 'jnl_oncology');      // reintento con éxito
+    await cargar(); await combinar();
+    const nueva = union(['jnl_top_publications', 'jnl_oncology']);
+    check('reintento: Combinar con la unión nueva', enlaceCombinar().includes(nueva), true);
+    const t = app._evidenceHandoffSearch();
+    check('reintento: consulta y rutas del traspaso coinciden',
+        t.query.includes(nueva) && t.paths.includes('filters/journals/jnl_oncology.txt') && !t.paths.includes('filters/journals/jnl_diabetes.txt'), true);
+
+    // Respuesta tardía de una descarga: la selección X tarda, la Y termina antes; X no pisa a Y.
+    let soltarX;
+    servirListas('jnl_top_publications', 'jnl_dermatology');
+    servidos[`${BASE_URL}journals/jnl_cardiology.txt`] = () => new Promise(r => { soltarX = () => r(fichero('jnl_cardiology')); });
+    REV.lists = ['jnl_top_publications', 'jnl_cardiology'];
+    const cargaX = cargar();
+    REV.lists = ['jnl_top_publications', 'jnl_dermatology'];
+    await cargar(); await combinar();
+    soltarX(); await cargaX; await combinar();
+    const y = union(['jnl_top_publications', 'jnl_dermatology']);
+    check('respuesta tardía: la vigente es la última selección', app._evidenceFilterQueryVigente('journals'), y);
+    check('respuesta tardía: Combinar no vuelve a la anterior', enlaceCombinar().includes(y) && !enlaceCombinar().includes('cardiology'), true);
+
+    // Una carga que termina cuando su selección ya cambió, sin otra carga detrás, no vale.
+    servidos[`${BASE_URL}journals/jnl_cardiology.txt`] = fichero('jnl_cardiology');
+    REV.lists = ['jnl_top_publications', 'jnl_cardiology'];
+    const cargaZ = cargar();
+    REV.lists = ['jnl_top_publications', 'jnl_dermatology'];
+    await cargaZ; await combinar();
+    check('una carga de una selección ya cambiada no se da por vigente', app._evidenceFilterQueryVigente('journals'), null);
+
+    // Cuenta de Combinar en vuelo cuando cambia la selección: al llegar, no se escribe.
+    await cargar(); await combinar();                         // vuelve a estar vigente Y
+    let soltarCuenta;
+    app._evidenceCountCache = new Map();
+    app._fetchPubmedCount = (_q, _v, opts) => (opts?.diagnostico
+        ? Promise.resolve({ count: 1, diag: null })
+        : new Promise(r => { soltarCuenta = () => r(99); }));
+    const enVuelo = app._updateEvidenceCombineBar();
+    REV.lists = ['jnl_top_publications', 'jnl_oncology'];
+    await combinar();
+    soltarCuenta(); await enVuelo;
+    check('cuenta en vuelo de la selección anterior: no aparece', elementos['evidence-combine-result'].textContent === '99', false);
 }
 
 // ─── 4. --canonico: paridad con pubmed-filters (solo en local) ─────────────────────────────
