@@ -264,6 +264,83 @@ console.log('\n5. Revistas: especialidad por ATC y unión de categorías');
     check('panel: sin catálogo lo dice y ofrece sugeridas y generales', /No se ha podido cargar el catálogo/.test(app._evidenceJournalPanelHtml(null, new Set(), null)), true);
 }
 
+// ─── 6. Traspaso a una IA con PubMed exacto ─────────────────────────────────────────────────
+console.log('\n6. Traspaso a la IA: la búsqueda en pantalla, sus rutas y el origen de la ventana');
+{
+    const app = nuevaApp();
+    const HUM = `NOT ${EXCLUSION}`;
+    app._evFilterDefs = [...DEFS, { id: 'journals', cat: 'journals', label: 'Revistas', icon: 'fa-star', lists: ['jnl_top_publications', 'jnl_diabetes'] }];
+    app._evFilterQueryById = { humans: HUM, metaanalysis: META_QUERY, journals: '((A[JO]) OR (B[JO]))' };
+    app._evSelectedFilters = new Set(['humans']);
+    app._evCombineMode = 'AND';
+    app.currentMed = { nombre: 'DIANBEN 850 mg', vtm: { nombre: 'metformina' } };
+    const pantalla = ({ days = '1825', tocado = false } = {}) => {
+        elementos = {
+            'evidence-drug-input': elemento({ value: 'metformin' }), 'evidence-acotar-input': elemento(),
+            'evidence-date-slider': elemento({ dataset: { days, ...(tocado ? { tocado: '1' } : {}) } }),
+            'evidence-date-label': elemento({ textContent: days === '0' ? 'Sin límite' : 'Últimos 5 años' }),
+        };
+    };
+
+    pantalla();
+    const b = app._evidenceHandoffSearch();
+    check('por defecto (Humanos marcado): la consulta es la de la fila, con la exclusión sin AND',
+        b.query, `metformin ${HUM} AND ("last 1825 days"[dp])`);
+    check('lleva la ruta del filtro marcado', b.paths, ['filters/scope/humans.txt']);
+    check('sin tocar el deslizador no es petición del clínico', b.tocado, false);
+
+    app._evSelectedFilters = new Set(['metaanalysis', 'journals', 'humans']);
+    const varios = app._evidenceHandoffSearch();
+    check('varios marcados: la misma combinación que la barra de Combinar',
+        varios.query, app._composeEvidenceCombination('metformin', [META_QUERY, '((A[JO]) OR (B[JO]))', HUM], 'AND', ' AND ("last 1825 days"[dp])'));
+    check('revistas: una ruta por categoría elegida', varios.paths,
+        ['filters/methodology/metaanalysis.txt', 'filters/journals/jnl_top_publications.txt', 'filters/journals/jnl_diabetes.txt', 'filters/scope/humans.txt']);
+    check('la exclusión nunca detrás de un AND', exclusionTrasAnd(varios.query), false);
+
+    app._evSelectedFilters = new Set(['metaanalysis', 'pediatrics']);
+    check('un filtro marcado sin cargar: espera, no se lleva otra búsqueda', app._evidenceHandoffSearch(), { pendiente: true });
+    app._evSelectedFilters = new Set(['humans']);
+
+    app._evidenceCountCache = new Map([[b.query, 33353]]);
+    const pDefecto = app._evidenceHandoffPrompt(app._evidenceHandoffSearch());
+    check('prompt: la consulta va literal en su propia línea', pDefecto.split('\n').includes(b.query), true);
+    check('prompt: declara la ruta en filters_used', /filters_used con estas rutas\): filters\/scope\/humans\.txt\./.test(pDefecto), true);
+    check('prompt: ventana por defecto → agent_policy con pasada P2 sin ventana',
+        /origin «agent_policy» y unrestricted_pass_id «P2»/.test(pDefecto) && /Pasada P2: la misma consulta sin la ventana/.test(pDefecto), true);
+    check('prompt: trae el recuento de MedCheck para contrastarlo', /MedCheck contó 33353 registros/.test(pDefecto), true);
+    check('prompt: no simula si falta el conector', /no simules la búsqueda/.test(pDefecto), true);
+
+    pantalla({ tocado: true });
+    app._evidenceCountCache = new Map();
+    const pUsuario = app._evidenceHandoffPrompt(app._evidenceHandoffSearch());
+    check('ventana elegida por el clínico → origin user y sin P2', /origin «user»/.test(pUsuario) && !/Pasada P2/.test(pUsuario), true);
+    check('sin recuento en caché no se inventa uno', /MedCheck contó/.test(pUsuario), false);
+    pantalla({ days: '0', tocado: true });
+    const pSin = app._evidenceHandoffPrompt(app._evidenceHandoffSearch());
+    check('sin límite de fecha → origin none', /origin «none»/.test(pSin) && !/last \d+ days/.test(pSin), true);
+
+    // Abrir: Claude nunca recibe el prompt por URL (algún parámetro lo envía solo); ChatGPT sí, con tope.
+    const abiertas = []; const avisos = [];
+    sandbox.window.open = url => { abiertas.push(url); };
+    sandbox.navigator.clipboard = { writeText: async () => {} };
+    app.showToast = (m, t) => avisos.push(t);
+    pantalla();
+    app.openEvidenceAi('claude');
+    app.openEvidenceAi('chatgpt');
+    await new Promise(r => setTimeout(r, 0));
+    check('Claude: abre claude.ai sin el prompt en la URL', abiertas[0], 'https://claude.ai/new');
+    check('ChatGPT: precarga con ?q=', /^https:\/\/chatgpt\.com\/\?q=/.test(abiertas[1] || ''), true);
+    elementos = {};
+    app.openEvidenceAi('claude');
+    check('sin término: avisa y no abre nada', abiertas.length === 2 && avisos.includes('warning'), true);
+
+    // La guía enseña el selector y el traspaso, y sus destinos existen en la pestaña.
+    const pasos = app._guideTours().evidence.steps;
+    check('guía: paso del selector de revistas', pasos.some(s => s.target === '#tab-evidence #evidence-journals-toggle'), true);
+    check('guía: paso del traspaso a la IA', pasos.some(s => s.target === '#tab-evidence .evidence-ia-handoff' && /PubMed exacto/.test(s.body)), true);
+    check('los destinos de la guía están en la pestaña', src.includes('id="evidence-journals-toggle"') && src.includes('<div class="evidence-ia-handoff">'), true);
+}
+
 // ─── 4. --canonico: paridad con pubmed-filters (solo en local) ─────────────────────────────
 let inconcluso = false;
 if (process.argv.includes('--canonico')) {

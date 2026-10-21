@@ -2939,13 +2939,15 @@ a.badge-seguimiento:focus-visible {
 .combo-ai-buttons { min-width: 0; }
 .combo-ai-buttons .btn { white-space: nowrap; }
 .btn-ai-perplexity,
-.btn-ai-chatgpt {
+.btn-ai-chatgpt,
+.btn-ai-claude {
     background: rgba(99, 102, 241, 0.16);
     border: 1px solid rgba(99, 102, 241, 0.45);
     color: #c7d2fe;
 }
 .btn-ai-perplexity:hover,
-.btn-ai-chatgpt:hover {
+.btn-ai-chatgpt:hover,
+.btn-ai-claude:hover {
     background: rgba(99, 102, 241, 0.28);
     border-color: rgba(99, 102, 241, 0.75);
 }
@@ -11213,6 +11215,46 @@ textarea.evidence-drug-input {
     .evidence-journals-panel { margin-left: 0; }
     /* Solo la cifra: con la palabra, el nombre de la fila se partía en tres líneas. */
     .evidence-journals-n-txt { display: none; }
+}
+
+/* ── Traspaso a una IA con PubMed exacto (2026-10-21) ── */
+.evidence-ia-handoff {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin-top: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+}
+
+.evidence-ia-handoff-label {
+    flex: 1 1 auto;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.evidence-ia-handoff-label i {
+    margin-right: 0.4rem;
+    color: var(--primary);
+}
+
+.evidence-ia-handoff-btns {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.evidence-ia-handoff-btns .btn {
+    white-space: nowrap;
+}
+
+.evidence-ia-handoff-note {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--text-secondary, #64748b);
 }
 
 /* ── Registros de ensayos: chips de estadísticas y lista de estudios enlazados ──

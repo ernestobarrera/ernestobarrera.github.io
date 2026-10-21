@@ -6983,10 +6983,13 @@ class MedCheckApp {
         const q = encodeURIComponent(prompt);
         // ChatGPT abre una página de error si el ?q= es excesivo; por encima del umbral se abre sin
         // precargar y el usuario pega (el prompt ya está copiado). Perplexity tolera consultas largas.
+        // Claude no documenta un parámetro de precarga, y según la fuente alguno envía el mensaje
+        // solo (comprobado el 21/10/2026): se copia, se abre y se pega, nunca se envía por URL.
         const CHATGPT_Q_MAX = 4000;
-        const precargado = engine !== 'chatgpt' || q.length <= CHATGPT_Q_MAX;
+        const precargado = engine === 'claude' ? false : (engine !== 'chatgpt' || q.length <= CHATGPT_Q_MAX);
         const url = engine === 'chatgpt'
             ? (precargado ? `https://chatgpt.com/?q=${q}` : 'https://chatgpt.com/')
+            : engine === 'claude' ? 'https://claude.ai/new'
             : `https://www.perplexity.ai/search?q=${q}`;
         let copia;
         try { copia = navigator.clipboard.writeText(prompt); } catch (e) { copia = Promise.reject(e); }
@@ -6994,12 +6997,16 @@ class MedCheckApp {
         return Promise.resolve(copia).then(
             () => this.showToast(precargado
                 ? 'Prompt copiado y motor abierto — si no se precarga, pega con Ctrl+V'
-                : 'Motor abierto sin precargar (prompt largo): pega con Ctrl+V, ya está copiado', 'success'),
+                : engine === 'claude'
+                    ? 'Prompt copiado y Claude abierto: pega con Ctrl+V'
+                    : 'Motor abierto sin precargar (prompt largo): pega con Ctrl+V, ya está copiado', 'success'),
             () => {
                 if (precargado) {
                     this.showToast('Motor abierto con la consulta precargada; no se pudo copiar el prompt', 'warning');
                 } else {
-                    this.showToast('No se pudo copiar y el prompt es largo para precargarlo: cópialo a mano', 'error');
+                    this.showToast(engine === 'claude'
+                        ? 'No se pudo copiar el prompt: cópialo a mano'
+                        : 'No se pudo copiar y el prompt es largo para precargarlo: cópialo a mano', 'error');
                     this._showPromptFallback(prompt);
                 }
             },
@@ -7151,6 +7158,106 @@ class MedCheckApp {
     /** Compone base y filtro según su naturaleza. El sufijo (fecha) va siempre al final. */
     _composeEvidenceFilter(base, query, suffix = '') {
         return this._isEvidenceExclusion(query) ? `${base} ${query}${suffix}` : `${base} AND (${query})${suffix}`;
+    }
+
+    /**
+     * Combinación de varios filtros: los positivos con AND u OR entre sí, las exclusiones al final
+     * y sin AND, la fecha la última. La comparten la barra de «Combinar» y el traspaso a la IA, para
+     * que la IA reciba exactamente la consulta que el clínico ve contada.
+     */
+    _composeEvidenceCombination(drugTerm, queries, mode = 'AND', dateSuffix = '') {
+        const exclusiones = queries.filter(q => this._isEvidenceExclusion(q));
+        const principales = queries.filter(q => !this._isEvidenceExclusion(q));
+        let query = drugTerm;
+        if (principales.length) {
+            query += ` AND ${mode === 'AND'
+                ? principales.map(q => `(${q})`).join(' AND ')
+                : '(' + principales.map(q => `(${q})`).join(' OR ') + ')'}`;
+        }
+        if (exclusiones.length) query += ' ' + exclusiones.join(' ');
+        return query + dateSuffix;
+    }
+
+    /**
+     * La búsqueda que se lleva a la IA (2026-10-21): la que el clínico tiene en pantalla —término,
+     * filtros marcados con su operador y fechas—, con las rutas de pubmed-filters de esos filtros
+     * para que el recibo de PubMed exacto compruebe que van tal cual (`filter_fidelity`).
+     * @returns {null | {pendiente: true} | {query, paths, days, etiqueta, tocado}}
+     */
+    _evidenceHandoffSearch() {
+        const drugTerm = this._evidenceEffectiveTerm();
+        if (!drugTerm) return null;
+        const ids = [...(this._evSelectedFilters || [])];
+        if (ids.some(id => !this._evFilterQueryById?.[id])) return { pendiente: true };
+        const slider = document.getElementById('evidence-date-slider');
+        const days = parseInt(slider?.dataset.days ?? '0', 10) || 0;
+        const dateSuffix = days ? ` AND ("last ${days} days"[dp])` : '';
+        const query = ids.length
+            ? this._composeEvidenceCombination(drugTerm, ids.map(id => this._evFilterQueryById[id]), this._evCombineMode || 'AND', dateSuffix)
+            : drugTerm + dateSuffix;
+        const paths = ids.flatMap(id => {
+            const f = (this._evFilterDefs || []).find(d => d.id === id);
+            if (!f) return [];
+            return f.cat === 'journals'
+                ? (f.lists?.length ? f.lists : ['jnl_top_publications']).map(l => `filters/journals/${l}.txt`)
+                : [`filters/${f.cat}/${f.id}.txt`];
+        });
+        return {
+            query, paths, days,
+            etiqueta: document.getElementById('evidence-date-label')?.textContent.trim() || '',
+            tocado: slider?.dataset.tocado === '1',
+        };
+    }
+
+    /**
+     * Prompt de lectura para una IA con el conector PubMed exacto. MedCheck monta la búsqueda; la
+     * IA la ejecuta literal, lee y cita (el router de pubmed-filters llama a MedCheck una superficie
+     * que compone y entrega). La ventana de fecha declara su origen con los valores del registro de
+     * selección del router: los 5 años por defecto no los pidió el clínico, son `agent_policy`, y
+     * eso obliga a una pasada sin ventana para comparar (`adaptation.date_window_check`).
+     */
+    _evidenceHandoffPrompt(b) {
+        if (!b?.query) return '';
+        const med = this.currentMed || {};
+        let inn = '';
+        try { inn = this._substanceIdentity(med)?.canonicalEn || ''; } catch { /* sin INN: solo el nombre */ }
+        const n = this._evidenceCountCache?.get(b.query);
+        const ventana = !b.days ? { origen: 'none', texto: 'sin límite de fecha.' }
+            : b.tocado ? { origen: 'user', texto: `${b.etiqueta}, elegida por el clínico.` }
+            : { origen: 'agent_policy', texto: `${b.etiqueta}. Es la opción por defecto de MedCheck: el clínico no la ha pedido.` };
+        const lineas = [
+            'Lectura bibliográfica con PubMed exacto (el conector de pubmed-filters). Es una búsqueda de literatura, no una consulta clínica: no hay datos de paciente.',
+            '',
+            `Medicamento: ${med.nombre || ''}${inn ? ` · principio activo (INN): ${inn}` : ''}`,
+            '',
+            'Pasada P1. Ejecútala LITERAL con pubmed_search_exact, sin reescribirla:',
+            b.query,
+            n != null ? `MedCheck contó ${n} registros con ESearch para esta misma consulta el ${new Date().toISOString().slice(0, 10)}.` : null,
+            `Filtros de pubmed-filters que contiene (decláralos en filters_used con estas rutas): ${b.paths.length ? b.paths.join(', ') : 'ninguno'}.`,
+            `Ventana de fecha: ${ventana.texto}`,
+            '',
+            `Antes de ejecutar, llama a pubmed_filter_catalog y envía con P1 su selection_record: cada filtro con decision «used» y date_window con origin «${ventana.origen}»${ventana.origen === 'agent_policy' ? ' y unrestricted_pass_id «P2»' : ''}.`,
+            ventana.origen === 'agent_policy'
+                ? 'Pasada P2: la misma consulta sin la ventana de fecha. Mira qué estudios relevantes quedan fuera de P1 antes de apoyarte solo en ella.'
+                : null,
+            '',
+            'Tareas:',
+            '1. Mira query_integrity y filter_fidelity en el recibo. Si alguno no es «verified», dilo y no uses el recuento.',
+            '2. Lee los resúmenes de los registros más relevantes (orden por relevancia, reading_path «focused_selection» con su motivo) y agrúpalos por tipo de evidencia. Cita cada afirmación con su PMID.',
+            '3. Separa lo que dicen los estudios de tu interpretación. No hagas recomendaciones clínicas ni juicios de seguridad.',
+            '',
+            'Si no tienes el conector PubMed exacto, dilo y no simules la búsqueda.',
+        ];
+        return lineas.filter(l => l !== null).join('\n');
+    }
+
+    /** Lleva la búsqueda en pantalla a una IA externa con PubMed exacto (copiar y abrir). */
+    openEvidenceAi(engine) {
+        const b = this._evidenceHandoffSearch();
+        if (b?.pendiente) { this.showToast('Espera a que carguen los filtros marcados', 'warning'); return; }
+        const prompt = this._evidenceHandoffPrompt(b);
+        if (!prompt) { this.showToast('No hay término de búsqueda para PubMed', 'warning'); return; }
+        this._openAiEngine(engine, prompt);
     }
 
     /**
@@ -21244,6 +21351,26 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
+                        target: '#tab-evidence #evidence-journals-toggle',
+                        title: 'Revistas de su especialidad',
+                        icon: 'fa-star',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p>La fila <span class="guide-key">Revistas · índice h5</span> suma las 20 revistas con mayor índice h5 de Google Scholar en cada categoría elegida. Nace con Top, la especialidad que sugiere el ATC del medicamento y Atención Primaria.</p>
+                            <p>El botón de la fila abre las 72 categorías: marca las que quieras y pulsa <span class="guide-key">Aplicar</span>. El índice h5 mide impacto bibliométrico, no calidad ni relevancia clínica.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-evidence .evidence-ia-handoff',
+                        title: 'Leer los artículos con tu IA',
+                        icon: 'fa-book-open-reader',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p>Copia la búsqueda que tienes en pantalla —término, filtros marcados y fechas— en un prompt para una IA con el conector <span class="guide-highlight">PubMed exacto</span>, que la ejecuta tal cual, lee los resúmenes y cita cada PMID.</p>
+                            <p>Si no has movido el deslizador, el prompt aclara que los 5 años son la opción por defecto y pide comparar sin límite de fecha. La IA es externa: comprueba su lectura en los artículos.</p>
+                        `,
+                    },
+                    {
                         target: '#tab-evidence .evidence-date-range',
                         title: 'Acotar PubMed por fecha',
                         icon: 'fa-calendar-days',
@@ -23414,6 +23541,14 @@ ${ftFechaDocsHtml}
                         <i class="fas fa-external-link-alt evidence-combine-ext"></i>
                     </a>
                 </div>
+                <div class="evidence-ia-handoff">
+                    <span class="evidence-ia-handoff-label"><i class="fas fa-book-open-reader" aria-hidden="true"></i>Leer los artículos con tu IA (PubMed exacto)</span>
+                    <div class="evidence-ia-handoff-btns">
+                        <button type="button" class="btn btn-sm btn-ai-claude" onclick="app.openEvidenceAi('claude')" title="Copia el prompt y abre Claude: pega con Ctrl+V. Necesita el conector PubMed exacto."><i class="fas fa-up-right-from-square" aria-hidden="true"></i> Claude</button>
+                        <button type="button" class="btn btn-sm btn-ai-chatgpt" onclick="app.openEvidenceAi('chatgpt')" title="Copia el prompt y abre ChatGPT (Ctrl+V si no se precarga). Necesita el conector PubMed exacto."><i class="fas fa-up-right-from-square" aria-hidden="true"></i> ChatGPT</button>
+                    </div>
+                    <p class="evidence-ia-handoff-note">Lleva la búsqueda que ves —término, filtros marcados y fechas— para que la IA la ejecute tal cual, lea los resúmenes y cite cada PMID. La IA es externa y su lectura no está validada: compruébala en los artículos.</p>
+                </div>
                 <p class="evidence-note">
                     <i class="fas fa-info-circle"></i>
                     Filtros de
@@ -23562,8 +23697,11 @@ ${ftFechaDocsHtml}
             ticks.forEach(t => t.classList.toggle('active', parseInt(t.dataset.idx, 10) === idx));
         };
 
+        // `data-tocado`: el rango lo eligió el clínico. Sin tocar, los 5 años son la opción por
+        // defecto de MedCheck, y el traspaso a la IA lo declara así (no como petición suya).
         if (slider) {
             slider.addEventListener('input', () => {
+                slider.dataset.tocado = '1';
                 updateSliderUI();
                 triggerDateReload();
             });
@@ -23573,6 +23711,7 @@ ${ftFechaDocsHtml}
         ticks.forEach(t => {
             t.addEventListener('click', () => {
                 if (!slider) return;
+                slider.dataset.tocado = '1';
                 slider.value = t.dataset.idx;
                 updateSliderUI();
                 triggerDateReload();
@@ -24630,18 +24769,7 @@ ${ftFechaDocsHtml}
             return;
         }
 
-        const mode = this._evCombineMode || 'AND';
-        const notQueries  = queries.filter(q => this._isEvidenceExclusion(q));
-        const mainQueries = queries.filter(q => !this._isEvidenceExclusion(q));
-        let finalQuery = drugTerm;
-        if (mainQueries.length > 0) {
-            const combinedFilter = mode === 'AND'
-                ? mainQueries.map(q => `(${q})`).join(' AND ')
-                : '(' + mainQueries.map(q => `(${q})`).join(' OR ') + ')';
-            finalQuery += ` AND ${combinedFilter}`;
-        }
-        if (notQueries.length > 0) finalQuery += ' ' + notQueries.join(' ');
-        finalQuery += dateSuffix;
+        const finalQuery = this._composeEvidenceCombination(drugTerm, queries, this._evCombineMode || 'AND', dateSuffix);
 
         const link = document.getElementById('evidence-combine-link');
         if (link) link.href = 'https://pubmed.ncbi.nlm.nih.gov/?term=' + encodeURIComponent(finalQuery);
