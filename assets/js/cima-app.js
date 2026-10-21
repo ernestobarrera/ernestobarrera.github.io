@@ -12475,12 +12475,18 @@ ${ftFechaDocsHtml}
                 return;
             }
 
+            // «Copiar» y «Compartir», como en 4.1 y 4.2 (21/10/2026): una interacción es justo lo que se
+            // pega en la historia clínica, y aquí no había forma de llevarla con su fuente.
+            const medNombre = (med?.nombre || '').replace(/'/g, "\\'");
             container.innerHTML = `
     <div class="section-header section-header-split">
         <h4><i class="fas fa-random"></i> Sección 4.5: Interacción con otros medicamentos</h4>
-        ${this._enlaceSeccionCima(med, '4.5')}
+        <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.5')}
+        <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('interactions-section-text', '${medNombre}', 'Interacción con otros medicamentos', '4.5')" title="Copiar a la historia clínica: lo seleccionado o la sección entera, con su fuente">
+            <i class="fas fa-copy"></i>
+        </button>${this._botonCompartir('interactions-section-text', 'Interacción con otros medicamentos (4.5)', '4.5')}</span>
                 </div>
-    <div class="section-text">
+    <div id="interactions-section-text" class="section-text">
         ${content}
     </div>
 `;
@@ -12532,12 +12538,19 @@ ${ftFechaDocsHtml}
                 return;
             }
 
+            // «Copiar» y «Compartir», como en 4.1 y 4.2 (21/10/2026). Las tablas de la 4.8 llegan aquí
+            // aplanadas (getDocSeccion limpia el HTML): copiar un fragmento seleccionado sale bien; la
+            // tabla entera, como texto corrido. El enlace a CIMA de la cita sí lleva a la tabla original.
+            const medNombre = (med?.nombre || '').replace(/'/g, "\\'");
             container.innerHTML = `
     <div class="section-header section-header-split">
         <h4><i class="fas fa-exclamation-triangle"></i> Sección 4.8: Reacciones Adversas</h4>
-        ${this._enlaceSeccionCima(med, '4.8')}
+        <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.8')}
+        <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('adverse-section-text', '${medNombre}', 'Reacciones adversas', '4.8')" title="Copiar a la historia clínica: lo seleccionado o la sección entera, con su fuente">
+            <i class="fas fa-copy"></i>
+        </button>${this._botonCompartir('adverse-section-text', 'Reacciones adversas (4.8)', '4.8')}</span>
                 </div>
-    <div class="section-text">
+    <div id="adverse-section-text" class="section-text">
         ${content}
     </div>
 `;
@@ -25244,6 +25257,8 @@ MedCheckApp._EV_CLASES = ['acod'];
 MedCheckApp._UI_SECCION_COPIA = {
     'indications-section-text': '4.1',
     'posology-section-text':    '4.2',
+    'interactions-section-text': '4.5',
+    'adverse-section-text':     '4.8',
     'qt-section-text':          'qt',
     'ev51-texto':               '5.1',
 };
