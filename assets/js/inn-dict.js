@@ -54,7 +54,7 @@ class InnDictionary {
   }
 
   /** Carga el JSON una sola vez. Falla en abierto (si no carga, opera solo con reglas). */
-  load(url = 'assets/data/inn-es-en.json?v=20260822c') {
+  load(url = 'assets/data/inn-es-en.json?v=20261021a') {
     if (this.loaded) return Promise.resolve();
     if (this._loading) return this._loading;
     this._loading = fetch(url, { cache: 'force-cache' })
