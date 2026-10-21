@@ -1,6 +1,6 @@
 {
   "version": "2026-08-18",
-  "note": "Baseline de identidad de sustancia. CANDIDATOS, no traducciones autorizadas: la incorporacion a inn-es-en.json es una decision humana. Estados: verified (una autoridad oficial lo resuelve; convergencia si ambas coinciden) · review (dos candidatos distintos: elegir seria juzgar) · unresolved (ninguna autoridad, o PubMed solo reconocio un fragmento) · manual (combinacion: pendiente de resolver por componentes estructurados) · inconclusive (no se pudo medir). Se guarda estado, termino y fecha; NUNCA recuentos historicos. · 2026-08-20: 63 veredictos reclasificados en local (parentesco con transliteracion y reposicion del sustantivo vaccine); las respuestas de las autoridades no se volvieron a pedir. · 2026-08-20: 72 unresolved resueltos por emparejamiento aproximado de RxNav (la autoridad propone, el parentesco y el derrumbe filtran). · 2026-08-20: 145 unresolved resueltos por emparejamiento aproximado de RxNav (la autoridad propone, el parentesco y el derrumbe filtran). · 2026-08-22: pasada abierta de Wikidata (CC0) con filtros estrictos — 17 candidatos, 16 términos que ya estaban en inglés y 4 avales humanos sobre el parentesco, medidos en los dos registros. · 2026-08-22: retirados del fichero publico los identificadores SCTID (1102 campos y 408 lineas de evidencia). Se conserva que SNOMED resolvio o no cada termino, y el rxcui, que es de dominio publico. Copia integra en la zona privada.",
+  "note": "Baseline de identidad de sustancia. CANDIDATOS, no traducciones autorizadas: la incorporacion a inn-es-en.json es una decision humana. Estados: verified (una autoridad oficial lo resuelve; convergencia si ambas coinciden) · review (dos candidatos distintos: elegir seria juzgar) · unresolved (ninguna autoridad, o PubMed solo reconocio un fragmento) · manual (combinacion: pendiente de resolver por componentes estructurados) · inconclusive (no se pudo medir). Se guarda estado, termino y fecha; NUNCA recuentos historicos. · 2026-08-20: 63 veredictos reclasificados en local (parentesco con transliteracion y reposicion del sustantivo vaccine); las respuestas de las autoridades no se volvieron a pedir. · 2026-08-20: 72 unresolved resueltos por emparejamiento aproximado de RxNav (la autoridad propone, el parentesco y el derrumbe filtran). · 2026-08-20: 145 unresolved resueltos por emparejamiento aproximado de RxNav (la autoridad propone, el parentesco y el derrumbe filtran). · 2026-08-22: pasada abierta de Wikidata (CC0) con filtros estrictos — 17 candidatos, 16 términos que ya estaban en inglés y 4 avales humanos sobre el parentesco, medidos en los dos registros. · 2026-08-22: retirados del fichero publico los identificadores SCTID (1102 campos y 408 lineas de evidencia). Se conserva que SNOMED resolvio o no cada termino, y el rxcui, que es de dominio publico. Copia integra en la zona privada. · 2026-08-22: retirados del fichero publico los identificadores SCTID (1102 campos y 408 lineas de evidencia). Se conserva que SNOMED resolvio o no cada termino, y el rxcui, que es de dominio publico. Copia integra en la zona privada.",
   "sources": {
     "snomed": "CIMA vtm.id (SNOMED CT) -> RxNav idtype=SNOMEDCT (NLM). Los identificadores SCTID NO se publican: SNOMED CT tiene regimen de licencia propio. El compilador los toma de CIMA en cada pasada, asi que el metodo es reproducible sin ellos.",
     "pubmed": "eutils esearch querytranslation (concepto MeSH / Supplementary Concept)"
@@ -3877,14 +3877,14 @@
       "checked": "2026-08-18"
     },
     "desfesoterodina": {
-      "products": 70,
-      "checked": "2026-08-18",
+      "products": 10,
+      "checked": "2026-10-21",
       "sources": {
         "snomed": "ausente",
         "pubmed": "ausente"
       },
       "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "reason": "ninguna autoridad lo resuelve: SCTID de la extension espanola (RxNav no lo conoce), PubMed no reconoce el termino y Wikidata Q27294711 no tiene etiqueta es. Ademas \"desfesoterodine\" no recupera nada (PubMed 0, CT.gov 0): traducirlo no ganaria nada"
     },
     "vinorelbina": {
       "products": 70,
@@ -28595,6 +28595,74 @@
       "evidence": [
         "RxNav approximateTerm sobre el nombre español; parentesco verificado"
       ]
+    },
+    "darifenacina": {
+      "products": 0,
+      "checked": "2026-10-21",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "darifenacin",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 136198",
+        "querytranslation: \"darifenacin\""
+      ],
+      "note": "hueco que dejaba a la vista el modo grupo de Evidencia (COLA-INTEGRADA, punto 4); en CIMA solo sin comercializar (vtm «producto con darifenacina»)",
+      "promoted": "2026-10-21",
+      "retrieval": {
+        "pubmed_es": 410,
+        "pubmed_en": 410,
+        "ctgov_es": 31,
+        "ctgov_en": 31
+      }
+    },
+    "trospio": {
+      "products": 0,
+      "checked": "2026-10-21",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ausente"
+      },
+      "status": "verified",
+      "en": "trospium",
+      "method": "snomed",
+      "evidence": [
+        "rxcui 236778 (vtm de «trospio cloruro»)"
+      ],
+      "note": "hueco que dejaba a la vista el modo grupo de Evidencia (COLA-INTEGRADA, punto 4); el diccionario solo tenía «trospio cloruro»",
+      "promoted": "2026-10-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 552,
+        "ctgov_es": 0,
+        "ctgov_en": 76
+      }
+    },
+    "didrogesterona": {
+      "products": 0,
+      "checked": "2026-10-21",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "dydrogesterone",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 3706",
+        "querytranslation: \"dydrogesterone\""
+      ],
+      "note": "hueco que dejaba a la vista el modo grupo de Evidencia (COLA-INTEGRADA, punto 4); en CIMA, comercializada solo en «didrogesterona + estradiol»",
+      "promoted": "2026-10-21",
+      "retrieval": {
+        "pubmed_es": 1007,
+        "pubmed_en": 1009,
+        "ctgov_es": 52,
+        "ctgov_en": 112
+      }
     }
   }
 }

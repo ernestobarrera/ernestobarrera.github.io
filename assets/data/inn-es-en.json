@@ -1,5 +1,5 @@
 {
-  "version": "2026-08-22",
+  "version": "2026-10-21",
   "note": "Diccionario INN espanol -> ingles para busquedas en PubMed/ensayos clinicos. Solo irregulares (los que no se deducen por regla de sufijo), mas los terminos que se comprobo que YA estan en ingles y no necesitan traduccion. Claves en minuscula sin acentos. Ampliable: anade pares aqui. Lo consume assets/js/inn-dict.js (window.innDict).",
   "source": {
     "rxnorm": "Nombres de sustancia obtenidos por API de RxNav (propiedad RxNorm Name), NLM/NIH. Dominio publico.",
@@ -400,6 +400,8 @@
     "oxibutinina": "oxybutynin",
     "mirabegron": "mirabegron",
     "tolterodina": "tolterodine",
+    "darifenacina": "darifenacin",
+    "trospio": "trospium",
     "vardenafilo": "vardenafil",
     "estradiol": "estradiol",
     "estriol": "estriol",
@@ -411,6 +413,7 @@
     "dienogest": "dienogest",
     "medroxiprogesterona": "medroxyprogesterone",
     "progesterona": "progesterone",
+    "didrogesterona": "dydrogesterone",
     "clomifeno": "clomiphene",
     "tibolona": "tibolone",
     "meloxicam": "meloxicam",

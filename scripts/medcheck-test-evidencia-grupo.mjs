@@ -92,9 +92,14 @@ check('incluye la forma inglesa (PubMed indexa en inglés)', /\boxybutynin\b/.te
 check('sin comillas (rompen el ATM)', g.term.includes('"'), false);
 check('sin MeSH ni etiquetas de campo', /\[(pa|mh|mesh|tiab)\]/i.test(g.term), false);
 check('la asociación no cuela tamsulosina', /tamsulosin/.test(g.term), false);
-// `trospio` no está en el diccionario (16/10/2026): pasa tal cual y la nota tiene que decirlo.
-const conHueco = app._evidenceGroupTerm([med('trospio'), med('oxibutinina')], []);
-check('se declara lo que pasa sin traducción comprobada', conHueco.sinVerificar, ['trospio']);
+// `desfesoterodina` no la resuelve ninguna autoridad (21/10/2026): pasa tal cual y la nota tiene que
+// decirlo. `trospio` era el ejemplo hasta que entró en el diccionario el mismo día.
+const conHueco = app._evidenceGroupTerm([med('desfesoterodina'), med('oxibutinina')], []);
+check('se declara lo que pasa sin traducción comprobada', conHueco.sinVerificar, ['desfesoterodina']);
+const yaCurados = app._evidenceGroupTerm(['trospio', 'darifenacina', 'didrogesterona'].map(p => med(p)), []);
+check('los huecos cerrados el 21/10 llevan su forma inglesa y no se declaran',
+    [yaCurados.sinVerificar, ['trospium', 'darifenacin', 'dydrogesterone'].every(en => new RegExp(`\\b${en}\\b`).test(yaCurados.term))],
+    [[], true]);
 check('lo curado (diccionario o regla) no se declara', g.sinVerificar, []);
 
 // ─── Casos sin término de grupo ───────────────────────────────────────────────
