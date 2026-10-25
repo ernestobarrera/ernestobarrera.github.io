@@ -11,11 +11,13 @@ let bannerYaInicializado = false;
 // Función para cargar analytics de forma segura
 function cargarAnalyticsSeguro() {
   try {
-    if (window.gtag) {
+    window['ga-disable-G-YFKR6RB1ZC'] = false;
+    if (window.gtag || window.__analyticsCargado) {
       console.log('🍪 Analytics ya está cargado');
       return;
     }
 
+    window.__analyticsCargado = true;
     console.log('🍪 Cargando Google Analytics...');
     const script = document.createElement('script');
     script.src = 'https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC';
@@ -164,3 +166,49 @@ if (document.readyState === 'loading') {
   // Pequeña pausa para que include.js termine de insertar contenido
   setTimeout(intentarInicializar, 50);
 }
+
+// La decisión se comparte con el glosario (misma clave, mismo dominio): si se
+// retira en otra página abierta, esta deja de enviar a Analytics y borra sus
+// cookies. Una cookie solo se borra con la ruta con la que se creó, así que se
+// prueban todas las de esta página.
+function retirarAnalytics() {
+  window['ga-disable-G-YFKR6RB1ZC'] = true;
+  const rutas = ['/'];
+  let base = '';
+  for (const parte of location.pathname.split('/').slice(1, -1)) {
+    base += '/' + parte;
+    rutas.push(base, base + '/');
+  }
+  for (const c of document.cookie.split(';')) {
+    const nombre = c.split('=')[0].trim();
+    if (!nombre.startsWith('_ga')) continue;
+    for (const ruta of rutas) {
+      document.cookie = `${nombre}=; Max-Age=0; path=${ruta}`;
+      document.cookie = `${nombre}=; Max-Age=0; path=${ruta}; domain=${location.hostname}`;
+    }
+  }
+}
+
+let decisionAplicada = guardadoInicial;
+
+function reconciliarConsentimiento() {
+  let guardado;
+  try { guardado = localStorage.getItem(CONSENT_KEY); } catch (e) { return; }
+  if (guardado === decisionAplicada) return;
+  decisionAplicada = guardado;
+  if (guardado === 'aceptado') {
+    document.getElementById('banner_cookies')?.classList.remove('show');
+    cargarAnalyticsSeguro();
+  } else {
+    retirarAnalytics();
+  }
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === CONSENT_KEY || e.key === null) reconciliarConsentimiento();
+});
+// Respaldo para la página restaurada desde el historial o que vuelve a primer plano.
+window.addEventListener('pageshow', reconciliarConsentimiento);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') reconciliarConsentimiento();
+});
