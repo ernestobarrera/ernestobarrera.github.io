@@ -67,14 +67,24 @@
       console.log(`RequestQueue inicializada con intervalo: ${this.interval}ms`);
     }
 
-    add(filterId, query, cycleId, signal) {
+    // opciones.prioridad: la petición se atiende antes que las ordinarias (el panel de análisis no
+    // espera detrás de una pasada de 100 contadores de botones). Entre prioritarias, por orden.
+    // Resuelve { filterId, count, detalle, cycleId }: detalle trae lo que PubMed ejecutó de verdad.
+    add(filterId, query, cycleId, signal, opciones = {}) {
       return new Promise((resolve, reject) => {
         const cached = this.getCached(query);
         if (cached !== null) {
-          resolve({ filterId, count: cached, cycleId });
+          resolve({ filterId, count: cached.count, detalle: cached, cycleId });
           return;
         }
-        this.queue.push({ filterId, query, resolve, reject, cycleId, signal });
+        const item = { filterId, query, resolve, reject, cycleId, signal, prioridad: !!opciones.prioridad };
+        if (item.prioridad) {
+          const primeraOrdinaria = this.queue.findIndex((q) => !q.prioridad);
+          if (primeraOrdinaria === -1) this.queue.push(item);
+          else this.queue.splice(primeraOrdinaria, 0, item);
+        } else {
+          this.queue.push(item);
+        }
         if (!this.isRunning) {
           this.run();
         }
@@ -87,46 +97,59 @@
         const { filterId, query, resolve, reject, cycleId, signal } = this.queue.shift();
 
         if (signal.aborted) {
-          // console.log(`Petición abortada ANTES de fetch para ${filterId} (ciclo ${cycleId})`);
           reject({ filterId, error: new DOMException('Aborted', 'AbortError'), cycleId, aborted: true });
           continue;
         }
 
-        try {
-          const cached = this.getCached(query);
-          if (cached !== null) {
-            resolve({ filterId, count: cached, cycleId });
-            continue;
-          }
+        const cached = this.getCached(query);
+        if (cached !== null) {
+          resolve({ filterId, count: cached.count, detalle: cached, cycleId });
+          continue;
+        }
 
-          const count = await this.fetchCount(query, signal);
+        try {
+          // Un 429 (demasiadas peticiones) se reintenta una vez tras una espera; nunca se da por cero.
+          let resultado = await this.fetchCount(query, signal);
+          if (resultado === 'Limite' && !signal.aborted) {
+            await new Promise((r) => setTimeout(r, 1100));
+            resultado = await this.fetchCount(query, signal);
+          }
+          if (resultado === 'Limite') resultado = 'Error';
 
           if (signal.aborted) {
-            //  console.log(`Petición abortada DURANTE/DESPUÉS de fetch para ${filterId} (ciclo ${cycleId})`);
             reject({ filterId, error: new DOMException('Aborted', 'AbortError'), cycleId, aborted: true });
+          } else if (typeof resultado === 'object') {
+            this.setCached(query, resultado);
+            resolve({ filterId, count: resultado.count, detalle: resultado, cycleId });
           } else {
-            this.setCached(query, count);
-            resolve({ filterId, count, cycleId });
+            resolve({ filterId, count: resultado, detalle: null, cycleId });
           }
-
-          if (cached === null && !signal.aborted) {
-            await new Promise((r) => setTimeout(r, this.interval));
-          }
-
         } catch (error) {
           const isAbortError = error.name === 'AbortError';
-          // console.error(`Error procesando ${filterId} (ciclo ${cycleId})${isAbortError ? ' - ABORTADO' : ''}:`, isAbortError ? '(Abortado)' : error.message);
           reject({ filterId, error, cycleId, aborted: isAbortError });
+        }
+
+        // La pausa va tras CADA petición a la red, también tras un fallo: antes solo se hacía tras un
+        // éxito, y una racha de errores disparaba peticiones seguidas contra el límite de NCBI.
+        if (!signal.aborted) {
+          await new Promise((r) => setTimeout(r, this.interval));
         }
       }
       this.isRunning = false;
     }
 
+    // Devuelve { count, traduccion, avisos[], errores[], hora } o, si falla, "Error" / "Limite" (429).
+    // Antes devolvía solo el número y descartaba la traducción y los avisos de PubMed: una cifra podía
+    // salir de una consulta que PubMed ejecutó a medias (una frase no encontrada) sin que nadie lo viera.
     async fetchCount(query, signal) {
       const baseUrl = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
       const baseParams = { db: "pubmed", retmode: "json", retmax: "0" };
-      let responseJson;
-      const fetchOptions = { signal };
+      // Tope propio de 20 s: sin él, una respuesta colgada bloqueaba la cola entera.
+      const control = new AbortController();
+      const abortarPorPadre = () => control.abort();
+      signal.addEventListener('abort', abortarPorPadre, { once: true });
+      const temporizador = setTimeout(() => control.abort(), 20000);
+      const fetchOptions = { signal: control.signal };
 
       try {
         const params = new URLSearchParams(baseParams);
@@ -145,47 +168,48 @@
           response = await fetch(baseUrl, fetchOptions);
         }
 
+        if (response.status === 429) return 'Limite';
         if (!response.ok) {
-          if (!signal.aborted) {
-            throw new Error(`Error HTTP! Estado: ${response.status} ${response.statusText}`);
-          } else {
-            return 'Aborted';
-          }
+          throw new Error(`Error HTTP! Estado: ${response.status} ${response.statusText}`);
         }
 
-        responseJson = await response.json();
-
-        if (responseJson?.esearchresult?.count !== undefined) {
-          return parseInt(responseJson.esearchresult.count, 10);
-        } else {
-          if (!signal.aborted) {
-            console.warn(`Respuesta inesperada de NCBI para query "${query.substring(0, 100)}...":`, responseJson);
-            throw new Error("Respuesta de API inválida o sin contador.");
-          } else {
-            return 'Aborted';
-          }
+        const responseJson = await response.json();
+        const r = responseJson?.esearchresult;
+        if (r?.count === undefined) {
+          console.warn(`Respuesta inesperada de NCBI para query "${query.substring(0, 100)}...":`, responseJson);
+          throw new Error("Respuesta de API inválida o sin contador.");
         }
+        const lista = (obj, claves) => claves.flatMap((k) =>
+          (Array.isArray(obj?.[k]) ? obj[k] : []).filter(Boolean).map((v) => `${k}: ${v}`));
+        return {
+          count: parseInt(r.count, 10),
+          traduccion: r.querytranslation || "",
+          errores: lista(r.errorlist, ["phrasesnotfound", "fieldsnotfound"]),
+          avisos: lista(r.warninglist, ["phrasesignored", "quotedphrasesnotfound", "outputmessages"]),
+          hora: Date.now(),
+        };
       } catch (error) {
-        if (error.name === 'AbortError') {
-          throw error;
-        }
+        if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
         console.error(`Fallo al obtener contador para query "${query.substring(0, 100)}...":`, error);
         return "Error";
+      } finally {
+        clearTimeout(temporizador);
+        signal.removeEventListener('abort', abortarPorPadre);
       }
     }
 
     getCached(query) {
       const cachedItem = this.cache.get(query);
       if (cachedItem && Date.now() - cachedItem.timestamp < DURACION_CACHE_MS) {
-        return cachedItem.count;
+        return cachedItem.detalle;
       }
       this.cache.delete(query);
       return null;
     }
 
-    setCached(query, count) {
-      if (typeof count === "number" && !isNaN(count)) {
-        this.cache.set(query, { count, timestamp: Date.now() });
+    setCached(query, detalle) {
+      if (detalle && typeof detalle.count === "number" && !isNaN(detalle.count)) {
+        this.cache.set(query, { detalle, timestamp: Date.now() });
       }
     }
 
@@ -374,6 +398,7 @@
             const cleanedQuery = rawQuery.split("\n").filter((line) => !line.trim().startsWith("#") && line.trim().length > 0).join(" ").trim();
             if (window.filterMap) window.filterMap[filterId] = cleanedQuery;
             filterMap[filterId] = cleanedQuery;
+            if (cleanedQuery && window.filtrosFallidos) window.filtrosFallidos.delete(filterId);
 
             let buttonSelector;
             const baseName = filterId.split("_")[0];
@@ -399,8 +424,11 @@
           })
           .catch((error) => { /* ... manejo error fetch ... */
             console.error(`Error procesando filtro ${filterId}:`, error);
-            if (window.filterMap) window.filterMap[filterId] = '';
-            filterMap[filterId] = '';
+            // La página descarga el mismo fichero: si ella sí lo obtuvo, no se pisa con vacío.
+            if (window.filterMap && !window.filterMap[filterId]) {
+              window.filterMap[filterId] = '';
+              if (window.filtrosFallidos) window.filtrosFallidos.add(filterId);
+            }
           });
         fetchPromises.push(promise);
       });
@@ -685,25 +713,30 @@
         return;
       }
 
+      // El contador de un botón dice cuántos resultados habría CON ese filtro activado, y la consulta
+      // la compone el mismo constructor de la página. Antes era «consulta actual AND filtro»: con OR
+      // dentro de una categoría y otro filtro de ella ya activo, eso estrecha en vez de ampliar, y la
+      // cifra no correspondía a lo que pasaba al pulsar. La fecha y Trending ya van dentro.
+      const estado = typeof window.estadoBusqueda === 'function' ? window.estadoBusqueda() : null;
       let fullQuery;
-      const trimmedBase = baseQuery.trim();
-      const trimmedFilter = filterQuery.trim();
-      if (trimmedBase && trimmedFilter) fullQuery = `(${trimmedBase}) AND (${trimmedFilter})`;
-      else if (trimmedFilter) fullQuery = trimmedFilter;
-      else { if (cycleId === currentUpdateCycleId) updateCounterDisplay(button, "?"); return; }
-
-      // ---> INICIO DEL BLOQUE A AÑADIR <---
-      // Ahora, añade el filtro de fecha si está seleccionado
-      const dateFilterValue = dateRange?.value; // Leer valor del select
-      if (dateFilterValue) {
-        // Construir la parte de la query de fecha (elige una sintaxis)
-        const dateFilterQuery = `("last ${dateFilterValue} days"[dp])`;
-        // O la sintaxis antigua: const dateFilterQuery = `("last ${dateFilterValue} days"[dp])`;
-
-        // Añadirla con AND a la query existente (que ya tiene término y/o filtro)
-        fullQuery = `(${fullQuery}) AND (${dateFilterQuery})`;
+      if (estado) {
+        const radio = button.querySelector('input[type="radio"]:checked');
+        const id = button.dataset.type || (button.dataset.base && radio ? `${button.dataset.base}_${radio.value}` : null);
+        // Sin filtro cargado no hay cifra que dar: «?» y no la de la consulta sin él.
+        if (!id || !window.filterMap?.[id]) { if (cycleId === currentUpdateCycleId) updateCounterDisplay(button, "?"); return; }
+        const activos = new Set(estado.activos);
+        if (button.dataset.base) {
+          activos.delete(`${button.dataset.base}_sensible`);
+          activos.delete(`${button.dataset.base}_especifico`);
+        }
+        activos.add(id);
+        fullQuery = constructQuery(estado.termino, { activos });
+      } else {
+        const trimmedBase = baseQuery.trim();
+        const trimmedFilter = filterQuery.trim();
+        fullQuery = trimmedBase ? `(${trimmedBase}) AND (${trimmedFilter})` : trimmedFilter;
       }
-      // ---> FIN DEL BLOQUE A AÑADIR <---
+      if (!fullQuery) { if (cycleId === currentUpdateCycleId) updateCounterDisplay(button, "?"); return; }
 
       const requestId = `${button.dataset.type || button.dataset.base || index}-${cycleId}`;
       const requestPromise = requestQueue.add(requestId, fullQuery, cycleId, signal)
@@ -806,6 +839,19 @@
   }
 
   window.triggerPubMedCounterUpdate = triggerImmediateUpdate;
+
+  // Puerta única a ESearch para el panel de análisis: misma cola, misma caché y mismo ritmo que los
+  // contadores, con prioridad. Dos colas separadas competirían por el mismo límite de NCBI por IP.
+  // contar(consulta, signal) → { count, traduccion, avisos[], errores[], hora } o lanza si falla.
+  window.PubMedConsultas = {
+    async contar(query, signal) {
+      if (!requestQueue) throw new Error("La cola de PubMed aún no está lista.");
+      const r = await requestQueue.add('analisis', query, -1, signal, { prioridad: true });
+      if (!r.detalle) throw new Error("PubMed no devolvió un recuento.");
+      return r.detalle;
+    },
+    porSegundo() { return requestQueue ? Math.round(1000 / requestQueue.interval) : PETICIONES_POR_SEGUNDO; },
+  };
 
 
   /**
