@@ -341,3 +341,16 @@
     padding: 0.3rem 0.25rem;
   }
 }
+
+.an-frase {
+  margin: -0.2rem 0 0.7rem;
+  padding: 0.45rem 0.7rem;
+  border-left: 3px solid var(--accent-color, #fbbf24);
+  background: rgba(251, 191, 36, 0.08);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.an-frase[hidden] {
+  display: none;
+}

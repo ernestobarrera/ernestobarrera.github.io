@@ -160,6 +160,16 @@ comprobar('C7', panel.composicion.some((l) => /^Y ?\(.+ Y .+\) ?Metodología$/.t
 comprobar('C8', panel.traduccion === `TRAD(${panel.final})`, 'muestra lo que ejecutó PubMed (querytranslation)');
 comprobar('C9', panel.nums.some((n) => n.q === `(${panel.final}) AND (${new Date().getFullYear()}[dp])`), 'la serie anual usa la consulta final con [dp]');
 
+// Con el panel ABIERTO se cambia un filtro: el panel recalcula antes de que la consulta nueva se dé por
+// estable, y el «antes» tiene que ser la consulta que había justo antes del cambio, no la previa a ella.
+const previa = panel.final;
+await pulsar('.filter-button[data-type="horizon"]');
+await page.waitForFunction((p) => {
+  const n = [...document.querySelectorAll('#analisisPanel .an-num')];
+  const f = document.getElementById('finalQuery').textContent;
+  return f !== p && n.length > 20 && n.every((el) => el.textContent !== '…') && n.some((el) => el.dataset.q === `(${p}) NOT (${f})`);
+}, previa, { timeout: 120000 }).then(() => true, () => false).then((ok) => comprobar('C11', ok, 'con el panel abierto, el último cambio compara con la consulta de justo antes'));
+
 // Sin términos ni filtros, el panel no consulta y lo explica.
 await pulsar('#resetButton');
 await page.waitForTimeout(1200);

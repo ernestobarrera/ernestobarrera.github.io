@@ -27,13 +27,13 @@
 
   // Tipos de publicación de PubMed ([pt]). Se solapan: un artículo puede tener varios.
   const TIPOS = [
-    { nombre: "Metaanálisis", q: "meta-analysis[pt]" },
-    { nombre: "Revisión sistemática", q: "systematic review[pt]" },
-    { nombre: "Ensayo controlado aleatorizado", q: "randomized controlled trial[pt]" },
-    { nombre: "Estudio observacional", q: "observational study[pt]" },
-    { nombre: "Guía de práctica clínica", q: "(guideline[pt] OR practice guideline[pt])" },
-    { nombre: "Revisión (cualquier tipo)", q: "review[pt]" },
-    { nombre: "Caso clínico", q: "case reports[pt]" },
+    { nombre: "Metaanálisis", plural: "los metaanálisis", q: "meta-analysis[pt]" },
+    { nombre: "Revisión sistemática", plural: "las revisiones sistemáticas", q: "systematic review[pt]" },
+    { nombre: "Ensayo controlado aleatorizado", plural: "los ensayos controlados aleatorizados", q: "randomized controlled trial[pt]" },
+    { nombre: "Estudio observacional", plural: "los estudios observacionales", q: "observational study[pt]" },
+    { nombre: "Guía de práctica clínica", plural: "las guías de práctica clínica", q: "(guideline[pt] OR practice guideline[pt])" },
+    { nombre: "Revisión (cualquier tipo)", plural: "las revisiones (de cualquier tipo)", q: "review[pt]" },
+    { nombre: "Caso clínico", plural: "los casos clínicos", q: "case reports[pt]" },
   ];
 
   const ALCANCE = [
@@ -62,7 +62,8 @@
   // ---------------------------------------------------------------- utilidades
 
   const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const num = (n) => (typeof n === "number" ? n.toLocaleString("es-ES") : "—");
+  // Punto de miles siempre, como el resto de la página (es-ES no agrupa los números de cuatro cifras).
+  const num = (n) => (typeof n === "number" ? String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "—");
   const pct = (a, b) => {
     if (typeof a !== "number" || typeof b !== "number" || b === 0) return "—";
     const p = (100 * a) / b;
@@ -154,7 +155,7 @@
 
     // 1. Qué hacen tus filtros
     h += `<section class="an-bloque"><h4>Qué hacen tus filtros</h4>
-      <p class="an-titular">${pasos.length > 1 ? "De" : "Tu búsqueda:"} ${celda(base, "an-grande")}${pasos.length > 1 ? ` a ${celda(final, "an-grande")} con tus filtros · conservan <span data-conserva>…</span>` : " artículos"}</p>`;
+      <p class="an-titular">${pasos.length > 1 ? "De" : "Tu búsqueda:"} ${celda(base, "an-grande")}${pasos.length > 1 ? ` a ${celda(final, "an-grande")} con tus filtros · conservan <span data-conserva>…</span>` : " artículos"}</p>${pasos.length > 1 ? `<p class="an-frase" data-frase hidden></p>` : ""}`;
     if (pasos.length > 1) {
       h += `<table class="an-tabla an-cascada"><caption class="an-oculto">Artículos tras cada paso de la consulta</caption>
         <thead><tr><th scope="col">Paso</th><th scope="col" class="an-col-barra"><span class="an-oculto">Proporción</span></th><th scope="col">Artículos</th><th scope="col">Cambio</th></tr></thead><tbody>`;
@@ -176,7 +177,7 @@
     // 2. Tipo de estudio
     h += `<section class="an-bloque"><h4>Tipo de estudio</h4>
       <table class="an-tabla"><caption class="an-oculto">Artículos por tipo de publicación, con y sin tus filtros</caption>
-      <thead><tr><th scope="col">Tipo</th><th scope="col" class="an-col-barra"><span class="an-oculto">Proporción</span></th><th scope="col">Con tus filtros</th>${pasos.length > 1 ? `<th scope="col">Sin filtros</th><th scope="col" title="Cuántas veces cambia la proporción de este tipo al aplicar tus filtros">Proporción ×</th>` : ""}</tr></thead><tbody>`;
+      <thead><tr><th scope="col">Tipo</th><th scope="col" class="an-col-barra"><span class="an-oculto">Proporción</span></th><th scope="col">Con tus filtros</th>${pasos.length > 1 ? `<th scope="col">Sin filtros</th><th scope="col" title="Cuántas veces cambia la proporción de este tipo al aplicar tus filtros">Cambio de proporción</th>` : ""}</tr></thead><tbody>`;
     TIPOS.forEach((t, i) => {
       h += `<tr><th scope="row">${esc(t.nombre)}</th><td class="an-col-barra">${barra("tipo" + i)}</td>
         <td>${celda(y(final, t.q))} <span class="an-pct" data-pct="tipoF${i}"></span></td>
@@ -289,6 +290,10 @@
     }));
   }
 
+  // «No items found» acompaña a todo recuento cero: no es un problema de la consulta, es el cero.
+  // Marcarlo con ⚠ haría que el aviso saliera siempre y se aprendiera a ignorar.
+  const avisosReales = (d) => [...d.errores, ...d.avisos.filter((a) => !/^outputmessages: No items found\.?$/i.test(a))];
+
   function pintar(q, d) {
     panel.querySelectorAll(".an-num[data-q]").forEach((el) => {
       if (el.dataset.q !== q) return;
@@ -299,7 +304,7 @@
         return;
       }
       el.textContent = num(d.count);
-      const problemas = [...d.errores, ...d.avisos];
+      const problemas = avisosReales(d);
       if (problemas.length) {
         el.classList.add("an-aviso");
         el.title = "PubMed avisó al ejecutar esta consulta:\n" + problemas.join("\n");
@@ -344,6 +349,8 @@
       }
     });
 
+    frase(final, base, R);
+
     ALCANCE.forEach((a, i) => {
       const f = c(y(final, a.q));
       const b = c(y(base, a.q));
@@ -368,12 +375,34 @@
       fijar("[data-traduccion]", dFinal.traduccion || "(PubMed no devolvió traducción)");
       const avisos = panel.querySelector("[data-avisos]");
       if (avisos) {
-        const problemas = [...dFinal.errores, ...dFinal.avisos];
+        const problemas = avisosReales(dFinal);
         avisos.innerHTML = problemas.length
           ? problemas.map((p) => `<li>⚠ ${esc(p)}</li>`).join("")
           : "<li>Sin avisos de PubMed para la consulta final.</li>";
       }
     }
+  }
+
+  // Una frase calculada antes que otro gráfico: el cambio de composición más marcado que producen los
+  // filtros. Solo con todos los tipos medidos y solo con cifras que lo sostengan (≥ 5 artículos con
+  // filtros para una subida, ≥ 5 % del total sin filtros para una bajada); si no, no se dice nada.
+  function frase(final, base, R) {
+    const el = panel.querySelector("[data-frase]");
+    if (!el) return;
+    const c = (q) => (R.get(q) ? R.get(q).count : undefined);
+    const nF = c(final), nB = c(base);
+    const filas = TIPOS.map((t) => ({ t, f: c(y(final, t.q)), b: c(y(base, t.q)) }));
+    if (!nF || !nB || filas.some((r) => typeof r.f !== "number" || typeof r.b !== "number")) return;
+    filas.forEach((r) => { r.pf = r.f / nF; r.pb = r.b / nB; r.x = r.pb ? r.pf / r.pb : Infinity; });
+    const sube = filas.filter((r) => r.f >= 5 && r.b > 0 && r.x >= 1.5).sort((a, b) => b.x - a.x)[0];
+    const baja = filas.filter((r) => r.pb >= 0.05 && r.x <= 0.5 && r !== sube).sort((a, b) => a.x - b.x)[0];
+    if (!sube && !baja) return;
+    const tramo = (r) => `${r.t.plural} pasan del ${pct(r.b, nB)} al ${pct(r.f, nF)}`;
+    let texto = "Con tus filtros, ";
+    if (sube) texto += tramo(sube) + ` de los artículos (×${sube.x.toLocaleString("es-ES", { maximumFractionDigits: sube.x < 10 ? 1 : 0 })})`;
+    if (baja) texto += (sube ? "; " : "") + tramo(baja);
+    el.textContent = texto + ".";
+    el.hidden = false;
   }
 
   // ---------------------------------------------------------------- interacción
