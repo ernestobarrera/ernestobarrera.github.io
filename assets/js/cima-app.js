@@ -66,6 +66,7 @@ class MedCheckApp {
     static _ACCESS_HASHES = new Set([
         '21681f70ffe03c4813eeeb6488a508439a03e88d30f2147b4d6f328a0e6d2245', // autor (corto a peticion, 18-ago-2026)
         '60fb2ff4822021da8905de54b7809a393d64262a4872c225d2ee887b674a5a68', // ML 2026
+        'e68054603396d03be3c66a1b07c9229de5c5255028485a5ef42996f594269151', // usuario nuevo (27-oct-2026)
         // Revocados 18-ago-2026: LR revisor, CB revisor, piloto A, piloto B, EC revisor.
     ]);
 
