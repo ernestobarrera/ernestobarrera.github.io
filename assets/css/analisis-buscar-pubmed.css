@@ -23,6 +23,7 @@
   border-radius: 10px;
   color: var(--text-primary, #f8fafc);
   scroll-margin-top: 80px;
+  line-height: 1.45;
 }
 
 .analisis-panel[hidden] {
@@ -328,12 +329,10 @@
     padding: 0.75rem;
   }
 
-  .an-col-barra {
-    display: none;
-  }
-
   .an-anios .an-barra {
-    display: none;
+    display: block;
+    width: 100%;
+    margin: 0.25rem 0;
   }
 
   .an-tabla th,
@@ -353,4 +352,120 @@
 
 .an-frase[hidden] {
   display: none;
+}
+
+/* El panorama mantiene cifras y barras también en pantallas estrechas. */
+.analisis-panel *,
+.analisis-panel *::before,
+.analisis-panel *::after {
+  box-sizing: border-box;
+}
+
+.an-panorama { margin: 0.8rem 0 1.2rem; }
+.an-panorama h4, .an-detalles > h4 { margin: 0; font-size: 1rem; }
+.an-intro { margin: 0.4rem 0; font-size: 0.85rem; line-height: 1.5; }
+.an-etiqueta, .an-contexto-etiqueta, .an-leyenda, .an-coste {
+  color: var(--text-secondary, #cbd5e1);
+  font-size: 0.75rem;
+}
+.an-filtros-actuales { margin: 0.5rem 0; font-size: 0.8rem; overflow-wrap: anywhere; }
+.an-contexto { display: flex; gap: 0.6rem; align-items: baseline; margin: 0.65rem 0; }
+.an-contexto-etiqueta { flex-shrink: 0; }
+.an-tema { font-weight: 600; overflow-wrap: anywhere; }
+.an-resumen { display: flex; flex-wrap: wrap; gap: 0.8rem 2rem; padding: 0.7rem 0; }
+.an-resumen > div { min-width: 6rem; }
+.an-resumen [data-fuera-total] { display: block; font-size: 1.25rem; }
+.an-panorama > .an-nota { max-width: 85ch; }
+.an-panorama .an-frase { margin-top: 0.7rem; }
+.an-leyenda { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; margin: 0.8rem 0 0.5rem; }
+.an-leyenda > span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.an-marca { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 2px; }
+.an-marca-conserva { background: #5eead4; }
+.an-marca-fuera { background: #475569; }
+.an-rutas-cabecera, .an-ruta {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1.7fr) minmax(8rem, 1fr) minmax(5rem, 0.5fr);
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+.an-compara .an-rutas-cabecera, .an-compara .an-ruta {
+  grid-template-columns: minmax(15rem, 1.8fr) minmax(7rem, 1fr) repeat(3, minmax(4.5rem, 0.5fr));
+}
+.an-rutas-cabecera { padding: 0.6rem 0.75rem; font-size: 0.7rem; color: var(--text-secondary, #cbd5e1); }
+.an-rutas-cabecera > :nth-child(n+3) { text-align: right; }
+.an-ruta { padding: 0.45rem 0.75rem; border-top: 1px solid #334155; }
+.an-ruta:nth-child(even) { background: rgba(255, 255, 255, 0.025); }
+.an-ruta > * { min-width: 0; }
+.an-ruta-nombre { position: relative; padding-right: 4.3rem; }
+.an-ruta-nombre strong { display: block; font-size: 0.85rem; font-weight: 600; }
+.an-ruta-nombre .an-sub { font-size: 0.7rem; line-height: 1.45; margin-top: 0.1rem; }
+.an-criterio { font-size: 0.75rem; }
+.an-criterio > summary { position: absolute; top: 0; right: 0; cursor: pointer; color: #cbd5e1; min-height: 24px; }
+.an-criterio > p { margin: 0.4rem -4rem 0 0; line-height: 1.5; padding: 0.5rem; background: #172334; border-radius: 4px; }
+.an-ruta-barra .an-barra { display: block; max-width: none; background: #475569; height: 0.55rem; }
+.an-ruta-barra .an-relleno { background: #5eead4; }
+.an-barra.an-sin-dato { background: repeating-linear-gradient(135deg, #263449 0 4px, #475569 4px 6px); }
+.an-ruta-barra .an-sub { margin-top: 0.3rem; font-size: 0.7rem; }
+.an-ruta-numero { text-align: right; font-size: 0.9rem; }
+.an-label-movil { display: none; }
+.an-medir { display: block; margin: 0.3rem 0 0 auto; font: inherit; font-size: 0.7rem; }
+.an-medir[hidden], .analisis-panel [hidden] { display: none; }
+.an-medir, .an-selector button {
+  min-height: 32px;
+  padding: 0.3rem 0.5rem;
+  color: var(--text-primary, #f8fafc);
+  background: #172334;
+  border: 1px solid #64748b;
+  border-radius: 4px;
+  cursor: pointer;
+  max-width: 100%;
+  white-space: normal;
+}
+.analisis-panel summary:focus-visible, .an-medir:focus-visible {
+  outline: 2px solid var(--accent-color, #fbbf24);
+  outline-offset: 3px;
+}
+.an-detalles { border-top: 1px solid #334155; padding-top: 1rem; }
+.an-detalle { border: 1px solid #334155; border-radius: 6px; margin-top: 0.5rem; }
+.an-detalle > summary { cursor: pointer; padding: 0.75rem; font-size: 0.85rem; }
+.an-detalle > summary > span:first-child { font-weight: 600; }
+.an-coste { margin-left: 0.75rem; }
+.an-definicion { font-size: 0.75rem; margin: 0.2rem 0 0.5rem; }
+.an-definicion summary { cursor: pointer; color: var(--text-secondary, #cbd5e1); }
+.an-detalle[open] > summary { border-bottom: 1px solid #334155; }
+.an-detalle-contenido { padding: 0.75rem; }
+.an-detalle-contenido h4 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.an-tabla { table-layout: fixed; }
+.an-tabla td { overflow-wrap: anywhere; }
+
+@media (max-width: 1000px) {
+  .an-rutas-cabecera, .an-ruta,
+  .an-compara .an-rutas-cabecera, .an-compara .an-ruta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .an-rutas-cabecera { display: none; }
+  .an-ruta { gap: 0.65rem; padding: 0.8rem 0.6rem; }
+  .an-ruta-nombre, .an-ruta-barra { grid-column: 1 / -1; }
+  .an-ruta-nombre { padding-right: 5rem; }
+  .an-ruta-barra .an-barra { height: 0.65rem; }
+  .an-ruta-numero { text-align: left; }
+  .an-label-movil { display: block; font-size: 0.7rem; color: var(--text-secondary, #cbd5e1); margin-bottom: 0.25rem; }
+  .an-rutas:not(.an-compara) .an-ruta-numero { grid-column: 1 / -1; }
+  .an-medir { margin-left: 0; }
+}
+
+@media (max-width: 600px) {
+  .an-contexto { flex-direction: column; gap: 0.15rem; }
+  .an-resumen { gap: 0.6rem 1rem; }
+  .an-resumen > div { min-width: 0; flex: 1; }
+  .an-coste { display: block; margin: 0.3rem 0 0 1rem; }
+  .an-detalle-contenido { padding: 0.65rem 0.4rem; }
+  .an-tabla { font-size: 0.75rem; }
+  .an-tabla thead th { font-size: 0.65rem; overflow-wrap: anywhere; }
+  .an-selector button { min-height: 40px; }
+  .an-criterio > summary { min-height: 32px; }
+  .an-ruta-nombre strong { font-size: 0.95rem; }
+  .an-ruta-nombre .an-sub { font-size: 0.8rem; }
+  .an-ruta-barra .an-sub, .an-label-movil { font-size: 0.75rem; }
+  .an-ruta-numero { font-size: 1rem; overflow-wrap: anywhere; }
 }

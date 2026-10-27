@@ -134,13 +134,15 @@ await page.waitForTimeout(100);
 await pulsar('.filter-button[data-base="treatment"]');
 await page.waitForTimeout(1500);
 await pulsar('#toggleAnalisisButton');
+// Los detalles se calculan al abrirlos; el panorama es la única carga inicial.
+await page.locator('#analisisPanel [data-seccion]').evaluateAll((els) => els.forEach((el) => { el.open = true; }));
 await page.waitForFunction(() => {
   const n = [...document.querySelectorAll('#analisisPanel .an-num')];
   return n.length > 20 && n.every((el) => el.textContent !== '…');
 }, null, { timeout: 120000 });
 
 const panel = await page.evaluate(() => {
-  const nums = [...document.querySelectorAll('#analisisPanel .an-num')].map((el) => ({ q: el.dataset.q, href: el.getAttribute('href'), t: el.textContent, cls: el.className }));
+  const nums = [...document.querySelectorAll('#analisisPanel .an-num[data-q]')].map((el) => ({ q: el.dataset.q, href: el.getAttribute('href'), t: el.textContent, cls: el.className }));
   const pasos = [...document.querySelectorAll('#analisisPanel .an-cascada tbody th')].map((th) => th.childNodes[0].textContent.trim());
   return { nums, pasos, final: document.getElementById('finalQuery').textContent, cambio: document.querySelector('#analisisPanel .an-cambio')?.textContent || '',
     composicion: [...document.querySelectorAll('#analisisPanel .an-composicion li')].map((l) => l.textContent.replace(/\s+/g, ' ').trim()),
@@ -164,6 +166,8 @@ comprobar('C9', panel.nums.some((n) => n.q === `(${panel.final}) AND (${new Date
 // estable, y el «antes» tiene que ser la consulta que había justo antes del cambio, no la previa a ella.
 const previa = panel.final;
 await pulsar('.filter-button[data-type="horizon"]');
+await page.waitForTimeout(1100);
+await page.locator('#analisisPanel [data-seccion]').evaluateAll((els) => els.forEach((el) => { el.open = true; }));
 await page.waitForFunction((p) => {
   const n = [...document.querySelectorAll('#analisisPanel .an-num')];
   const f = document.getElementById('finalQuery').textContent;
