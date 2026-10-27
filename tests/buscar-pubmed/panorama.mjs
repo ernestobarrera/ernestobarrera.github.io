@@ -35,7 +35,7 @@ let bien = 0, mal = 0;
 function check(id, ok, mensaje) { console.log((ok ? '  pass  ' : '  FAIL  ') + id + '  ' + mensaje); ok ? bien++ : mal++; }
 const browser = await chromium.launch();
 const paginas = [];
-async function montar({ filtrado = true, control = 0, cambios = [], lento = false } = {}) {
+async function montar({ filtrado = true, control = 0, cambios = [], lento = false, activo = 'treatment_especifico' } = {}) {
   const page = await browser.newPage({ viewport: { width: 1366, height: 1000 }, reducedMotion: 'reduce' });
   paginas.push(page);
   await page.route('**/*', (r) => r.abort());
@@ -48,7 +48,7 @@ async function montar({ filtrado = true, control = 0, cambios = [], lento = fals
   cambios.forEach(([q, v]) => { const ix = datos.findIndex(([k]) => k === q); ix < 0 ? datos.push([q,v]) : datos[ix] = [q,v]; });
   await page.setContent('<html lang="es"><head><meta charset="utf-8"></head><body style="margin:16px;background:#0a0f1a;color:#f8fafc;font-family:Arial,sans-serif"><main style="max-width:1160px;margin:auto"><button id="toggleAnalisisButton" aria-controls="analisisPanel" aria-expanded="false"><span>Análisis de resultados</span></button><section id="analisisPanel" class="analisis-panel" hidden></section></main></body></html>');
   await page.addStyleTag({ content: css });
-  await page.evaluate(({ datos, filtrado, lento, A, B }) => {
+  await page.evaluate(({ datos, filtrado, lento, A, B, activo }) => {
     window._datos = new Map(datos);
     window._calls = [];
     window._pendientes = [];
@@ -57,8 +57,8 @@ async function montar({ filtrado = true, control = 0, cambios = [], lento = fals
     window._base = A;
     window._final = B;
     window.filterMap = { qualitative: '(qualitative-fixture[tw])' };
-    window.estadoBusqueda = () => ({ termino: window._termino, activos: new Set(window._filtrado ? ['treatment_especifico'] : []),
-      categorias: { clinical: ['treatment_especifico'] }, operadores: { clinical: 'AND' }, trending: false, fecha: '' });
+    window.estadoBusqueda = () => ({ termino: window._termino, activos: new Set(window._filtrado ? [activo] : []),
+      categorias: { clinical: [activo] }, operadores: { clinical: 'AND' }, trending: false, fecha: '' });
     window.constructQuery = (term, o) => o?.activos?.size === 0 || !window._filtrado ? window._base : window._final;
     window.etiquetaFiltro = () => 'Tratamiento-CQ (E)';
     window.filtrosNoAplicados = () => [];
@@ -69,7 +69,7 @@ async function montar({ filtrado = true, control = 0, cambios = [], lento = fals
       if (d === null || d === undefined) throw new Error('Fallo de fixture');
       return typeof d === 'number' ? { count: d, traduccion: q, avisos: [], errores: [] } : d;
     }};
-  }, { datos, filtrado, lento, A, B });
+  }, { datos, filtrado, lento, A, B, activo });
   await page.addScriptTag({ content: js });
   await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
   await page.click('#toggleAnalisisButton');
@@ -91,10 +91,17 @@ try {
   check('P05', await p.locator('[data-fuera="guia"]').getAttribute('href') === 'https://pubmed.ncbi.nlm.nih.gov/?term=' + encodeURIComponent(not(and(A, filas[0][1]), B)), 'Fuera enlaza al conjunto literal A∩tipo NOT B');
   check('P06', await p.locator('[data-barra="ruta-aleatorizado"]').evaluate((e) => e.style.width) === '100%', 'la barra mide conservación dentro de la misma fila');
   check('P07', await p.locator('[data-fuera-total] a').getAttribute('href') === 'https://pubmed.ncbi.nlm.nih.gov/?term=' + encodeURIComponent(not(A, B)), 'el total excluido también abre su conjunto');
+  const frase = await texto(p, '[data-frase]');
+  check('H01', /mayor conservación en «Ensayos aleatorizados», 301 de 301/.test(frase)
+    && /Mayor pérdida proporcional en «Guías de práctica clínica»: quedan fuera 35 de 35/.test(frase), 'el destacado contrapone conservación y pérdida, aunque se conserven todos los ensayos');
+  check('H02', await p.locator('[data-frase] a').evaluateAll((els) => els.some((e) => new URL(e.href).searchParams.get('term') === '((apixaban) AND ((guideline[pt] OR practice guideline[pt]))) NOT ((apixaban) AND (Therapy/Narrow[filter]))')), 'la pérdida destacada abre su conjunto exacto en PubMed');
   const enlacesFuera = await p.locator('[data-fuera]').evaluateAll((els) => els.map((e) => [e.dataset.fuera, e.href]));
   check('P17', filas.every(([id,q]) => enlacesFuera.some(([i,h]) => i === id && h === 'https://pubmed.ncbi.nlm.nih.gov/?term=' + encodeURIComponent(not(and(A,q),B)))), 'cada una de las diez diferencias abre su consulta exacta');
   await p.locator(ruta('cohortes') + ' summary').click();
   check('P08', await nPedidos(p) === 23 && /MeSH/.test(await texto(p, ruta('cohortes') + ' details')), 'aclarar qué cuenta no consulta la API');
+  check('H03', /puede incluir ensayos/.test(await texto(p, ruta('cohortes') + ' .an-ruta-nombre > .an-sub'))
+    && /prospectivos y de seguimiento/.test(await texto(p, ruta('cohortes') + ' details'))
+    && /ensayos aleatorizados/.test(await texto(p, ruta('cohortes') + ' details')), 'cohortes advierte del solapamiento con ensayos en la fila y en su criterio');
   await p.locator(ruta('cohortes') + ' summary').click();
   check('P09', /20/.test(await texto(p, '[data-seccion="anios"] [data-coste]')), 'la serie anual anuncia sus veinte recuentos adicionales');
   await abrir(p, 'anios'); await p.waitForFunction(() => window._calls.length === 43); await listo(p);
@@ -126,6 +133,7 @@ try {
   check('P16', /4,1 %/.test(await texto(s, '[data-retencion="aleatorizado"]')), 'sin filtros las barras indican proporción dentro de la búsqueda');
   const d = await montar({ control: 5 });
   check('F01', await texto(d, '[data-fuera="guia"]') === 'Ver fuera' && await d.locator('[data-comparacion-aviso]').isVisible(), 'si B no está contenido en A, no resta ni publica una falsa pérdida');
+  check('H04', await d.locator('[data-frase]').isHidden(), 'el destacado no deriva pérdidas cuando la inclusión no está verificada');
   await d.setViewportSize({ width: 320, height: 844 });
   check('F11', await d.locator('#analisisPanel').evaluate((e) => e.scrollWidth <= e.clientWidth + 1), 'la alternativa de cálculo manual también cabe a 320 px');
   await d.click('[data-medir-fuera="guia"]'); await listo(d);
@@ -144,6 +152,7 @@ try {
   const j = await montar({ cambios: [[and(B, filas[0][1]), { count: 0, traduccion: 'x', avisos: ['outputmessages: No items found.'], errores: [] }]] });
   check('F09', await texto(j, '[data-fuera="guia"]') === '35', 'No items found permite tratar un cero documentado como cero');
   const k = await montar({ lento: true });
+  check('H05', await k.locator('[data-frase]').isHidden(), 'el resumen espera a los recuentos de la primera vista');
   await k.evaluate(() => {
     window._termino = 'otra búsqueda'; window._base = 'otra'; window._final = '(otra) AND x';
     document.dispatchEvent(new CustomEvent('consulta-cambiada', { detail: { consulta: window._final } }));
@@ -151,6 +160,20 @@ try {
   });
   await k.waitForTimeout(100);
   check('F10', await texto(k, ruta('aleatorizado') + ' .an-conserva') === '…', 'una respuesta antigua no pinta durante la espera de recálculo, aunque ignore abort');
+  const otro = await montar({ activo: 'diagnosis_especifico' });
+  check('H06', await texto(otro, '[data-frase]') === frase && await nPedidos(otro) === 23, 'el mismo resultado destaca las mismas rutas con otro filtro: sin selección por id ni consultas extra');
+  const pequenas = await montar({ cambios: [[and(A, filas[0][1]), 4]] });
+  check('H07', /al menos cinco registros/.test(await texto(pequenas, '[data-frase]'))
+    && /Mayor pérdida proporcional en «Otros ensayos clínicos»/.test(await texto(pequenas, '[data-frase]')), 'el umbral de tamaño se declara y evita destacar una ruta de cuatro registros');
+  const sinGuias = await montar({ cambios: [[and(B, filas[0][1]), null]] });
+  check('H08', /Mayor pérdida proporcional en «Otros ensayos clínicos»/.test(await texto(sinGuias, '[data-frase]'))
+    && !/Guías de práctica clínica/.test(await texto(sinGuias, '[data-frase]')), 'un recuento fallido se excluye del destacado, sin convertirlo en pérdida total');
+  const sinPerdida = await montar({ cambios: [[B,7372], ...filas.map(([,q,a]) => [and(B,q),a])] });
+  check('H09', /No quedan registros fuera en estas rutas/.test(await texto(sinPerdida, '[data-frase]'))
+    && !/Mayor pérdida/.test(await texto(sinPerdida, '[data-frase]')), 'si todas las rutas conservan sus registros, el resumen no inventa una pérdida');
+  const ninguna = await montar({ cambios: filas.map(([,q]) => [and(B,q),0]) });
+  check('H10', /ninguna conserva registros/.test(await texto(ninguna, '[data-frase]'))
+    && /Mayor pérdida proporcional/.test(await texto(ninguna, '[data-frase]')), 'si todas quedan vacías, el mensaje lo dice sin una falsa conservación');
   const etiquetas = await p.locator('.an-ruta [role="rowheader"]').count();
   check('A01', etiquetas === 10 && await p.locator('[role="table"][aria-label]').count() === 1, 'filas, cabeceras y tabla tienen semántica accesible');
   check('A02', await p.locator('[data-estado][role="status"][aria-live="polite"]').count() === 1, 'el progreso se anuncia de forma no intrusiva');

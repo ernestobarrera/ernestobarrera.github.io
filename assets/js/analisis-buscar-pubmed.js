@@ -14,7 +14,7 @@
     { id: "aleatorizado", nombre: "Ensayos aleatorizados", uso: "Explorar comparaciones de intervenciones", q: "randomized controlled trial[pt]", criterio: "Etiqueta de ensayo controlado aleatorizado. Un registro puede ser un análisis secundario; no equivale a un ensayo único." },
     { id: "otros-ensayos", nombre: "Otros ensayos clínicos", uso: "Ampliar los estudios de intervención", q: "(clinical trial[pt] NOT randomized controlled trial[pt])", criterio: "Etiqueta de ensayo clínico sin la etiqueta de aleatorizado. Su ausencia no demuestra que el estudio no sea aleatorizado." },
     { id: "observacional", nombre: "Estudios observacionales", uso: "Explorar asociaciones y seguimiento", q: "observational study[pt]", criterio: "Solo la etiqueta de estudio observacional: no incluye todos los diseños observacionales. Compárala con la fila de cohortes y casos-controles." },
-    { id: "cohortes", nombre: "Cohortes y casos-controles", uso: "Explorar seguimiento y factores asociados", q: '("cohort studies"[mh] OR "case-control studies"[mh])', criterio: "Encabezamientos MeSH de cohortes o casos-controles y su expansión. Dependen de la indexación; son una señal documental, no una clasificación revisada de cada estudio." },
+    { id: "cohortes", nombre: "Cohortes y casos-controles", uso: "Seguimiento; puede incluir ensayos", q: '("cohort studies"[mh] OR "case-control studies"[mh])', criterio: "Encabezamientos MeSH de cohortes o casos-controles y su expansión a estudios prospectivos y de seguimiento. También incluye ensayos aleatorizados con estas etiquetas y análisis de cohortes derivados de ensayos. Depende de la indexación; esta ruta no identifica exclusivamente estudios observacionales." },
     { id: "cualitativo", nombre: "Estudios cualitativos", uso: "Explorar experiencias y significados", filtro: "qualitative", criterio: "Coincidencias del filtro cualitativo del catálogo. Pueden incluir documentos que no sean estudios cualitativos; hace falta leerlos." },
     { id: "revision", nombre: "Revisiones generales", uso: "Obtener una visión de conjunto", q: "review[pt]", criterio: "Etiqueta Review de PubMed y su expansión: puede incluir revisiones sistemáticas. No es una categoría exclusiva de revisión narrativa." },
     { id: "caso", nombre: "Casos clínicos", uso: "Explorar casos y señales", q: "case reports[pt]", criterio: "Etiqueta de caso clínico. Un caso no permite estimar frecuencia ni efecto de una intervención." },
@@ -362,15 +362,28 @@
     });
 
     const elFrase = panel.querySelector("[data-frase]");
-    const id = s.estado.activos.has("metaanalysis") ? "sistematica" : s.estado.activos.has("gpc") ? "guia" : "aleatorizado";
-    const t = s.rutas.find((r) => r.id === id);
-    const ta = t && numero(s, t.base), tb = t && numero(s, t.final);
-    const fraseValida = comparar && inclusion && esNumero(ta) && esNumero(tb) && ta > 0 && tb <= ta;
-    elFrase.hidden = !fraseValida;
-    if (fraseValida) elFrase.innerHTML = "Conservas " + enlaceValor(t.final, tb, t.nombre + ", conservados") + " de "
-      + enlaceValor(t.base, ta, t.nombre + ", disponibles") + " registros de la fila «" + esc(t.nombre) + "»."
-      + (tb === ta ? " Tus filtros mantienen su número."
-        : " " + enlaceValor(salvo(t.base, s.final), ta - tb, t.nombre + ", fuera") + " quedan fuera con estos filtros.");
+    const verificadas = s.rutas.map((t) => ({ ...t, disponibles: numero(s, t.base), conservados: numero(s, t.final) }))
+      .filter((t) => esNumero(t.disponibles) && t.disponibles >= 5 && esNumero(t.conservados) && t.conservados <= t.disponibles);
+    // Esperar a toda la primera vista evita destacar la primera respuesta que llega.
+    const resumenCompleto = [...s.iniciales].every((q) => s.resultados.has(q));
+    elFrase.hidden = !comparar || !inclusion || !resumenCompleto || !verificadas.length;
+    if (!elFrase.hidden) {
+      const proporcion = (t) => t.conservados / t.disponibles;
+      const mejor = verificadas.reduce((m, t) => proporcion(t) > proporcion(m)
+        || (proporcion(t) === proporcion(m) && t.disponibles > m.disponibles) ? t : m);
+      // En pérdidas empatadas se mantiene el orden visible de las rutas, sin un veredicto clínico.
+      const perdida = verificadas.reduce((m, t) => proporcion(t) < proporcion(m) ? t : m);
+      const fuera = perdida.disponibles - perdida.conservados;
+      elFrase.innerHTML = "Entre rutas verificadas con al menos cinco registros: "
+        + (mejor.conservados ? "mayor conservación en «" + esc(mejor.nombre) + "», "
+          + enlaceValor(mejor.final, mejor.conservados, mejor.nombre + ", conservados") + " de "
+          + enlaceValor(mejor.base, mejor.disponibles, mejor.nombre + ", disponibles") + " (" + pct(mejor.conservados, mejor.disponibles) + ")."
+          : "ninguna conserva registros.")
+        + (fuera ? " Mayor pérdida proporcional en «" + esc(perdida.nombre) + "»: quedan fuera "
+          + enlaceValor(salvo(perdida.base, s.final), fuera, perdida.nombre + ", fuera") + " de "
+          + enlaceValor(perdida.base, perdida.disponibles, perdida.nombre + ", disponibles") + " (" + pct(fuera, perdida.disponibles) + ")."
+          : " No quedan registros fuera en estas rutas.");
+    }
 
     s.pasos.forEach((p, i) => {
       const n = numero(s, p.q), previo = i ? numero(s, s.pasos[i - 1].q) : undefined;
