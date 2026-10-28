@@ -575,8 +575,14 @@
 .an-linea-final { stroke: #64dfc7; }
 .an-punto-base { fill: #94a3b8; }
 .an-punto-final { fill: #64dfc7; }
+.an-anio-incompleto { fill: #94a3b8; fill-opacity: 0.09; }
+.an-punto-incompleto { fill: #0f192a; stroke-width: 2; }
+.an-punto-base.an-punto-incompleto { stroke: #94a3b8; }
+.an-punto-final.an-punto-incompleto { stroke: #64dfc7; }
+.an-temporal-selector { display: flex; flex-wrap: wrap; margin: 0.7rem 0; }
 .an-temporal-leyenda { display: flex; flex-wrap: wrap; gap: 1rem; color: #cbd5e1; font-size: 0.75rem; margin: 0.5rem 0; }
 .an-temporal-leyenda > span:first-child { color: #85ecd5; }
+.an-temporal-leyenda [hidden] { display: none; }
 .an-fecha-serie { display: block; font-size: 0.75rem; color: #bdccdc; margin: 0.5rem 0; }
 .an-fecha-serie select { display: block; max-width: 100%; font: inherit; padding: 0.45rem; background: #152238; color: #edf5fa; border: 1px solid #50627c; border-radius: 5px; margin-top: 0.3rem; min-height: 36px; }
 .an-atlas .an-anios .an-relleno { background: #64dfc7; }

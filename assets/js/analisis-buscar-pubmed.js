@@ -116,13 +116,13 @@
       + '<p class="an-intro">Abre las cifras para explorar los artículos. Las rutas se solapan; no sumes sus recuentos.</p>'
       + '<div class="an-contexto"><span class="an-contexto-etiqueta">Tus términos</span><span class="an-tema">' + esc(s.estado.termino || "Sin términos: todo PubMed") + '</span></div>'
       + '<div class="an-resumen">';
-    h += '<div><span class="an-sub">' + (comparar ? "Sin tus filtros" : "Tu búsqueda") + '</span>' + celda(s.base, "an-grande", "Artículos sin los filtros añadidos") + '</div>';
+    h += '<div><span class="an-sub">Disponibles</span>' + celda(s.base, "an-grande", "Disponibles: artículos sin los filtros añadidos") + '</div>';
     if (comparar) {
-      h += '<div><span class="an-sub">Con tus filtros</span>' + celda(s.final, "an-grande", "Artículos con tus filtros") + '</div>'
-        + '<div><span class="an-sub">Quedan fuera</span><span data-fuera-total>…</span></div>';
+      h += '<div><span class="an-sub">Conservados</span>' + celda(s.final, "an-grande", "Conservados: artículos con tus filtros") + '</div>'
+        + '<div><span class="an-sub">Fuera</span><span data-fuera-total>…</span></div>';
     }
     h += '</div><details class="an-definicion"><summary>Qué se compara</summary><p class="an-nota">' + (comparar
-      ? "«Sin tus filtros» mantiene los mismos términos y omite los filtros, Trending y la fecha añadidos en esta página. «Fuera» resta disponibles menos conservados solo tras comprobar que la búsqueda filtrada no añade registros a la inicial. Las consultas se ejecutan por separado, no en una instantánea del índice."
+      ? "«Disponibles» mantiene los mismos términos y omite los filtros, Trending y la fecha añadidos en esta página. «Conservados» aplica tu consulta efectiva. «Fuera» resta disponibles menos conservados solo tras comprobar que la búsqueda filtrada no añade registros a la inicial. Las consultas se ejecutan por separado, no en una instantánea del índice."
       : "Al activar un filtro, verás también cuántos conserva y qué queda fuera en cada fila.") + '</p></details>'
       + '<p class="an-frase" data-frase hidden></p><p class="an-alerta" data-comparacion-aviso hidden></p>'
       + '<div class="an-leyenda">' + (comparar
@@ -171,25 +171,27 @@
     let h = '<div class="an-titulo-fila"><h4>Evolución por año</h4><div class="an-selector" role="group" aria-label="Años mostrados">'
       + [10, 20].map((n) => '<button type="button" data-anios="' + n + '" aria-pressed="' + (anios === n) + '">' + n + ' años</button>').join("") + '</div></div>'
       + '<label class="an-fecha-serie">Calendario de la gráfica<select data-campo-anios><option value="dp"' + (campoAnio === "dp" ? " selected" : "") + '>Publicación [dp]</option><option value="crdt"' + (campoAnio === "crdt" ? " selected" : "") + '>Creación del registro [crdt]</option></select></label>'
-      + '<div class="an-temporal-leyenda"><span>── Búsqueda efectiva</span>' + (comparar ? '<span>┄┄ Tema sin filtros</span>' : '') + '</div><div data-grafica-anios class="an-grafica-anios"></div>'
+      + (comparar ? '<div class="an-selector an-temporal-selector" role="group" aria-label="Vista de la evolución"><button type="button" data-temporal-modo="conservados" aria-pressed="true">Conservados</button><button type="button" data-temporal-modo="comparar" aria-pressed="false">Comparar volúmenes</button></div>' : '')
+      + '<p class="an-nota" data-temporal-escala></p><div class="an-temporal-leyenda"><span>── ' + (comparar ? "Conservados" : "Disponibles") + '</span><span data-temporal-base hidden>┄┄ Disponibles</span></div><div data-grafica-anios class="an-grafica-anios"></div>'
+      + '<p class="an-nota">' + new Date().getFullYear() + ': año en curso, incompleto. Se muestra con puntos huecos y separado de la línea de los años completos.</p>'
       + '<table class="an-tabla an-anios"><caption>Datos y consultas de la gráfica · ' + (campoAnio === "dp" ? "publicación" : "creación del registro en PubMed") + '</caption><thead><tr><th scope="col">Año</th>'
-      + (comparar ? '<th scope="col">Sin filtros</th>' : "") + '<th scope="col">' + (comparar ? "Con filtros" : "Artículos") + '</th>'
-      + (comparar ? '<th scope="col">Conservan</th>' : "") + '</tr></thead><tbody>';
+      + (comparar ? '<th scope="col">Disponibles</th>' : "") + '<th scope="col">' + (comparar ? "Conservados" : "Disponibles") + '</th>'
+      + (comparar ? '<th scope="col">% conservado</th>' : "") + '</tr></thead><tbody>';
     for (let a = new Date().getFullYear(); a > new Date().getFullYear() - anios; a--) {
-      h += '<tr><th scope="row">' + a + (a === new Date().getFullYear() ? '<span class="an-sub">en curso</span>' : "") + '</th>'
+      h += '<tr><th scope="row">' + a + (a === new Date().getFullYear() ? '<span class="an-sub">en curso · incompleto</span>' : "") + '</th>'
         + (comparar ? '<td>' + barra("aB" + a, "an-gris") + celda(y(s.base, a + "[" + campoAnio + "]")) + '</td>' : "")
         + '<td>' + barra("aF" + a) + celda(y(s.final, a + "[" + campoAnio + "]")) + '</td>'
         + (comparar ? '<td class="an-pct" data-pct="anio' + a + '">…</td>' : "") + '</tr>';
     }
     return h + '</tbody></table><p class="an-nota">' + (campoAnio === "dp"
       ? "Fecha de publicación; un artículo puede contar en dos años por sus fechas electrónica e impresa."
-      : "Fecha de creación del registro en PubMed; no equivale a publicación ni a indexación MeSH.") + ' Ambas series comparten escala. El año en curso está incompleto.</p>';
+      : "Fecha de creación del registro en PubMed; no equivale a publicación ni a indexación MeSH.") + ' Las barras de la tabla comparten escala.</p>';
   }
 
   function alcanceHTML(s) {
     const comparar = s.base !== s.final;
-    let h = '<h4>Acceso y alcance</h4><table class="an-tabla"><caption class="an-oculto">Acceso, indexación, población e idioma</caption><thead><tr><th scope="col">Característica</th><th scope="col">Con filtros</th>'
-      + (comparar ? '<th scope="col">Sin filtros</th>' : "") + '</tr></thead><tbody>';
+    let h = '<h4>Acceso y alcance</h4><table class="an-tabla"><caption class="an-oculto">Acceso, indexación, población e idioma</caption><thead><tr><th scope="col">Característica</th><th scope="col">' + (comparar ? "Conservados" : "Disponibles") + '</th>'
+      + (comparar ? '<th scope="col">Disponibles</th>' : "") + '</tr></thead><tbody>';
     ALCANCE.forEach((t, i) => {
       h += '<tr><th scope="row">' + esc(t.nombre) + '</th><td>' + celda(y(s.final, t.q)) + ' <span class="an-pct" data-pct="alcF' + i + '"></span></td>'
         + (comparar ? '<td>' + celda(y(s.base, t.q)) + ' <span class="an-pct" data-pct="alcB' + i + '"></span></td>' : "") + '</tr>';
@@ -205,7 +207,7 @@
     });
     return h + '</ol><div class="an-traduccion"><h5>Lo que ejecutó PubMed</h5><p>Consulta enviada:</p><pre>' + esc(s.final)
       + '</pre><p>Cómo la interpretó PubMed:</p><pre data-traduccion>…</pre><ul class="an-avisos" data-avisos></ul>'
-      + (s.controlInclusion ? '<p>Artículos de la búsqueda filtrada fuera de la base: ' + celda(s.controlInclusion) + '. Este control no certifica una instantánea del índice.</p>' : "")
+      + (s.controlInclusion ? '<p>Artículos conservados que no están entre los disponibles: ' + celda(s.controlInclusion) + '. Este control no certifica una instantánea del índice.</p>' : "")
       + '</div>';
   }
 

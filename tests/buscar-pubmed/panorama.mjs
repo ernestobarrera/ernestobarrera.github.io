@@ -91,6 +91,13 @@ try {
   const p = await montar();
   check('P01', await nPedidos(p) === 23, '23 consultas iniciales con filtros, incluido el control de inclusión');
   check('P02', await p.locator('.an-ruta').count() === 10, 'las diez rutas están visibles sin desplegar secciones');
+  const conjuntos = ['Disponibles', 'Conservados', 'Fuera'];
+  check('C01', JSON.stringify((await p.locator('.an-resumen > div > .an-sub').allTextContents()).slice(0,3)) === JSON.stringify(conjuntos)
+    && JSON.stringify((await p.locator('.an-rutas-cabecera [role="columnheader"]').allTextContents()).slice(-3)) === JSON.stringify(conjuntos)
+    && JSON.stringify(await p.locator('.an-ruta').first().locator('.an-label-movil').allTextContents()) === JSON.stringify(conjuntos), 'cabecera, tabla y móvil nombran los mismos conjuntos de la misma forma');
+  check('C02', !/\b[AB]\b/.test(await texto(p,'.an-leyenda'))
+    && JSON.stringify(await p.locator('[data-cruce-universo] option').allTextContents()) === JSON.stringify(conjuntos.slice(0,2))
+    && /Disponibles:.*Conservados:/.test(await texto(p,'.an-conjuntos')), 'A/B queda reservado a las lentes; los universos usan los mismos nombres y tienen definición visible');
   check('P03', /301/.test(await texto(p, ruta('aleatorizado') + ' .an-conserva')) && await texto(p, '[data-fuera="aleatorizado"]') === '0', '301 ensayos conservados y cero fuera; no se confunde proporción con ganancia');
   check('P04', await texto(p, '[data-fuera="guia"]') === '35', '35 guías fuera con esta combinación de filtros');
   check('P05', await p.locator('[data-fuera="guia"]').getAttribute('href') === 'https://pubmed.ncbi.nlm.nih.gov/?term=' + encodeURIComponent(not(and(A, filas[0][1]), B)), 'Fuera enlaza al conjunto literal A∩tipo NOT B');
@@ -117,10 +124,23 @@ try {
   check('P10', await nPedidos(p) === 43, 'abrir la serie solo añade sus veinte consultas');
   const anchuras = await p.locator('[data-barra]').evaluateAll((els) => els.filter((e) => /a[BF]/.test(e.dataset.barra)).slice(0,2).map((e) => e.style.width));
   check('P11', JSON.stringify(anchuras) === JSON.stringify(['100%', '10%']), 'ambas series anuales comparten escala');
+  check('T04', await p.locator('.an-grafica-anios .an-linea-final').count() === 1
+    && await p.locator('.an-grafica-anios .an-linea-base').count() === 0
+    && await p.locator('[data-temporal-base]').isHidden()
+    && /Conservados.*escala propia desde cero/.test(await texto(p,'[data-temporal-escala]')), 'la vista inicial permite leer la evolución de conservados con un único eje propio desde cero');
+  check('C03', JSON.stringify(await p.locator('.an-anios thead th').allTextContents()) === JSON.stringify(['Año','Disponibles','Conservados','% conservado']), 'la evolución mantiene la terminología de los conjuntos');
+  await p.locator('[data-temporal-modo="comparar"]').focus(); await p.keyboard.press('Enter');
+  check('T05', await nPedidos(p) === 43 && await p.locator('.an-grafica-anios .an-linea').count() === 2
+    && /escala común desde cero/.test(await texto(p,'[data-temporal-escala]'))
+    && await p.locator('[data-temporal-modo="comparar"]').evaluate(e=>e===document.activeElement && e.getAttribute('aria-pressed')==='true'), 'el teclado cambia a comparación común sin consultas y conserva el foco');
   await p.click('[data-anios="20"]'); await p.waitForFunction(() => window._calls.length === 63); await listo(p);
   await p.click('[data-anios="10"]');
   check('P12', await nPedidos(p) === 63 && await p.locator('.an-anios .an-num').evaluateAll((els) => els.every((e) => e.textContent !== '…')), 'volver a diez años reutiliza y repinta lo resuelto');
   check('P13', await p.locator('[data-anios="10"]').evaluate((e) => e === document.activeElement), 'cambiar años conserva el foco del teclado');
+  check('T06', await p.locator('[data-temporal-modo="comparar"]').getAttribute('aria-pressed') === 'true'
+    && await p.locator('.an-grafica-anios .an-linea').count() === 2, 'cambiar el intervalo conserva la vista temporal elegida');
+  await p.click('[data-temporal-modo="conservados"]');
+  check('T07', await nPedidos(p) === 63 && await p.locator('.an-grafica-anios .an-linea').count() === 1, 'volver a conservados no pide datos ni deja la serie disponible oculta en la escala');
   await p.locator('[data-seccion="anios"]').evaluate((e) => { e.open = false; });
   await abrir(p, 'anios'); await p.waitForTimeout(50);
   check('P14', await nPedidos(p) === 63, 'reabrir una sección no repite consultas');
@@ -183,9 +203,18 @@ try {
   });
   const antesCalendario=await nPedidos(p); await p.selectOption('[data-campo-anios]','crdt'); await listo(p);
   check('T02', await nPedidos(p)===antesCalendario+20 && /creación del registro/.test(await texto(p,'.an-anios caption'))
-    && await p.locator('.an-grafica-anios path').count()===2, 'el calendario de creación del registro tiene sus consultas y dos líneas, sin confundirlo con publicación');
+    && await p.locator('.an-grafica-anios path').count()===1
+    && await p.locator('[data-temporal-modo="conservados"]').getAttribute('aria-pressed')==='true', 'el calendario de creación tiene sus consultas y conserva la vista elegida, sin confundirlo con publicación');
   await p.selectOption('[data-campo-anios]','dp'); await listo(p);
   check('T03', await nPedidos(p)===antesCalendario+20 && await p.locator('[data-campo-anios]').evaluate(e=>e===document.activeElement), 'volver a publicación reutiliza datos y conserva el foco');
+  const incompleto = await p.locator('[data-grafica-anios]').evaluate(e=>{
+    const punto=e.querySelector('.an-punto-incompleto'), linea=e.querySelector('.an-linea-final');
+    return {hueco:getComputedStyle(punto).fill!==getComputedStyle(punto).stroke,
+      separado:linea.getPointAtLength(linea.getTotalLength()).x < punto.cx.baseVal.value,
+      rotulo:e.textContent.includes('en curso'), banda:!!e.querySelector('rect.an-anio-incompleto')};
+  });
+  check('T08', incompleto.hueco && incompleto.separado && incompleto.rotulo && incompleto.banda
+    && /en curso · incompleto/.test(await texto(p,'.an-anios tbody tr:first-child th')), 'el año en curso conserva la cifra pero queda hueco, rotulado y fuera de la línea de años completos');
   await p.locator('[data-seccion="anios"]').evaluate(e=>{e.open=false;});
 
   for (const ancho of [1366, 768, 390, 320]) {
@@ -202,6 +231,24 @@ try {
   const s = await montar({ filtrado: false });
   check('P15', await nPedidos(s) === 11 && await s.locator('.an-conserva').count() === 0, 'sin filtros: once consultas y una sola serie');
   check('P16', /4,1 %/.test(await texto(s, '[data-retencion="aleatorizado"]')), 'sin filtros las barras indican proporción dentro de la búsqueda');
+  await abrir(s,'anios'); await listo(s);
+  check('T09', await nPedidos(s)===21 && await s.locator('[data-temporal-modo]').count()===0
+    && await s.locator('.an-grafica-anios .an-linea').count()===1
+    && /Disponibles.*escala propia desde cero/.test(await texto(s,'[data-temporal-escala]')), 'sin filtros hay una sola serie Disponible, con diez recuentos bajo demanda');
+  const year = new Date().getFullYear(), serie = Array.from({length:10},(_,i)=>[
+    [and(A,(year-i)+'[dp]'),470+i*16], [and(B,(year-i)+'[dp]'),i ? 17+i*2 : 12]
+  ]).flat();
+  const vigilancia = await montar({cambios:serie}); await abrir(vigilancia,'anios'); await listo(vigilancia);
+  const amplitud = () => vigilancia.locator('.an-punto-final:not(.an-punto-incompleto)').evaluateAll(els=>{
+    const ys=els.map(e=>e.cy.baseVal.value); return Math.max(...ys)-Math.min(...ys);
+  });
+  const propia=await amplitud(), antesVista=await nPedidos(vigilancia);
+  await vigilancia.click('[data-temporal-modo="comparar"]'); const comun=await amplitud();
+  check('T10', propia>50 && comun<10 && propia>comun*10 && await nPedidos(vigilancia)===antesVista,
+    'una serie pequeña (19–35 frente a 470–614) gana más de diez veces amplitud visible sin alterar sus recuentos ni pedir otros');
+  await vigilancia.setViewportSize({width:320,height:900});
+  check('T11', await vigilancia.locator('[data-seccion="anios"]').evaluate(e=>e.scrollWidth<=e.clientWidth+1)
+    && await vigilancia.locator('[data-temporal-modo="comparar"]').isVisible(), 'gráfica, etiquetas y selector temporal caben a 320 px');
   const d = await montar({ control: 5 });
   check('F01', await texto(d, '[data-fuera="guia"]') === 'Ver fuera' && await d.locator('[data-comparacion-aviso]').isVisible(), 'si B no está contenido en A, no resta ni publica una falsa pérdida');
   check('H04', await d.locator('[data-frase]').isHidden(), 'el destacado no deriva pérdidas cuando la inclusión no está verificada');

@@ -48,7 +48,7 @@
   }
 
   function montar(panel, s, api) {
-    const c = { panel, s, api, modo: "volumen", catalogo: catalogo(s), cruce: null };
+    const c = { panel, s, api, modo: "volumen", temporal: "conservados", catalogo: catalogo(s), cruce: null };
     contextos.set(panel, c);
     panel.classList.add("an-atlas");
     const { esc, celda } = api, comparar = s.base !== s.final;
@@ -68,7 +68,7 @@
     carta.setAttribute("aria-label", "Mapa de rutas documentales");
     carta.innerHTML = '<div class="an-carta-titulo"><div><p class="an-eyebrow">01 / MAPA DOCUMENTAL</p><h4>Qué literatura hay</h4></div><div class="an-selector" role="group" aria-label="Lectura de las barras"><button type="button" data-atlas-modo="volumen" aria-pressed="true">Volumen</button>' + (comparar ? '<button type="button" data-atlas-modo="conservacion" aria-pressed="false">Conservación</button>' : '') + '</div></div>';
     const leyenda = panel.querySelector(".an-leyenda");
-    leyenda.innerHTML = '<span><i class="an-marca an-marca-base" aria-hidden="true"></i>A · Sin filtros</span>' + (comparar ? '<span><i class="an-marca an-marca-conserva" aria-hidden="true"></i>B · Con filtros</span>' : '') + '<span data-escala>Escala común · registros por ruta</span>';
+    leyenda.innerHTML = '<span><i class="an-marca ' + (comparar ? "an-marca-base" : "an-marca-conserva") + '" aria-hidden="true"></i>Disponibles</span>' + (comparar ? '<span><i class="an-marca an-marca-conserva" aria-hidden="true"></i>Conservados</span>' : '') + '<span data-escala>Escala común · registros por ruta</span>';
     carta.append(leyenda, mesa);
     carta.insertAdjacentHTML("beforeend", '<p class="an-nota">Las rutas se solapan y combinan etiquetas de publicación, MeSH y filtros. No sumes sus recuentos.</p>');
     grid.append(carta);
@@ -78,7 +78,6 @@
       pista.insertAdjacentHTML("afterbegin", '<span class="an-base-barra an-sin-dato" aria-hidden="true"><span data-barra-base="' + t.id + '"></span></span>');
       if (!comparar) pista.querySelector(".an-base-barra").hidden = true;
       const tipo = t.filtro ? "Filtro" : t.id === "cohortes" ? "MeSH" : "Publicación";
-      fila.querySelectorAll(".an-label-movil").forEach((el, i) => { el.textContent = ["Base (A)", "Final (B)", "Fuera"][i]; });
       fila.querySelector("strong").insertAdjacentHTML("afterend", '<span class="an-origen">' + tipo + '</span>');
       if (t.id !== "cohortes") {
         const uso = fila.querySelector(".an-ruta-nombre > .an-sub");
@@ -103,6 +102,7 @@
     const contexto = document.createElement("div"); contexto.className = "an-busqueda-contexto";
     const filtrosActuales = panel.querySelector(".an-filtros-actuales"); filtrosActuales.before(contexto);
     contexto.append(panel.querySelector(".an-contexto"), filtrosActuales, definicion);
+    definicion.insertAdjacentHTML("beforebegin", '<p class="an-nota an-conjuntos">Disponibles: tus términos sin los filtros añadidos aquí.' + (comparar ? ' Conservados: tu consulta efectiva con esos filtros.' : '') + '</p>');
     const notaOriginal = panorama.querySelector(":scope > .an-nota");
     if (notaOriginal) definicion.append(notaOriginal);
     const nota = document.createElement("p"); nota.className = "an-nota an-procedencia";
@@ -110,7 +110,7 @@
     panorama.append(nota);
 
     const cruces = document.createElement("details"); cruces.className = "an-detalle"; cruces.dataset.seccion = "cruces";
-    cruces.innerHTML = '<summary><span>Cruces y complementariedad</span><span class="an-coste" data-coste data-coste-propio>Elegir dos lentes · hasta 4 recuentos</span></summary><div class="an-detalle-contenido"><p class="an-eyebrow">03 / CARRILES ALTERNATIVOS</p><h4>Qué coincide y qué aporta cada lente</h4><p class="an-nota">Compara dos filtros o rutas dentro del mismo universo. Explorar aquí no cambia tu búsqueda.</p><div class="an-cruce-controles"><label>Universo<select data-cruce-universo><option value="base">Tema sin filtros</option>' + (comparar ? '<option value="final">Búsqueda efectiva</option>' : '') + '</select></label><label>Lente A<select data-lente="a"></select></label><label>Lente B<select data-lente="b"></select></label><button type="button" class="an-accion" data-calcular-cruce>Calcular cruce · hasta 4 recuentos</button></div><p class="an-nota" data-cruce-definicion></p><div data-cruce-grafico></div><p class="an-nota" data-cruce-estado role="status" aria-live="polite">Elige las lentes. No se consulta hasta que pulses Calcular.</p><div class="an-inspector"><strong data-region-titulo>Consulta de la región seleccionada</strong><pre data-region-consulta></pre><a data-region-enlace target="_blank" rel="noopener">Abrir región en PubMed</a></div></div>';
+    cruces.innerHTML = '<summary><span>Cruces y complementariedad</span><span class="an-coste" data-coste data-coste-propio>Elegir dos lentes · hasta 4 recuentos</span></summary><div class="an-detalle-contenido"><p class="an-eyebrow">03 / CARRILES ALTERNATIVOS</p><h4>Qué coincide y qué aporta cada lente</h4><p class="an-nota">Compara dos filtros o rutas dentro del mismo universo. Explorar aquí no cambia tu búsqueda.</p><div class="an-cruce-controles"><label>Universo<select data-cruce-universo><option value="base">Disponibles</option>' + (comparar ? '<option value="final">Conservados</option>' : '') + '</select></label><label>Lente A<select data-lente="a"></select></label><label>Lente B<select data-lente="b"></select></label><button type="button" class="an-accion" data-calcular-cruce>Calcular cruce · hasta 4 recuentos</button></div><p class="an-nota" data-cruce-definicion></p><div data-cruce-grafico></div><p class="an-nota" data-cruce-estado role="status" aria-live="polite">Elige las lentes. No se consulta hasta que pulses Calcular.</p><div class="an-inspector"><strong data-region-titulo>Consulta de la región seleccionada</strong><pre data-region-consulta></pre><a data-region-enlace target="_blank" rel="noopener">Abrir región en PubMed</a></div></div>';
     const detalles = panel.querySelector(".an-detalles");
     detalles.querySelector("h4").textContent = "Profundizar";
     detalles.querySelector(".an-nota").textContent = "Elige una tarea. Las consultas adicionales se indican antes de calcular.";
@@ -127,6 +127,7 @@
     panel.addEventListener("click", async (e) => {
       const b = e.target.closest("button"); if (!b || !api.vigente()) return;
       if (b.dataset.atlasModo) { c.modo = b.dataset.atlasModo; actualizar(panel, s); }
+      if (b.dataset.temporalModo) { c.temporal = b.dataset.temporalModo; dibujarTemporal(c); }
       if (b.hasAttribute("data-completar-flujo")) await api.solicitar(s.pasos.map((p) => p.q));
       if (b.dataset.irAtlas) {
         const el = b.dataset.irAtlas === "rutas" ? carta : panel.querySelector('[data-seccion="' + b.dataset.irAtlas + '"]');
@@ -142,7 +143,7 @@
         panel.querySelector("[data-exporta-estado]").textContent = "Registro preparado con las consultas de esta sesión.";
       }
       if (b.hasAttribute("data-copiar-estrategia")) {
-        const texto = "PubMed · " + new Date().toISOString() + "\n\nConsulta efectiva:\n" + s.final + "\n\nTema sin filtros:\n" + s.base + "\n\nFiltros: " + [...s.estado.activos].join(", ") + "\nNo certifica una revisión exhaustiva ni PRISMA-S.";
+        const texto = "PubMed · " + new Date().toISOString() + (comparar ? "\n\nConservados (consulta efectiva):\n" + s.final : "") + "\n\nDisponibles (sin filtros añadidos):\n" + s.base + "\n\nFiltros: " + [...s.estado.activos].join(", ") + "\nNo certifica una revisión exhaustiva ni PRISMA-S.";
         try { await navigator.clipboard.writeText(texto); panel.querySelector("[data-exporta-estado]").textContent = "Estrategia copiada."; }
         catch { panel.querySelector("[data-exporta-estado]").textContent = "El navegador no permite copiar. Puedes seleccionar la consulta o descargar el registro."; }
       }
@@ -195,22 +196,33 @@
     if (!destino || !destino.getBoundingClientRect().width) return;
     const anios = [...panel.querySelectorAll(".an-anios tbody tr")].map((tr) => Number(tr.querySelector("th").childNodes[0].textContent));
     if (!anios.length) return;
-    const w = Math.max(260, Math.round(destino.getBoundingClientRect().width)), h = 215, l = 48, r = 16, t = 16, b = 30;
-    const comparar = s.base !== s.final;
+    const w = Math.max(260, Math.round(destino.getBoundingClientRect().width)), h = 215, l = 48, r = 24, t = 28, b = 30;
+    const filtrado = s.base !== s.final, comparar = filtrado && c.temporal === "comparar";
+    panel.querySelectorAll("[data-temporal-modo]").forEach((el) => el.setAttribute("aria-pressed", String(el.dataset.temporalModo === c.temporal)));
+    panel.querySelector("[data-temporal-base]").hidden = !comparar;
+    panel.querySelector("[data-temporal-escala]").textContent = comparar
+      ? "Disponibles y conservados · escala común desde cero para comparar volúmenes."
+      : (filtrado ? "Conservados" : "Disponibles") + " · escala propia desde cero para ver su evolución.";
     const campo = panel.querySelector("[data-campo-anios]")?.value === "crdt" ? "crdt" : "dp";
     const series = (comparar ? [s.base, s.final] : [s.final]).map((q) => anios.slice().reverse().map((a) => api.numero(and(q, a + "[" + campo + "]"))));
     const max = Math.max(0, ...series.flat().filter(seguro));
     if (!series.some((serie) => serie.some(seguro))) { destino.innerHTML = '<p class="an-nota">La gráfica aparecerá con los recuentos. Un dato ausente nunca se dibuja como cero.</p>'; return; }
     const x = (i) => l + i * (w - l - r) / Math.max(1, anios.length - 1), y = (n) => h - b - (max ? n / max : 0) * (h - t - b);
+    const orden = anios.slice().reverse(), enCurso = orden.indexOf(new Date().getFullYear());
     let svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true" focusable="false">';
+    if (enCurso >= 0) {
+      const inicio = enCurso ? (x(enCurso - 1) + x(enCurso)) / 2 : l;
+      svg += '<rect x="' + inicio + '" y="' + t + '" width="' + (w - 8 - inicio) + '" height="' + (h - t - b) + '" class="an-anio-incompleto"/><text x="' + (w - 8) + '" y="17" text-anchor="end">en curso</text>';
+    }
     [0, 0.5, 1].forEach((p) => { const yy = y(max * p); svg += '<line x1="' + l + '" y1="' + yy + '" x2="' + (w - r) + '" y2="' + yy + '" class="an-rejilla"/><text x="' + (l - 7) + '" y="' + (yy + 4) + '" text-anchor="end">' + api.num(Math.round(max * p)) + '</text>'; });
-    const orden = anios.slice().reverse(), indices = [...new Set([0, Math.floor((anios.length - 1) / 2), anios.length - 1])];
+    const indices = [...new Set([0, Math.floor((anios.length - 1) / 2), anios.length - 1])];
     indices.forEach((i) => { svg += '<text x="' + x(i) + '" y="' + (h - 7) + '" text-anchor="middle">' + orden[i] + '</text>'; });
     series.forEach((serie, k) => {
       let path = "", previo = false;
-      serie.forEach((n, i) => { if (!seguro(n)) { previo = false; return; } path += (previo ? " L" : " M") + x(i) + " " + y(n); previo = true; });
+      // El año incompleto conserva su cifra, pero no prolonga la tendencia de años completos.
+      serie.forEach((n, i) => { if (!seguro(n) || i === enCurso) { previo = false; return; } path += (previo ? " L" : " M") + x(i) + " " + y(n); previo = true; });
       svg += '<path d="' + path + '" class="an-linea ' + (comparar && !k ? "an-linea-base" : "an-linea-final") + '"/>';
-      serie.forEach((n, i) => { if (seguro(n)) svg += '<circle cx="' + x(i) + '" cy="' + y(n) + '" r="3" class="' + (comparar && !k ? "an-punto-base" : "an-punto-final") + '"/>'; });
+      serie.forEach((n, i) => { if (seguro(n)) svg += '<circle cx="' + x(i) + '" cy="' + y(n) + '" r="' + (i === enCurso ? "4" : "3") + '" class="' + (comparar && !k ? "an-punto-base" : "an-punto-final") + (i === enCurso ? " an-punto-incompleto" : "") + '"/>'; });
     });
     destino.innerHTML = svg + '</svg>';
   }
