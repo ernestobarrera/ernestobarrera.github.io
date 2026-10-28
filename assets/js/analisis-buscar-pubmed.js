@@ -29,7 +29,7 @@
   const UNIVERSO = "all[sb]";
   const ESPERA_ESTABLE_MS = 1200;
   const ESPERA_RECALCULO_MS = 900;
-  let panel, boton, abierto = false, anios = 10, actual = null;
+  let panel, boton, abierto = false, anios = 10, campoAnio = "dp", actual = null;
   let temporizadorRecalculo, temporizadorEstable, estable = null, anterior = null, pendiente = null;
 
   const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -116,13 +116,13 @@
       + '<p class="an-intro">Abre las cifras para explorar los artículos. Las rutas se solapan; no sumes sus recuentos.</p>'
       + '<div class="an-contexto"><span class="an-contexto-etiqueta">Tus términos</span><span class="an-tema">' + esc(s.estado.termino || "Sin términos: todo PubMed") + '</span></div>'
       + '<div class="an-resumen">';
-    h += '<div><span class="an-sub">' + (comparar ? "Sin tus filtros" : "Tu búsqueda") + '</span>' + celda(s.base, "an-grande", "Artículos sin los filtros añadidos") + '</div>';
+    h += '<div><span class="an-sub">Disponibles</span>' + celda(s.base, "an-grande", "Disponibles: artículos sin los filtros añadidos") + '</div>';
     if (comparar) {
-      h += '<div><span class="an-sub">Con tus filtros</span>' + celda(s.final, "an-grande", "Artículos con tus filtros") + '</div>'
-        + '<div><span class="an-sub">Quedan fuera</span><span data-fuera-total>…</span></div>';
+      h += '<div><span class="an-sub">Conservados</span>' + celda(s.final, "an-grande", "Conservados: artículos con tus filtros") + '</div>'
+        + '<div><span class="an-sub">Fuera</span><span data-fuera-total>…</span></div>';
     }
     h += '</div><details class="an-definicion"><summary>Qué se compara</summary><p class="an-nota">' + (comparar
-      ? "«Sin tus filtros» mantiene los mismos términos y omite los filtros, Trending y la fecha añadidos en esta página. «Fuera» resta disponibles menos conservados solo tras comprobar que la búsqueda filtrada no añade registros a la inicial. Las consultas se ejecutan por separado, no en una instantánea del índice."
+      ? "«Disponibles» mantiene los mismos términos y omite los filtros, Trending y la fecha añadidos en esta página. «Conservados» aplica tu consulta efectiva. «Fuera» resta disponibles menos conservados solo tras comprobar que la búsqueda filtrada no añade registros a la inicial. Las consultas se ejecutan por separado, no en una instantánea del índice."
       : "Al activar un filtro, verás también cuántos conserva y qué queda fuera en cada fila.") + '</p></details>'
       + '<p class="an-frase" data-frase hidden></p><p class="an-alerta" data-comparacion-aviso hidden></p>'
       + '<div class="an-leyenda">' + (comparar
@@ -170,22 +170,28 @@
     const comparar = s.base !== s.final;
     let h = '<div class="an-titulo-fila"><h4>Evolución por año</h4><div class="an-selector" role="group" aria-label="Años mostrados">'
       + [10, 20].map((n) => '<button type="button" data-anios="' + n + '" aria-pressed="' + (anios === n) + '">' + n + ' años</button>').join("") + '</div></div>'
-      + '<table class="an-tabla an-anios"><caption class="an-oculto">Artículos por año, con una escala común para ambas series</caption><thead><tr><th scope="col">Año</th>'
-      + (comparar ? '<th scope="col">Sin filtros</th>' : "") + '<th scope="col">' + (comparar ? "Con filtros" : "Artículos") + '</th>'
-      + (comparar ? '<th scope="col">Conservan</th>' : "") + '</tr></thead><tbody>';
+      + '<label class="an-fecha-serie">Calendario de la gráfica<select data-campo-anios><option value="dp"' + (campoAnio === "dp" ? " selected" : "") + '>Publicación [dp]</option><option value="crdt"' + (campoAnio === "crdt" ? " selected" : "") + '>Creación del registro [crdt]</option></select></label>'
+      + (comparar ? '<div class="an-selector an-temporal-selector" role="group" aria-label="Vista de la evolución"><button type="button" data-temporal-modo="conservados" aria-pressed="true">Conservados</button><button type="button" data-temporal-modo="comparar" aria-pressed="false">Comparar volúmenes</button></div>' : '')
+      + '<p class="an-nota" data-temporal-escala></p><div class="an-temporal-leyenda"><span>── ' + (comparar ? "Conservados" : "Disponibles") + '</span><span data-temporal-base hidden>┄┄ Disponibles</span></div><div data-grafica-anios class="an-grafica-anios"></div>'
+      + '<p class="an-nota">' + new Date().getFullYear() + ': año en curso, incompleto. Se muestra con puntos huecos y separado de la línea de los años completos.</p>'
+      + '<table class="an-tabla an-anios"><caption>Datos y consultas de la gráfica · ' + (campoAnio === "dp" ? "publicación" : "creación del registro en PubMed") + '</caption><thead><tr><th scope="col">Año</th>'
+      + (comparar ? '<th scope="col">Disponibles</th>' : "") + '<th scope="col">' + (comparar ? "Conservados" : "Disponibles") + '</th>'
+      + (comparar ? '<th scope="col">% conservado</th>' : "") + '</tr></thead><tbody>';
     for (let a = new Date().getFullYear(); a > new Date().getFullYear() - anios; a--) {
-      h += '<tr><th scope="row">' + a + (a === new Date().getFullYear() ? '<span class="an-sub">en curso</span>' : "") + '</th>'
-        + (comparar ? '<td>' + barra("aB" + a, "an-gris") + celda(y(s.base, a + "[dp]")) + '</td>' : "")
-        + '<td>' + barra("aF" + a) + celda(y(s.final, a + "[dp]")) + '</td>'
+      h += '<tr><th scope="row">' + a + (a === new Date().getFullYear() ? '<span class="an-sub">en curso · incompleto</span>' : "") + '</th>'
+        + (comparar ? '<td>' + barra("aB" + a, "an-gris") + celda(y(s.base, a + "[" + campoAnio + "]")) + '</td>' : "")
+        + '<td>' + barra("aF" + a) + celda(y(s.final, a + "[" + campoAnio + "]")) + '</td>'
         + (comparar ? '<td class="an-pct" data-pct="anio' + a + '">…</td>' : "") + '</tr>';
     }
-    return h + '</tbody></table><p class="an-nota">Fecha de publicación; ambas series comparten escala. Un artículo puede contar en dos años por sus fechas electrónica e impresa. El año en curso está incompleto.</p>';
+    return h + '</tbody></table><p class="an-nota">' + (campoAnio === "dp"
+      ? "Fecha de publicación; un artículo puede contar en dos años por sus fechas electrónica e impresa."
+      : "Fecha de creación del registro en PubMed; no equivale a publicación ni a indexación MeSH.") + ' Las barras de la tabla comparten escala.</p>';
   }
 
   function alcanceHTML(s) {
     const comparar = s.base !== s.final;
-    let h = '<h4>Acceso y alcance</h4><table class="an-tabla"><caption class="an-oculto">Acceso, indexación, población e idioma</caption><thead><tr><th scope="col">Característica</th><th scope="col">Con filtros</th>'
-      + (comparar ? '<th scope="col">Sin filtros</th>' : "") + '</tr></thead><tbody>';
+    let h = '<h4>Acceso y alcance</h4><table class="an-tabla"><caption class="an-oculto">Acceso, indexación, población e idioma</caption><thead><tr><th scope="col">Característica</th><th scope="col">' + (comparar ? "Conservados" : "Disponibles") + '</th>'
+      + (comparar ? '<th scope="col">Disponibles</th>' : "") + '</tr></thead><tbody>';
     ALCANCE.forEach((t, i) => {
       h += '<tr><th scope="row">' + esc(t.nombre) + '</th><td>' + celda(y(s.final, t.q)) + ' <span class="an-pct" data-pct="alcF' + i + '"></span></td>'
         + (comparar ? '<td>' + celda(y(s.base, t.q)) + ' <span class="an-pct" data-pct="alcB' + i + '"></span></td>' : "") + '</tr>';
@@ -201,7 +207,7 @@
     });
     return h + '</ol><div class="an-traduccion"><h5>Lo que ejecutó PubMed</h5><p>Consulta enviada:</p><pre>' + esc(s.final)
       + '</pre><p>Cómo la interpretó PubMed:</p><pre data-traduccion>…</pre><ul class="an-avisos" data-avisos></ul>'
-      + (s.controlInclusion ? '<p>Artículos de la búsqueda filtrada fuera de la base: ' + celda(s.controlInclusion) + '. Este control no certifica una instantánea del índice.</p>' : "")
+      + (s.controlInclusion ? '<p>Artículos conservados que no están entre los disponibles: ' + celda(s.controlInclusion) + '. Este control no certifica una instantánea del índice.</p>' : "")
       + '</div>';
   }
 
@@ -251,7 +257,15 @@
   }
 
   function costes(s) {
+    panel.querySelectorAll("[data-campo-anios] option").forEach((op) => {
+      const consultas = Array.from({ length: anios }, (_, i) => new Date().getFullYear() - i)
+        .flatMap((a) => [y(s.base, a + "[" + op.value + "]"), y(s.final, a + "[" + op.value + "]")]);
+      const n = [...new Set(consultas)].filter((q) => !s.solicitadas.has(q)).length;
+      op.textContent = (op.value === "dp" ? "Publicación [dp]" : "Creación del registro [crdt]")
+        + (op.value === campoAnio ? "" : n ? " · +" + n + " recuentos" : " · sin consultas adicionales");
+    });
     panel.querySelectorAll("[data-seccion]").forEach((el) => {
+      if (el.querySelector("[data-coste-propio]")) return;
       const n = consultasEn(el).filter((q) => !s.solicitadas.has(q)).length;
       el.querySelector("[data-coste]").textContent = n ? "Calcular " + n + " recuentos" : "Sin consultas adicionales";
     });
@@ -401,9 +415,9 @@
       });
     });
     const lista = Array.from({ length: anios }, (_, i) => new Date().getFullYear() - i);
-    const maximo = Math.max(0, ...lista.flatMap((a) => [numero(s, y(s.base, a + "[dp]")) || 0, numero(s, y(s.final, a + "[dp]")) || 0]));
+    const maximo = Math.max(0, ...lista.flatMap((a) => [numero(s, y(s.base, a + "[" + campoAnio + "]")) || 0, numero(s, y(s.final, a + "[" + campoAnio + "]")) || 0]));
     lista.forEach((anio) => {
-      const na = numero(s, y(s.base, anio + "[dp]")), nb = numero(s, y(s.final, anio + "[dp]"));
+      const na = numero(s, y(s.base, anio + "[" + campoAnio + "]")), nb = numero(s, y(s.final, anio + "[" + campoAnio + "]"));
       ancho("aB" + anio, maximo ? na / maximo : undefined); ancho("aF" + anio, maximo ? nb / maximo : undefined);
       const el = panel.querySelector('[data-pct="anio' + anio + '"]');
       if (el) el.textContent = inclusion && esNumero(na) && esNumero(nb) && nb <= na ? pct(nb, na) : "—";
@@ -414,6 +428,7 @@
     const avisos = panel.querySelector("[data-avisos]");
     if (avisos && final) avisos.innerHTML = avisosReales(final).map((a) => "<li>" + esc(a) + "</li>").join("")
       || (utilizable(final) ? "<li>Sin avisos de PubMed para esta consulta.</li>" : "<li>No se pudo verificar la traducción.</li>");
+    window.PubMedAtlas?.actualizar(panel, s);
   }
 
   function analizar() {
@@ -433,13 +448,17 @@
       controlInclusion: base !== final ? salvo(final, base) : null, resultados: new Map(), solicitadas: new Set(), fallos: 0, revisar: 0 };
     s.rutas = rutas(estado, base, final); actual = s;
     panel.innerHTML = esqueleto(s);
+    window.PubMedAtlas?.montar(panel, s, { esc, celda, num, pct, urlPubMed, pintar,
+      numero: (q) => numero(s, q), solicitar: (qs) => solicitar(qs, s), vigente: () => vigente(s) });
     panel.querySelectorAll("[data-seccion]").forEach((el) => el.addEventListener("toggle", () => {
-      if (el.open && vigente(s)) solicitar(consultasEn(el), s);
+      if (el.open && el.dataset.seccion !== "cruces" && vigente(s)) solicitar(consultasEn(el), s);
     }));
-    const iniciales = consultasEn(panel.querySelector(".an-panorama"));
+    // El recorrido y los cruces muestran consultas, pero su cálculo sigue siendo bajo demanda.
+    const iniciales = [...new Set([base, final, ...s.rutas.flatMap((t) => [t.base, t.final]).filter(Boolean)])];
     if (s.controlInclusion) iniciales.push(s.controlInclusion);
     s.iniciales = new Set(iniciales);
     solicitar(iniciales, s);
+    window.PubMedAtlas?.actualizar(panel, s);
   }
 
   function alternar() {
@@ -466,16 +485,24 @@
     panel = document.getElementById("analisisPanel"); boton = document.getElementById("toggleAnalisisButton");
     if (!panel || !boton) return;
     boton.addEventListener("click", alternar); document.addEventListener("consulta-cambiada", alCambiar);
+    const refrescarAnios = (foco) => {
+      const detalle = panel.querySelector('[data-seccion="anios"]');
+      detalle.querySelector(".an-detalle-contenido").innerHTML = aniosHTML(actual);
+      detalle.querySelector(foco)?.focus();
+      solicitar(consultasEn(detalle), actual); derivar(actual);
+    };
+    panel.addEventListener("change", (e) => {
+      if (!e.target.matches("[data-campo-anios]") || !actual || !vigente(actual)) return;
+      if (!["dp", "crdt"].includes(e.target.value)) return;
+      campoAnio = e.target.value; refrescarAnios("[data-campo-anios]");
+    });
     panel.addEventListener("click", (e) => {
       const b = e.target.closest("button[data-anios], button[data-medir-fuera]");
       if (!b || !actual || !vigente(actual)) return;
       if (b.dataset.anios) {
         const n = Number(b.dataset.anios); if (n === anios) return;
         anios = n;
-        const detalle = panel.querySelector('[data-seccion="anios"]');
-        detalle.querySelector(".an-detalle-contenido").innerHTML = aniosHTML(actual);
-        detalle.querySelector('[data-anios="' + n + '"]').focus();
-        solicitar(consultasEn(detalle), actual); derivar(actual);
+        refrescarAnios('[data-anios="' + n + '"]');
       } else {
         const t = actual.rutas.find((t) => t.id === b.dataset.medirFuera);
         if (t?.base) {
