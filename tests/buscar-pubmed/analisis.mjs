@@ -136,14 +136,15 @@ await page.waitForTimeout(1500);
 await pulsar('#toggleAnalisisButton');
 // Los detalles se calculan al abrirlos; el panorama es la única carga inicial.
 await page.locator('#analisisPanel [data-seccion]').evaluateAll((els) => els.forEach((el) => { el.open = true; }));
+await page.locator('[data-completar-flujo]').evaluate((el) => el.click());
 await page.waitForFunction(() => {
-  const n = [...document.querySelectorAll('#analisisPanel .an-num')];
+  const n = [...document.querySelectorAll('#analisisPanel .an-num')].filter((el) => !el.closest('[data-seccion="cruces"]'));
   return n.length > 20 && n.every((el) => el.textContent !== '…');
 }, null, { timeout: 120000 });
 
 const panel = await page.evaluate(() => {
   const nums = [...document.querySelectorAll('#analisisPanel .an-num[data-q]')].map((el) => ({ q: el.dataset.q, href: el.getAttribute('href'), t: el.textContent, cls: el.className }));
-  const pasos = [...document.querySelectorAll('#analisisPanel .an-cascada tbody th')].map((th) => th.childNodes[0].textContent.trim());
+  const pasos = [...document.querySelectorAll('#analisisPanel .an-paso-nombre')].map((th) => th.textContent.trim());
   return { nums, pasos, final: document.getElementById('finalQuery').textContent, cambio: document.querySelector('#analisisPanel .an-cambio')?.textContent || '',
     composicion: [...document.querySelectorAll('#analisisPanel .an-composicion li')].map((l) => l.textContent.replace(/\s+/g, ' ').trim()),
     traduccion: document.querySelector('#analisisPanel [data-traduccion]')?.textContent || '' };
@@ -168,8 +169,9 @@ const previa = panel.final;
 await pulsar('.filter-button[data-type="horizon"]');
 await page.waitForTimeout(1100);
 await page.locator('#analisisPanel [data-seccion]').evaluateAll((els) => els.forEach((el) => { el.open = true; }));
+await page.locator('[data-completar-flujo]').evaluate((el) => el.click());
 await page.waitForFunction((p) => {
-  const n = [...document.querySelectorAll('#analisisPanel .an-num')];
+  const n = [...document.querySelectorAll('#analisisPanel .an-num')].filter((el) => !el.closest('[data-seccion="cruces"]'));
   const f = document.getElementById('finalQuery').textContent;
   return f !== p && n.length > 20 && n.every((el) => el.textContent !== '…') && n.some((el) => el.dataset.q === `(${p}) NOT (${f})`);
 }, previa, { timeout: 120000 }).then(() => true, () => false).then((ok) => comprobar('C11', ok, 'con el panel abierto, el último cambio compara con la consulta de justo antes'));

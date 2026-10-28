@@ -13,6 +13,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const js = readFileSync(join(root, 'assets/js/analisis-buscar-pubmed.js'), 'utf8');
+const atlas = readFileSync(join(root, 'assets/js/atlas-buscar-pubmed.js'), 'utf8');
 const css = readFileSync(join(root, 'assets/css/analisis-buscar-pubmed.css'), 'utf8');
 const capturas = process.argv.includes('--capturas') ? resolve(process.argv[process.argv.indexOf('--capturas') + 1]) : null;
 if (capturas) mkdirSync(capturas, { recursive: true });
@@ -36,9 +37,9 @@ function check(id, ok, mensaje) { console.log((ok ? '  pass  ' : '  FAIL  ') + i
 const browser = await chromium.launch();
 const paginas = [];
 async function montar({ filtrado = true, control = 0, cambios = [], lento = false, activo = 'treatment_especifico' } = {}) {
-  const page = await browser.newPage({ viewport: { width: 1366, height: 1000 }, reducedMotion: 'reduce' });
+  const page = await browser.newPage({ viewport: { width: 1366, height: 1000 }, reducedMotion: 'reduce', acceptDownloads: true });
   paginas.push(page);
-  await page.route('**/*', (r) => r.abort());
+  await page.route(/^https?:\/\//, (r) => r.abort());
   const datos = [[A, 7372], [B, 413], [not(B, A), control]];
   filas.forEach(([, q, a, b]) => { datos.push([and(A, q), a], [and(B, q), b], [not(and(A, q), B), a - b]); });
   for (let i = 0; i < 20; i++) {
@@ -56,7 +57,7 @@ async function montar({ filtrado = true, control = 0, cambios = [], lento = fals
     window._termino = A;
     window._base = A;
     window._final = B;
-    window.filterMap = { qualitative: '(qualitative-fixture[tw])' };
+    window.filterMap = { qualitative: '(qualitative-fixture[tw])', treatment_especifico: '(Therapy/Narrow[filter])' };
     window.estadoBusqueda = () => ({ termino: window._termino, activos: new Set(window._filtrado ? [activo] : []),
       categorias: { clinical: [activo] }, operadores: { clinical: 'AND' }, trending: false, fecha: '' });
     window.constructQuery = (term, o) => o?.activos?.size === 0 || !window._filtrado ? window._base : window._final;
@@ -70,6 +71,7 @@ async function montar({ filtrado = true, control = 0, cambios = [], lento = fals
       return typeof d === 'number' ? { count: d, traduccion: q, avisos: [], errores: [] } : d;
     }};
   }, { datos, filtrado, lento, A, B, activo });
+  await page.addScriptTag({ content: atlas });
   await page.addScriptTag({ content: js });
   await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
   await page.click('#toggleAnalisisButton');
@@ -81,6 +83,9 @@ const nPedidos = (p) => p.evaluate(() => window._calls.length);
 const texto = (p, sel) => p.locator(sel).textContent();
 const ruta = (id) => '[data-ruta="' + id + '"]';
 const abrir = (p, id) => p.locator('[data-seccion="' + id + '"]').evaluate((e) => { e.open = true; });
+const valoresCruce = (p, valores) => p.evaluate((datos) => {
+  [...document.querySelectorAll('.an-region .an-num')].forEach((el, i) => window._datos.set(el.dataset.q, datos[i]));
+}, valores);
 
 try {
   const p = await montar();
@@ -89,7 +94,11 @@ try {
   check('P03', /301/.test(await texto(p, ruta('aleatorizado') + ' .an-conserva')) && await texto(p, '[data-fuera="aleatorizado"]') === '0', '301 ensayos conservados y cero fuera; no se confunde proporción con ganancia');
   check('P04', await texto(p, '[data-fuera="guia"]') === '35', '35 guías fuera con esta combinación de filtros');
   check('P05', await p.locator('[data-fuera="guia"]').getAttribute('href') === 'https://pubmed.ncbi.nlm.nih.gov/?term=' + encodeURIComponent(not(and(A, filas[0][1]), B)), 'Fuera enlaza al conjunto literal A∩tipo NOT B');
-  check('P06', await p.locator('[data-barra="ruta-aleatorizado"]').evaluate((e) => e.style.width) === '100%', 'la barra mide conservación dentro de la misma fila');
+  await p.click('[data-atlas-modo="conservacion"]');
+  check('P06', await p.locator('[data-barra="ruta-aleatorizado"]').evaluate((e) => e.style.width) === '100%', 'en modo conservación, la barra mide la misma fila');
+  await p.click('[data-atlas-modo="volumen"]');
+  const volumen = await p.locator('[data-barra-base="revision"]').evaluate((e) => ({ estilo: e.style.width, ancho: e.getBoundingClientRect().width, pista: e.parentElement.getBoundingClientRect().width }));
+  check('P18', volumen.estilo === '100%', 'volumen usa una escala común para las rutas: ' + JSON.stringify(volumen));
   check('P07', await p.locator('[data-fuera-total] a').getAttribute('href') === 'https://pubmed.ncbi.nlm.nih.gov/?term=' + encodeURIComponent(not(A, B)), 'el total excluido también abre su conjunto');
   const frase = await texto(p, '[data-frase]');
   check('H01', /mayor conservación en «Ensayos aleatorizados», 301 de 301/.test(frase)
@@ -115,7 +124,69 @@ try {
   await p.locator('[data-seccion="anios"]').evaluate((e) => { e.open = false; });
   await abrir(p, 'anios'); await p.waitForTimeout(50);
   check('P14', await nPedidos(p) === 63, 'reabrir una sección no repite consultas');
+  check('P19', await p.locator('[data-barra-base="revision"]').evaluate((e) => e.style.width) === '100%', 'abrir años no cambia la escala de volumen de las rutas');
   await p.locator('[data-seccion="anios"]').evaluate((e) => { e.open = false; });
+
+  // Álgebra independiente: verdad de cada región para todas las asignaciones Q/A/B.
+  const algebra = await p.evaluate(() => {
+    const probar = (expresionA) => {
+      const qs = window.PubMedAtlas.consultasCruce('Q', expresionA, 'B');
+      for (let mask=0; mask<8; mask++) {
+        const Q=!!(mask&4), A=!!(mask&2), B=!!(mask&1), lente=expresionA==='A'?A:!A;
+        const esperadas=[Q&&lente&&B,Q&&lente&&!B,Q&&!lente&&B,Q&&!lente&&!B];
+        const valores=qs.map(q=>Function('return '+q.replace(/\b(Q|A|B)\b/g,k=>String({Q,A,B}[k])).replace(/\bAND\b/g,'&&').replace(/\bOR\b/g,'||').replace(/\bNOT\b/g,'&& !'))());
+        if(JSON.stringify(valores)!==JSON.stringify(esperadas)) return false;
+      }
+      return true;
+    };
+    const a=window.PubMedAtlas;
+    return { positivas:probar('A'), negativas:probar('NOT A'), negativasSinEspacio:probar('NOT(A)'),
+      coherente:a.evaluarCruce([8,27,366,6971],7372), incoherente:a.evaluarCruce([8,27,366,6972],7372),
+      vacia:a.evaluarCruce([0,0,0,7372],7372), todasVacias:a.evaluarCruce([0,0,0,0],0),
+      invalida:a.evaluarCruce([NaN,0,0,0],0), negativa:a.evaluarCruce([-1,1,0,0],0) };
+  });
+  check('X01', algebra.positivas, 'las cuatro regiones son una partición de Q para las ocho asignaciones booleanas');
+  check('X02', algebra.negativas && algebra.negativasSinEspacio, 'una cláusula NOT conserva su sentido, con y sin espacio');
+  check('X03', algebra.coherente.valido && Math.abs(algebra.coherente.jaccard - 8/401) < 1e-12, 'Jaccard usa la unión y no el universo como denominador');
+  check('X04', !algebra.incoherente.valido && !algebra.invalida.valido && !algebra.negativa.valido, 'recuentos incoherentes, no finitos o negativos no certifican una partición');
+  check('X05', algebra.vacia.valido && algebra.vacia.jaccard === null && algebra.todasVacias.valido, 'el universo vacío y las lentes vacías no producen un 0 % ficticio');
+  const antesCruce = await nPedidos(p);
+  await abrir(p, 'cruces'); await p.waitForTimeout(50);
+  check('X06', await nPedidos(p) === antesCruce && /4 recuentos/.test(await texto(p, '[data-calcular-cruce]')), 'abrir cruces muestra el coste y las expresiones, sin consultar');
+  await valoresCruce(p,[8,27,366,6971]);
+  await p.click('[data-calcular-cruce]'); await listo(p);
+  check('X07', await nPedidos(p) === antesCruce + 4, 'calcular una pareja pide exactamente cuatro regiones directas');
+  check('X08', await p.locator('.an-region > .an-num').allTextContents().then(x=>JSON.stringify(x)===JSON.stringify(['8','27','366','6.971'])), 'los cuatro grupos muestran sus recuentos exactos');
+  check('X09', /suman el universo/.test(await texto(p,'[data-cruce-estado]')) && /2 %/.test(await texto(p,'[data-jaccard]')), 'la partición coherente permite una coincidencia del 2 %');
+  await p.locator('[data-region="2"]').focus(); await p.keyboard.press('Enter');
+  check('X10', await p.locator('[data-region="2"]').getAttribute('aria-pressed') === 'true'
+    && await texto(p,'[data-region-consulta]') === await p.locator('.an-region > .an-num').nth(2).getAttribute('data-q'), 'el teclado coordina la región y su inspector literal');
+  check('X11', await p.locator('[data-region-enlace]').getAttribute('href') === await p.locator('.an-region > .an-num').nth(2).getAttribute('href'), 'inspector y cifra abren el mismo conjunto en PubMed');
+  await p.locator('[data-seccion="cruces"]').evaluate(e=>{e.open=false;}); await abrir(p,'cruces'); await p.waitForTimeout(30);
+  check('X12', await nPedidos(p) === antesCruce + 4, 'reabrir cruces y elegir regiones no añade consultas');
+  await p.locator('[data-seccion="cruces"]').evaluate(e=>{e.open=false;});
+  await abrir(p,'consulta');
+  const esperaDescarga=p.waitForEvent('download'); await p.click('[data-exportar-registro]');
+  const descarga=await esperaDescarga, registro=JSON.parse(readFileSync(await descarga.path(),'utf8'));
+  check('R01', registro.formato==='buscar-pubmed-atlas/1' && registro.base===A && registro.consulta_efectiva===B, 'el registro descargado identifica universo y estrategia efectiva');
+  check('R02', registro.recuentos.length===antesCruce+4 && registro.recuentos.every(r=>r.consulta && r.estado && r.dato?.traduccion), 'el registro conserva las consultas ejecutadas y sus traducciones');
+  check('R03', registro.limites.some(t=>/PRISMA-S/.test(t)) && !JSON.stringify(registro).includes('api_key'), 'la exportación declara sus límites y no exporta claves');
+  await p.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async t=>{window._copiado=t;}}}));
+  await p.click('[data-copiar-estrategia]');
+  check('R04', await p.evaluate(()=>window._copiado.includes(window._final)) && /copiada/.test(await texto(p,'[data-exporta-estado]')), 'copiar estrategia entrega la expresión efectiva al portapapeles');
+  check('R05', registro.filtros[0].expresion==='(Therapy/Narrow[filter])' && registro.recorrido.length===2, 'el registro conserva la expresión del filtro y el recorrido, no solo identificadores');
+  await p.locator('[data-seccion="consulta"]').evaluate(e=>{e.open=false;});
+  await abrir(p,'anios');
+  check('T01', /20 recuentos/.test(await texto(p,'[data-campo-anios] option[value="crdt"]')), 'el calendario alternativo anuncia veinte recuentos antes de cambiar');
+  await p.evaluate(()=>{
+    for(let i=0;i<10;i++) {const a=new Date().getFullYear()-i;window._datos.set('(apixaban) AND ('+a+'[crdt])',i?100:1000);window._datos.set('((apixaban) AND (Therapy/Narrow[filter])) AND ('+a+'[crdt])',i?20:100);}
+  });
+  const antesCalendario=await nPedidos(p); await p.selectOption('[data-campo-anios]','crdt'); await listo(p);
+  check('T02', await nPedidos(p)===antesCalendario+20 && /creación del registro/.test(await texto(p,'.an-anios caption'))
+    && await p.locator('.an-grafica-anios path').count()===2, 'el calendario de creación del registro tiene sus consultas y dos líneas, sin confundirlo con publicación');
+  await p.selectOption('[data-campo-anios]','dp'); await listo(p);
+  check('T03', await nPedidos(p)===antesCalendario+20 && await p.locator('[data-campo-anios]').evaluate(e=>e===document.activeElement), 'volver a publicación reutiliza datos y conserva el foco');
+  await p.locator('[data-seccion="anios"]').evaluate(e=>{e.open=false;});
 
   for (const ancho of [1366, 768, 390, 320]) {
     await p.setViewportSize({ width: ancho, height: 1000 });
@@ -174,6 +245,21 @@ try {
   const ninguna = await montar({ cambios: filas.map(([,q]) => [and(B,q),0]) });
   check('H10', /ninguna conserva registros/.test(await texto(ninguna, '[data-frase]'))
     && /Mayor pérdida proporcional/.test(await texto(ninguna, '[data-frase]')), 'si todas quedan vacías, el mensaje lo dice sin una falsa conservación');
+  const incoherente=await montar(); await abrir(incoherente,'cruces'); await valoresCruce(incoherente,[8,27,366,6972]);
+  await incoherente.click('[data-calcular-cruce]'); await listo(incoherente);
+  check('X13', /no encajan/.test(await texto(incoherente,'[data-cruce-estado]')) && /pendiente/.test(await texto(incoherente,'[data-jaccard]')), 'una suma incorrecta no cierra artificialmente la partición');
+  const fallido=await montar(); await abrir(fallido,'cruces'); await valoresCruce(fallido,[null,27,366,6971]);
+  await fallido.click('[data-calcular-cruce]'); await listo(fallido);
+  check('X14', await texto(fallido,'.an-region:first-child > .an-num')==='fallo'
+    && await fallido.locator('.an-particion > .an-sin-dato').count()===4, 'un cruce fallido no dibuja ceros ni proporciones inventadas');
+  const avisado=await montar(); await abrir(avisado,'cruces'); await valoresCruce(avisado,[{count:8,traduccion:'',avisos:[],errores:[]},27,366,6971]);
+  await avisado.click('[data-calcular-cruce]'); await listo(avisado);
+  check('X15', /⚠/.test(await texto(avisado,'.an-region:first-child > .an-num')) && /pendiente/.test(await texto(avisado,'[data-jaccard]')), 'un aviso de integridad bloquea el Jaccard');
+  const tardio=await montar({lento:true}); await abrir(tardio,'cruces'); await valoresCruce(tardio,[8,27,366,6971]);
+  await tardio.click('[data-calcular-cruce]'); await tardio.selectOption('[data-lente="b"]','ruta:metaanalisis');
+  await tardio.evaluate(()=>window._pendientes.splice(0).forEach(ok=>ok())); await tardio.waitForTimeout(100);
+  check('X16', await tardio.locator('.an-region > .an-num').allTextContents().then(x=>x.every(t=>t==='…'))
+    && await nPedidos(tardio)===27, 'cambiar de lentes invalida la vista sin disparar consultas ni pintar respuestas de la pareja anterior');
   const etiquetas = await p.locator('.an-ruta [role="rowheader"]').count();
   check('A01', etiquetas === 10 && await p.locator('[role="table"][aria-label]').count() === 1, 'filas, cabeceras y tabla tienen semántica accesible');
   check('A02', await p.locator('[data-estado][role="status"][aria-live="polite"]').count() === 1, 'el progreso se anuncia de forma no intrusiva');
