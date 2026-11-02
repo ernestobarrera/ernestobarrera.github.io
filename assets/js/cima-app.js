@@ -13526,15 +13526,48 @@ ${ftFechaDocsHtml}
     }
 
     /**
+     * Una consulta por CN a /sns-catalog/by-cn o /bifimed/by-cn que distingue AUSENCIA de FALLO.
+     * Devuelve el registro si está, `{found:false}` solo cuando el Worker responde 404 con
+     * `found:false`, y `{found:false, error:true}` en cualquier otro caso.
+     *
+     * El reintento no es adorno. Medido el 2026-11-02: el Worker parsea el catálogo entero (19,7 MB)
+     * en cada isolate frío y, con ráfagas, Cloudflare corta con 503 «error code: 1102» (límite de
+     * CPU) — 38 de 600 peticiones. El segundo intento suele caer en un isolate ya caliente.
+     */
+    async _consultarFinanciacionCn(url, headers) {
+        for (let intento = 0; intento < 2; intento++) {
+            if (intento) await new Promise(res => setTimeout(res, 400));
+            try {
+                const r = await fetch(url, { signal: AbortSignal.timeout(8000), headers });
+                const j = await r.json();
+                if (r.ok && j?.found) return j;
+                if (r.status === 404 && j?.found === false) return j;
+            } catch (e) { /* red, tiempo o cuerpo no JSON (el 1102 llega en texto plano) */ }
+        }
+        return { found: false, error: true };
+    }
+
+    /** Botón «Reintentar» de la pestaña Financiación tras un fallo de consulta. */
+    _reintentarFinanciacion() {
+        const container = document.getElementById('financing-content');
+        if (!container || !this._medFinanciacion) return;
+        delete container.dataset.loaded;
+        container.innerHTML = '<div class="loading-spinner"></div>';
+        this.loadSnsFinancing(this._medFinanciacion);
+    }
+
+    /**
      * Carga lazy de la pestaña Financiación SNS del modal.
      * Fuente: Nomenclátor de Facturación (Ministerio de Sanidad) vía Worker KV.
-     * Busca cada CN de las presentaciones del medicamento. Si falla, mensaje discreto.
+     * Busca cada CN de las presentaciones del medicamento. Si no se puede consultar, lo dice y
+     * ofrece reintentar: nunca lo presenta como «no figura».
      */
     async loadSnsFinancing(med) {
         const container = document.getElementById('financing-content');
         if (!container || container.dataset.loaded) return;
         container.dataset.loaded = '1';
         this._pendingSnsFinancing = null;
+        this._medFinanciacion = med;
 
         const esc = s => this._escapeHtml(String(s ?? ''));
         const workerBase = this.api.cloudflareProxy;
@@ -13554,19 +13587,15 @@ ${ftFechaDocsHtml}
                 ...(window._mcSource         ? { 'X-MC-Source':  window._mcSource }         : {}),
             };
             const [snsResults, bifimedResults] = await Promise.all([
-                Promise.all(cns.map(cn =>
-                    fetch(`${workerBase}/sns-catalog/by-cn/${cn}`, { signal: AbortSignal.timeout(8000), headers: analyticsHeaders })
-                        .then(r => r.json())
-                        .catch(() => ({ found: false, cn }))
-                )),
-                Promise.all(cns.map(cn =>
-                    fetch(`${workerBase}/bifimed/by-cn/${cn}`, { signal: AbortSignal.timeout(8000), headers: analyticsHeaders })
-                        .then(r => r.json())
-                        .catch(() => ({ found: false, cn }))
-                )),
+                Promise.all(cns.map(cn => this._consultarFinanciacionCn(`${workerBase}/sns-catalog/by-cn/${cn}`, analyticsHeaders))),
+                Promise.all(cns.map(cn => this._consultarFinanciacionCn(`${workerBase}/bifimed/by-cn/${cn}`, analyticsHeaders))),
             ]);
 
             const found = snsResults.filter(r => r.found);
+            // Un CN que no se pudo consultar no es un CN que no figure. Sin esto, dos fallos de red
+            // pintaban «no figura en el Nomenclátor ni en BIFIMED» sobre un anticoagulante financiado.
+            const snsFallo = snsResults.some(r => r.error);
+            const bifimedFallo = bifimedResults.some(r => r.error) && !bifimedResults.some(r => r.found);
 
             const downloadDateSns = found[0]?._meta?.download_date || '';
 
@@ -13715,7 +13744,17 @@ ${ftFechaDocsHtml}
                         Los precios son orientativos. Fuente: Nomenclátor — Ministerio de Sanidad.
                         <a href="${nomenclatorUrlPrimary}" target="_blank" rel="noopener">Ver ficha en Nomenclátor</a>${bifimedLink}
                     </div>
+                    ${bifimedFallo ? `<div class="fin-disclaimer"><i class="fas fa-exclamation-triangle"></i> No se pudo consultar BIFIMED (financiación por indicación). <button type="button" class="btn btn-sm btn-secondary" onclick="app._reintentarFinanciacion()">Reintentar</button></div>` : ''}
                    </div>`;
+            } else if (snsFallo || bifimedFallo) {
+                // Sin respuesta de una de las dos fuentes, ninguna de las notas de abajo es afirmable:
+                // todas dicen, explícita o implícitamente, que el Nomenclátor no lo tiene.
+                snsSection = `<div class="sns-empty" style="padding:1.5rem">
+                        <i class="fas fa-exclamation-triangle" style="font-size:2rem;color:var(--warning);display:block;margin-bottom:0.5rem"></i>
+                        <div class="sns-empty-title">No se pudo consultar la financiación</div>
+                        <div class="sns-empty-sub">El servicio no respondió. Esto no significa que el medicamento no esté financiado.</div>
+                        <button type="button" class="btn btn-sm btn-secondary" style="margin-top:0.75rem" onclick="app._reintentarFinanciacion()">Reintentar</button>
+                       </div>`;
             } else {
                 const st = (bifimedDrugStatus || '').toLowerCase();
                 let notaIcon, notaClass, notaTexto;

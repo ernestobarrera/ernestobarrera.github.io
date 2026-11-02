@@ -34,7 +34,7 @@ const sandbox = {
     console: { log() {}, warn() {}, error() {} },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     fetch: () => Promise.reject(new Error('sin red en tests')),
-    setTimeout, clearTimeout, setInterval, clearInterval,
+    setTimeout, clearTimeout, setInterval, clearInterval, AbortSignal,
     Date, Math, JSON, Promise, Map, Set, RegExp, URL, URLSearchParams,
     navigator: { onLine: true },
     location: { search: '', href: '' },
@@ -185,6 +185,49 @@ check('la nota de financiación lo incluye', /notaTexto\}\$\{bifimedLink\}/.test
 check('la sección del Nomenclátor también lo incluye', /Ver ficha en Nomenclátor<\/a>\$\{bifimedLink\}/.test(fuente), true);
 check('el enlace usa ?cn= y no el ?prod= del Nomenclátor',
     /medicamentos\.do\?metodo=verDetalle&cn=\$\{cnToProd\(bifimedCn\)\}/.test(fuente), true);
+
+// --- Ausencia frente a fallo de consulta (2026-11-02) ---------------------------
+// RIVAROXABAN AUROVITAS 10 MG (CN 725293) salió «Sin datos de financiación SNS — no figura en el
+// Nomenclátor ni en BIFIMED» estando financiado: el Worker corta a veces con 503 «error code:
+// 1102» (texto plano) y el `.catch` lo convertía en `found:false`.
+console.log('\n— Ausencia frente a fallo de consulta —');
+const respuesta = (status, cuerpo) => Promise.resolve({
+    ok: status >= 200 && status < 300,
+    status,
+    json: () => (typeof cuerpo === 'string' ? Promise.reject(new SyntaxError('no JSON')) : Promise.resolve(cuerpo)),
+});
+const conFetch = async (secuencia) => {
+    let llamadas = 0;
+    sandbox.fetch = () => secuencia[Math.min(llamadas++, secuencia.length - 1)]();
+    const r = await app._consultarFinanciacionCn('https://x/sns-catalog/by-cn/725293', {});
+    return { r, llamadas };
+};
+const registro = { found: true, cn: '0725293', estado: 'ALTA' };
+
+let caso = await conFetch([() => respuesta(200, registro)]);
+check('200 con registro → el registro, sin reintento', caso.r.found === true && caso.llamadas === 1, true);
+caso = await conFetch([() => respuesta(404, { cn: '0725293', found: false })]);
+check('404 con found:false → ausencia real, sin marca de error', caso.r.found === false && !caso.r.error && caso.llamadas === 1, true);
+caso = await conFetch([() => respuesta(503, 'error code: 1102'), () => respuesta(200, registro)]);
+check('503 «1102» y luego 200 → el reintento recupera el registro', caso.r.found === true && caso.llamadas === 2, true);
+caso = await conFetch([() => respuesta(503, 'error code: 1102')]);
+check('503 dos veces → error, NUNCA ausencia', caso.r.error === true && caso.llamadas === 2, true);
+caso = await conFetch([() => Promise.reject(new Error('timeout'))]);
+check('red caída o timeout → error, NUNCA ausencia', caso.r.error === true, true);
+caso = await conFetch([() => respuesta(200, { found: false })]);
+check('200 sin registro (respuesta anómala) → error, no ausencia', caso.r.error === true, true);
+
+// MUTANTE: el comportamiento anterior (`.catch(() => ({found:false}))`) tiene que fallar el contrato.
+const consultaVieja = (p) => p.then(r => r.json()).catch(() => ({ found: false }));
+const vieja = await consultaVieja(respuesta(503, 'error code: 1102'));
+check('MUTANTE: la consulta vieja convertía el 1102 en ausencia sin marca de error',
+    vieja.found === false && !vieja.error, true);
+
+check('la pestaña pinta «No se pudo consultar» ANTES de cualquier nota de ausencia',
+    fuente.indexOf('No se pudo consultar la financiación') > -1
+    && fuente.indexOf('No se pudo consultar la financiación') < fuente.indexOf('Sin datos de financiación SNS'), true);
+check('loadSnsFinancing ya no traga el fallo con `.catch(() => ({ found: false, cn }))`',
+    fuente.includes('.catch(() => ({ found: false, cn }))'), false);
 
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);
