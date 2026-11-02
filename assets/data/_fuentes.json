@@ -53,9 +53,9 @@
       "mantenimiento": "auto",
       "workflow": ".github/workflows/etl-medynut.yml",
       "campo_fecha": "_meta.generated_at",
-      "max_age_days": 40,
-      "desfase_dato_max_days": 40,
+      "max_age_days": null,
       "campo_fecha_fuente": "_meta.generated_at",
+      "vigilancia": "Sin umbral de edad aqui A PROPOSITO (02/11/2026), mismo caso que materiales-catalog.json. El ETL mensual solo commitea si el indice CAMBIA, asi que generated_at del fichero envejece mientras MedyNut no cambie: el 07/10/2026 el ETL salio en verde sin cambios, el fichero se quedo en el 18/09 y desde el 28/10 el watchdog fallaba cada dia (OBSOLETO y DATO VIEJO) por un dato al dia. Lo vigilable es que el ETL siga corriendo, y eso lo mide medynut:meta en SOURCES (umbral 40 dias), que el workflow sube en cada pasada sin condicion de cambio. Mas el latido.",
       "degradacion": null
     },
     "clinical-ontology.json": {

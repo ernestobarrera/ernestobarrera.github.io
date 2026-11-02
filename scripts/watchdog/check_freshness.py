@@ -79,6 +79,17 @@ SOURCES = [
         "date_fields": ["generated_at"],
         "max_age_days": 40,
     },
+    # Entra el 02/11/2026 por el mismo motivo que `materiales:meta`. El ETL de MedyNut solo
+    # commitea si el indice CAMBIA, y el fichero del repo se quedo con generated_at del 18/09
+    # mientras el run del 07/10 salia en verde sin cambios: el watchdog fallo cada dia desde el
+    # 28/10 por un dato al dia. El paso de KV no lleva condicion de cambio. Cadencia mensual (dia 7).
+    {
+        "key": "medynut:meta",
+        "workflow": "etl-medynut.yml",
+        "label": "Indice de fichas MedyNut (SENPE)",
+        "date_fields": ["generated_at"],
+        "max_age_days": 40,
+    },
     # Cadencia anual: el Ministerio publico la tabla de 2025 el 1 de abril de 2026. 400 dias deja
     # margen para un retraso de un par de meses sin ruido; mas alla de eso hay que mirarlo.
     #
