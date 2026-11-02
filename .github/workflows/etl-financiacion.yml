@@ -135,10 +135,12 @@ jobs:
           # revisión del 2026-09-10.
           #
           # También se compara el esquema: pasar de 7 a 8 columnas cambia lo que el cliente lee.
-          nuevo_fin=$(jq -S -c '.fin' /tmp/financiacion-index.json)
+          # Y el mapa `visado` (02/11/2026): no entra en `catalog_id`, así que un cambio SOLO de
+          # visado no movería el sello y, sin esto, no se commitearía nunca.
+          nuevo_fin=$(jq -S -c '[.fin, .visado]' /tmp/financiacion-index.json)
           nuevo_sello=$(jq -r '._meta.catalog_id, ._meta.schema_version' /tmp/financiacion-index.json)
           if [ -f assets/data/financiacion-index.json ]; then
-            viejo_fin=$(jq -S -c '.fin' assets/data/financiacion-index.json)
+            viejo_fin=$(jq -S -c '[.fin, .visado]' assets/data/financiacion-index.json)
             viejo_sello=$(jq -r '._meta.catalog_id, ._meta.schema_version' assets/data/financiacion-index.json)
           else
             viejo_fin=""; viejo_sello=""

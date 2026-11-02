@@ -112,6 +112,7 @@ const COL_NOMENCLATOR = CODIGOS.length + 1;
 // del catálogo de AEMPS que no tocó ni una presentación comercializada, y la faceta se quedó
 // apagada un mes. El detalle y la medición, en la cabecera de ese fichero.
 const MIN_CON_DATO = 12000;
+const MIN_VISADO_MEDICAMENTOS = 800;
 
 // ── Crawl con caché del día ───────────────────────────────────────────────────
 const CACHE_DIR = join(HERE, '.cache');
@@ -332,6 +333,15 @@ async function main() {
             + `· catalog_id ${nomMeta.catalog_id.slice(0, 16)}…`);
     }
 
+    // Visado (sidecar de esquema 2, desde el 02/11/2026). Va en un mapa APARTE, `visado`, y no
+    // como columna de `fin`: es un campo propio de BIFIMED («Condiciones financiación
+    // restringidas»), independiente de la situación de financiación, y añadirlo como novena
+    // posición acoplaría su presencia a la del Nomenclátor y movería el ancho que vigilan los
+    // centinelas. Un sidecar sin la lista —esquema 1— no produce mapa, y el cliente entonces no
+    // afirma nada sobre el visado: no saber no es «sin visado».
+    const cnsVisado = Array.isArray(proc.visado) ? new Set(proc.visado) : null;
+    const visado = {};
+
     const idx = CODIGOS.reduce((m, c, i) => (m[c] = i + 1, m), {});
     const ancho = nomPorCn ? COL_NOMENCLATOR + 1 : CODIGOS.length + 1;
     const fin = {};
@@ -353,6 +363,11 @@ async function main() {
         const codigo = porCn[cn7];
         if (codigo !== undefined) {
             fila[idx[String(codigo)]] += 1;
+            // Solo de las financiadas (listas 1 y 2): en una excluida el visado no dice nada, y la
+            // ficha en vivo (`_computeFinancingSummary`) cuenta con el mismo criterio.
+            if (cnsVisado?.has(cn7) && (String(codigo) === '1' || String(codigo) === '2')) {
+                visado[nreg] = (visado[nreg] || 0) + 1;
+            }
         } else if (nomPorCn && nomPorCn[cn7] === 'A') {
             // SOLO cuando BIFIMED no dice nada de este CN. El orden de este `else if` ES la
             // garantía de que no hay doble conteo: una presentación cae en una columna o en la
@@ -379,6 +394,19 @@ async function main() {
 
     const fallos = validarCentinelas(fin, join(HERE, 'sentinels.json'), { conNomenclator: !!nomPorCn });
     if (fallos > 0) throw new Error(`${fallos} centinela(s) fallidos`);
+
+    // Un sidecar que trae la lista y un cruce que la deja casi vacía es un fallo, no un dato: el
+    // cliente leería «sin visado» donde BIFIMED lo exige. Medido el 02/11/2026: 2.460 CN con
+    // visado y 1.579 medicamentos comercializados con alguno; el mínimo es la mitad.
+    const conVisado = Object.keys(visado).length;
+    if (cnsVisado) {
+        console.error(`[etl-fin] visado: ${cnsVisado.size} CN en el sidecar · ${conVisado} medicamentos con alguna presentación comercializada con visado`);
+        if (conVisado < MIN_VISADO_MEDICAMENTOS) {
+            throw new Error(`cruce de visado anómalo: ${conVisado} medicamentos (mínimo ${MIN_VISADO_MEDICAMENTOS})`);
+        }
+    } else {
+        console.error('[etl-fin] aviso: el sidecar no trae `visado` (esquema 1): el índice no dirá nada del visado');
+    }
 
 
     const payload = {
@@ -413,8 +441,11 @@ async function main() {
             nregistros,
             con_algun_dato: conAlgunDato,
             sin_comercializadas: sinComercializadas,
+            // `null` = el sidecar no traía la lista, y entonces el índice no sabe nada del visado.
+            con_visado: cnsVisado ? conVisado : null,
         },
         fin,
+        ...(cnsVisado ? { visado } : {}),
     };
 
     // El esquema DECLARADO tiene que ser el esquema EMITIDO, y se comprueba leyendo el payload YA

@@ -63,6 +63,10 @@ const orden = (v) => Array.isArray(v) ? v.map(orden)
     ? Object.fromEntries(Object.keys(v).sort().map(k => [k, orden(v[k])]))
     : v;
 if (expr === '.fin') { process.stdout.write(JSON.stringify(orden(j.fin)) + '\\n'); }
+else if (expr === '[.fin, .visado]') {
+  // Como jq: un campo ausente es null, no un error.
+  process.stdout.write(JSON.stringify([orden(j.fin), j.visado === undefined ? null : orden(j.visado)]) + '\\n');
+}
 else if (expr === '._meta.catalog_id, ._meta.schema_version') {
   process.stdout.write(String(j._meta.catalog_id) + '\\n' + String(j._meta.schema_version) + '\\n');
 } else { process.stderr.write('shim de jq: expresion no contemplada: ' + expr + '\\n'); process.exit(9); }
@@ -117,6 +121,14 @@ check('MISMOS conteos pero OTRO catalog_id → se commitea igual',
     decidir(idx(FIN_A, 'bbb'), idx(FIN_A, 'aaa')), 'true');
 check('mismos conteos y mismo sello pero OTRO esquema → se commitea igual',
     decidir(idx(FIN_A, 'aaa', 1), idx(FIN_A, 'aaa', 2)), 'true');
+
+console.log('\n— El visado, que no entra en el sello (02/11/2026) —');
+check('mismos conteos y sello pero OTRO visado → se commitea',
+    decidir({ ...idx(FIN_A, 'aaa'), visado: { 63575: 1 } }, { ...idx(FIN_A, 'aaa'), visado: { 63575: 2 } }), 'true');
+check('el primer índice con visado sobre uno sin él → se commitea',
+    decidir({ ...idx(FIN_A, 'aaa'), visado: { 63575: 1 } }, idx(FIN_A, 'aaa')), 'true');
+check('visado idéntico → no se commitea',
+    decidir({ ...idx(FIN_A, 'aaa'), visado: { 63575: 1 } }, { ...idx(FIN_A, 'aaa'), visado: { 63575: 1 } }), 'false');
 
 console.log('\n— Bordes —');
 check('sin índice publicado todavía → se commitea',

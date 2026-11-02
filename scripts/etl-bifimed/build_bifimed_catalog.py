@@ -649,11 +649,18 @@ def main(argv: list[str] | None = None) -> int:
     # `schema_version` sigue en 2: nada de lo que se publica es distinto.
     proc_out = Path(args.procedencia_out) if args.procedencia_out else \
         Path(args.out).with_name(Path(args.out).stem + "_procedencia.json")
+    # Esquema 2 (02/11/2026): + `visado`, los CN con «Condiciones financiación restringidas: Visado».
+    # BIFIMED lo publica como campo PROPIO, independiente de la situación de financiación: el
+    # rivaroxabán 10 mg de Aurovitas (CN 725293) es «Si» con visado. Hasta ahora el cliente deducía
+    # el visado del código 2 y erraba en los dos sentidos (~1.970 CN con visado sin marcar, ~1.080
+    # sin visado marcados). No entra en `catalog_id`, que sigue identificando la procedencia.
+    visado = sorted(cn for cn, r in parsed["by_cn"].items() if r.get("visado"))
     proc = {
         "meta": {
-            "schema_version": 1,
-            "descripcion": "CN -> código `financiado` de la lista BIFIMED de la que procede. "
-                           "Dato de la fuente, no clasificación propia.",
+            "schema_version": 2,
+            "descripcion": "CN -> código `financiado` de la lista BIFIMED de la que procede, y CN "
+                           "con visado. Dato de la fuente, no clasificación propia.",
+            "total_cn_visado": len(visado),
             "download_date": download_date,
             "generated_at": out["meta"]["generated_at"],
             "catalog_id": parsed["catalog_id"],
@@ -663,6 +670,7 @@ def main(argv: list[str] | None = None) -> int:
             "total_cn_catalogo": parsed["total_cn"],
         },
         "por_cn": parsed["procedencia"],
+        "visado": visado,
     }
     proc_compact = json.dumps(proc, ensure_ascii=False, separators=(",", ":"))
     proc_out.write_text(proc_compact, encoding="utf-8")
