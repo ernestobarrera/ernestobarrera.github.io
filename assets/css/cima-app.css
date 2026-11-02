@@ -14850,3 +14850,19 @@ a.ipt-item:hover {
         font-size: max(16px, 1em);
     }
 }
+
+/* BIFIMED — ficha con los rótulos literales de la fuente (02/11/2026) */
+.bifimed-campo {
+    display: grid;
+    grid-template-columns: minmax(9rem, 14rem) 1fr;
+    gap: 0.25rem 0.75rem;
+    padding: 0.35rem 0;
+    font-size: 0.85rem;
+    border-bottom: 1px dashed var(--border-default);
+}
+.bifimed-campo:last-child { border-bottom: none; }
+.bifimed-campo-rotulo { color: var(--text-muted); }
+.bifimed-campo-valor { color: var(--text-primary); line-height: 1.4; }
+@media (max-width: 600px) {
+    .bifimed-campo { grid-template-columns: 1fr; }
+}

@@ -229,5 +229,50 @@ check('la pestaña pinta «No se pudo consultar» ANTES de cualquier nota de aus
 check('loadSnsFinancing ya no traga el fallo con `.catch(() => ({ found: false, cn }))`',
     fuente.includes('.catch(() => ({ found: false, cn }))'), false);
 
+// --- El visado es un eje aparte (2026-11-02) ------------------------------------
+// BIFIMED publica «Situación de financiación» y «Condiciones financiación restringidas: Visado» como
+// campos independientes. RIVAROXABAN AUROVITAS 10 MG (84006, CN 725293) es «Si» CON visado y salía
+// «Financiado por el SNS» a secas; RIVAROXABAN ALMUS 15 MG es «Sí para determinadas
+// indicaciones/condiciones» con visado. El código 2 sin visado salía «con visado».
+console.log('\n— El visado, eje aparte de la situación —');
+const desdeConteos = (c) => app._financingSummaryFromCounts(c);
+check('«Si» con visado → la etiqueta lo añade',
+    desdeConteos({ fin: 1, visado: 1 }).label, 'Financiado por el SNS · Visado');
+check('«Si» sin visado → sin visado', desdeConteos({ fin: 1 }).label, 'Financiado por el SNS');
+check('código 2 sin visado → rótulo de BIFIMED, sin visado',
+    desdeConteos({ cond: 1 }).label, 'Financiado para determinadas indicaciones/condiciones');
+check('código 2 con visado → rótulo de BIFIMED + visado',
+    desdeConteos({ cond: 2, visado: 2 }).label, 'Financiado para determinadas indicaciones/condiciones · Visado');
+check('visado en parte de las financiadas → dice cuántas',
+    desdeConteos({ fin: 2, visado: 1 }).label, 'Financiado por el SNS · Visado (1 de 2 presentaciones)');
+check('una no financiada no hereda el visado', desdeConteos({ nofin: 1, visado: 1 }).label, 'No financiado por el SNS');
+check('el visado no cambia el estado (la faceta no se mueve)', desdeConteos({ fin: 1, visado: 1 }).estado, 'si');
+
+const enVivo = app._computeFinancingSummary(new Map([
+    ['0725293', { found: true, sit: 'Si', visado: true }],
+]));
+check('camino en vivo: el CN de Aurovitas 10 mg lleva visado', enVivo.label, 'Financiado por el SNS · Visado');
+const enVivoExcluido = app._computeFinancingSummary(new Map([
+    ['1', { found: true, sit: 'Excluido', visado: true }],
+]));
+check('camino en vivo: el visado de una excluida no cuenta', enVivoExcluido.visado, undefined);
+
+// Índice: el visado llega en un mapa aparte, y la tarjeta lo añade a su rótulo corto.
+app._financingVisado = { 84006: 1 };
+check('tarjeta: Aurovitas 10 mg (índice) → «Financiado por el SNS · Visado»',
+    app._financingTagFromRow([1, 1, 0, 0, 0, 0, 0, 0], '84006')?.short, 'Financiado por el SNS · Visado');
+check('tarjeta: código 2 sin visado → rótulo de BIFIMED',
+    app._financingTagFromRow([1, 0, 1, 0, 0, 0, 0, 0], '88050')?.short, 'Financiado: determinadas indicaciones/condiciones');
+app._financingVisado = null;
+check('índice sin mapa de visado (anterior al 02/11) → no afirma nada del visado',
+    app._financingTagFromRow([1, 1, 0, 0, 0, 0, 0, 0], '84006')?.short, 'Financiado por el SNS');
+
+check('MUTANTE: ya no queda «Financiado con visado» deducido del código 2',
+    fuente.includes("cond: 'Financiado con visado'"), false);
+check('la pestaña pinta el visado con el rótulo de BIFIMED',
+    fuente.includes("campo('Condiciones financiación restringidas', visadoHtml)"), true);
+check('la pestaña pinta las indicaciones financiadas en texto',
+    fuente.includes("campo('Indicaciones financiadas', r.indicaciones_financiadas"), true);
+
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);

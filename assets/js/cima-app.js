@@ -12784,15 +12784,16 @@ ${ftFechaDocsHtml}
     // RESUMEN DE FINANCIACIÓN EN FICHA INFORMACIÓN (vistazo rápido)
     // ============================================
 
-    /** Lee la caché de financiación por CN de localStorage. */
+    /** Lee la caché de financiación por CN de localStorage. `_v2` desde que guarda el visado
+     *  (02/11/2026): las entradas viejas no lo traen y durante 24 h lo habrían callado. */
     _finCacheRead() {
-        try { return JSON.parse(localStorage.getItem('medcheck_fin_summary_cache') || '{}'); }
+        try { return JSON.parse(localStorage.getItem('medcheck_fin_summary_cache_v2') || '{}'); }
         catch (e) { return {}; }
     }
 
     /** Persiste la caché de financiación por CN en localStorage (best-effort). */
     _finCacheWrite(cache) {
-        try { localStorage.setItem('medcheck_fin_summary_cache', JSON.stringify(cache)); }
+        try { localStorage.setItem('medcheck_fin_summary_cache_v2', JSON.stringify(cache)); }
         catch (e) { /* cuota/no disponible: la caché es best-effort */ }
     }
 
@@ -12820,7 +12821,7 @@ ${ftFechaDocsHtml}
                 fetch(`${workerBase}/bifimed/by-cn/${cn}`, { signal: AbortSignal.timeout(8000), headers })
                     .then(r => r.json())
                     .then(j => {
-                        const d = { found: !!j.found, sit: j.situacion_financiacion || '' };
+                        const d = { found: !!j.found, sit: j.situacion_financiacion || '', visado: !!j.visado };
                         result.set(cn, d);
                         cache[cn] = { t: now, d };
                     })
@@ -12868,16 +12869,18 @@ ${ftFechaDocsHtml}
      * cuenta como financiada pero se muestra aparte, no como "sin datos". Mezcla financiada/no → parcial.
      */
     _computeFinancingSummary(map) {
-        let fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0;
+        let fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0, visado = 0;
         for (const d of map.values()) {
             const c = this._classifyFinSit(d.sit, d.found);
+            // Visado solo de las financiadas: el índice lo cuenta igual, y en una excluida no dice nada.
+            if (d.visado && (c === 'fin' || c === 'cond')) visado++;
             if (c === 'fin') fin++;
             else if (c === 'cond') cond++;
             else if (c === 'nofin') nofin++;
             else if (c === 'estudio_sin_peticion') estudio++;
             else sindato++;
         }
-        return this._financingSummaryFromCounts({ fin, cond, nofin, estudio, sindato });
+        return this._financingSummaryFromCounts({ fin, cond, nofin, estudio, sindato, visado });
     }
 
     /**
@@ -12890,7 +12893,21 @@ ${ftFechaDocsHtml}
      * tarjeta y la ficha del mismo medicamento podrían acabar diciendo cosas distintas — que es
      * exactamente lo que este diseño existe para impedir.
      */
-    _financingSummaryFromCounts({ fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0, nom = 0 }) {
+    _financingSummaryFromCounts({ fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0, nom = 0, visado = 0 }) {
+        // EL VISADO ES UN EJE APARTE (02/11/2026). BIFIMED lo publica en su propio campo,
+        // «Condiciones financiación restringidas: Visado», independiente de la «Situación de
+        // financiación». Antes se deducía del código 2 («Sí para determinadas
+        // indicaciones/condiciones») y fallaba en los dos sentidos: RIVAROXABAN AUROVITAS 10 MG es
+        // «Si» CON visado y salía sin él (~1.970 CN así), y ~1.080 CN del código 2 sin visado
+        // salían «con visado». Ahora se añade, con la palabra de BIFIMED, solo si la fuente lo dice.
+        const conVisado = (r) => {
+            if (!(visado > 0)) return r;
+            // Si no todas las financiadas lo llevan, se dice cuántas: «Visado» a secas sería
+            // atribuírselo también a las que BIFIMED no se lo pone.
+            const bif = fin + cond;
+            const cuantas = visado < bif ? ` (${visado} de ${bif} presentaciones)` : '';
+            return { ...r, visado, label: `${r.label} · Visado${cuantas}` };
+        };
         // El denominador es SIEMPRE el total de presentaciones consultadas, incluidas las que no
         // sabemos clasificar. Hasta el 2026-09-06 se calculaba sobre `fin + cond + nofin`, así que
         // un medicamento con dos CN financiados y uno sin dato se anunciaba como "Financiado por el
@@ -12915,8 +12932,9 @@ ${ftFechaDocsHtml}
             if (nom === total) {
                 return { estado: 'si_nom', label: 'Financiado (consta de alta en el Nomenclátor)', icon: 'fa-check-circle', color: 'var(--success)' };
             }
-            if (cond === 0) return { estado: 'si', label: 'Financiado por el SNS', icon: 'fa-check-circle', color: 'var(--success)' };
-            return { estado: 'cond', label: 'Financiado (condicionado: visado / por indicación)', icon: 'fa-circle-check', color: 'var(--warning)' };
+            if (cond === 0) return conVisado({ estado: 'si', label: 'Financiado por el SNS', icon: 'fa-check-circle', color: 'var(--success)' });
+            // El rótulo es el de BIFIMED, literal: «Sí para determinadas indicaciones/condiciones».
+            return conVisado({ estado: 'cond', label: 'Financiado para determinadas indicaciones/condiciones', icon: 'fa-circle-check', color: 'var(--warning)' });
         }
         // Sin ninguna presentación con cobertura. "No financiado" se reserva a los tres estados
         // negativos (no incluido, excluido, denegado por resolución): son resoluciones del
@@ -12932,7 +12950,7 @@ ${ftFechaDocsHtml}
             const plural = nofin > 1 ? 's' : '';
             return { estado: 'sin_cobertura', label: `Sin cobertura SNS actual: ${nofin} no financiada${plural} · ${estudio} en estudio/sin petición${pendientes}`, icon: 'fa-times-circle', color: gris };
         }
-        return { estado: 'parcial', label: `Financiación parcial (${financiadas} de ${total} presentaciones${pendientes})`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' };
+        return conVisado({ estado: 'parcial', label: `Financiación parcial (${financiadas} de ${total} presentaciones${pendientes})`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' });
     }
 
     /**
@@ -13017,7 +13035,7 @@ ${ftFechaDocsHtml}
      * Devuelve `null` si la fila no es utilizable: sin fila no hay marca, y la AUSENCIA DE MARCA
      * NUNCA puede leerse como "financiado".
      */
-    _financingSummaryFromIndexRow(fila) {
+    _financingSummaryFromIndexRow(fila, visadas = 0) {
         // Se admiten los DOS anchos a propósito: 7 = esquema 1 (solo BIFIMED), 8 = esquema 2 (con
         // la columna del Nomenclátor). Si se exigiera solo el nuevo, el día que el ETL del
         // Nomenclátor fallara la lista se quedaría entera sin marcas de financiación; y si se
@@ -13045,6 +13063,8 @@ ${ftFechaDocsHtml}
         // BIFIMED eran 1.331 medicamentos visibles (medido 2026-09-08), 993 de ellos importaciones
         // paralelas; el Nomenclátor resuelve 1.017 de esos 1.331 y quedan 312 realmente sin dato.
         counts.sindato = Math.max(0, total - clasificadas);
+        // `visadas` viene del mapa `visado` del índice, aparte de la fila (ver el ETL).
+        counts.visado = Number.isFinite(visadas) ? visadas : 0;
         return this._financingSummaryFromCounts(counts);
     }
 
@@ -13302,7 +13322,7 @@ ${ftFechaDocsHtml}
     }
 
     _financingTagFromRow(fila, nregistro) {
-        const resumen = this._financingSummaryFromIndexRow(fila);
+        const resumen = this._financingSummaryFromIndexRow(fila, this._financingVisado?.[String(nregistro ?? '')]);
         if (!resumen) return null;
         // Los casos particulares comparten la etiqueta corta con el resto de la incertidumbre —una
         // tarjeta no es sitio para explicar por qué falta un dato— pero cada uno conserva su motivo
@@ -13328,7 +13348,9 @@ ${ftFechaDocsHtml}
             // no una resolución de BIFIMED— vive en el `title`, que es donde va a mirar quien se lo
             // pregunte. Es la misma decisión que agrupó los seis grises en dos.
             si_nom: 'Financiado por el SNS',
-            cond: 'Financiado con visado',
+            // Rótulo de BIFIMED («Sí para determinadas indicaciones/condiciones»), no «con visado»:
+            // el visado es otro campo y se añade aparte, abajo, solo cuando la fuente lo dice.
+            cond: 'Financiado: determinadas indicaciones/condiciones',
             parcial: 'Financiado en parte',
             no: 'Sin cobertura del SNS',
             estudio_sin_peticion: 'Sin cobertura del SNS',
@@ -13336,7 +13358,7 @@ ${ftFechaDocsHtml}
             sindato: 'Sin datos',
         };
         return {
-            short: cortos[resumen.estado] || resumen.label,
+            short: (cortos[resumen.estado] || resumen.label) + (resumen.visado ? ' · Visado' : ''),
             icon: resumen.icon,
             color: resumen.color,
             title: nota || resumen.label,
@@ -13375,12 +13397,15 @@ ${ftFechaDocsHtml}
                 }
                 this._financingIndexMeta = data._meta;
                 this._financingIndex = fin;
+                // `null` en un índice anterior al 02/11/2026: entonces no se afirma nada del visado.
+                this._financingVisado = (data.visado && typeof data.visado === 'object') ? data.visado : null;
                 this._financingIndexUsable = true;
                 return fin;
             })
             .catch((err) => {
                 console.warn('[financiación] índice no utilizable:', err.message);
                 this._financingIndex = {};
+                this._financingVisado = null;
                 this._financingIndexUsable = false;
                 return this._financingIndex;
             });
@@ -13437,7 +13462,7 @@ ${ftFechaDocsHtml}
     _financingSummaryFromIndex(nregistro) {
         if (!this._financingIndexUsable) return null;
         const fila = this._financingIndex?.[String(nregistro ?? '')];
-        const resumen = this._financingSummaryFromIndexRow(fila);
+        const resumen = this._financingSummaryFromIndexRow(fila, this._financingVisado?.[String(nregistro ?? '')]);
         if (!resumen) return null;
         return { resumen, nota: this._financingNoteForRow(fila, nregistro, resumen) };
     }
@@ -13722,6 +13747,38 @@ ${ftFechaDocsHtml}
 
             // Estado a nivel de medicamento desde BIFIMED (primer resultado con datos)
             const bifimedDrugRecord = bifimedResults.find(r => r.found) || null;
+
+            // La ficha de BIFIMED con SUS rótulos y en SU orden (02/11/2026). Hasta hoy la pestaña no
+            // enseñaba el visado —BIFIMED lo da en «Condiciones financiación restringidas», aparte de
+            // la situación— ni las indicaciones financiadas cuando vienen en texto, que es como llegan
+            // en los no centralizados: RIVAROXABAN AUROVITAS 10 MG mostraba solo precio y aportación.
+            const bifimedFicha = (() => {
+                const registros = bifimedResults.filter(r => r.found);
+                if (!registros.length) return '';
+                const r = bifimedDrugRecord;
+                const texto = t => esc(t).replace(/\n/g, '<br>');
+                const campo = (rotulo, valorHtml) => valorHtml
+                    ? `<div class="bifimed-campo"><span class="bifimed-campo-rotulo">${rotulo}</span><span class="bifimed-campo-valor">${valorHtml}</span></div>`
+                    : '';
+                // Por presentación, como el resto de la pestaña: si no todas lo llevan, se dice cuántas.
+                const nVisado = registros.filter(x => x.visado).length;
+                const visadoHtml = nVisado
+                    ? `<strong>Visado</strong>${nVisado < registros.length ? ` (${nVisado} de ${registros.length} presentaciones)` : ''}`
+                    : '';
+                const fecha = r._meta?.download_date ? `<span class="fin-date">Datos: ${esc(r._meta.download_date)}</span>` : '';
+                return `<div class="bifimed-section bifimed-ficha">
+                        <div class="bifimed-section-header">
+                            <i class="fas fa-file-contract"></i>
+                            <strong>BIFIMED — Ministerio de Sanidad</strong>
+                            ${fecha}
+                        </div>
+                        ${campo('Situación de financiación', r.situacion_financiacion ? esc(r.situacion_financiacion) : '')}
+                        ${campo('Condiciones financiación restringidas', visadoHtml)}
+                        ${campo('Condiciones especiales de financiación', r.condiciones_especiales ? texto(r.condiciones_especiales) : '')}
+                        ${campo('Indicaciones financiadas', r.indicaciones_financiadas ? texto(r.indicaciones_financiadas) : '')}
+                        ${campo('Indicaciones no financiadas', r.indicaciones_no_financiadas ? texto(r.indicaciones_no_financiadas) : '')}
+                    </div>`;
+            })();
             const bifimedDrugStatus = bifimedDrugRecord?.situacion_financiacion || null;
             // Marcadores de ámbito hospitalario del propio BIFIMED: uso hospitalario, diagnóstico
             // hospitalario, especial control médico. Son los únicos que autorizan a decir que la
@@ -13796,7 +13853,7 @@ ${ftFechaDocsHtml}
                        </div>`;
             }
 
-            container.innerHTML = `${snsSection}${bifimedSection}`;
+            container.innerHTML = `${snsSection}${bifimedFicha}${bifimedSection}`;
 
         } catch (err) {
             container.innerHTML = `<p class="text-muted" style="padding:1rem"><i class="fas fa-exclamation-triangle"></i> Error al consultar el Nomenclátor SNS: ${esc(err.message)}</p>`;
@@ -15670,7 +15727,7 @@ ${ftFechaDocsHtml}
 
         // El nombre de la casilla es el que usa un médico, pero agrupa la financiación ordinaria y
         // la condicionada a visado o indicación. El matiz no se pierde: la marca de cada tarjeta
-        // distingue "Financiado por el SNS" de "Financiado con visado", y esta aclaración lo dice
+        // dice la situación con el rótulo de BIFIMED y añade «· Visado» aparte, y esta aclaración lo dice
         // en el propio control para quien pase el ratón.
         const tipFinanciado = '«Financiado»: alguna presentación comercializada con cobertura del SNS, incluida la '
             + 'condicionada a visado o a indicación concreta (la marca de cada tarjeta las distingue). '
