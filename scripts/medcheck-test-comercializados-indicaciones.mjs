@@ -93,7 +93,9 @@ const rutasFijas = appSrc.match(/comercializados:\s*true/g) || [];
 ok('no queda ningún `comercializados: true` en la vista de indicaciones',
     rutasFijas.length <= 1, `quedan ${rutasFijas.length} (se admite 1: el de Alternativas del modal, que es otra pantalla)`);
 const usos = (appSrc.match(/comercializados:\s*this\._soloComercializados\(\)/g) || []).length;
-ok('las cinco rutas de Indicaciones lo leen del estado', usos === 5, `encontradas ${usos}`);
+// Seis desde el 2026-11-02: el reintento de los grupos ATC que no respondieron
+// (`_reintentarGruposFallidos`) también consulta CIMA y tiene que pedir lo mismo que la búsqueda.
+ok('las seis rutas de Indicaciones lo leen del estado', usos === 6, `encontradas ${usos}`);
 
 // --- 3. La casilla se pinta SIEMPRE -------------------------------------------------------------
 console.log('\n— La casilla se ve siempre, también sin ninguna otra —');

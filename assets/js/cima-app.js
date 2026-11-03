@@ -3595,26 +3595,17 @@ class MedCheckApp {
         `;
 
         try {
-            let allResults = [];
-            for (const atcCode of atcCodes) {
-                const results = await this.api.searchByATC(atcCode, { comercializados: this._soloComercializados(), noTrack: true });
-                if (results.resultados && results.resultados.length > 0) {
-                    allResults = allResults.concat(results.resultados);
-                }
-            }
-
-            // Deduplicate
-            const seen = new Set();
-            const unique = allResults.filter(med => {
-                if (seen.has(med.nregistro)) return false;
-                seen.add(med.nregistro);
-                return true;
-            });
+            // La misma consulta que teclear + Enter: antes, aquí un grupo que fallaba tumbaba la
+            // búsqueda entera, y por el otro camino desaparecía en silencio. Ahora los dos dicen
+            // qué grupos no respondieron (`_consultarGruposATC`).
+            const { resultados: unique, consulta } = await this.api._consultarGruposATC(
+                atcCodes, { comercializados: this._soloComercializados(), noTrack: true });
 
             const data = {
                 resultados: unique,
                 totalFilas: unique.length,
-                matchedIndication: { label, atc: atcCodes }
+                matchedIndication: { label, atc: atcCodes },
+                consulta,
             };
 
             this.lastIndicationResults = data;
@@ -4123,7 +4114,9 @@ class MedCheckApp {
                 return;
             }
 
-            if (!data.resultados || data.resultados.length === 0) {
+            // Un cero con grupos que no respondieron NO es «Sin resultados»: sigue por el render
+            // normal, que lo pinta como lista incompleta y ofrece reintentar esos grupos.
+            if ((!data.resultados || data.resultados.length === 0) && !data.consulta?.fallidos?.length) {
                 this.lastIndicationResults = null;
                 // Sin resultados NO hay universo que anunciar: si `lastIndicationQuery`
                 // se quedara puesto, cerrar el modal después serializaría un término
@@ -4167,6 +4160,110 @@ class MedCheckApp {
         if (errors > 0) {
             this.showToast(`${errors} fármaco(s) no se pudieron verificar en ficha técnica (mostrados sin filtrar por 4.1)`, 'warning');
         }
+    }
+
+    /** Códigos ATC de la búsqueda que no respondieron (`CimaAPI._consultarGruposATC`). */
+    _indicacionFallidos(data) {
+        return (data?.consulta?.fallidos || []).map(f => String(f.atc));
+    }
+
+    /**
+     * Aviso de lista incompleta. Va DENTRO del render, no en un toast: un toast se pierde al
+     * repintar con la primera faceta, y la lista seguiría incompleta sin decirlo.
+     * @param {number} recuperados - medicamentos de los grupos que sí respondieron (antes de facetas)
+     */
+    _indicacionParcialHtml(data, recuperados) {
+        const fallidos = this._indicacionFallidos(data);
+        if (!fallidos.length) return '';
+        const total = data?.consulta?.intentados?.length || fallidos.length;
+        const lista = fallidos.map((code) => {
+            const desc = this._describeATCCode(code);
+            return `<strong>${this._escapeHtml(code)}</strong>${desc ? ` ${this._escapeHtml(desc)}` : ''}`;
+        }).join(' · ');
+        const reintentando = !!this._indReintentando;
+        return `
+            <div class="ind-parcial" role="status">
+                <p><i class="fas fa-triangle-exclamation"></i> <strong>Lista incompleta.</strong>
+                No se ${fallidos.length === 1 ? 'pudo' : 'pudieron'} consultar ${fallidos.length} de ${total} grupos ATC: ${lista}.
+                ${recuperados
+                    ? `Se muestran los ${recuperados} medicamentos de los grupos que respondieron; los de ${fallidos.length === 1 ? 'ese grupo' : 'esos grupos'} no están.`
+                    : `Los grupos que respondieron no tienen medicamentos para esta búsqueda; ${fallidos.length === 1 ? 'en el que falló' : 'en los que fallaron'} puede haberlos.`}</p>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="app._reintentarGruposFallidos()" ${reintentando ? 'disabled' : ''}>
+                    <i class="fas fa-rotate-right"></i> ${reintentando ? 'Reintentando…' : `Reintentar ${fallidos.length === 1 ? 'ese grupo' : 'esos grupos'}`}
+                </button>
+            </div>`;
+    }
+
+    /**
+     * Vuelve a consultar SOLO los grupos que fallaron y los suma a la lista en pantalla, sin
+     * duplicados y pasando lo nuevo por la misma criba 4.1 si la indicación la lleva. Si la
+     * búsqueda cambió mientras tanto, no escribe nada: el resultado sería de otro universo.
+     */
+    async _reintentarGruposFallidos() {
+        const data = this.lastIndicationResults;
+        const fallidos = this._indicacionFallidos(data);
+        if (!fallidos.length || this._indReintentando) return;
+        const repintar = () => {
+            if (this.lastIndicationResults === data) this.displayIndicationResults(data, this.lastIndicationQuery || data.matchedIndication?.label || '');
+        };
+        this._indReintentando = true;
+        repintar();
+        try {
+            const nuevo = await this.api._consultarGruposATC(
+                fallidos, { comercializados: this._soloComercializados(), noTrack: true });
+            const vistos = new Set(data.consulta.candidatos || []);
+            let anadidos = nuevo.resultados.filter(m => !vistos.has(m.nregistro));
+            const filtro = data.matchedIndication?.section41Filter || data.matchedIndication?.sectionFilter;
+            let resumen = null;
+            if (filtro && anadidos.length) {
+                const cribado = await this.api._filterIndicationResultsBySection(anadidos, filtro);
+                resumen = cribado.summary;
+                anadidos = { candidatos: anadidos, resultados: cribado.resultados };
+            } else {
+                anadidos = { candidatos: anadidos, resultados: anadidos };
+            }
+            if (this.lastIndicationResults !== data) return;
+            this._fusionarReintentoIndicacion(data, nuevo.consulta, anadidos, resumen);
+            const quedan = this._indicacionFallidos(data).length;
+            this.showToast(quedan ? `Siguen sin responder ${quedan} grupo(s) ATC` : 'Lista completa: todos los grupos ATC han respondido', quedan ? 'warning' : 'success');
+        } catch (error) {
+            // `CONSULTA_FALLIDA`: ninguno de los reintentados respondió. La lista se queda como
+            // estaba, todavía marcada como incompleta.
+            if (this.lastIndicationResults === data) this.showToast('Esos grupos siguen sin responder; prueba en unos segundos', 'warning');
+        } finally {
+            this._indReintentando = false;
+            repintar();
+        }
+    }
+
+    /**
+     * Suma el resultado de un reintento a los datos de la búsqueda. Aparte de la red para poder
+     * probarla: es donde se decide qué cuenta como consultado y qué no.
+     * @param {Object} consultaNueva - `consulta` del reintento (sus `completos` y `fallidos`)
+     * @param {{candidatos: Array, resultados: Array}} anadidos - nuevos, sin los ya vistos; `resultados` tras la criba
+     * @param {Object|null} resumen - `summary` de la criba 4.1 de los nuevos, si la hubo
+     */
+    _fusionarReintentoIndicacion(data, consultaNueva, anadidos, resumen = null) {
+        const enLista = new Set(data.resultados.map(m => m.nregistro));
+        data.resultados = data.resultados.concat(anadidos.resultados.filter(m => !enLista.has(m.nregistro)));
+        data.totalFilas = data.resultados.length;
+        data.consulta = {
+            ...data.consulta,
+            completos: [...data.consulta.completos, ...consultaNueva.completos],
+            fallidos: consultaNueva.fallidos,
+            candidatos: [...(data.consulta.candidatos || []), ...anadidos.candidatos.map(m => m.nregistro)],
+        };
+        const fs = data.matchedIndication?.filterSummary;
+        if (fs && resumen) {
+            data.matchedIndication.filterSummary = {
+                ...fs,
+                candidates: fs.candidates + resumen.candidates,
+                checked: fs.checked + resumen.checked,
+                matched: fs.matched + resumen.matched,
+                errors: fs.errors + resumen.errors,
+            };
+        }
+        return data;
     }
 
     getSimilarTermsSuggestions(query) {
@@ -6589,10 +6686,15 @@ class MedCheckApp {
         const mi = data?.matchedIndication || null;
         const codes = mi ? (Array.isArray(mi.atc) ? mi.atc : [mi.atc]).filter(Boolean).map(String) : [];
         // La rama de fallback puede dejar texto libre en `atc`: solo se envían códigos con forma de ATC.
-        const consultados = codes.filter(c => /^[A-Z]\d{2}([A-Z]{1,2}(\d{2})?)?$/i.test(c)).map(c => ({
+        // Un grupo que no respondió no es «consultado»: va aparte, y el prompt avisa de que la lista
+        // de principios activos puede estar incompleta (2026-11-02).
+        const fallidos = new Set(this._indicacionFallidos(data).map(c => c.toUpperCase()));
+        const conForma = codes.filter(c => /^[A-Z]\d{2}([A-Z]{1,2}(\d{2})?)?$/i.test(c)).map(c => ({
             codigo: c.toUpperCase(),
             nombre: (atcCode && c.toUpperCase() === String(atcCode).toUpperCase() && mi.label) ? mi.label : this._describeATCCode(c),
         }));
+        const consultados = conForma.filter(c => !fallidos.has(c.codigo));
+        const noConsultados = conForma.filter(c => fallidos.has(c.codigo));
         const meds = Array.isArray(filtered) ? filtered : [];
 
         const presentes = new Map();
@@ -6619,7 +6721,7 @@ class MedCheckApp {
         const sinVia = meds.filter(m => !(m.viasAdministracion || []).some(v => v?.nombre)).length;
         const formas = [...new Set(meds.map(m => this._consultForma(m)).filter(Boolean))];
         return {
-            kind: 'grupo', pas, atcs, consultados, vias, sinVia, formas, total: meds.length,
+            kind: 'grupo', pas, atcs, consultados, noConsultados, vias, sinVia, formas, total: meds.length,
             indicacion: (!atcCode && mi?.label) ? mi.label : null, nombre: null,
         };
     }
@@ -6636,6 +6738,7 @@ class MedCheckApp {
         if (scope.pas.length) partes.push(this._consultListaPas(scope.pas));
         if (scope.formas.length) partes.push(this._consultListaPas(scope.formas, 4));
         if (scope.vias.length) partes.push(scope.vias.length === 1 ? `vía ${scope.vias[0]}` : `vías ${scope.vias.join(', ')}`);
+        if (scope.noConsultados?.length) partes.push(`lista incompleta: sin respuesta de ${scope.noConsultados.map(c => c.codigo).join(', ')}`);
         return partes.join(' — ');
     }
 
@@ -6899,6 +7002,7 @@ class MedCheckApp {
             if (scope.vias.length === 1) lines.push(`- Vía: ${scope.vias[0]} (responde para esta vía; no extrapoles de otras).`);
             else if (scope.vias.length > 1) lines.push(`- Vías presentes: ${scope.vias.join(', ')} (si la respuesta cambia con la vía, distingue por vía).`);
             if (scope.sinVia) lines.push(`- Vía no declarada en CIMA para ${scope.sinVia} de ${scope.total} medicamentos.`);
+            if (scope.noConsultados?.length) lines.push(`- LISTA INCOMPLETA: no se pudieron consultar los ATC ${atcTxt(scope.noConsultados)}. Pueden faltar principios activos de esos grupos; no concluyas que no existen.`);
             lines.push('Si la respuesta depende de la molécula, la forma, la concentración o la población, distingue.');
             if (duda) lines.push('', `PREGUNTA DEL CLÍNICO (responde PRIMERO qué sostienen las fuentes, bajo qué condiciones y qué no permiten concluir; sin datos identificables): ${duda}`);
         }
@@ -14924,7 +15028,23 @@ ${ftFechaDocsHtml}
         // la cortamos nosotros (ver `CimaAPI._request`). Se dice de quién es el problema —no del
         // ordenador de quien busca— y qué hacer, que es repetir o ir a la fuente. Es intermitente:
         // la misma búsqueda suele salir a la segunda.
-        if (error.code === 'TIMEOUT') {
+        // Ningún grupo ATC de la indicación respondió (`CimaAPI._consultarGruposATC`). Hasta el
+        // 2026-11-02 esto se pintaba como «Sin resultados», que es una afirmación sobre el
+        // catálogo hecha a partir de un fallo nuestro o de la fuente.
+        if (error.code === 'CONSULTA_FALLIDA') {
+            const n = error.consulta?.fallidos?.length || 0;
+            message = 'No se pudo consultar CIMA';
+            help = `
+                <div class="ind-parcial">
+                    <p class="text-muted" style="font-size: 0.85rem;">
+                        No respondió ${n === 1 ? 'el grupo ATC' : `ninguno de los ${n} grupos ATC`} de esta búsqueda.
+                        <strong>No significa que no haya medicamentos</strong>: repite la búsqueda en unos
+                        segundos o consúltalo en
+                        <a href="https://cima.aemps.es/cima/publico/home.html" target="_blank" rel="noopener">CIMA</a>.
+                    </p>
+                </div>
+            `;
+        } else if (error.code === 'TIMEOUT') {
             message = 'CIMA no responde';
             help = `
                 <div style="margin-top: 1rem; padding: 1rem; background: var(--warning-light); border-radius: var(--radius-md);">
@@ -15935,7 +16055,7 @@ ${ftFechaDocsHtml}
                     </details>
                     ` : ''}
                     <div class="control-section results-info">
-                        <span class="results-count"><strong>${totalResults}</strong> resultados</span>
+                        <span class="results-count"><strong>${totalResults}</strong> ${options.parcial ? 'resultados recuperados · <span class="results-count-parcial">lista incompleta</span>' : 'resultados'}</span>
                         ${activeFilters > 0 ? `
                         <button id="clear-filters-btn" class="clear-btn" title="Limpiar ${activeFilters} filtro${activeFilters > 1 ? 's' : ''}">
                             <i class="fas fa-times"></i> Limpiar ${activeFilters}
@@ -16366,9 +16486,18 @@ ${ftFechaDocsHtml}
      */
     displayGroupedIndicationResults(data, searchQuery) {
         const resultsContainer = document.getElementById('indication-results');
+        const fallidos = this._indicacionFallidos(data);
 
         if (!data.resultados || data.resultados.length === 0) {
-            resultsContainer.innerHTML = `
+            // Cero en los grupos que respondieron, con otros sin responder: no se sabe si hay
+            // medicamentos, así que no se dice «Sin resultados».
+            resultsContainer.innerHTML = fallidos.length
+                ? `<div class="empty-state">
+                    <i class="fas fa-triangle-exclamation" style="color: var(--warning);"></i>
+                    <h3>Resultados incompletos</h3>
+                    ${this._indicacionParcialHtml(data, 0)}
+                </div>`
+                : `
                 <div class="empty-state">
                     <i class="fas fa-pills"></i>
                     <h3>Sin resultados</h3>
@@ -16414,16 +16543,21 @@ ${ftFechaDocsHtml}
         // se veían dos grupos y el único modo de saber cuál era el tópico y cuál el
         // sistémico era deducirlo. El nombre no cuesta ninguna petición (árbol curado local).
         const miAtcCodes = mi ? (Array.isArray(mi.atc) ? mi.atc : [mi.atc]).filter(Boolean) : [];
+        // Un grupo que no respondió no se rotula como «consultado»: va tachado y lo dice.
         const miAtcList = miAtcCodes.map((code) => {
             const desc = this._describeATCCode(code);
-            return `<span class="match-atc-code">${this._escapeHtml(String(code))}</span>`
-                + (desc ? `<span class="match-atc-name">${this._escapeHtml(desc)}</span>` : '');
+            const fallo = fallidos.includes(String(code));
+            return `<span class="match-atc-code${fallo ? ' is-fallido' : ''}"${fallo ? ' title="No se pudo consultar: sus medicamentos no están en la lista"' : ''}>${this._escapeHtml(String(code))}</span>`
+                + (desc ? `<span class="match-atc-name${fallo ? ' is-fallido' : ''}">${this._escapeHtml(desc)}</span>` : '')
+                + (fallo ? '<span class="match-atc-fallo">sin respuesta</span>' : '');
         }).join('<span class="match-atc-sep">·</span>');
         const miFs = mi?.filterSummary;
         const miFilterNote = miFs
             ? ` <span class="match-filter" title="Esta indicación lleva criba adicional por ficha técnica: de ${miFs.candidates} candidatos por grupo ATC se muestran los ${miFs.matched} cuya sección 4.1 (indicaciones autorizadas) recoge este uso. Solo algunas indicaciones sensibles llevan esta criba.">verificados en ficha (4.1): ${miFs.matched} de ${miFs.candidates}</span>`
             : '';
-        const miAtcTitle = miFs
+        const miAtcTitle = fallidos.length
+            ? 'Grupos ATC de esta indicación; los tachados no se pudieron consultar'
+            : miFs
             ? 'Grupos ATC consultados para esta indicación'
             : 'Grupos ATC consultados — mapeo orientativo por clase terapéutica, sin criba por ficha técnica';
         const matchInfoInline = mi
@@ -16451,8 +16585,9 @@ ${ftFechaDocsHtml}
                 ${breadcrumbHtml}
                 <button type="button" class="btn btn-sm btn-ai-chatgpt ind-ai-toggle" aria-expanded="${indAiOpen}" aria-controls="ind-ai-slot" onclick="app.toggleIndAiPanel()" title="Preparar una pregunta a una IA externa sobre este grupo, sin marcas ni presentaciones"><i class="fas fa-robot"></i> Preguntar a IA</button>
             </div>
+            ${this._indicacionParcialHtml(data, universe.length)}
             <div id="ind-ai-slot">${indAiPanel}</div>
-            ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, { showDoses: false, showEFG: true })}
+            ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, { showDoses: false, showEFG: true, parcial: fallidos.length > 0 })}
             ${this.renderRouteFilterChips(routes)}
             ${this.renderPAFilterChips(paList)}
             ${this.renderGalenicFilterChips()}

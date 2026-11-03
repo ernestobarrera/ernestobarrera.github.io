@@ -1257,26 +1257,7 @@ class CimaAPI {
      */
     async _executeIndicationSearch(matchData, options) {
         const atcCodes = Array.isArray(matchData.atc) ? matchData.atc : [matchData.atc];
-
-        let allResults = [];
-        for (const atcCode of atcCodes) {
-            try {
-                const results = await this.searchByATC(atcCode, options);
-                if (results.resultados && results.resultados.length > 0) {
-                    allResults = allResults.concat(results.resultados);
-                }
-            } catch (error) {
-                console.warn(`Error searching ATC ${atcCode}:`, error);
-            }
-        }
-
-        // Eliminar duplicados por nregistro
-        const seen = new Set();
-        const uniqueResults = allResults.filter(med => {
-            if (seen.has(med.nregistro)) return false;
-            seen.add(med.nregistro);
-            return true;
-        });
+        const { resultados: uniqueResults, consulta } = await this._consultarGruposATC(atcCodes, options);
 
         const sectionFilter = matchData.section41Filter || matchData.sectionFilter;
         if (sectionFilter) {
@@ -1287,15 +1268,80 @@ class CimaAPI {
                 matchedIndication: {
                     ...matchData,
                     filterSummary: filtered.summary
-                }
+                },
+                consulta,
             };
         }
 
         return {
             resultados: uniqueResults,
             totalFilas: uniqueResults.length,
-            matchedIndication: matchData
+            matchedIndication: matchData,
+            consulta,
         };
+    }
+
+    /**
+     * Consulta varios grupos ATC y DICE cuáles respondieron.
+     *
+     * Hasta el 2026-11-02 un grupo cuya consulta fallaba (CIMA colgado, un 503 del Worker) se
+     * descartaba con un `console.warn` y la lista se pintaba como si estuviera completa; si fallaban
+     * todos, la pantalla decía «Sin resultados». Reproducido por Codex: A falla en la página 2, B
+     * responde, y la lista final trae solo B, sin ningún rastro de A. En una búsqueda por indicación
+     * eso es lo peor que puede pasar: el clínico no echa de menos lo que no sabe que falta.
+     *
+     * Un grupo que falla a mitad (página 1 sí, página 2 no) cuenta como fallido entero y lo recibido
+     * se descarta: rescatar páginas sueltas sería otro contrato, y aquí basta con declararlo.
+     *
+     * `consulta` viaja con los datos de la búsqueda, así que sobrevive a facetas y repintados, y de
+     * ella leen la cabecera, el aviso de lista incompleta, el reintento y el panel de IA.
+     * `candidatos` son los nregistro que salieron de los grupos ANTES de cualquier filtro: el
+     * reintento los usa para no volver a contar en la criba 4.1 lo que ya se cribó.
+     *
+     * Si ningún grupo responde, lanza `CONSULTA_FALLIDA`: un fallo total es un error de consulta,
+     * nunca un cero. «Sin resultados» solo puede decirlo una búsqueda que se completó.
+     *
+     * @returns {Promise<{resultados: Array, consulta: {intentados: string[], completos: string[],
+     *   fallidos: Array<{atc: string, motivo: string}>, candidatos: string[]}}>}
+     */
+    async _consultarGruposATC(atcCodes, options = {}) {
+        const completos = [];
+        const fallidos = [];
+        let allResults = [];
+        for (const atcCode of atcCodes) {
+            try {
+                const results = await this.searchByATC(atcCode, options);
+                completos.push(atcCode);
+                if (results.resultados && results.resultados.length > 0) {
+                    allResults = allResults.concat(results.resultados);
+                }
+            } catch (error) {
+                console.warn(`Error searching ATC ${atcCode}:`, error);
+                fallidos.push({ atc: atcCode, motivo: error?.code === 'TIMEOUT' ? 'timeout' : 'error' });
+            }
+        }
+
+        // Eliminar duplicados por nregistro
+        const seen = new Set();
+        const resultados = allResults.filter(med => {
+            if (seen.has(med.nregistro)) return false;
+            seen.add(med.nregistro);
+            return true;
+        });
+
+        const consulta = {
+            intentados: [...atcCodes],
+            completos,
+            fallidos,
+            candidatos: resultados.map(med => med.nregistro),
+        };
+        if (!completos.length && fallidos.length) {
+            const err = new Error(`No se pudo consultar ninguno de los ${fallidos.length} grupos ATC`);
+            err.code = 'CONSULTA_FALLIDA';
+            err.consulta = consulta;
+            throw err;
+        }
+        return { resultados, consulta };
     }
 
     /**
