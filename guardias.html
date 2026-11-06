@@ -468,7 +468,8 @@
         <h1 style="color: #1e293b; font-weight: 700;">Sistema de Gestión de Avisos y Urgencias v2.0</h1>
         <small>Round-Robin para turnos asistenciales</small>
       </div>
-      <div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <button type="button" id="btnGuia" class="secondary" title="Ver la guía paso a paso">❓ Guía rápida</button>
         <a href="guardias-legacy.html"
           style="font-size: 0.8rem; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; text-decoration: none; border: 1px solid #cbd5e1;">
           <i class="fas fa-history"></i> Volver a versión clásica (v1)
@@ -3461,6 +3462,7 @@ Ejemplo 2: GARCIA[TAB]Medicina de Familia[TAB]TARDE"
         .addEventListener("change", validarRangoFechas);
     });
   </script>
+  <script src="assets/js/guardias-guia.js"></script>
 </body>
 
 </html>
