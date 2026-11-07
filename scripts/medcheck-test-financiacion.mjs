@@ -274,5 +274,116 @@ check('la pestaña pinta el visado con el rótulo de BIFIMED',
 check('la pestaña pinta las indicaciones financiadas en texto',
     fuente.includes("campo('Indicaciones financiadas', r.indicaciones_financiadas"), true);
 
+// --- La línea de Información, camino en vivo: fallo frente a ausencia (2026-11-07) ---------
+// Punto 9 de la cola integrada. `_fetchFinancingByCns` convertía cualquier fallo en `found:false`:
+// el 1102 en texto plano por el `.catch`, y el 503 con JSON del Worker (`{error:'bifimed no
+// disponible'}`) porque `!!j.found` es false — y ese lo GUARDABA 24 h. La línea decía «Sin datos de
+// financiación», o «Financiación parcial (… · 1 sin dato)» de un medicamento financiado entero.
+console.log('\n— Línea de Información en vivo: fallo frente a ausencia —');
+app.api = { cloudflareProxy: 'https://x' };
+const almacen = {};
+sandbox.localStorage = {
+    getItem: (k) => (k in almacen ? almacen[k] : null),
+    setItem: (k, v) => { almacen[k] = String(v); },
+    removeItem: (k) => { delete almacen[k]; },
+};
+const cacheGuardada = () => JSON.parse(almacen.medcheck_fin_summary_cache_v3 || '{}');
+const vaciarCache = () => { for (const k of Object.keys(almacen)) delete almacen[k]; };
+// Respuesta por CN; cada CN tiene su propia secuencia (para el reintento interno).
+const porCn = async (rutas, cns) => {
+    const llamadas = {};
+    sandbox.fetch = (url) => {
+        const cn = String(url).split('/').pop();
+        const n = (llamadas[cn] = (llamadas[cn] || 0) + 1);
+        const seq = rutas[cn];
+        return seq[Math.min(n - 1, seq.length - 1)]();
+    };
+    const map = await app._fetchFinancingByCns(cns);
+    return { map, llamadas };
+};
+const bifSi = { found: true, cn: '0725293', situacion_financiacion: 'Si', visado: true };
+const caido503 = () => respuesta(503, { error: 'bifimed no disponible', detail: 'KV vacío' });
+const caido1102 = () => respuesta(503, 'error code: 1102');
+const ausente = () => respuesta(404, { cn: '0000001', found: false });
+
+vaciarCache();
+let vivo = await porCn({ '725293': [caido503] }, ['725293']);
+check('503 con JSON del Worker → error, NUNCA ausencia', vivo.map.get('725293')?.error, true);
+check('…y se reintenta una vez', vivo.llamadas['725293'], 2);
+check('…y NO se guarda en la caché', '725293' in cacheGuardada(), false);
+
+vaciarCache();
+vivo = await porCn({ '725293': [caido1102] }, ['725293']);
+check('1102 en texto plano → error, NUNCA ausencia', vivo.map.get('725293')?.error, true);
+check('…y NO se guarda en la caché', '725293' in cacheGuardada(), false);
+
+vaciarCache();
+vivo = await porCn({ '1': [ausente] }, ['1']);
+check('404 con found:false → ausencia real, sin error', vivo.map.get('1')?.found === false && !vivo.map.get('1')?.error, true);
+check('…y la ausencia real sí se guarda', cacheGuardada()['1']?.d?.found, false);
+
+vaciarCache();
+vivo = await porCn({ '725293': [caido1102, () => respuesta(200, bifSi)] }, ['725293']);
+check('1102 y luego 200 → el reintento recupera la situación y el visado',
+    JSON.stringify(vivo.map.get('725293')), JSON.stringify({ found: true, sit: 'Si', visado: true }));
+check('…y se guarda', cacheGuardada()['725293']?.d?.sit, 'Si');
+
+// «Reintentar»: lo que salió bien viene de la caché y solo se vuelve a preguntar por lo que falló.
+vaciarCache();
+await porCn({ '725293': [() => respuesta(200, bifSi)], '725294': [caido503] }, ['725293', '725294']);
+vivo = await porCn({ '725293': [() => respuesta(200, bifSi)], '725294': [() => respuesta(200, { ...bifSi, cn: '0725294' })] },
+    ['725293', '725294']);
+check('al reintentar, el CN que ya respondió sale de la caché (0 peticiones)', vivo.llamadas['725293'], undefined);
+check('…y el que falló se vuelve a preguntar y ahora responde', vivo.map.get('725294')?.found, true);
+
+// El veredicto, con fallos.
+const conFallos = (filas) => app._computeFinancingSummary(new Map(filas.map((f, i) => [String(i),
+    f === 'error' ? { found: false, sit: '', error: true }
+        : f === null ? { found: false, sit: '' }
+            : { found: true, sit: f }])));
+let rf = conFallos(['error']);
+check('todas sin consultar → «No se pudo consultar la financiación»', rf.label, 'No se pudo consultar la financiación');
+check('…con estado propio, no «sindato»', rf.estado, 'error');
+check('…y lleva el recuento para el aviso', `${rf.error}/${rf.total}`, '1/1');
+rf = conFallos(['Si', 'error']);
+check('una financiada y una sin consultar → lo dice, sin llamarlo «sin dato»',
+    rf.label, 'Financiación parcial (1 de 2 presentaciones · 1 sin consultar)');
+rf = conFallos(['Excluido', 'error']);
+check('una excluida y una sin consultar → «no financiado» con la que falta a la vista',
+    rf.label, 'No financiado por el SNS (1 de 2 presentaciones · 1 sin consultar)');
+rf = conFallos([null, 'error']);
+check('una sin dato y una sin consultar → no se emite veredicto (nunca «0 de 2»)', rf.estado, 'error');
+rf = conFallos(['Si', 'Si']);
+check('sin fallos, nada cambia: «Financiado por el SNS» y sin campo error',
+    `${rf.label}|${rf.error}`, 'Financiado por el SNS|undefined');
+check('la tarjeta (índice) no conoce el estado de fallo: los conteos sin error no lo producen',
+    desdeConteos({ sindato: 2 }).estado, 'sindato');
+
+// El aviso de la ficha.
+check('sin fallos, el aviso no pinta nada', app._financingRetryHtml(conFallos(['Si'])), '');
+const avisoTotal = app._financingRetryHtml(conFallos(['error', 'error']));
+check('todas sin consultar → dice que no significa «no financiado» y ofrece Reintentar',
+    avisoTotal.includes('Esto no significa que el medicamento no esté financiado')
+    && avisoTotal.includes('_reintentarResumenFinanciacion()'), true);
+check('una de dos sin consultar → «No se pudo consultar 1 de 2 presentaciones»',
+    app._financingRetryHtml(conFallos(['Si', 'error'])).includes('No se pudo consultar 1 de 2 presentaciones'), true);
+
+// MUTANTES: el camino viejo tiene que fallar este contrato.
+const fetchViejo = (p) => p.then(r => r.json())
+    .then(j => ({ found: !!j.found, sit: j.situacion_financiacion || '' }))
+    .catch(() => ({ found: false, sit: '' }));
+const viejo503 = await fetchViejo(caido503());
+check('MUTANTE: el camino viejo leía el 503 con JSON como ausencia (y lo habría guardado)',
+    viejo503.found === false && !viejo503.error, true);
+check('MUTANTE: con el camino viejo, un 1102 en todas las presentaciones decía «Sin datos de financiación»',
+    app._computeFinancingSummary(new Map([['0', await fetchViejo(caido1102())]])).label, 'Sin datos de financiación');
+const metodoFetch = fuente.slice(fuente.indexOf('async _fetchFinancingByCns('), fuente.indexOf('_classifyFinSit(sit, found) {'));
+check('_fetchFinancingByCns consulta con _consultarFinanciacionCn', metodoFetch.includes('this._consultarFinanciacionCn('), true);
+check('_fetchFinancingByCns ya no traga el fallo como found:false',
+    /\.catch\(\(\) => \{ result\.set\(cn, \{ found: false/.test(metodoFetch), false);
+check('la caché de la ficha cambia de clave (las entradas _v2 pudieron guardar un fallo)',
+    fuente.includes("'medcheck_fin_summary_cache_v2'"), false);
+sandbox.fetch = () => Promise.reject(new Error('sin red en tests'));
+
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);

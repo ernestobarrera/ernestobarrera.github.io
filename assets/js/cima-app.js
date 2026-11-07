@@ -12889,23 +12889,33 @@ ${ftFechaDocsHtml}
     // ============================================
 
     /** Lee la caché de financiación por CN de localStorage. `_v2` desde que guarda el visado
-     *  (02/11/2026): las entradas viejas no lo traen y durante 24 h lo habrían callado. */
+     *  (02/11/2026): las entradas viejas no lo traen y durante 24 h lo habrían callado. `_v3` desde
+     *  que no guarda los fallos (07/11/2026): la `_v2` pudo guardar como «no figura» un 503 del
+     *  Worker, y esa entrada habría seguido diciendo «Sin datos» hasta 24 h después. */
     _finCacheRead() {
-        try { return JSON.parse(localStorage.getItem('medcheck_fin_summary_cache_v2') || '{}'); }
+        try { return JSON.parse(localStorage.getItem('medcheck_fin_summary_cache_v3') || '{}'); }
         catch (e) { return {}; }
     }
 
     /** Persiste la caché de financiación por CN en localStorage (best-effort). */
     _finCacheWrite(cache) {
-        try { localStorage.setItem('medcheck_fin_summary_cache_v2', JSON.stringify(cache)); }
+        try { localStorage.setItem('medcheck_fin_summary_cache_v3', JSON.stringify(cache)); }
         catch (e) { /* cuota/no disponible: la caché es best-effort */ }
     }
 
     /**
      * Estado de financiación por CN desde BIFIMED (solo situación de financiación), con caché 24h.
-     * Devuelve Map cn -> { found, sit }. Una sola llamada por CN nuevo; el detalle (precio,
-     * aportación, por indicación) lo carga aparte la pestaña Financiación. Marca las llamadas
-     * como no-track (X-MC-Autocomplete) para no inflar la analítica con consultas automáticas.
+     * Devuelve Map cn -> { found, sit, visado } o, si no se pudo consultar, { found:false, error:true }.
+     * Una sola llamada por CN nuevo; el detalle (precio, aportación, por indicación) lo carga aparte
+     * la pestaña Financiación. Marca las llamadas como no-track (X-MC-Autocomplete) para no inflar
+     * la analítica con consultas automáticas.
+     *
+     * AUSENCIA FRENTE A FALLO (07/11/2026). Es la misma consulta que la pestaña Financiación
+     * (`_consultarFinanciacionCn`): solo un 404 con `found:false` es ausencia, y lo demás se
+     * reintenta una vez. Antes, un 503 con cuerpo JSON (`{error:'bifimed no disponible'}`, el KV
+     * sin leer) daba `found:false` y se GUARDABA 24 h, y un 1102 en texto plano caía en el `.catch`
+     * como `found:false`: los dos se pintaban como «Sin datos de financiación». Un fallo no se
+     * guarda en la caché, así que el siguiente intento vuelve a preguntar solo por él.
      */
     async _fetchFinancingByCns(cns) {
         const TTL = 24 * 60 * 60 * 1000;
@@ -12921,16 +12931,13 @@ ${ftFechaDocsHtml}
         if (pending.length) {
             const workerBase = this.api.cloudflareProxy;
             const headers = { 'X-MC-Autocomplete': '1' }; // no-track: consulta automática, no acción explícita
-            await Promise.all(pending.map(cn =>
-                fetch(`${workerBase}/bifimed/by-cn/${cn}`, { signal: AbortSignal.timeout(8000), headers })
-                    .then(r => r.json())
-                    .then(j => {
-                        const d = { found: !!j.found, sit: j.situacion_financiacion || '', visado: !!j.visado };
-                        result.set(cn, d);
-                        cache[cn] = { t: now, d };
-                    })
-                    .catch(() => { result.set(cn, { found: false, sit: '' }); })
-            ));
+            await Promise.all(pending.map(async (cn) => {
+                const j = await this._consultarFinanciacionCn(`${workerBase}/bifimed/by-cn/${cn}`, headers);
+                if (j.error) { result.set(cn, { found: false, sit: '', error: true }); return; }
+                const d = { found: !!j.found, sit: j.situacion_financiacion || '', visado: !!j.visado };
+                result.set(cn, d);
+                cache[cn] = { t: now, d };
+            }));
             this._finCacheWrite(cache);
         }
         return result;
@@ -12973,8 +12980,10 @@ ${ftFechaDocsHtml}
      * cuenta como financiada pero se muestra aparte, no como "sin datos". Mezcla financiada/no → parcial.
      */
     _computeFinancingSummary(map) {
-        let fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0, visado = 0;
+        let fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0, visado = 0, error = 0;
         for (const d of map.values()) {
+            // Un CN que no se pudo consultar no es un CN sin dato: se cuenta aparte (07/11/2026).
+            if (d.error) { error++; continue; }
             const c = this._classifyFinSit(d.sit, d.found);
             // Visado solo de las financiadas: el índice lo cuenta igual, y en una excluida no dice nada.
             if (d.visado && (c === 'fin' || c === 'cond')) visado++;
@@ -12984,7 +12993,10 @@ ${ftFechaDocsHtml}
             else if (c === 'estudio_sin_peticion') estudio++;
             else sindato++;
         }
-        return this._financingSummaryFromCounts({ fin, cond, nofin, estudio, sindato, visado });
+        const r = this._financingSummaryFromCounts({ fin, cond, nofin, estudio, sindato, visado, error });
+        // `error` y `total` viajan en el resumen para que la ficha diga cuántas faltan y ofrezca
+        // reintentar (`_financingRetryHtml`).
+        return error ? { ...r, error, total: map.size } : r;
     }
 
     /**
@@ -12997,7 +13009,7 @@ ${ftFechaDocsHtml}
      * tarjeta y la ficha del mismo medicamento podrían acabar diciendo cosas distintas — que es
      * exactamente lo que este diseño existe para impedir.
      */
-    _financingSummaryFromCounts({ fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0, nom = 0, visado = 0 }) {
+    _financingSummaryFromCounts({ fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0, nom = 0, visado = 0, error = 0 }) {
         // EL VISADO ES UN EJE APARTE (02/11/2026). BIFIMED lo publica en su propio campo,
         // «Condiciones financiación restringidas: Visado», independiente de la «Situación de
         // financiación». Antes se deducía del código 2 («Sí para determinadas
@@ -13022,12 +13034,20 @@ ${ftFechaDocsHtml}
         // que la frase pueda decir de dónde sale. Es la diferencia entre "lo dice BIFIMED" y "lo
         // dice el Nomenclátor", y en 1.017 medicamentos (medido 2026-09-10) solo lo dice el
         // segundo: son casi todos importaciones paralelas, que BIFIMED no recoge.
-        const total = fin + cond + nofin + estudio + sindato + nom;
+        //
+        // `error` = presentaciones que NO SE PUDIERON CONSULTAR (solo el camino en vivo, 07/11/2026).
+        // Entran en el denominador por la misma regla que «sin dato» —la fracción desconocida se
+        // muestra, no desaparece—, pero con nombre propio: «sin dato» es un hecho sobre la fuente y
+        // «sin consultar» es un fallo nuestro que un reintento puede resolver. Si todo lo que falta
+        // es fallo o sin dato y hay algún fallo, no se emite veredicto: «Sin datos de financiación»
+        // sería presentar el fallo como ausencia.
+        const total = fin + cond + nofin + estudio + sindato + nom + error;
         const financiadas = fin + cond + nom;
         const sinCobertura = nofin + estudio;
-        const pendientes = sindato ? ` · ${sindato} sin dato` : '';
+        const pendientes = (sindato ? ` · ${sindato} sin dato` : '') + (error ? ` · ${error} sin consultar` : '');
         const gris = 'var(--text-secondary)';
 
+        if (error && sindato + error === total) return { estado: 'error', label: 'No se pudo consultar la financiación', icon: 'fa-triangle-exclamation', color: 'var(--warning)' };
         if (total === 0 || sindato === total) return { estado: 'sindato', label: 'Sin datos de financiación', icon: 'fa-circle-question', color: gris };
         if (financiadas === total) {
             // Solo el Nomenclátor lo respalda: se dice así, sin ascenderlo al mismo enunciado que
@@ -13046,10 +13066,10 @@ ${ftFechaDocsHtml}
         // mezclas, se descompone en vez de colapsar ambas cosas en una etiqueta que no es cierta.
         if (financiadas === 0) {
             if (estudio === 0) {
-                return { estado: 'no', label: sindato ? `No financiado por el SNS (${nofin} de ${total} presentaciones${pendientes})` : 'No financiado por el SNS', icon: 'fa-times-circle', color: gris };
+                return { estado: 'no', label: pendientes ? `No financiado por el SNS (${nofin} de ${total} presentaciones${pendientes})` : 'No financiado por el SNS', icon: 'fa-times-circle', color: gris };
             }
             if (nofin === 0) {
-                return { estado: 'estudio_sin_peticion', label: sindato ? `En estudio o sin petición de financiación (${estudio} de ${total} presentaciones${pendientes})` : 'En estudio o sin petición de financiación', icon: 'fa-hourglass-half', color: gris };
+                return { estado: 'estudio_sin_peticion', label: pendientes ? `En estudio o sin petición de financiación (${estudio} de ${total} presentaciones${pendientes})` : 'En estudio o sin petición de financiación', icon: 'fa-hourglass-half', color: gris };
             }
             const plural = nofin > 1 ? 's' : '';
             return { estado: 'sin_cobertura', label: `Sin cobertura SNS actual: ${nofin} no financiada${plural} · ${estudio} en estudio/sin petición${pendientes}`, icon: 'fa-times-circle', color: gris };
@@ -13614,6 +13634,7 @@ ${ftFechaDocsHtml}
     async _hydrateFinancingSummary(med) {
         const valueEl = document.getElementById('financing-summary-value');
         if (!valueEl) return;
+        this._medResumenFinanciacion = med; // para «Reintentar» (`_reintentarResumenFinanciacion`)
         const pintar = (html) => {
             if (this.currentMed?.nregistro !== med.nregistro) return; // el modal cambió mientras cargaba
             const el = document.getElementById('financing-summary-value');
@@ -13648,10 +13669,38 @@ ${ftFechaDocsHtml}
         }
         try {
             const map = await this._fetchFinancingByCns(cns);
-            pintar(this._financingSummaryValueHtml(this._computeFinancingSummary(map)));
+            const resumen = this._computeFinancingSummary(map);
+            pintar(this._financingSummaryValueHtml(resumen) + this._financingRetryHtml(resumen));
         } catch (e) {
             pintar(discreto('Financiación no disponible ahora'));
         }
+    }
+
+    /**
+     * Aviso y «Reintentar» de la línea Financiación cuando el camino en vivo no pudo consultar algún
+     * CN (07/11/2026). Va visible, no en un `title`, por el mismo criterio que la `nota`. Sin fallos
+     * no pinta nada.
+     */
+    _financingRetryHtml(resumen) {
+        if (!resumen?.error) return '';
+        const texto = resumen.estado === 'error'
+            ? 'El servicio no respondió. Esto no significa que el medicamento no esté financiado.'
+            : `No se pudo consultar ${resumen.error} de ${resumen.total} presentaciones: el resumen está incompleto.`;
+        return `<div class="fin-summary-retry" style="margin-top:0.25rem; font-size:0.85em; color:var(--text-secondary); line-height:1.35">`
+            + `<i class="fas fa-triangle-exclamation" style="color:var(--warning)"></i> ${this._escapeHtml(texto)} `
+            + `<button type="button" class="btn btn-sm btn-secondary" onclick="app._reintentarResumenFinanciacion()">Reintentar</button></div>`;
+    }
+
+    /**
+     * Botón «Reintentar» de la línea Financiación de Información. Vuelve a preguntar solo por lo que
+     * falló: lo consultado con éxito sale de la caché, y los fallos nunca se guardan en ella.
+     */
+    _reintentarResumenFinanciacion() {
+        const med = this._medResumenFinanciacion;
+        if (!med || this.currentMed?.nregistro !== med.nregistro) return;
+        const el = document.getElementById('financing-summary-value');
+        if (el) el.innerHTML = '<span class="text-muted" style="font-size:0.85em"><i class="fas fa-spinner fa-spin"></i> consultando…</span>';
+        this._hydrateFinancingSummary(med);
     }
 
     /**
