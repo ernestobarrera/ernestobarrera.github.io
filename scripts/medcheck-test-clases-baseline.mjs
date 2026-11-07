@@ -127,5 +127,16 @@ for (const [term, v] of Object.entries(real.terms || {})) {
 }
 check('hay clases declaradas en el baseline', declaradas > 0, true);
 
+// ── Orden de declaración (02/11/2026) ─────────────────────────────────────────
+// Este banco ejecuta `claseQueCubre` extraída y aislada, así que no podía ver el fallo real: en el
+// auditor, el bucle de `--reconcile` corre en el nivel superior del módulo y llama a
+// `claseQueCubre` antes de que el módulo llegue a declarar `CLASE_CATEGORIAS` si esta vive en la
+// mitad de abajo. El gate reventaba con ReferenceError (zona muerta temporal) en cuanto un GAP
+// nuevo quedaba cubierto por una clase: WEGOVY 7,2 mg.
+const iConstante = fuente.search(/const CLASE_CATEGORIAS = new Set\(/);
+const iBucle = fuente.indexOf('await reconcileEntry(');
+check('el auditor declara CLASE_CATEGORIAS antes del bucle de --reconcile que la usa',
+    iConstante > -1 && iBucle > -1 && iConstante < iBucle, true);
+
 console.log(`\n[clases] ${fallos} ${fallos === 1 ? 'fallo' : 'fallos'}`);
 process.exit(fallos === 0 ? 0 : 1);

@@ -56,6 +56,18 @@ const ACCEPTED_MAX_AGE_DAYS = 180;
 const BACKOFF_BASE_MS = Number(process.env.MC_AUDIT_BACKOFF_MS) || 1000;
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 class UnknownResultError extends Error {}
+// Categorías admitidas en una aceptación por CLASE (ver «Aceptación por CLASE», junto a
+// `claseQueCubre`). Aquí arriba por la misma zona muerta temporal: el bucle de `--reconcile` llama a
+// `claseQueCubre` antes de que el módulo llegue a esa mitad, y declarada allí abajo el gate
+// reventaba con ReferenceError en cuanto un GAP nuevo quedaba cubierto por una clase (02/11/2026,
+// WEGOVY 7,2 mg).
+const CLASE_CATEGORIAS = new Set([
+  'contextual',   // la condición es el escenario del procedimiento, no la diana (Fragmin/hemodiálisis)
+  'homonimia',    // la palabra en otro campo semántico (dobutamina: «depresión de la contractilidad»)
+  'remision',     // aparece en una remisión a otra sección («…ver sección 5.1»)
+  'niega',        // la 4.1 niega expresamente esa indicación (adenosina: «no revierte el flutter»)
+  'adyacente',    // trata algo asociado, no la condición (pinazepam: ansiedad de origen depresivo)
+]);
 // Entidades HTML nombradas que decodeEntities traduce a mano (docSegmentado no las decodifica).
 // Ver la nota junto a decodeEntities: DEBE vivir aquí arriba por la zona muerta temporal.
 const NAMED_ENTITIES = {
@@ -907,13 +919,7 @@ function acceptedBlockReason(gapRecord, termRecord, currentHash41, currentConfig
 //
 // Y NO SILENCIA: lo cubierto por clase se imprime bajo su propio epígrafe con la clase que lo
 // cubrió. Un guardián que aprueba sin decir qué aprueba es el que ya costó once días en septiembre.
-const CLASE_CATEGORIAS = new Set([
-  'contextual',   // la condición es el escenario del procedimiento, no la diana (Fragmin/hemodiálisis)
-  'homonimia',    // la palabra en otro campo semántico (dobutamina: «depresión de la contractilidad»)
-  'remision',     // aparece en una remisión a otra sección («…ver sección 5.1»)
-  'niega',        // la 4.1 niega expresamente esa indicación (adenosina: «no revierte el flutter»)
-  'adyacente',    // trata algo asociado, no la condición (pinazepam: ansiedad de origen depresivo)
-]);
+// Las categorías admitidas viven arriba, en `CLASE_CATEGORIAS`, por la zona muerta temporal.
 
 /** Normaliza para comparar texto clínico: minúsculas, sin acentos, espacios colapsados. */
 function plegarTexto(s) {
