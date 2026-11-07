@@ -9,6 +9,7 @@ sirve como datos del producto, y esa mezcla hacía pasar por dato público lo qu
 | `substance-identity-baseline.json` | candidatos de identidad de sustancia (no traducciones autorizadas: promoverlas es decisión humana) | `medcheck-compile-identity`, `medcheck-audit-identity`, `medcheck-test-identidad` |
 | `reconcile-baseline.json` | memoria de GAPs de reconciliación ya revisados | `medcheck-audit-ontology`, `medcheck-audit-identity`, `medcheck-test-perimetro` |
 | `broad-watch-baseline.json` | vigilancia de los prefijos ATC declarados `broad` en la ontología | `medcheck-audit-ontology` |
+| `guardias-motor-golden.json` | reparto del gestor de guardias generado con el motor anterior a la v2.1 (16 configuraciones aleatorias): el motor actual debe asignar igual | `guardias-test-motor` (no está en el CI de MedCheck: se pasa a mano) |
 
 Se versionan a propósito: un baseline sin historial no distingue «revisado y aceptado» de «nunca
 se miró». Cada uno lleva su contrato dentro, en `_doc`.

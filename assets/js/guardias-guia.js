@@ -1,125 +1,221 @@
 /*
- * Guía rápida del gestor de guardias (guardias.html y guardias-v2.html).
+ * Ayuda del gestor de guardias (guardias.html): menú «❓ Ayuda» y dos recorridos.
  *
- * Tour de primera visita sin dependencias externas: la página presume de no
- * cargar ningún framework y debe seguir funcionando en redes que bloquean CDNs.
+ *  - Guía rápida: de cero a un mes cerrado. Se lanza sola la primera vez solo si
+ *    el navegador no tiene datos (usuario nuevo).
+ *  - Configuración en detalle: una parada por pestaña, para quien ya ha visto la
+ *    rápida o hereda una configuración y quiere entenderla.
  *
- * No toca datos. Solo cambia la sección y la pestaña visibles, bloquea los clics
- * sobre la página mientras está abierta y, al cerrar, devuelve la vista a donde
- * estaba. Se lanza sola la primera vez solo si el navegador no tiene médicos
- * guardados (usuario nuevo); quien ya trabaja con la herramienta no la ve salvo
- * que pulse «Guía rápida».
+ * Sin dependencias externas: la página no carga ningún framework y debe
+ * funcionar en redes que bloquean CDNs. No toca datos: cambia la sección y la
+ * pestaña visibles (a través de window.GuardiasApp), bloquea los clics sobre la
+ * página mientras está abierta y, al cerrar, devuelve la vista a donde estaba.
  */
 (() => {
   "use strict";
 
   const CLAVE_VISTA = "guardiasGuiaVista_v1";
-  const CLAVE_DATOS = "sistemaGuardias_v16";
   const MARGEN = 16;
-  const HOLGURA_FOCO = 6;
+  const HOLGURA = 6;
 
-  const PASOS = [
-    {
-      titulo: "Guía rápida",
-      seccion: "configuracion",
-      pestana: "tabMedicos",
-      texto:
-        "Esta herramienta reparte cada mes los <b>cuatro puestos de cada día laborable</b> " +
-        "(avisos y urgencias, de mañana y de tarde) de forma equitativa entre los médicos, y " +
-        "<b>compensa</b> a quien haya hecho de más o de menos en meses anteriores." +
-        "<br><br>Los datos se quedan <b>en este navegador</b>: no se envían a ningún servidor." +
-        "<br><br>Puedes salir en cualquier momento con <kbd>Esc</kbd>.",
-    },
-    {
-      titulo: "¿Te han pasado ficheros? Empieza aquí",
-      el: ".nav-right > div",
-      texto:
-        "Si alguien ya usaba la herramienta y te ha enviado sus ficheros, impórtalos antes de nada:" +
-        "<ul><li><b>Config → 📥 Importar</b>: médicos, festivos, ausencias…</li>" +
-        "<li><b>Histórico → 📈 Importar</b>: los saldos de meses anteriores, necesarios para compensar.</li></ul>" +
-        "Si empiezas de cero, pasa al siguiente paso.",
-    },
-    {
-      titulo: "Da de alta a los médicos",
-      el: "#tabMedicos > .form-group:nth-child(-n+3), #tabMedicos > button",
-      seccion: "configuracion",
-      pestana: "tabMedicos",
-      texto:
-        "Escribe el nombre, elige el turno y pulsa <b>Agregar Médico</b>." +
-        "<br><br>El <b>turno</b> decide a qué guardias puede ir cada uno: MAÑANA, TARDE o MIXTO " +
-        "(alterna mañana y tarde según el día de la semana).",
-    },
-    {
-      titulo: "O pega la lista desde Excel",
-      el: () => [document.getElementById("importacionMasiva")?.closest(".form-group")],
-      seccion: "configuracion",
-      pestana: "tabMedicos",
-      texto:
-        "Si tienes la plantilla en una hoja de cálculo, copia las columnas, pégalas aquí y pulsa " +
-        "<b>Procesar Importación</b>. Columnas que acepta:" +
-        "<ul><li><code>Nombre · Turno</code></li>" +
-        "<li><code>Nombre · Categoría · Turno · Jornada%</code></li></ul>",
-    },
-    {
-      titulo: "Indica cuándo no puede trabajar cada uno",
-      el: "#configuracion .tabs",
-      seccion: "configuracion",
-      texto:
-        "<ul><li><b>Jornada y Exclusiones</b>: jornada reducida o días fijos sin guardia. Le baja el objetivo.</li>" +
-        "<li><b>Ausencias</b>: vacaciones y bajas. También le bajan el objetivo.</li>" +
-        "<li><b>Excl. Puntuales</b>: un día suelto. <b>No</b> le baja el objetivo: el sistema intentará darle esa guardia otro día.</li>" +
-        "<li><b>Plan. Turnos</b>: qué días hace mañana y cuáles tarde cada médico MIXTO.</li></ul>" +
-        "<b>Parámetros Avanzados</b> puede quedarse como está.",
-    },
-    {
-      titulo: "Añade los festivos",
-      el: "#tabFestivos > .form-group, #tabFestivos > button",
-      seccion: "configuracion",
-      pestana: "tabFestivos",
-      texto:
-        "Los fines de semana se excluyen solos, pero los festivos <b>nacionales, autonómicos y locales</b> " +
-        "hay que añadirlos aquí. Si falta alguno, el calendario pondrá guardias ese día.",
-    },
-    {
-      titulo: "Guarda la configuración",
-      el: 'nav button[onclick="guardarEnMemoria()"]',
-      texto:
-        "<b>Los cambios no se guardan solos.</b> Cuando termines, pulsa <b>Guardado</b> " +
-        "(o <kbd>Alt</kbd>+<kbd>S</kbd>). Si cierras la pestaña sin hacerlo, perderás lo que hayas añadido.",
-    },
-    {
-      titulo: "Genera el mes",
-      el: "#calendario > .form-group, #calendario > button",
-      seccion: "calendario",
-      texto:
-        "Elige <b>mes y año</b> (compruébalos bien) y pulsa <b>Generar Guardias</b>." +
-        '<br><br>En el calendario, una celda <span class="guia-descubierto">---</span> es un puesto ' +
-        "<b>sin cubrir</b>: ese día no quedaba nadie disponible en esa franja." +
-        "<br><br>Si algo no cuadra, corrige festivos o ausencias y vuelve a generarlo: " +
-        "no cuenta hasta que lo guardes en el histórico.",
-    },
-    {
-      titulo: "Cierra el mes en el histórico",
-      seccion: "calendario",
-      texto:
-        'Cuando el calendario sea el definitivo, pulsa <span class="guia-boton">💾 Guardar en Histórico</span> ' +
-        "<b>una vez por mes</b>." +
-        "<br><br>Así se recuerda quién hizo de más o de menos y se compensa el mes siguiente. " +
-        "Si no lo guardas, el próximo reparto no tendrá en cuenta este mes.",
-    },
-    {
-      titulo: "Haz copia de seguridad",
-      el: ".nav-right > div",
-      texto:
-        "Si se borran los datos del navegador o cambias de ordenador, se pierde todo. " +
-        "<b>Exporta</b> la configuración (📄) y el histórico (📊) al cerrar cada mes: " +
-        "son también los ficheros que pasarías a otra persona." +
-        "<br><br>Para repasar, tienes esta guía en <b>❓ Guía rápida</b> y el detalle en <b>Manual de uso</b>.",
-    },
-  ];
+  const app = () => window.GuardiasApp;
+  const $ = (id) => document.getElementById(id);
+  const contenedorDe = (id) => () => [$(id)?.closest(".table-container")];
+
+  const RUTAS = {
+    rapida: [
+      {
+        titulo: "Guía rápida",
+        seccion: "configuracion",
+        pestana: "tabMedicos",
+        texto:
+          "Esta herramienta reparte cada mes los <b>cuatro puestos de cada día laborable</b> " +
+          "(avisos y urgencias, de mañana y de tarde) de forma equitativa, y <b>compensa</b> a quien " +
+          "haya hecho de más o de menos en meses anteriores." +
+          "<br><br>Todo se guarda solo, <b>en este navegador</b>: no se envía nada a ningún servidor." +
+          "<br><br>Puedes salir con <kbd>Esc</kbd> y volver a verla en <b>❓ Ayuda</b>.",
+      },
+      {
+        titulo: () => (app().resumen().medicos ? "Ya hay datos en este navegador" : "¿Cómo empiezas?"),
+        seccion: "configuracion",
+        el: () => (app().resumen().medicos ? [$("zonaDatos")] : [$("bienvenida")]),
+        texto: () => {
+          const { medicos, meses } = app().resumen();
+          if (medicos) {
+            return (
+              `Aquí ya hay <b>${medicos} médicos</b> y <b>${meses} ${meses === 1 ? "mes" : "meses"} de histórico</b>. ` +
+              "Revisa que estén al día. Si alguien te pasa una copia más reciente, cárgala con <b>⬆ Importar</b>."
+            );
+          }
+          return (
+            "Elige según lo que tengas:" +
+            "<ul><li><b>Tengo una copia</b>: impórtala y listo.</li>" +
+            "<li><b>Los datos están en otro ordenador</b>: exporta allí la copia y tráela.</li>" +
+            "<li><b>Empiezo de cero</b>: sigue esta guía.</li></ul>" +
+            "Si no sabes si hay copia, pregunta a quien llevaba antes las guardias. Si no aparece, empezar de cero " +
+            "también vale: la compensación arrancará desde el primer mes que guardes."
+          );
+        },
+      },
+      {
+        titulo: "Da de alta a los médicos",
+        el: "#altaMedico",
+        seccion: "configuracion",
+        pestana: "tabMedicos",
+        texto:
+          "Escribe el nombre, elige el turno y pulsa <b>Agregar médico</b>." +
+          "<br><br>El <b>turno</b> decide a qué guardias puede ir: MAÑANA, TARDE o MIXTO (alterna según el día). " +
+          "Turno y estado se pueden cambiar después en la propia lista.",
+      },
+      {
+        titulo: "O pega la lista desde Excel",
+        el: "#importacionRapida",
+        seccion: "configuracion",
+        pestana: "tabMedicos",
+        texto:
+          "Copia las columnas de la hoja de cálculo, pégalas aquí y pulsa <b>Procesar importación</b>." +
+          "<br><br><b>Nombre</b> y <b>Turno</b> son obligatorias; <b>Categoría</b> y <b>Jornada %</b>, opcionales. " +
+          "Si alguna fila falla, se queda en el cuadro con el motivo.",
+      },
+      {
+        titulo: "Indica cuándo no puede trabajar cada uno",
+        el: "#configuracion .tabs",
+        seccion: "configuracion",
+        texto:
+          "<ul><li><b>Jornada y Exclusiones</b>: jornada reducida o días fijos sin guardia. Le baja el objetivo.</li>" +
+          "<li><b>Ausencias</b>: vacaciones y bajas. También le bajan el objetivo.</li>" +
+          "<li><b>Excl. Puntuales</b>: un día suelto. <b>No</b> le baja el objetivo.</li>" +
+          "<li><b>Plan. Turnos</b>: qué días hace mañana y cuáles tarde cada MIXTO.</li></ul>" +
+          "En <b>❓ Ayuda → Configuración en detalle</b> hay una parada por pestaña.",
+      },
+      {
+        titulo: "Añade los festivos",
+        el: "#tabFestivos > .form-group, #tabFestivos > button",
+        seccion: "configuracion",
+        pestana: "tabFestivos",
+        texto:
+          "Los fines de semana se excluyen solos, pero los festivos <b>nacionales, autonómicos y locales</b> " +
+          "hay que añadirlos. Si falta alguno, el calendario pondrá guardias ese día.",
+      },
+      {
+        titulo: "Genera el mes",
+        el: "#formularioMes",
+        seccion: "calendario",
+        texto:
+          "Por defecto aparece el mes siguiente. Pulsa <b>Generar guardias</b>." +
+          '<br><br>Encima del calendario saldrán los avisos: una celda <span class="guia-descubierto">---</span> ' +
+          "es un puesto <b>sin cubrir</b>, y también se avisa de los MIXTO sin planificar." +
+          "<br><br>Si algo no cuadra, corrige y vuelve a generar: no cuenta hasta que lo guardes en el histórico.",
+      },
+      {
+        titulo: "Cierra el mes en el histórico",
+        seccion: "calendario",
+        texto:
+          'Cuando el calendario sea el definitivo, pulsa <span class="guia-boton">💾 Guardar en el histórico</span> ' +
+          "<b>una vez por mes</b>." +
+          "<br><br>Así se recuerda quién hizo de más o de menos y se compensa en los meses siguientes. " +
+          "Si no lo guardas, el próximo reparto no tendrá en cuenta este mes.",
+      },
+      {
+        titulo: "Haz copia de seguridad",
+        el: "#zonaDatos",
+        texto:
+          "Aquí ves cuándo se guardó por última vez. Pero ese guardado <b>solo existe en este navegador</b>: " +
+          "si se borran los datos de navegación o cambias de ordenador, se pierde." +
+          "<br><br>Al cerrar cada mes, pulsa <b>⬇ Exportar copia</b>: es tu respaldo y el fichero que pasarás a " +
+          "quien te sustituya. Si pasa más de un mes sin copia, aquí saldrá un aviso.",
+        extra: { texto: "Configuración en detalle ›", ruta: "configuracion" },
+      },
+    ],
+
+    configuracion: [
+      {
+        titulo: "La lista de médicos",
+        el: contenedorDe("tablaMedicos"),
+        seccion: "configuracion",
+        pestana: "tabMedicos",
+        texto:
+          "<b>Turno</b> y <b>Activo</b> se cambian aquí mismo." +
+          "<br><br>Un médico <b>inactivo</b> no recibe guardias ni cuenta para el reparto, pero conserva su " +
+          "configuración y su histórico: úsalo para quien falta una temporada. <b>Eliminar</b> borra también " +
+          "su jornada, ausencias y planificación.",
+      },
+      {
+        titulo: "Jornada y días excluidos",
+        el: "#tabJornada .fila-campos, #tabJornada fieldset, #tabJornada > button",
+        seccion: "configuracion",
+        pestana: "tabJornada",
+        texto:
+          "Al elegir un médico se cargan sus datos." +
+          "<ul><li><b>Jornada %</b>: su objetivo baja en proporción (al 50 %, la mitad que un compañero igual a jornada completa).</li>" +
+          "<li><b>Días excluidos</b>: ese día de la semana nunca se le asigna, y también le baja el objetivo.</li></ul>",
+      },
+      {
+        titulo: "Ausencias",
+        el: "#tabAusencias .fila-campos, #tabAusencias > button",
+        seccion: "configuracion",
+        pestana: "tabAusencias",
+        texto:
+          "Vacaciones, bajas, formación… <b>Desde</b> y <b>hasta</b>, ambos incluidos." +
+          "<br><br>Esos días no se le asigna y su objetivo baja, porque no está.",
+      },
+      {
+        titulo: "Exclusiones puntuales",
+        el: "#tabExclPunt .fila-campos, #tabExclPunt > button",
+        seccion: "configuracion",
+        pestana: "tabExclPunt",
+        texto:
+          "Un día suelto en que no puede (una cita, un curso)." +
+          "<br><br>Ese día no se le asigna, pero su objetivo <b>no</b> baja: el sistema intentará darle esa " +
+          "guardia otro día. Si va a faltar varios días, mejor como ausencia.",
+      },
+      {
+        titulo: "Planificación de los MIXTO",
+        el: "#tabPlanTurnos > .form-group, #tablaPlanTurno, #tabPlanTurnos .botonera",
+        seccion: "configuracion",
+        pestana: "tabPlanTurnos",
+        texto:
+          "Para cada médico MIXTO, qué días hace mañana y cuáles tarde. Ese día solo puede ir a guardias de esa franja." +
+          "<br><br>Sin planificación se usa lunes, miércoles y viernes de tarde y martes y jueves de mañana, y al " +
+          "generar sale un aviso.",
+      },
+      {
+        titulo: "Compensación histórica",
+        el: "#bloqueCompensacion",
+        seccion: "configuracion",
+        pestana: "tabParametros",
+        texto:
+          "<ul><li><b>Factor</b>: qué parte del saldo de cada médico se corrige el mes siguiente. 50 % por defecto; " +
+          "0 % la desactiva. El ajuste nunca pasa del 30 % de su objetivo.</li>" +
+          "<li><b>Ventana</b>: cuántos meses anteriores al que se genera cuentan (6 por defecto). Los más antiguos " +
+          "se conservan, pero dejan de contar.</li></ul>",
+      },
+      {
+        titulo: "Desempate",
+        el: "#bloqueDesempate",
+        seccion: "configuracion",
+        pestana: "tabParametros",
+        texto:
+          "Si dos médicos empatan, por defecto gana el primero de la lista. El <b>desempate aleatorio</b> reparte " +
+          "esa suerte sin tocar la equidad; con una <b>semilla</b> fija, el mismo mes sale siempre igual.",
+      },
+      {
+        titulo: "Histórico y saldos",
+        el: "#panelHistorico",
+        seccion: "configuracion",
+        pestana: "tabParametros",
+        texto:
+          "Qué meses hay guardados y cuáles cuentan para el mes elegido en Calendario. Debajo, el <b>saldo</b> de " +
+          "cada médico: positivo si hizo de más." +
+          "<br><br>En <b>Ver detalle por meses</b> se puede borrar un mes guardado por error. Si un nombre del " +
+          "histórico no coincide con la lista, se avisa aquí.",
+      },
+    ],
+  };
 
   const ESTILOS = `
-    header { flex-wrap: wrap; gap: 8px; }
+    /* Espacio al final mientras dura la guía: así cualquier zona puede subir arriba y dejar sitio a la caja. */
+    html.guia-activa body { padding-bottom: 70vh; }
     .guia-capa { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 10000; }
     .guia-foco {
       position: fixed; z-index: 10001; pointer-events: none; border-radius: 8px;
@@ -141,12 +237,7 @@
     .guia-caja h3 { margin: 2px 0 8px; font-size: 1rem; color: #1e293b; }
     .guia-caja ul { margin: 6px 0 6px 18px; }
     .guia-caja li { margin-bottom: 4px; }
-    .guia-caja code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 0.8rem; }
-    .guia-caja kbd {
-      border: 1px solid #cbd5e1; border-bottom-width: 2px; border-radius: 3px;
-      padding: 0 4px; font-size: 0.78rem; background: #f8fafc; font-family: inherit;
-    }
-    .guia-botones { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+    .guia-botones { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
     .guia-botones .guia-saltar {
       margin-right: auto; background: transparent; color: #64748b; border: none;
       padding: 6px 2px; text-decoration: underline;
@@ -165,6 +256,7 @@
     }
   `;
 
+  let pasos = [];
   let capa = null;
   let foco = null;
   let caja = null;
@@ -189,39 +281,8 @@
     }
   };
 
-  const hayDatosGuardados = () => {
-    try {
-      const datos = JSON.parse(leer(CLAVE_DATOS) || "null");
-      return Boolean(datos && Array.isArray(datos.medicos) && datos.medicos.length > 0);
-    } catch (e) {
-      return false;
-    }
-  };
-
-  const movimientoReducido = () =>
-    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  // --- Navegación por la página, reutilizando sus propias funciones ---------
-
-  const irASeccion = (id) => {
-    if (typeof mostrarSeccion !== "function") return;
-    const enlace = document.querySelector(`.nav-link[onclick*="'${id}'"]`);
-    mostrarSeccion(id, enlace ? { currentTarget: enlace } : null);
-  };
-
-  const abrirPestana = (id) => {
-    if (typeof abrirTab !== "function") return;
-    const boton = document.querySelector(`.tab-button[onclick*="'${id}'"]`);
-    if (boton) abrirTab({ currentTarget: boton }, id);
-  };
-
-  const leerVista = () => {
-    const seccion = Array.from(document.querySelectorAll(".seccion")).find(
-      (s) => s.style.display !== "none"
-    );
-    const pestana = document.querySelector(".tab-content.active");
-    return { seccion: seccion ? seccion.id : "configuracion", pestana: pestana ? pestana.id : "tabMedicos" };
-  };
+  const valor = (v) => (typeof v === "function" ? v() : v);
+  const movimientoReducido = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
   // --- Geometría -------------------------------------------------------------
 
@@ -244,10 +305,19 @@
     return r;
   };
 
+  /**
+   * Desplaza la página para que se vean la zona resaltada y la caja. Si caben
+   * las dos, sube la zona arriba del todo y deja la caja debajo; si no caben
+   * (zona muy alta en un móvil), al menos enseña el principio de la zona.
+   */
   const llevarAVista = (rect) => {
     const alto = window.innerHeight;
-    if (rect.top >= MARGEN && rect.bottom <= alto - MARGEN) return;
-    const destino = window.scrollY + rect.top - 80;
+    const necesario = caja.offsetHeight + 12 + MARGEN;
+    const visible = rect.top >= MARGEN && rect.bottom <= alto - MARGEN;
+    const hayHueco = alto - rect.bottom - HOLGURA >= necesario || rect.top - HOLGURA >= necesario;
+    if (visible && hayHueco) return;
+    const caben = rect.bottom - rect.top + HOLGURA * 2 + necesario + MARGEN <= alto;
+    const destino = window.scrollY + rect.top - (caben ? MARGEN + HOLGURA : 80);
     window.scrollTo({ top: Math.max(0, destino), behavior: movimientoReducido() ? "auto" : "smooth" });
   };
 
@@ -256,7 +326,7 @@
     if (!caja) return;
     const ancho = window.innerWidth;
     const alto = window.innerHeight;
-    const rect = rectUnion(nodosVisibles(PASOS[indice]));
+    const rect = rectUnion(nodosVisibles(pasos[indice]));
     const anchoCaja = caja.offsetWidth;
     const altoCaja = caja.offsetHeight;
 
@@ -270,17 +340,17 @@
 
     foco.classList.remove("guia-sin-objetivo");
     Object.assign(foco.style, {
-      top: `${rect.top - HOLGURA_FOCO}px`,
-      left: `${rect.left - HOLGURA_FOCO}px`,
-      width: `${rect.right - rect.left + HOLGURA_FOCO * 2}px`,
-      height: `${rect.bottom - rect.top + HOLGURA_FOCO * 2}px`,
+      top: `${rect.top - HOLGURA}px`,
+      left: `${rect.left - HOLGURA}px`,
+      width: `${rect.right - rect.left + HOLGURA * 2}px`,
+      height: `${rect.bottom - rect.top + HOLGURA * 2}px`,
     });
 
-    const abajo = alto - rect.bottom - HOLGURA_FOCO;
-    const arriba = rect.top - HOLGURA_FOCO;
+    const abajo = alto - rect.bottom - HOLGURA;
+    const arriba = rect.top - HOLGURA;
     let top;
-    if (abajo >= altoCaja + 12 + MARGEN) top = rect.bottom + HOLGURA_FOCO + 12;
-    else if (arriba >= altoCaja + 12 + MARGEN) top = rect.top - HOLGURA_FOCO - 12 - altoCaja;
+    if (abajo >= altoCaja + 12 + MARGEN) top = rect.bottom + HOLGURA + 12;
+    else if (arriba >= altoCaja + 12 + MARGEN) top = rect.top - HOLGURA - 12 - altoCaja;
     else top = alto - altoCaja - MARGEN;
 
     const left = Math.min(Math.max(MARGEN, rect.left), ancho - anchoCaja - MARGEN);
@@ -294,10 +364,10 @@
     window.requestAnimationFrame(colocar);
   };
 
-  // --- Construcción y pasos ----------------------------------------------------
+  // --- Recorrido -------------------------------------------------------------
 
   const insertarEstilos = () => {
-    if (document.getElementById("guia-estilos")) return;
+    if ($("guia-estilos")) return;
     const style = document.createElement("style");
     style.id = "guia-estilos";
     style.textContent = ESTILOS;
@@ -325,44 +395,54 @@
         <div id="guiaTexto"></div>
       </div>
       <div class="guia-botones">
-        <button type="button" class="guia-saltar" data-accion="salir">Saltar guía</button>
-        <button type="button" class="secondary" data-accion="anterior">‹ Anterior</button>
-        <button type="button" data-accion="siguiente">Siguiente ›</button>
+        <button type="button" class="guia-saltar" data-guia-accion="salir">Saltar guía</button>
+        <button type="button" class="secondary" data-guia-accion="anterior">‹ Anterior</button>
+        <button type="button" class="secondary" data-guia-accion="extra" hidden></button>
+        <button type="button" data-guia-accion="siguiente">Siguiente ›</button>
       </div>`;
     caja.addEventListener("click", (e) => {
-      const accion = e.target.closest("[data-accion]")?.dataset.accion;
+      e.stopPropagation();
+      const accion = e.target.closest("[data-guia-accion]")?.dataset.guiaAccion;
       if (accion === "salir") cerrar();
-      if (accion === "anterior") mostrarPaso(indice - 1);
-      if (accion === "siguiente") mostrarPaso(indice + 1);
+      else if (accion === "anterior") mostrarPaso(indice - 1);
+      else if (accion === "siguiente") mostrarPaso(indice + 1);
+      else if (accion === "extra") {
+        const ruta = pasos[indice].extra?.ruta;
+        cerrar({ restaurar: false });
+        if (ruta) iniciar(ruta);
+      }
     });
 
     document.body.append(capa, foco, caja);
   };
 
   const mostrarPaso = (nuevo) => {
-    if (nuevo >= PASOS.length) {
+    if (nuevo >= pasos.length) {
       cerrar();
       return;
     }
     indice = Math.max(0, nuevo);
-    const paso = PASOS[indice];
-    if (paso.seccion) irASeccion(paso.seccion);
-    if (paso.pestana) abrirPestana(paso.pestana);
+    const paso = pasos[indice];
+    if (paso.seccion) app().irASeccion(paso.seccion);
+    if (paso.pestana) app().abrirPestana(paso.pestana);
 
-    const ultimo = indice === PASOS.length - 1;
-    caja.querySelector(".guia-progreso span").style.width = `${((indice + 1) / PASOS.length) * 100}%`;
-    caja.querySelector("#guiaPaso").textContent = `Paso ${indice + 1} de ${PASOS.length}`;
-    caja.querySelector("#guiaTitulo").textContent = paso.titulo;
-    caja.querySelector("#guiaTexto").innerHTML = paso.texto;
-    caja.querySelector('[data-accion="anterior"]').hidden = indice === 0;
-    caja.querySelector('[data-accion="salir"]').hidden = ultimo;
-    const siguiente = caja.querySelector('[data-accion="siguiente"]');
+    const ultimo = indice === pasos.length - 1;
+    caja.querySelector(".guia-progreso span").style.width = `${((indice + 1) / pasos.length) * 100}%`;
+    $("guiaPaso").textContent = `Paso ${indice + 1} de ${pasos.length}`;
+    $("guiaTitulo").textContent = valor(paso.titulo);
+    $("guiaTexto").innerHTML = valor(paso.texto);
+    caja.querySelector('[data-guia-accion="anterior"]').hidden = indice === 0;
+    caja.querySelector('[data-guia-accion="salir"]').hidden = ultimo;
+    const extra = caja.querySelector('[data-guia-accion="extra"]');
+    extra.hidden = !paso.extra;
+    extra.textContent = paso.extra ? paso.extra.texto : "";
+    const siguiente = caja.querySelector('[data-guia-accion="siguiente"]');
     siguiente.textContent = ultimo ? "Entendido" : indice === 0 ? "Empezar ›" : "Siguiente ›";
 
     const rect = rectUnion(nodosVisibles(paso));
     if (rect) llevarAVista(rect);
     colocar();
-    // La pestaña entra con una animación de 0,2 s: se recoloca cuando termina.
+    // Las pestañas entran con una animación de 0,2 s: se recoloca cuando termina.
     window.setTimeout(pedirColocacion, 260);
     siguiente.focus({ preventScroll: true });
   };
@@ -381,11 +461,9 @@
     } else if (e.key === "Tab") {
       const botones = Array.from(caja.querySelectorAll("button")).filter((b) => !b.hidden);
       const actual = botones.indexOf(document.activeElement);
-      const siguiente = e.shiftKey
-        ? (actual - 1 + botones.length) % botones.length
-        : (actual + 1) % botones.length;
+      const destino = e.shiftKey ? (actual - 1 + botones.length) % botones.length : (actual + 1) % botones.length;
       e.preventDefault();
-      botones[siguiente].focus();
+      botones[destino].focus();
     } else if (e.altKey) {
       // Los atajos Alt+letra de la página cambiarían la vista por debajo de la guía.
       e.preventDefault();
@@ -395,19 +473,22 @@
     e.stopPropagation();
   };
 
-  const iniciar = () => {
-    if (caja) return;
+  const iniciar = (ruta = "rapida") => {
+    if (caja || !app() || !RUTAS[ruta]) return;
+    cerrarMenu();
     insertarEstilos();
-    vistaInicial = leerVista();
-    focoPrevio = document.activeElement;
+    pasos = RUTAS[ruta];
+    if (!vistaInicial) vistaInicial = { seccion: app().seccionVisible(), pestana: app().pestanaActiva() };
+    if (!focoPrevio) focoPrevio = document.activeElement;
     crearNodos();
+    document.documentElement.classList.add("guia-activa");
     document.addEventListener("keydown", alPulsarTecla, true);
     window.addEventListener("resize", pedirColocacion);
     window.addEventListener("scroll", pedirColocacion, true);
     mostrarPaso(0);
   };
 
-  const cerrar = () => {
+  const cerrar = ({ restaurar = true } = {}) => {
     if (!caja) return;
     escribir(CLAVE_VISTA, new Date().toISOString());
     document.removeEventListener("keydown", alPulsarTecla, true);
@@ -415,20 +496,77 @@
     window.removeEventListener("scroll", pedirColocacion, true);
     [capa, foco, caja].forEach((n) => n.remove());
     capa = foco = caja = null;
+    document.documentElement.classList.remove("guia-activa");
+    if (!restaurar) return;
     if (vistaInicial) {
-      irASeccion(vistaInicial.seccion);
-      abrirPestana(vistaInicial.pestana);
+      app().irASeccion(vistaInicial.seccion);
+      app().abrirPestana(vistaInicial.pestana);
     }
     window.scrollTo({ top: 0 });
-    const boton = document.getElementById("btnGuia");
-    const destino = focoPrevio && document.contains(focoPrevio) && focoPrevio !== document.body ? focoPrevio : boton;
-    if (destino) destino.focus({ preventScroll: true });
+    const destino = focoPrevio && document.contains(focoPrevio) && focoPrevio !== document.body ? focoPrevio : $("btnGuia");
+    destino?.focus({ preventScroll: true });
+    vistaInicial = null;
+    focoPrevio = null;
+  };
+
+  // --- Menú «❓ Ayuda» --------------------------------------------------------
+
+  const menu = () => $("menuAyuda");
+
+  const cerrarMenu = () => {
+    if (!menu() || menu().hidden) return;
+    menu().hidden = true;
+    $("btnGuia").setAttribute("aria-expanded", "false");
+  };
+
+  const abrirMenu = () => {
+    menu().hidden = false;
+    $("btnGuia").setAttribute("aria-expanded", "true");
+    menu().querySelector("button")?.focus();
+  };
+
+  const prepararMenu = () => {
+    const boton = $("btnGuia");
+    if (!boton || !menu()) return;
+    document.querySelectorAll("[data-pasos]").forEach((n) => {
+      const ruta = RUTAS[n.dataset.pasos];
+      if (ruta) n.textContent = `${ruta.length} pasos`;
+    });
+    boton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (menu().hidden) abrirMenu();
+      else cerrarMenu();
+    });
+    menu().addEventListener("click", (e) => {
+      const opcion = e.target.closest("button");
+      if (!opcion) return;
+      if (opcion.dataset.guia) {
+        e.stopPropagation();
+        iniciar(opcion.dataset.guia);
+      }
+      cerrarMenu();
+    });
+    menu().addEventListener("keydown", (e) => {
+      const opciones = Array.from(menu().querySelectorAll("button"));
+      const actual = opciones.indexOf(document.activeElement);
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const paso = e.key === "ArrowDown" ? 1 : -1;
+        opciones[(actual + paso + opciones.length) % opciones.length].focus();
+      } else if (e.key === "Escape") {
+        cerrarMenu();
+        boton.focus();
+      }
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".menu-ayuda")) cerrarMenu();
+    });
   };
 
   const arrancar = () => {
-    const boton = document.getElementById("btnGuia");
-    if (boton) boton.addEventListener("click", iniciar);
-    if (!leer(CLAVE_VISTA) && !hayDatosGuardados()) window.setTimeout(iniciar, 500);
+    prepararMenu();
+    const { medicos, meses } = app() ? app().resumen() : { medicos: 1, meses: 1 };
+    if (!leer(CLAVE_VISTA) && medicos === 0 && meses === 0) window.setTimeout(() => iniciar("rapida"), 500);
   };
 
   window.iniciarGuiaGuardias = iniciar;
