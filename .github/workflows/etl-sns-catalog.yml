@@ -127,6 +127,24 @@ jobs:
           echo "$body" | jq .
           test "$status" = "200" || exit 1
 
+      # Punto 8 de la cola de MedCheck (el 1102): además del blob entero, el catálogo partido en
+      # trozos versionados, para que el Worker lea ~300 KB por consulta y no 20 MB. `:full` y
+      # `:meta` se siguen publicando arriba sin cambios: son la vuelta atrás (Worker viejo, o el
+      # nuevo sin CATALOGOS_TROZOS). El publicador verifica todos los CN contra el JSON, relee lo
+      # escrito y mueve el puntero lo último; si algo no casa, el Worker sigue con el release
+      # anterior, entero. Formato y orden: `scripts/kv-trozos/`. Coste: 66 escrituras por pasada.
+      - name: Setup Node (trozos)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Publicar trozos versionados a Cloudflare KV
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: node scripts/kv-trozos/publicar-trozos.mjs --catalogo sns-catalog --entrada sns_catalog.json --publicar
+
       # Descomentar cuando el Worker tenga el endpoint /sns-catalog/meta desplegado
       # - name: Verificar endpoint del Worker
       #   run: |
