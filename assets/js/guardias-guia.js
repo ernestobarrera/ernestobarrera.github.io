@@ -181,6 +181,17 @@
           "generar sale un aviso.",
       },
       {
+        titulo: "Cambios de turno en fechas concretas",
+        el: "#bloqueCambiosTurno .fila-campos, #vistaPreviaCambio, #bloqueCambiosTurno > .botonera",
+        seccion: "configuracion",
+        pestana: "tabPlanTurnos",
+        texto:
+          "Para <b>cualquier médico</b>, no solo los MIXTO: los días en que pasa consulta en la otra franja (un cambio " +
+          "con un compañero, una semana de tarde…). Elige médico, desde, hasta y franja." +
+          "<br><br>Antes de registrarlo, un recuadro explica qué va a pasar. Su objetivo del mes <b>no</b> cambia y, " +
+          "si ese día tiene ausencia, manda la ausencia. En el calendario, <b>⇄</b> marca esas guardias.",
+      },
+      {
         titulo: "Compensación histórica",
         el: "#bloqueCompensacion",
         seccion: "configuracion",
