@@ -185,6 +185,9 @@
   /** Tras cualquier cambio de la configuración. */
   const cambioConfiguracion = () => {
     guardar();
+    // Festivos, ausencias, turnos y altas cambian cómo se leen los cambios de turno.
+    pintarCambios();
+    pintarVistaPreviaCambio();
     if (resultado) {
       resultadoDesactualizado = true;
       pintarAvisosResultado();
@@ -293,8 +296,10 @@
       return;
     }
     select.disabled = false;
-    opciones.forEach((o) => select.append(crear("option", { value: o, texto: o })));
-    if (opciones.includes(anterior)) select.value = anterior;
+    // Cada opción es un texto o { valor, texto } si lo que se ve no es lo que se guarda.
+    const valores = opciones.map((o) => (typeof o === "string" ? o : o.valor));
+    opciones.forEach((o) => select.append(crear("option", typeof o === "string" ? { value: o, texto: o } : { value: o.valor, texto: o.texto })));
+    if (valores.includes(anterior)) select.value = anterior;
   };
 
   const poblarSelects = () => {
@@ -309,8 +314,14 @@
       rellenarSelect($(id), nombres, "— Añade médicos activos primero —")
     );
     rellenarSelect($("planTurnoMedico"), mixtos, "— No hay médicos MIXTO activos —");
+    rellenarSelect(
+      $("cambioMedico"),
+      [...activos()].sort((a, b) => ordenAlfabetico(a.nombre, b.nombre)).map((m) => ({ valor: m.nombre, texto: `${m.nombre} · ${m.turno}` })),
+      "— Añade médicos activos primero —"
+    );
     cargarReduccionEnFormulario();
     cargarPlanEnFormulario();
+    pintarVistaPreviaCambio();
   };
 
   // --- Médicos -----------------------------------------------------------------------------------
@@ -441,7 +452,7 @@
   const eliminarMedico = async (nombre) => {
     const ok = await confirmar({
       titulo: `Eliminar a ${nombre}`,
-      mensaje: `Se borrarán también su jornada, ausencias, exclusiones y planificación. Su histórico se conserva. Si solo va a dejar de hacer guardias un tiempo, mejor desmárcalo como activo.`,
+      mensaje: `Se borrarán también su jornada, ausencias, exclusiones, planificación y cambios de turno. Su histórico se conserva. Si solo va a dejar de hacer guardias un tiempo, mejor desmárcalo como activo.`,
       aceptar: "Eliminar",
       peligro: true,
     });
@@ -451,6 +462,7 @@
     estado.ausencias = estado.ausencias.filter((a) => a.medico !== nombre);
     estado.exclusionesPuntuales = estado.exclusionesPuntuales.filter((e) => e.medico !== nombre);
     estado.planificacionesTurnos = estado.planificacionesTurnos.filter((p) => p.medico !== nombre);
+    estado.cambiosTurno = estado.cambiosTurno.filter((c) => c.medico !== nombre);
     cambioConfiguracion();
     pintarTodo();
     avisar(`${nombre} eliminado.`);
@@ -743,6 +755,220 @@
     });
   };
 
+  // --- Cambios de turno en fechas concretas ------------------------------------------------------
+  //
+  // Se guarda una entrada por médico y día laborable ({ medico, fecha, turno });
+  // aquí se introducen y se enseñan por tramos. Qué efecto tiene cada uno lo
+  // decide el motor (analizarCambiosTurno), el mismo que reparte.
+
+  const NO_DISPONIBLE = { ausencia: "con ausencia", "dia-excluido": "en su día excluido", "exclusion-puntual": "con exclusión puntual" };
+
+  const hoyISO = () => {
+    const h = new Date();
+    return M.aISO(M.fechaUTC(h.getFullYear(), h.getMonth() + 1, h.getDate()));
+  };
+  const fechaCorta = (iso) => `${diaDeLaSemana(iso).slice(0, 3).toLowerCase()} ${formatearFecha(iso)}`;
+  const textoFechas = (desde, hasta) => (desde === hasta ? fechaCorta(desde) : `${fechaCorta(desde)} → ${fechaCorta(hasta)}`);
+  const turnoDe = (nombre) => estado.medicos.find((m) => m.nombre === nombre)?.turno;
+
+  /** Lo que hay escrito en el formulario, ya interpretado. */
+  const leerFormularioCambio = () => {
+    const medico = $("cambioMedico").value;
+    const desde = $("cambioDesde").value;
+    const hasta = $("cambioHasta").value;
+    const turno = $("cambioTurno").value;
+    if (!medico || !desde) return { medico, turno, completo: false };
+    const fechas = M.fechasEntre(desde, hasta || desde);
+    if (!fechas) {
+      const error = hasta && hasta < desde ? "La fecha «hasta» es anterior a «desde»." : "El periodo no es válido (como mucho, un año).";
+      return { medico, turno, desde, hasta, completo: true, error };
+    }
+    // Se registran todos los días laborables del periodo: también los que hoy no
+    // cambian nada, para que el cambio siga valiendo si cambia su plan o su ausencia.
+    const analisis = M.analizarCambiosTurno(estado, fechas.map((fecha) => ({ medico, fecha, turno })));
+    const laborables = analisis.filter((a) => a.motivo !== "no-laborable");
+    const previos = new Map(estado.cambiosTurno.filter((c) => c.medico === medico).map((c) => [c.fecha, c.turno]));
+    return {
+      medico,
+      turno,
+      desde,
+      hasta: hasta || desde,
+      completo: true,
+      fechas,
+      laborables,
+      cambian: laborables.filter((a) => a.cambia),
+      yaEra: laborables.filter((a) => a.motivo === "ya-es-su-franja"),
+      noDisponible: laborables.filter((a) => a.motivo in NO_DISPONIBLE),
+      sustituye: laborables.filter((a) => previos.has(a.fecha) && previos.get(a.fecha) !== turno),
+      registrados: fechas.filter((f) => previos.has(f)),
+    };
+  };
+
+  const contarPorMotivo = (lista) =>
+    Object.entries(NO_DISPONIBLE)
+      .map(([motivo, texto]) => [lista.filter((a) => a.motivo === motivo).length, texto])
+      .filter(([n]) => n > 0)
+      .map(([n, texto]) => `${n} ${texto}`)
+      .join(", ");
+
+  /** Explica, antes de registrarlo, qué va a hacer el cambio. */
+  const pintarVistaPreviaCambio = () => {
+    const zona = $("vistaPreviaCambio");
+    const f = leerFormularioCambio();
+    zona.classList.remove("vista-error");
+    if (!f.completo) {
+      zona.hidden = true;
+      return;
+    }
+    zona.hidden = false;
+    if (f.error) {
+      zona.textContent = f.error;
+      zona.classList.add("vista-error");
+      return;
+    }
+    if (f.laborables.length === 0) {
+      zona.textContent = "En esas fechas no hay días laborables (fin de semana o festivo): no hay nada que registrar.";
+      return;
+    }
+    const lineas = [`${f.medico} · ${textoFechas(f.desde, f.hasta)}: ${plural(f.laborables.length, "día laborable", "días laborables")}.`];
+    if (f.cambian.length) {
+      const desde = [...new Set(f.cambian.map((a) => a.habitual))].join(" o ");
+      lineas.push(`En ${plural(f.cambian.length, "día", "días")} pasa de ${desde} a ${f.turno}.`);
+    }
+    if (f.yaEra.length) lineas.push(`En ${plural(f.yaEra.length, "día", "días")} ya era de ${f.turno}: no cambia nada.`);
+    if (f.noDisponible.length) lineas.push(`${contarPorMotivo(f.noDisponible)}: esos días no hace guardias igualmente.`);
+    if (f.sustituye.length) lineas.push(`Sustituye ${plural(f.sustituye.length, "cambio ya registrado", "cambios ya registrados")} de esas fechas.`);
+    if (f.cambian.length === 0 && f.sustituye.length === 0) lineas.push("Registrarlo no cambiaría nada hoy.");
+    zona.textContent = lineas.join(" ");
+  };
+
+  const agregarCambioTurno = () => {
+    const f = leerFormularioCambio();
+    if (!f.medico || !f.completo) {
+      avisar("Elige el médico y al menos la fecha «desde».", { tipo: "error" });
+      return;
+    }
+    if (f.error) {
+      avisar(f.error, { tipo: "error" });
+      return;
+    }
+    if (f.laborables.length === 0) {
+      avisar("En esas fechas no hay días laborables: no hay nada que registrar.");
+      return;
+    }
+    if (f.cambian.length === 0 && f.sustituye.length === 0) {
+      avisar(`No cambia nada: esos días ${f.medico} ya pasa consulta de ${f.turno} o no está disponible.`);
+      return;
+    }
+    const nuevas = new Set(f.laborables.map((a) => a.fecha));
+    estado.cambiosTurno = estado.cambiosTurno
+      .filter((c) => !(c.medico === f.medico && nuevas.has(c.fecha)))
+      .concat(f.laborables.map((a) => ({ medico: f.medico, fecha: a.fecha, turno: f.turno })))
+      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)) || String(a.medico).localeCompare(String(b.medico), "es"));
+    $("cambioDesde").value = "";
+    $("cambioHasta").value = "";
+    cambioConfiguracion();
+    avisar(`Cambio registrado: ${f.medico}, ${plural(f.laborables.length, "día", "días")} de ${f.turno}.`, { tipo: "ok" });
+  };
+
+  const quitarCambiosDeFechas = async () => {
+    const f = leerFormularioCambio();
+    if (!f.medico || !f.completo || f.error) {
+      avisar(f.error || "Elige el médico y las fechas cuyos cambios quieres quitar.", { tipo: "error" });
+      return;
+    }
+    if (f.registrados.length === 0) {
+      avisar(`${f.medico} no tiene cambios de turno entre esas fechas.`);
+      return;
+    }
+    const ok = await confirmar({
+      titulo: "Quitar cambios de turno",
+      mensaje: `Se quitarán ${plural(f.registrados.length, "cambio", "cambios")} de ${f.medico} (${textoFechas(f.desde, f.hasta)}). Esos días vuelve a su turno habitual.`,
+      aceptar: "Quitar",
+      peligro: true,
+    });
+    if (!ok) return;
+    const fuera = new Set(f.registrados);
+    estado.cambiosTurno = estado.cambiosTurno.filter((c) => !(c.medico === f.medico && fuera.has(c.fecha)));
+    cambioConfiguracion();
+    avisar(`${plural(f.registrados.length, "cambio quitado", "cambios quitados")}.`, { tipo: "ok" });
+  };
+
+  const observacionesDeTramo = (tramo) => {
+    const analisis = M.analizarCambiosTurno(estado, tramo.fechas.map((fecha) => ({ medico: tramo.medico, fecha, turno: tramo.turno })));
+    const partes = [];
+    if (analisis.some((a) => a.motivo === "medico-desconocido")) return "No está en la lista de médicos: no se aplica.";
+    if (analisis.some((a) => a.motivo === "inactivo")) partes.push("está inactivo");
+    const yaEra = analisis.filter((a) => a.motivo === "ya-es-su-franja").length;
+    if (yaEra) partes.push(`${yaEra} ya ${yaEra === 1 ? "era" : "eran"} de ${tramo.turno}`);
+    const noDisp = contarPorMotivo(analisis);
+    if (noDisp) partes.push(noDisp);
+    const festivos = analisis.filter((a) => a.motivo === "no-laborable").length;
+    if (festivos) partes.push(`${festivos} ${festivos === 1 ? "cae" : "caen"} en festivo`);
+    return partes.join(" · ");
+  };
+
+  const pintarCambios = () => {
+    const tbody = cuerpo("tablaCambiosTurno");
+    const hoy = hoyISO();
+    const tramos = M.agruparCambiosTurno(estado);
+    const pasados = tramos.filter((t) => t.hasta < hoy);
+    const verPasados = $("verCambiosPasados").checked;
+    const visibles = verPasados ? tramos : tramos.filter((t) => t.hasta >= hoy);
+    $("contadorCambiosPasados").textContent = pasados.length ? `(${pasados.length})` : "";
+    $("zonaBorrarPasados").hidden = !(verPasados && pasados.length);
+
+    if (visibles.length === 0) {
+      filaVacia(
+        tbody,
+        6,
+        tramos.length ? "No hay cambios de hoy en adelante. Marca «Ver también los ya pasados» para verlos." : "Sin cambios de turno registrados."
+      );
+      return;
+    }
+    visibles.forEach((tramo) => {
+      const fila = tbody.insertRow();
+      if (tramo.hasta < hoy) fila.className = "fila-pasada";
+      const turno = turnoDe(tramo.medico);
+      fila.insertCell().textContent = turno ? `${tramo.medico} · ${turno}` : tramo.medico;
+      fila.insertCell().textContent = textoFechas(tramo.desde, tramo.hasta);
+      fila.insertCell().textContent = tramo.fechas.length;
+      const celdaTurno = fila.insertCell();
+      celdaTurno.textContent = tramo.turno;
+      celdaTurno.className = "negrita";
+      const obs = fila.insertCell();
+      obs.textContent = observacionesDeTramo(tramo);
+      obs.className = "observaciones";
+      celdaEliminar(fila, `Quitar el cambio de ${tramo.medico} (${textoFechas(tramo.desde, tramo.hasta)})`, async () => {
+        const ok = await confirmar({
+          titulo: "Quitar cambio de turno",
+          mensaje: `¿Quitar el cambio de ${tramo.medico} a ${tramo.turno} (${textoFechas(tramo.desde, tramo.hasta)}, ${plural(tramo.fechas.length, "día", "días")})? Esos días vuelve a su turno habitual.`,
+          aceptar: "Quitar",
+          peligro: true,
+        });
+        if (!ok) return;
+        const fuera = new Set(tramo.fechas);
+        estado.cambiosTurno = estado.cambiosTurno.filter((c) => !(c.medico === tramo.medico && c.turno === tramo.turno && fuera.has(c.fecha)));
+        cambioConfiguracion();
+      });
+    });
+  };
+
+  const borrarCambiosPasados = async () => {
+    const hoy = hoyISO();
+    const pasados = estado.cambiosTurno.filter((c) => String(c.fecha) < hoy);
+    if (pasados.length === 0) return;
+    const ok = await confirmar({
+      titulo: "Borrar cambios ya pasados",
+      mensaje: `Se borrarán ${plural(pasados.length, "cambio de turno anterior", "cambios de turno anteriores")} a hoy. No afectan a los meses ya guardados en el histórico; solo, si volvieras a generar uno de esos meses, saldría sin ellos.`,
+      aceptar: "Borrar",
+      peligro: true,
+    });
+    if (!ok) return;
+    estado.cambiosTurno = estado.cambiosTurno.filter((c) => !(String(c.fecha) < hoy));
+    cambioConfiguracion();
+  };
+
   // --- Parámetros e histórico -------------------------------------------------------------------
 
   const pintarParametros = () => {
@@ -973,7 +1199,11 @@
     const aviso = (clase, texto) => items.push(crear("li", { class: clase, texto }));
     if (resultadoDesactualizado) aviso("aviso-critico", "Has cambiado la configuración después de generar este calendario. Vuelve a generarlo antes de guardarlo o copiarlo.");
     if (resultado.totales.descubiertos > 0) aviso("aviso-critico", `${plural(resultado.totales.descubiertos, "puesto sin cubrir", "puestos sin cubrir")} (celdas --- en rojo): ese día no quedaba nadie disponible en esa franja. Revisa ausencias y turnos.`);
-    if (resultado.mixtosSinPlan.length) aviso("aviso-atencion", `Turno MIXTO sin planificar: ${resultado.mixtosSinPlan.join(", ")}. Se ha usado L/X/V tarde y M/J mañana; puedes fijarlo en «Plan. Turnos».`);
+    if (resultado.mixtosSinPlan.length) aviso("aviso-atencion", `Turno MIXTO sin planificar: ${resultado.mixtosSinPlan.join(", ")}. Se ha usado L/X/V tarde y M/J mañana; puedes fijarlo en «Plan y cambios de turno».`);
+    const aplicados = resultado.cambiosTurno.filter((c) => c.cambia);
+    const sinEfecto = resultado.cambiosTurno.filter((c) => c.motivo in NO_DISPONIBLE || c.motivo === "inactivo");
+    if (aplicados.length) aviso("aviso-info", `Este mes se aplican ${plural(aplicados.length, "cambio puntual de turno", "cambios puntuales de turno")}. En el calendario, ⇄ marca a quien hace guardia uno de esos días en la franja que no es la suya habitual.`);
+    if (sinEfecto.length) aviso("aviso-info", `${plural(sinEfecto.length, "cambio de turno de este mes no se aplica", "cambios de turno de este mes no se aplican")} porque ese día el médico no está disponible (ausencia, exclusión o inactivo).`);
     if (estado.historico.meses[resultado.clave]) aviso("aviso-info", "Este mes ya está guardado en el histórico. Si lo guardas otra vez, se sustituirá.");
     const comp = resultado.compensacion;
     if (comp.factor === 0) aviso("aviso-info", "Compensación histórica desactivada (factor 0 %).");
@@ -1002,6 +1232,7 @@
     pintarAvisosResultado();
 
     const cal = cuerpo("tablaCalendario");
+    const conCambio = new Map(resultado.cambiosTurno.filter((c) => c.cambia).map((c) => [`${c.medico}|${c.fecha}`, c.habitual]));
     resultado.dias.forEach((d) => {
       const fila = cal.insertRow();
       fila.insertCell().textContent = d.dia;
@@ -1019,6 +1250,9 @@
         if (d[p.clave] === M.SIN_ASIGNAR) {
           celda.className = "alerta-descubierto";
           celda.title = "Puesto sin cubrir";
+        } else if (conCambio.has(`${d[p.clave]}|${d.fecha}`)) {
+          celda.className = "cambio-turno";
+          celda.title = `Cambio puntual de turno: ese día pasa consulta de ${p.franja} (habitualmente de ${conCambio.get(`${d[p.clave]}|${d.fecha}`)})`;
         }
       });
     });
@@ -1067,7 +1301,11 @@
     }
     const nota = crear("p", {
       class: "help-text",
-      texto: `Entre quien más y quien menos guardias tiene hay ${equidad.rango}. Es normal si hay jornadas reducidas o ausencias. En equipos pequeños, el tope de dos guardias por semana obliga a repartir a partes iguales.`,
+      texto: `Entre quien más y quien menos guardias tiene hay ${equidad.rango}. Es normal si hay jornadas reducidas o ausencias. En equipos pequeños, el tope de dos guardias por semana obliga a repartir a partes iguales.${
+        resultado.cambiosTurno.some((c) => c.cambia)
+          ? " Los cambios de turno también desvían: quien se va a la otra franja deja más guardias a los que se quedan en la suya. Guardar el mes en el histórico lo compensa en los meses siguientes."
+          : ""
+      }`,
     });
 
     const sumar = (obj) => Object.values(obj).reduce((s, v) => s + v, 0);
@@ -1231,7 +1469,7 @@
     return `${plural(e.medicos.length, "médico", "médicos")}, ${plural(e.festivos.length, "festivo", "festivos")}, ${plural(e.ausencias.length, "ausencia", "ausencias")} y ${plural(meses, "mes", "meses")} de histórico`;
   };
 
-  const CAMPOS_CONFIGURACION = ["medicos", "reducciones", "festivos", "ausencias", "exclusionesPuntuales", "planificacionesTurnos"];
+  const CAMPOS_CONFIGURACION = ["medicos", "reducciones", "festivos", "ausencias", "exclusionesPuntuales", "planificacionesTurnos", "cambiosTurno"];
 
   const importarFichero = async (fichero) => {
     let datos;
@@ -1317,6 +1555,7 @@
     pintarAusencias();
     pintarExclusiones();
     pintarPlanes();
+    pintarCambios();
     pintarParametros();
     pintarHistorico();
     pintarBienvenida();
@@ -1332,6 +1571,9 @@
     "agregar-ausencia": agregarAusencia,
     "agregar-exclusion": agregarExclusionPuntual,
     "guardar-plan": guardarPlanTurno,
+    "agregar-cambio": agregarCambioTurno,
+    "quitar-cambios": quitarCambiosDeFechas,
+    "borrar-cambios-pasados": borrarCambiosPasados,
     "nueva-semilla": nuevaSemilla,
     "detalle-historico": verDetalleHistorico,
     generar: generarGuardias,
@@ -1394,6 +1636,12 @@
 
     $("reduccionMedico").addEventListener("change", cargarReduccionEnFormulario);
     $("planTurnoMedico").addEventListener("change", cargarPlanEnFormulario);
+    ["cambioMedico", "cambioDesde", "cambioHasta", "cambioTurno"].forEach((id) => {
+      $(id).addEventListener("change", pintarVistaPreviaCambio);
+      $(id).addEventListener("input", pintarVistaPreviaCambio);
+    });
+    conIntro("cambioHasta", agregarCambioTurno);
+    $("verCambiosPasados").addEventListener("change", pintarCambios);
 
     $("factorCompensacion").addEventListener("input", (e) => {
       $("valorFactor").textContent = `${e.target.value} %`;

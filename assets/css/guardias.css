@@ -617,6 +617,59 @@ td select {
   max-width: 360px;
 }
 
+/* --- Cambios de turno en fechas concretas ------------------------------------------- */
+
+.bloque-cambios {
+  margin-top: 24px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.vista-previa {
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  border-left: 4px solid var(--color-primary);
+  border-radius: 4px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 0.85rem;
+}
+
+.vista-previa.vista-error {
+  border-color: var(--color-danger);
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.cabecera-lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+tr.fila-pasada td {
+  color: var(--color-muted);
+}
+
+td.observaciones {
+  white-space: normal;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+/* En el calendario: guardia en un día con cambio de turno. */
+td.cambio-turno {
+  background-color: #eef2ff;
+}
+
+td.cambio-turno::after {
+  content: " ⇄";
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
 #tablaCalendario th,
 #tablaCalendario td {
   padding: 4px 6px;

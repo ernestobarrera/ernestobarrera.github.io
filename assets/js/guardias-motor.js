@@ -10,11 +10,18 @@
  *    urgencias de mañana, avisos de tarde y urgencias de tarde.
  *  - Un médico no ocupa dos puestos el mismo día.
  *  - Candidatos: activos, disponibles (sin ausencia, día excluido ni exclusión
- *    puntual) y con la franja de su turno; los MIXTO, según su planificación o,
- *    sin ella, L/X/V tarde y M/J mañana.
+ *    puntual) y en la franja que les toca ese día.
+ *  - Franja de un médico en un día (franjaDelDia), por este orden:
+ *      1. un cambio de turno registrado para esa fecha (cambiosTurno), que vale
+ *         para cualquier médico, no solo para los MIXTO;
+ *      2. su turno fijo (MAÑANA o TARDE) o, si es MIXTO, su planificación
+ *         semanal o, sin ella, L/X/V tarde y M/J mañana.
+ *    La disponibilidad va antes que todo esto: un cambio de turno no devuelve
+ *    al médico un día de ausencia, día excluido o exclusión puntual.
  *  - Objetivo de cada médico: los puestos del mes repartidos en proporción a sus
  *    puestos disponibles por su % de jornada. Las exclusiones puntuales no lo
- *    reducen.
+ *    reducen. Cada día disponible cuenta 2 puestos sea cual sea la franja, así
+ *    que un cambio de turno mueve al médico de franja sin cambiar su objetivo.
  *  - Compensación: objetivo − saldo × factor, con un ajuste máximo del 30 % del
  *    objetivo base y renormalizado para que el total no cambie.
  *  - Puntuación de cada candidato: menos guardias y más déficit primero;
@@ -31,6 +38,9 @@
  *    regenerarlo y la ventana se medía desde la fecha de hoy, con un mes de más).
  *  - El histórico ya no se borra al salir de la ventana: solo deja de contar.
  *  - Las fechas se calculan en UTC, sin depender de la zona horaria del equipo.
+ *
+ * AÑADIDO EN LA v2.2: cambios de turno en fechas concretas. Sin ninguno, el
+ * reparto es idéntico al de la v2.1 (lo vigila la misma línea base).
  */
 ((raiz, fabrica) => {
   const motor = fabrica();
@@ -40,6 +50,8 @@
   "use strict";
 
   const TURNOS = ["MAÑANA", "TARDE", "MIXTO"];
+  const FRANJAS = ["MAÑANA", "TARDE"];
+  const MAXIMO_DIAS_RANGO = 366;
   const CLAVES_DIA = ["L", "M", "X", "J", "V"];
   const NOMBRES_DIA = ["DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
   const PUESTOS = [
@@ -64,6 +76,27 @@
   const desplazarMes = (anio, mes, delta) => {
     const total = anio * 12 + (mes - 1) + delta;
     return { anio: Math.floor(total / 12), mes: (total % 12) + 1 };
+  };
+
+  /** «AAAA-MM-DD» a fecha UTC, o null si no es una fecha real (rechaza el 31/02). */
+  const desdeISO = (texto) => {
+    const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(texto || ""));
+    if (!partes) return null;
+    const fecha = fechaUTC(Number(partes[1]), Number(partes[2]), Number(partes[3]));
+    return aISO(fecha) === partes[0] ? fecha : null;
+  };
+
+  /**
+   * Fechas ISO de `desde` a `hasta`, ambas incluidas. Sin `hasta`, solo `desde`.
+   * null si alguna no es válida, si están al revés o si pasan de un año.
+   */
+  const fechasEntre = (desde, hasta) => {
+    const inicio = desdeISO(desde);
+    const fin = hasta ? desdeISO(hasta) : inicio;
+    if (!inicio || !fin || fin < inicio) return null;
+    const dias = Math.round((fin - inicio) / 86400000) + 1;
+    if (dias > MAXIMO_DIAS_RANGO) return null;
+    return Array.from({ length: dias }, (_, i) => aISO(new Date(inicio.getTime() + i * 86400000)));
   };
 
   const semanaISO = (fecha) => {
@@ -100,6 +133,7 @@
       ausencias: lista(entrada.ausencias),
       exclusionesPuntuales: lista(entrada.exclusionesPuntuales),
       planificacionesTurnos: lista(entrada.planificacionesTurnos),
+      cambiosTurno: lista(entrada.cambiosTurno),
       historico: {
         meses: objeto(historico.meses),
         saldoAcumulado: objeto(historico.saldoAcumulado),
@@ -144,8 +178,22 @@
       fin: Date.parse(a.fin),
     })),
     exclusiones: new Set(cfg.exclusionesPuntuales.map((e) => `${e.medico}|${e.fecha}`)),
+    cambios: indexarCambios(cfg.cambiosTurno),
     mixtosSinPlan: new Set(),
   });
+
+  /**
+   * Índice «médico|fecha» → franja. Se ignora lo que no sea una franja válida
+   * en una fecha válida; si hay dos para el mismo día, vale el último, igual
+   * que cuando se registra uno nuevo encima de otro.
+   */
+  const indexarCambios = (cambios) => {
+    const indice = new Map();
+    cambios.forEach((c) => {
+      if (c && FRANJAS.includes(c.turno) && desdeISO(c.fecha)) indice.set(`${c.medico}|${c.fecha}`, c.turno);
+    });
+    return indice;
+  };
 
   const esLaborable = (ctx, fecha) => {
     const dia = fecha.getUTCDay();
@@ -187,8 +235,82 @@
     return "MAÑANA";
   };
 
-  const cubreFranja = (ctx, medico, fecha, franja) =>
-    medico.turno === franja || (medico.turno === "MIXTO" && turnoMixto(ctx, medico.nombre, fecha) === franja);
+  /** Franja que le toca sin cambios puntuales: su turno fijo o, si es MIXTO, su plan. */
+  const franjaHabitual = (ctx, medico, fecha) => (medico.turno === "MIXTO" ? turnoMixto(ctx, medico.nombre, fecha) : medico.turno);
+
+  /** Franja que le toca ese día: el cambio puntual, si lo hay, manda sobre la habitual. */
+  const franjaDelDia = (ctx, medico, fecha) => ctx.cambios.get(`${medico.nombre}|${aISO(fecha)}`) ?? franjaHabitual(ctx, medico, fecha);
+
+  const cubreFranja = (ctx, medico, fecha, franja) => franjaDelDia(ctx, medico, fecha) === franja;
+
+  // --- Cambios de turno en fechas concretas ---------------------------------------------
+
+  /**
+   * Qué hace un cambio de turno con la configuración actual. `cambia` es true
+   * solo si ese día mueve de verdad al médico de franja; si no, `motivo` dice
+   * por qué: fecha-invalida, turno-invalido, medico-desconocido, no-laborable,
+   * inactivo, ausencia, dia-excluido, exclusion-puntual o ya-es-su-franja.
+   * Usa un contexto propio: no deja rastro en el aviso de MIXTO sin plan.
+   */
+  const efectoDeCambio = (cfg, ctx, cambio) => {
+    const fecha = desdeISO(cambio.fecha);
+    if (!fecha) return { cambia: false, motivo: "fecha-invalida" };
+    if (!FRANJAS.includes(cambio.turno)) return { cambia: false, motivo: "turno-invalido" };
+    const medico = cfg.medicos.find((m) => m.nombre === cambio.medico);
+    if (!medico) return { cambia: false, motivo: "medico-desconocido" };
+    if (!esLaborable(ctx, fecha)) return { cambia: false, motivo: "no-laborable" };
+    if (!medico.activo) return { cambia: false, motivo: "inactivo" };
+    if (estaAusente(ctx, medico.nombre, fecha)) return { cambia: false, motivo: "ausencia" };
+    if (tieneDiaExcluido(ctx, medico.nombre, fecha)) return { cambia: false, motivo: "dia-excluido" };
+    if (tieneExclusionPuntual(ctx, medico.nombre, fecha)) return { cambia: false, motivo: "exclusion-puntual" };
+    const habitual = franjaHabitual(ctx, medico, fecha);
+    if (habitual === cambio.turno) return { cambia: false, motivo: "ya-es-su-franja", habitual };
+    return { cambia: true, motivo: null, habitual };
+  };
+
+  /** Efecto de cada cambio (los registrados o los que se van a registrar). */
+  const analizarCambiosTurno = (cfg, cambios = cfg.cambiosTurno) => {
+    const ctx = crearContexto(cfg);
+    return cambios.map((c) => ({ medico: c.medico, fecha: c.fecha, turno: c.turno, ...efectoDeCambio(cfg, ctx, c) }));
+  };
+
+  // Dos fechas son del mismo tramo si entre ellas solo hay fines de semana o festivos.
+  const seguidas = (ctx, anterior, siguiente) => {
+    const entre = fechasEntre(anterior, siguiente);
+    return Boolean(entre && entre.length >= 2 && entre.slice(1, -1).every((iso) => !esLaborable(ctx, desdeISO(iso))));
+  };
+
+  /**
+   * Agrupa los cambios en tramos para enseñarlos: mismo médico, misma franja y
+   * días laborables seguidos. «Del 3 al 14 de tarde» es un tramo, no diez filas.
+   */
+  const agruparCambiosTurno = (cfg, cambios = cfg.cambiosTurno) => {
+    const ctx = crearContexto(cfg);
+    const ordenados = cambios
+      .filter((c) => c && typeof c.fecha === "string")
+      .sort((a, b) => String(a.medico).localeCompare(String(b.medico)) || a.fecha.localeCompare(b.fecha));
+    const tramos = [];
+    let actual = null;
+    ordenados.forEach((c) => {
+      if (actual && actual.medico === c.medico && actual.turno === c.turno && seguidas(ctx, actual.hasta, c.fecha)) {
+        actual.hasta = c.fecha;
+        actual.fechas.push(c.fecha);
+        return;
+      }
+      actual = { medico: c.medico, turno: c.turno, desde: c.fecha, hasta: c.fecha, fechas: [c.fecha] };
+      tramos.push(actual);
+    });
+    return tramos.sort((a, b) => a.desde.localeCompare(b.desde) || String(a.medico).localeCompare(String(b.medico), "es"));
+  };
+
+  // Los cambios que valen de verdad (uno por médico y día) en un mes.
+  const cambiosEfectivosDelMes = (ctx, clave) =>
+    Array.from(ctx.cambios, ([llave, turno]) => {
+      const corte = llave.lastIndexOf("|");
+      return { medico: llave.slice(0, corte), fecha: llave.slice(corte + 1), turno };
+    })
+      .filter((c) => c.fecha.startsWith(`${clave}-`))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha) || String(a.medico).localeCompare(String(b.medico)));
 
   // --- Histórico y compensación ----------------------------------------------------
 
@@ -244,9 +366,7 @@
       let huecos = 0;
       laborables.forEach((fecha) => {
         if (!puedeTrabajarParaObjetivo(ctx, medico.nombre, fecha)) return;
-        const mixto = medico.turno === "MIXTO" ? turnoMixto(ctx, medico.nombre, fecha) : null;
-        if (medico.turno === "MAÑANA" || mixto === "MAÑANA") huecos += 2;
-        if (medico.turno === "TARDE" || mixto === "TARDE") huecos += 2;
+        if (FRANJAS.includes(franjaDelDia(ctx, medico, fecha))) huecos += 2;
       });
       const reduccion = ctx.reducciones.get(medico.nombre);
       const jornada = reduccion ? reduccion.porcentaje / 100 : 1;
@@ -430,6 +550,7 @@
       },
       totales: { puestos: totalPuestos, cubiertos, descubiertos: totalPuestos - cubiertos },
       mixtosSinPlan: Array.from(ctx.mixtosSinPlan),
+      cambiosTurno: analizarCambiosTurno(cfg, cambiosEfectivosDelMes(ctx, claveMes(anio, mes))),
       compensacion: { saldos, factor, meses: mesesQueCuentan(cfg.historico, anio, mes) },
     };
   };
@@ -547,6 +668,7 @@
 
   return {
     TURNOS,
+    FRANJAS,
     PUESTOS,
     SIN_ASIGNAR,
     NOMBRES_DIA,
@@ -555,6 +677,8 @@
     VENTANA_POR_DEFECTO,
     fechaUTC,
     aISO,
+    desdeISO,
+    fechasEntre,
     diasDelMes,
     claveMes,
     desplazarMes,
@@ -565,6 +689,8 @@
     saldosParaMes,
     saldoVigente,
     generarCalendario,
+    analizarCambiosTurno,
+    agruparCambiosTurno,
     diferenciasDelMes,
     evaluarEquidad,
     parsearImportacionMedicos,

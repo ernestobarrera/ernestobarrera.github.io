@@ -11,6 +11,9 @@
 //     configuraciones aleatorias (scripts/baselines/guardias-motor-golden.json).
 //  2. Las reglas de negocio descritas en la cabecera del motor.
 //  3. Los fallos corregidos en la v2.1, para que no vuelvan.
+//  4. Los cambios de turno en fechas concretas (v2.2): precedencia, objetivo
+//     intacto, datos dañados y tramos. Sin cambios, la línea base del punto 1
+//     garantiza que el reparto es el de siempre.
 
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
@@ -174,6 +177,186 @@ prueba("sin aleatoriedad, el mismo mes sale siempre igual", () => {
 prueba("con aleatoriedad y la misma semilla, sale igual", () => {
   const cfg = cfgBase({ configuracionAlgoritmo: { usarAleatoriedad: true, semilla: 12345 } });
   igual(M.generarCalendario(cfg, 2026, 11).dias, M.generarCalendario(cfg, 2026, 11).dias, "calendario");
+});
+
+console.log("\nCambios de turno en fechas concretas (v2.2)");
+const conCambios = (cambiosTurno, extra = {}) => cfgBase({ cambiosTurno, ...extra });
+const diaDe = (r, iso) => r.dias.find((d) => d.fecha === iso);
+const enManana = (d, n) => d.avisos_manana === n || d.urgencias_manana === n;
+const enTarde = (d, n) => d.avisos_tarde === n || d.urgencias_tarde === n;
+prueba("un médico de MAÑANA con cambio a TARDE ese día solo puede ir por la tarde", () => {
+  // Con D, E y F ausentes el 10/11, A es el único candidato de tarde: tiene que salir ahí.
+  const r = M.generarCalendario(
+    conCambios([{ medico: "A", fecha: "2026-11-10", turno: "TARDE" }], {
+      ausencias: ["D", "E", "F"].map((medico) => ({ medico, inicio: "2026-11-10", fin: "2026-11-10" })),
+    }),
+    2026,
+    11
+  );
+  const d = diaDe(r, "2026-11-10");
+  cierto(!enManana(d, "A"), "A sigue yendo por la mañana");
+  cierto(enTarde(d, "A"), "A no cubre la tarde aunque es el único de tarde");
+  filas(r)
+    .filter((x) => x.fecha !== "2026-11-10")
+    .forEach((x) => cierto(!enTarde(x, "A"), `A por la tarde el ${x.fecha} sin cambio`));
+});
+prueba("el cambio manda sobre la planificación semanal de un MIXTO", () => {
+  const cfg = cfgBase({
+    medicos: [...cfgBase().medicos, { nombre: "X", turno: "MIXTO", activo: true }],
+    planificacionesTurnos: [{ medico: "X", L: "MAÑANA", M: "MAÑANA", X: "MAÑANA", J: "MAÑANA", V: "MAÑANA" }],
+    cambiosTurno: [{ medico: "X", fecha: "2026-11-11", turno: "TARDE" }],
+    ausencias: ["D", "E", "F"].map((medico) => ({ medico, inicio: "2026-11-11", fin: "2026-11-11" })),
+  });
+  const r = M.generarCalendario(cfg, 2026, 11);
+  cierto(enTarde(diaDe(r, "2026-11-11"), "X"), "X no cubre la tarde del 11/11");
+  igual(r.cambiosTurno.map((c) => [c.cambia, c.habitual]), [[true, "MAÑANA"]], "análisis del cambio");
+});
+prueba("un cambio de turno NO cambia ningún objetivo", () => {
+  const cambios = ["2026-11-03", "2026-11-04", "2026-11-05", "2026-11-17"].map((fecha) => ({ medico: "B", fecha, turno: "TARDE" }));
+  igual(M.generarCalendario(conCambios(cambios), 2026, 11).resumen.objetivos, nov.resumen.objetivos, "objetivos");
+});
+prueba("la ausencia manda sobre el cambio de turno", () => {
+  // A sería el único candidato de tarde el 10/11: si la ausencia no mandara, saldría ahí.
+  const ausentes = ["D", "E", "F"].map((medico) => ({ medico, inicio: "2026-11-10", fin: "2026-11-10" }));
+  const r = M.generarCalendario(
+    conCambios([{ medico: "A", fecha: "2026-11-10", turno: "TARDE" }], {
+      ausencias: [{ medico: "A", inicio: "2026-11-09", fin: "2026-11-13" }, ...ausentes],
+    }),
+    2026,
+    11
+  );
+  const d = diaDe(r, "2026-11-10");
+  cierto(!nombresDelDia(d).includes("A"), "A asignado estando ausente");
+  igual([d.avisos_tarde, d.urgencias_tarde], [M.SIN_ASIGNAR, M.SIN_ASIGNAR], "tarde del 10/11");
+  igual(r.cambiosTurno[0].motivo, "ausencia", "motivo");
+});
+prueba("la exclusión puntual y el día excluido también mandan sobre el cambio", () => {
+  const a = M.analizarCambiosTurno(
+    cfgBase({
+      exclusionesPuntuales: [{ medico: "A", fecha: "2026-11-10" }],
+      reducciones: [{ medico: "B", porcentaje: 100, diasExcluidos: "VIERNES" }],
+    }),
+    [
+      { medico: "A", fecha: "2026-11-10", turno: "TARDE" },
+      { medico: "B", fecha: "2026-11-13", turno: "TARDE" },
+    ]
+  );
+  igual(a.map((c) => c.motivo), ["exclusion-puntual", "dia-excluido"], "motivos");
+});
+prueba("un cambio en fin de semana, festivo, inactivo o desconocido no tiene efecto ni rompe nada", () => {
+  const cfg = conCambios(
+    [
+      { medico: "A", fecha: "2026-11-07", turno: "TARDE" },
+      { medico: "A", fecha: "2026-11-02", turno: "TARDE" },
+      { medico: "B", fecha: "2026-11-10", turno: "TARDE" },
+      { medico: "NADIE", fecha: "2026-11-10", turno: "TARDE" },
+    ],
+    { festivos: ["2026-11-02"] }
+  );
+  cfg.medicos[1].activo = false;
+  const r = M.generarCalendario(cfg, 2026, 11);
+  igual(r.cambiosTurno.map((c) => c.motivo), ["no-laborable", "no-laborable", "inactivo", "medico-desconocido"], "motivos");
+  const sin = cfgBase({ festivos: ["2026-11-02"] });
+  sin.medicos[1].activo = false;
+  igual(r.dias, M.generarCalendario(sin, 2026, 11).dias, "calendario");
+});
+prueba("un cambio a la franja que ya tenía no altera nada y se marca como tal", () => {
+  const r = M.generarCalendario(conCambios([{ medico: "A", fecha: "2026-11-10", turno: "MAÑANA" }]), 2026, 11);
+  igual(r.dias, nov.dias, "calendario");
+  igual(r.cambiosTurno[0].motivo, "ya-es-su-franja", "motivo");
+});
+prueba("datos dañados (franja o fecha inválidas) se ignoran sin romper el reparto", () => {
+  const r = M.generarCalendario(
+    conCambios([
+      { medico: "A", fecha: "2026-11-10", turno: "NOCHE" },
+      { medico: "A", fecha: "2026-11-31", turno: "TARDE" },
+      { medico: "A", fecha: "10/11/2026", turno: "TARDE" },
+      null,
+    ]),
+    2026,
+    11
+  );
+  igual(r.dias, nov.dias, "calendario");
+  igual(r.cambiosTurno, [], "cambios del mes");
+});
+prueba("dos cambios para el mismo médico y día: vale el último", () => {
+  // Con D, E y F ausentes, si valiera el primero (TARDE), A cubriría la tarde.
+  const ausentes = ["D", "E", "F"].map((medico) => ({ medico, inicio: "2026-11-10", fin: "2026-11-10" }));
+  const r = M.generarCalendario(
+    conCambios(
+      [
+        { medico: "A", fecha: "2026-11-10", turno: "TARDE" },
+        { medico: "A", fecha: "2026-11-10", turno: "MAÑANA" },
+      ],
+      { ausencias: ausentes }
+    ),
+    2026,
+    11
+  );
+  cierto(!enTarde(diaDe(r, "2026-11-10"), "A"), "A cubre la tarde: ha valido el primer cambio");
+  igual(r.cambiosTurno.map((c) => c.turno), ["MAÑANA"], "un solo cambio efectivo, el último");
+});
+prueba("el resultado solo informa de los cambios del mes generado", () => {
+  const r = M.generarCalendario(
+    conCambios([
+      { medico: "A", fecha: "2026-10-30", turno: "TARDE" },
+      { medico: "A", fecha: "2026-11-10", turno: "TARDE" },
+      { medico: "A", fecha: "2026-12-01", turno: "TARDE" },
+    ]),
+    2026,
+    11
+  );
+  igual(r.cambiosTurno.map((c) => c.fecha), ["2026-11-10"], "fechas");
+});
+prueba("si los cambios vacían una franja, se ve como puesto sin cubrir (no se inventa nadie)", () => {
+  const r = M.generarCalendario(conCambios(["D", "E", "F"].map((medico) => ({ medico, fecha: "2026-11-10", turno: "MAÑANA" }))), 2026, 11);
+  const d = diaDe(r, "2026-11-10");
+  igual([d.avisos_tarde, d.urgencias_tarde], [M.SIN_ASIGNAR, M.SIN_ASIGNAR], "tarde del 10/11");
+  igual(r.totales.descubiertos, 2, "descubiertos");
+});
+prueba("un MIXTO sin plan con cambio todos los días laborables no salta como «sin plan»", () => {
+  const laborables = filas(nov).map((d) => ({ medico: "X", fecha: d.fecha, turno: "MAÑANA" }));
+  const cfg = cfgBase({ medicos: [...cfgBase().medicos, { nombre: "X", turno: "MIXTO", activo: true }], cambiosTurno: laborables });
+  igual(M.generarCalendario(cfg, 2026, 11).mixtosSinPlan, [], "mixtos sin plan");
+});
+prueba("generar con cambios no modifica la configuración recibida", () => {
+  const cfg = conCambios([{ medico: "A", fecha: "2026-11-10", turno: "TARDE" }]);
+  const antes = JSON.stringify(cfg);
+  M.generarCalendario(cfg, 2026, 11);
+  M.agruparCambiosTurno(cfg);
+  igual(JSON.stringify(cfg), antes, "configuración");
+});
+prueba("tramos: se unen los días seguidos saltando fines de semana y festivos", () => {
+  const cfg = cfgBase({ festivos: ["2026-11-09"] });
+  const fechas = ["2026-11-05", "2026-11-06", "2026-11-10", "2026-11-11", "2026-11-13"];
+  const tramos = M.agruparCambiosTurno(cfg, [
+    ...fechas.map((fecha) => ({ medico: "A", fecha, turno: "TARDE" })),
+    { medico: "A", fecha: "2026-11-16", turno: "MAÑANA" },
+    { medico: "B", fecha: "2026-11-06", turno: "TARDE" },
+  ]);
+  igual(
+    tramos.map((t) => [t.medico, t.desde, t.hasta, t.turno, t.fechas.length]),
+    [
+      ["A", "2026-11-05", "2026-11-11", "TARDE", 4],
+      ["B", "2026-11-06", "2026-11-06", "TARDE", 1],
+      ["A", "2026-11-13", "2026-11-13", "TARDE", 1],
+      ["A", "2026-11-16", "2026-11-16", "MAÑANA", 1],
+    ],
+    "tramos"
+  );
+});
+prueba("fechasEntre: rango incluido, un solo día, al revés, inválido o de más de un año", () => {
+  igual(M.fechasEntre("2026-12-30", "2027-01-02"), ["2026-12-30", "2026-12-31", "2027-01-01", "2027-01-02"], "cruce de año");
+  igual(M.fechasEntre("2026-11-10"), ["2026-11-10"], "un día");
+  igual(M.fechasEntre("2026-11-10", "2026-11-09"), null, "al revés");
+  igual(M.fechasEntre("2026-02-30", "2026-03-02"), null, "30 de febrero");
+  igual(M.fechasEntre("2026-01-01", "2027-01-02"), null, "más de un año");
+  igual(M.fechasEntre("2028-01-01", "2028-12-31").length, 366, "año bisiesto completo");
+});
+prueba("las copias antiguas cargan sin cambios y las nuevas los conservan", () => {
+  igual(M.normalizarEstado({ medicos: [] }).cambiosTurno, [], "copia antigua");
+  const c = [{ medico: "A", fecha: "2026-11-10", turno: "TARDE" }];
+  igual(M.normalizarEstado(JSON.parse(JSON.stringify({ medicos: [], cambiosTurno: c }))).cambiosTurno, c, "ida y vuelta");
 });
 
 console.log("\nCompensación histórica");

@@ -85,7 +85,8 @@
           "<ul><li><b>Jornada y Exclusiones</b>: jornada reducida o días fijos sin guardia. Le baja el objetivo.</li>" +
           "<li><b>Ausencias</b>: vacaciones y bajas. También le bajan el objetivo.</li>" +
           "<li><b>Excl. Puntuales</b>: un día suelto. <b>No</b> le baja el objetivo.</li>" +
-          "<li><b>Plan. Turnos</b>: qué días hace mañana y cuáles tarde cada MIXTO.</li></ul>" +
+          "<li><b>Plan y cambios de turno</b>: qué días hace mañana y cuáles tarde cada MIXTO, y los cambios de " +
+          "turno de cualquiera en fechas concretas.</li></ul>" +
           "En <b>❓ Ayuda → Configuración en detalle</b> hay una parada por pestaña.",
       },
       {
@@ -171,7 +172,7 @@
       },
       {
         titulo: "Planificación de los MIXTO",
-        el: "#tabPlanTurnos > .form-group, #tablaPlanTurno, #tabPlanTurnos .botonera",
+        el: "#tabPlanTurnos > .form-group, #tablaPlanTurno, #tabPlanTurnos > .botonera",
         seccion: "configuracion",
         pestana: "tabPlanTurnos",
         texto:

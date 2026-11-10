@@ -7,7 +7,7 @@
   <title>Gestor de guardias de avisos y urgencias · Atención Primaria</title>
   <meta name="description"
     content="Reparte cada mes los avisos y urgencias de un equipo de Atención Primaria de forma equitativa y compensa los meses anteriores. Funciona en el navegador, sin enviar datos." />
-  <link rel="stylesheet" href="assets/css/guardias.css?v=20261107a" />
+  <link rel="stylesheet" href="assets/css/guardias.css?v=20261110a" />
 </head>
 
 <body>
@@ -88,7 +88,7 @@
         <button type="button" class="tab-button" role="tab" data-tab="tabFestivos">Festivos</button>
         <button type="button" class="tab-button" role="tab" data-tab="tabAusencias">Ausencias</button>
         <button type="button" class="tab-button" role="tab" data-tab="tabExclPunt">Excl. Puntuales</button>
-        <button type="button" class="tab-button" role="tab" data-tab="tabPlanTurnos">Plan. Turnos (Mixtos)</button>
+        <button type="button" class="tab-button" role="tab" data-tab="tabPlanTurnos">Plan y cambios de turno</button>
         <button type="button" class="tab-button" role="tab" data-tab="tabParametros">Parámetros Avanzados</button>
       </div>
 
@@ -285,7 +285,7 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
 
       <!-- Planificación de mixtos -->
       <div id="tabPlanTurnos" class="tab-content" role="tabpanel">
-        <h3>Planificación de turnos (médicos MIXTO)</h3>
+        <h3>Plan semanal de los médicos MIXTO</h3>
         <span class="help-text">Qué días hace mañana y cuáles tarde cada médico con turno MIXTO. <b>Efecto:</b> ese
           día solo puede recibir guardias de esa franja. Sin planificación se usa lunes, miércoles y viernes de tarde
           y martes y jueves de mañana, y se avisa al generar.</span>
@@ -342,6 +342,64 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+
+        <div id="bloqueCambiosTurno" class="bloque-cambios">
+          <h3>Cambios de turno en fechas concretas</h3>
+          <span class="help-text">Para <b>cualquier médico</b>, sea de mañana, de tarde o MIXTO: días concretos en que pasa
+            consulta en la otra franja (un cambio con un compañero, una semana de tarde, un turno deslizante…).
+            <b>Efecto:</b> esos días solo puede recibir guardias de esa franja y su objetivo del mes <b>no</b> cambia.
+            El cambio manda sobre su turno y su planificación; una ausencia o exclusión manda sobre el cambio. Los fines
+            de semana y festivos se saltan solos.</span>
+          <div class="fila-campos">
+            <div class="form-group">
+              <label for="cambioMedico">Médico</label>
+              <select id="cambioMedico"></select>
+            </div>
+            <div class="form-group">
+              <label for="cambioDesde">Desde</label>
+              <input type="date" id="cambioDesde" />
+            </div>
+            <div class="form-group">
+              <label for="cambioHasta">Hasta (incluido; vacío = solo ese día)</label>
+              <input type="date" id="cambioHasta" />
+            </div>
+            <div class="form-group">
+              <label for="cambioTurno">Esos días pasa consulta de</label>
+              <select id="cambioTurno">
+                <option value="MAÑANA">MAÑANA</option>
+                <option value="TARDE" selected>TARDE</option>
+              </select>
+            </div>
+          </div>
+          <p id="vistaPreviaCambio" class="vista-previa" aria-live="polite" hidden></p>
+          <div class="botonera">
+            <button type="button" data-accion="agregar-cambio">Registrar cambio</button>
+            <button type="button" class="secondary" data-accion="quitar-cambios">Quitar los cambios de esas fechas</button>
+          </div>
+          <div class="cabecera-lista">
+            <h3>Cambios registrados</h3>
+            <label class="casilla"><input type="checkbox" id="verCambiosPasados" /> Ver también los ya pasados
+              <span id="contadorCambiosPasados"></span></label>
+          </div>
+          <div class="table-container">
+            <table id="tablaCambiosTurno">
+              <thead>
+                <tr>
+                  <th>Médico</th>
+                  <th>Fechas</th>
+                  <th>Días</th>
+                  <th>Pasa a</th>
+                  <th>Observaciones</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="zonaBorrarPasados" class="botonera" hidden>
+            <button type="button" class="secondary pequeno" data-accion="borrar-cambios-pasados">Borrar los ya pasados</button>
+          </div>
         </div>
       </div>
 
@@ -565,9 +623,13 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
             <td>No se le asigna ese día, pero su objetivo <b>no</b> baja: se intentará darle la guardia otro día.</td>
           </tr>
           <tr>
-            <td><b>Plan. Turnos</b></td>
-            <td>Mañana o tarde de cada día laborable para los MIXTO.</td>
-            <td>Solo puede ir a esa franja ese día. Sin plan: L/X/V tarde y M/J mañana, con aviso.</td>
+            <td><b>Plan y cambios de turno</b></td>
+            <td><b>Plan semanal:</b> mañana o tarde de cada día laborable para los MIXTO.<br /><b>Cambios en fechas
+                concretas:</b> para cualquier médico, los días en que pasa consulta en la otra franja (un día suelto o
+              un periodo «desde-hasta»).</td>
+            <td>Solo puede ir a esa franja ese día. Sin plan: L/X/V tarde y M/J mañana, con aviso. El cambio puntual
+              manda sobre el turno y el plan, y no cambia su objetivo; si ese día tiene ausencia o exclusión, manda la
+              ausencia.</td>
           </tr>
           <tr>
             <td><b>Parámetros</b></td>
@@ -586,6 +648,11 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
       </ul>
       <p>Se ignora una primera fila de títulos. Si un médico ya existe, se actualiza su turno (y su jornada, si viene),
         sin tocar sus días excluidos. Las filas con error se quedan en el cuadro para corregirlas.</p>
+      <p><b>Cambios de turno en fechas concretas.</b> Elige médico, fechas y la franja en la que pasa consulta esos
+        días. Antes de registrarlo, la página explica qué va a pasar: cuántos días laborables son, en cuántos cambia
+        de verdad de franja, cuáles ya eran de esa franja y cuáles tienen ausencia. Los cambios se ven agrupados por
+        tramos; para deshacer parte de uno, elige esas fechas y pulsa <b>Quitar los cambios de esas fechas</b>. Los ya
+        pasados se ocultan solos y se pueden borrar.</p>
 
       <h3 id="m-generar">4. Generar el mes</h3>
       <ol>
@@ -596,6 +663,8 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
             <li>Una celda <span class="valor-mal negrita">---</span> es un puesto <b>sin cubrir</b>: ese día no
               quedaba nadie disponible en esa franja. Revisa ausencias y turnos.</li>
             <li>Los médicos MIXTO sin planificación.</li>
+            <li>Los cambios de turno de ese mes: en el calendario, <b>⇄</b> marca a quien hace guardia un día en que
+              pasa consulta en la franja que no es la suya habitual.</li>
             <li>Si ese mes ya está guardado en el histórico, o si has cambiado la configuración después de generar.</li>
           </ul>
         </li>
@@ -626,7 +695,8 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
       <h3 id="m-reglas">7. Cómo se reparte</h3>
       <p>Día a día y puesto a puesto (avisos de mañana, urgencias de mañana, avisos de tarde, urgencias de tarde), se
         elige entre los médicos activos que ese día pueden y tienen esa franja, sin repetir a nadie en el mismo día.
-        Gana quien más puntos tiene:</p>
+        La franja de cada médico ese día sale, por este orden, de su cambio de turno para esa fecha, si lo tiene; si
+        no, de su turno o, si es MIXTO, de su plan semanal. Gana quien más puntos tiene:</p>
       <ul>
         <li>Primero, quien lleva menos guardias y más le faltan para su objetivo.</li>
         <li>Se evita una <b>tercera guardia en la misma semana</b>: solo ocurre si no queda nadie más.</li>
@@ -656,6 +726,11 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
           no cuenta las guardias del mes anterior.</li>
         <li>Los festivos no se cargan solos: hay que añadirlos cada año.</li>
         <li>Si varias pestañas tienen la página abierta, el último cambio manda; las demás se actualizan al detectarlo.</li>
+        <li>Si los cambios de turno llevan a mucha gente a la misma franja un día, la otra puede quedarse sin nadie: la
+          página no lo impide, lo enseña como puesto sin cubrir.</li>
+        <li>Un cambio de turno no cambia el objetivo de nadie, pero sí cuántos hay en cada franja: si alguien se va
+          unos días a la tarde, los de mañana cubren entre menos y ese mes pueden quedar por encima de su objetivo. Al
+          guardar el mes en el histórico, se compensa en los siguientes.</li>
       </ul>
 
       <h3 id="m-atajos">10. Atajos de teclado</h3>
@@ -665,6 +740,11 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
 
       <h3 id="m-versiones">11. Versiones</h3>
       <div class="destacado">
+        <p><b>v2.2 (noviembre de 2026)</b></p>
+        <ul>
+          <li>Cambios de turno en fechas concretas, para cualquier médico, con vista previa de su efecto y marca ⇄ en
+            el calendario. Sin cambios registrados, el reparto es idéntico al de la v2.1.</li>
+        </ul>
         <p><b>v2.1 (noviembre de 2026)</b></p>
         <ul>
           <li>Guardado automático y aviso de copia de seguridad pendiente; una sola copia con configuración e
@@ -683,11 +763,12 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
         <p><b>v2.0</b>: prevención de la tercera guardia semanal, alertas de puestos sin cubrir y copia a Excel.</p>
       </div>
       <p>La versión 1 sigue disponible en <a href="guardias-legacy.html">guardias-legacy.html</a>. Comparte los
-        datos con esta: lo que se cambie allí se verá aquí.</p>
+        datos con esta: lo que se cambie allí se verá aquí. Conserva los cambios de turno, pero no los aplica al
+        repartir: genera siempre aquí.</p>
     </section>
 
     <footer class="footer">
-      <p>Gestor de guardias v2.1 · Los datos se quedan en este navegador · <a href="#" data-accion="ir-manual">Manual de
+      <p>Gestor de guardias v2.2 · Los datos se quedan en este navegador · <a href="#" data-accion="ir-manual">Manual de
           uso</a></p>
     </footer>
   </div>
@@ -700,9 +781,9 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="assets/js/guardias-motor.js?v=20261107a"></script>
-  <script src="assets/js/guardias-app.js?v=20261107a"></script>
-  <script src="assets/js/guardias-guia.js?v=20261107a"></script>
+  <script src="assets/js/guardias-motor.js?v=20261110a"></script>
+  <script src="assets/js/guardias-app.js?v=20261110a"></script>
+  <script src="assets/js/guardias-guia.js?v=20261110a"></script>
 </body>
 
 </html>
