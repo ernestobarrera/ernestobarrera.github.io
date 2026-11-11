@@ -15714,8 +15714,21 @@ ${ftFechaDocsHtml}
                     ? (med) => { for (const r of snap.routes) if (this._medMatchesRoute(med, r)) return true; return false; }
                     : null;
             case 'pa':
+                // La banda agrupada por subgrupo ATC deja seleccionar una CAJA entera: su clave va
+                // en el mismo conjunto, con prefijo `atc:`, y casa por el subgrupo del medicamento
+                // (`_atcSubgrupo`, la misma regla que la caja y la tarjeta). No equivale a marcar
+                // todos sus chips: un PA que está en dos subgrupos (glicerol: enema y «otros»)
+                // colaría los del otro. OR con el resto de la banda, como los chips.
                 return snap.pas.size
-                    ? (med) => { const medPAs = this._medFacetKeys(med); for (const p of snap.pas) if (medPAs.has(p)) return true; return false; }
+                    ? (med) => {
+                        const medPAs = this._medFacetKeys(med);
+                        for (const p of snap.pas) {
+                            if (String(p).startsWith(MedCheckApp.PA_CLAVE_SUBGRUPO)
+                                ? this._atcSubgrupo(med)?.code === String(p).slice(MedCheckApp.PA_CLAVE_SUBGRUPO.length)
+                                : medPAs.has(p)) return true;
+                        }
+                        return false;
+                    }
                     : null;
             default:
                 return null;
@@ -16308,6 +16321,11 @@ ${ftFechaDocsHtml}
      *  unos 38 y desplegadas ocuparían media pantalla antes del primer resultado. */
     static get PA_SUBGRUPOS_ABIERTOS_MAX() { return 12; }
 
+    /** Prefijo de la clave con la que una CAJA de subgrupo entra en la selección de la banda de
+     *  PA (`activeIngredientFilters`). Compartir el conjunto le da gratis URL, «Limpiar N»,
+     *  Ctrl+clic y el borrado al cambiar de búsqueda. Ningún nombre de PA empieza así. */
+    static get PA_CLAVE_SUBGRUPO() { return 'atc:'; }
+
     /**
      * @param {Array<{name: string, count: number}>} paList - lista plana (facetada)
      * @param {{subgrupos?: Array|null}} [opts] - salida de `extractPAsBySubgroup`; si llega,
@@ -16361,17 +16379,25 @@ ${ftFechaDocsHtml}
         const abiertasPorDefecto = subgrupos.length <= MedCheckApp.PA_SUBGRUPOS_ABIERTOS_MAX;
 
         const cajas = subgrupos.map(g => {
-            const tieneActivo = g.pas.some(pa => activos.has(pa.name));
+            const clave = g.code ? MedCheckApp.PA_CLAVE_SUBGRUPO + g.code : '';
+            const cajaElegida = !!clave && activos.has(clave);
+            const tieneActivo = cajaElegida || g.pas.some(pa => activos.has(pa.name));
             const porDefecto = abiertasPorDefecto || tieneActivo;
             const abierta = tieneActivo || (manual.has(g.code) ? manual.get(g.code) : porDefecto);
             const nombre = g.code
                 ? (g.nombre || this._describeATCCode(g.code) || g.code)
                 : 'Sin subgrupo ATC';
             const codigo = g.code ? `<span class="pa-subgrupo-code">${this._escapeHtml(g.code)}</span>` : '';
+            // El NOMBRE de la caja filtra (es un chip más de la banda: mismo manejador, misma
+            // semántica de clic y Ctrl+clic); el resto de la cabecera pliega y despliega. La caja
+            // sin ATC no filtra: no hay subgrupo que pedir.
+            const nombreHtml = clave
+                ? `<button type="button" class="pa-chip pa-subgrupo-filtro${cajaElegida ? ' active' : ''}" data-pa="${this._escapeHtml(clave)}" title="Ver solo este subgrupo (Ctrl+clic para sumar otro)">${this._escapeHtml(nombre)}</button>`
+                : `<span class="pa-subgrupo-name">${this._escapeHtml(nombre)}</span>`;
             return `
-                <details class="pa-subgrupo${tieneActivo ? ' has-active' : ''}" data-subgrupo="${this._escapeHtml(g.code)}" data-por-defecto="${porDefecto ? '1' : '0'}"${abierta ? ' open' : ''}>
+                <details class="pa-subgrupo${tieneActivo ? ' has-active' : ''}${cajaElegida ? ' is-filtro' : ''}" data-subgrupo="${this._escapeHtml(g.code)}" data-por-defecto="${porDefecto ? '1' : '0'}"${abierta ? ' open' : ''}>
                     <summary class="pa-subgrupo-head" title="Subgrupo terapéutico ATC (nivel 4), nomenclatura de la AEMPS">
-                        <span class="pa-subgrupo-name">${this._escapeHtml(nombre)}</span>
+                        ${nombreHtml}
                         ${codigo}
                         <span class="pa-subgrupo-n">${g.pas.length} PA</span>
                     </summary>
@@ -16381,7 +16407,7 @@ ${ftFechaDocsHtml}
         }).join('');
 
         const label = filterCount > 1
-            ? `<span class="pa-filter-label">PA activos (OR):</span>`
+            ? `<span class="pa-filter-label">Selección (OR):</span>`
             : `<span class="pa-filter-label">Principio activo por subgrupo:</span>`;
 
         return `
@@ -16400,6 +16426,10 @@ ${ftFechaDocsHtml}
      *  cambie. Solo se guarda la DIFERENCIA con el estado por defecto. */
     _wirePASubgrupos(root = document) {
         if (!this._paSubgrupoManual) this._paSubgrupoManual = new Map();
+        // El botón del nombre vive dentro del <summary>: sin esto, filtrar plegaría la caja.
+        root.querySelectorAll('.pa-subgrupo-filtro').forEach(btn => {
+            btn.addEventListener('click', (e) => e.preventDefault());
+        });
         root.querySelectorAll('details.pa-subgrupo').forEach(el => {
             el.addEventListener('toggle', () => {
                 const code = el.dataset.subgrupo || '';
@@ -16782,7 +16812,10 @@ ${ftFechaDocsHtml}
         if (this._indAi?.open) this._indAi.state = this._captureIndAiState();
         this._indAiCtx = {
             data, filtered: filteredResults, atcCode: this.lastATCCode || null,
-            seleccionPA: [...(this.groupingState?.activeIngredientFilters || [])],
+            // Solo nombres de PA: una caja de subgrupo (`atc:…`) no es un principio activo, y el
+            // alcance ya refleja el subgrupo porque se calcula sobre los resultados filtrados.
+            seleccionPA: [...(this.groupingState?.activeIngredientFilters || [])]
+                .filter(k => !String(k).startsWith(MedCheckApp.PA_CLAVE_SUBGRUPO)),
         };
         const indAiOpen = !!this._indAi?.open;
         const indAiPanel = indAiOpen

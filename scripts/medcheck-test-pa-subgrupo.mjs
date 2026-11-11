@@ -171,7 +171,28 @@ const htmlPlegada = appSel.renderPAFilterChips([{ name: 'pa0', count: 2 }, { nam
 ok('una caja plegada a mano se abre si tiene el chip activo', /^<details[^>]*\sopen>/.test(cajaDe(htmlPlegada, muchos[3].code)),
     cajaDe(htmlPlegada, muchos[3].code).slice(0, 160));
 
-// ── 5. Dónde se usa (complemento de fuente: el efecto ya lo prueban los bloques de arriba) ──
+// ── 5. Filtrar por caja: «solo este subgrupo» ────────────────────────────────────────────────
+console.log('— Filtrar por caja —');
+const K = C.PA_CLAVE_SUBGRUPO;
+const filtra = (claves) => app._applyResultFilters(laxantes, { pas: new Set(claves) }, { only: 'pa' });
+const enemas = filtra([K + 'A06AG']);
+eq('elegir la caja Enemas deja solo medicamentos de A06AG',
+    [...new Set(enemas.map(m => app._atcSubgrupo(m).code))], ['A06AG']);
+eq('… todos los de A06AG (7 glicerol + 2 fosfatos)', enemas.length, 9);
+ok('… y NO el glicerol de «otros laxantes», aunque el PA se llame igual',
+    !enemas.some(m => app._atcSubgrupo(m).code === 'A06AX'));
+const mezcla = filtra([K + 'A06AH', 'prucaloprida']);
+eq('caja + chip se suman (OR, como dos chips)', mezcla.length, 5 + 2);
+eq('los chips sueltos siguen filtrando como siempre', filtra(['lactulosa']).length, 4);
+const appCaja = nuevaApp([K + 'A06AD']);
+const htmlCaja = appCaja.renderPAFilterChips(plana, { subgrupos: grupos });
+ok('el nombre de la caja es un chip de la banda con su clave',
+    /class="pa-chip pa-subgrupo-filtro active" data-pa="atc:A06AD"/.test(htmlCaja));
+ok('la caja elegida se marca', /<details class="pa-subgrupo has-active is-filtro" data-subgrupo="A06AD"/.test(htmlCaja));
+ok('la caja sin ATC no ofrece filtro', !app.renderPAFilterChips([...plana, { name: 'sinatc', count: 1 }], { subgrupos: conHuerfano })
+    .includes('data-pa="atc:"'));
+
+// ── 6. Dónde se usa (complemento de fuente: el efecto ya lo prueban los bloques de arriba) ──
 console.log('— Dónde se usa —');
 const cuerpo = (nombre) => {
     const i = appSrc.indexOf(`\n    ${nombre}(`);
@@ -182,6 +203,8 @@ ok('Indicaciones pasa los subgrupos a la banda', ind.includes('this.renderPAFilt
 ok('Indicaciones agrupa sobre el MISMO conjunto facetado que la lista plana',
     /const paList = this\.extractUniquePrincipiosActivos\(sinFiltroPA\)/.test(ind) && ind.includes('this.extractPAsBySubgroup(sinFiltroPA)'));
 ok('Indicaciones engancha la memoria de cajas abiertas', ind.includes('this._wirePASubgrupos(resultsContainer)'));
+ok('la consulta a IA no recibe una caja como si fuera un principio activo',
+    /seleccionPA: \[\.\.\.\(this\.groupingState\?\.activeIngredientFilters \|\| \[\]\)\]\s*\.filter\(k => !String\(k\)\.startsWith\(MedCheckApp\.PA_CLAVE_SUBGRUPO\)\)/.test(ind));
 eq('Buscar sigue con la banda plana (una sola llamada con subgrupos en todo el fichero)',
     (appSrc.match(/this\.renderPAFilterChips\([^)]*subgrupos/g) || []).length, 1);
 

@@ -7554,9 +7554,11 @@ div.section-text th .ft-tras-hueco {
     color: var(--info);
 }
 
-/* Banda de PA agrupada por subgrupo ATC (Indicaciones, 2026-11-11). Cuadrícula que se adapta al
-   ancho: tantas columnas como quepan de ~13 rem, una sola en el móvil. `min(…, 100%)` evita que
-   una columna sea más ancha que la pantalla. */
+/* Banda de PA agrupada por subgrupo ATC (Indicaciones, 2026-11-11). En HORIZONTAL: cada caja mide
+   lo que piden sus chips puestos en fila (`flex: 1 1 auto`), crece para llenar el hueco de su fila
+   y no pasa del ancho disponible, donde sus chips parten línea. Una caja grande ocupa una fila;
+   las pequeñas la comparten. La primera versión usaba una cuadrícula de columnas de ~13 rem y en
+   pantalla ancha apilaba los chips uno por línea: mucha altura y media pantalla vacía. */
 .pa-por-subgrupo {
     display: block;
 }
@@ -7570,13 +7572,14 @@ div.section-text th .ft-tras-hueco {
 }
 
 .pa-subgrupos {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--space-xs);
-    align-items: start;
 }
 
 .pa-subgrupo {
+    flex: 1 1 auto;
+    max-width: 100%;
     border: 1px solid rgba(99, 102, 241, 0.18);
     border-radius: var(--radius-md);
     background: rgba(99, 102, 241, 0.03);
@@ -7586,6 +7589,38 @@ div.section-text th .ft-tras-hueco {
 
 .pa-subgrupo.has-active {
     border-color: var(--info);
+}
+
+.pa-subgrupo.is-filtro {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+/* El nombre de la caja es un chip de la banda (filtra por el subgrupo entero), pero se lee como
+   título: sin cápsula hasta que se pasa por encima o está elegido. */
+.pa-chip.pa-subgrupo-filtro {
+    padding: 0.05rem 0.35rem;
+    margin-left: -0.35rem;
+    margin-right: auto;
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: normal;
+    text-align: left;
+    min-width: 0;
+}
+
+.pa-chip.pa-subgrupo-filtro:hover {
+    border-color: var(--info);
+    background: var(--info-light);
+    color: var(--info);
+}
+
+.pa-chip.pa-subgrupo-filtro.active {
+    background: var(--info);
+    border-color: var(--info);
+    color: #fff;
 }
 
 .pa-subgrupo-head {
