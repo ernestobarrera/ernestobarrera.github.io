@@ -15237,6 +15237,29 @@ ${ftFechaDocsHtml}
     }
 
     /**
+     * Subgrupo terapéutico (nivel 4 del ATC) de un medicamento, o `null` si no trae ATC.
+     *
+     * Por `nivel` cuando CIMA lo declara —que es el dato, no una inferencia— y por longitud del
+     * código solo como respaldo, para no quedarse sin grupo si algún registro viniera sin ese
+     * campo. El porqué del nivel 4 está en el caso `'atc'` de `groupResultsByField`.
+     *
+     * ÚNICA fuente de la regla: la usan la agrupación de tarjetas y la banda de principios
+     * activos por subgrupo. Si cada una eligiera el nivel a su manera, un chip podría caer en
+     * un subgrupo distinto del de sus propias tarjetas.
+     *
+     * @returns {{code: string, nombre: string|null}|null}
+     */
+    _atcSubgrupo(med) {
+        const atcs = Array.isArray(med?.atcs) ? med.atcs : [];
+        if (atcs.length === 0) return null;
+        const porNivel = atcs.find(a => a?.nivel === 4)
+            || atcs.filter(a => (a?.codigo || '').length === 5)[0]
+            || atcs.find(a => a?.nivel === 3)
+            || atcs[0];
+        return { code: porNivel?.codigo || '', nombre: porNivel?.nombre || null };
+    }
+
+    /**
      * Groups results by field
      */
     groupResultsByField(results, field) {
@@ -15323,22 +15346,18 @@ ${ftFechaDocsHtml}
                     // monofármaco de IECA con diurético, o insulinas por duración de acción.
                     //
                     // Nivel 5 NO: es el principio activo, y agrupar por él es no agrupar.
-                    const atcs = Array.isArray(med.atcs) ? med.atcs : [];
-                    if (atcs.length > 0) {
-                        // Por `nivel` cuando CIMA lo declara —que es el dato, no una inferencia— y
-                        // por longitud del código solo como respaldo, para no quedarse sin grupo si
-                        // algún registro viniera sin ese campo.
-                        const porNivel = atcs.find(a => a?.nivel === 4)
-                            || atcs.filter(a => (a?.codigo || '').length === 5)[0]
-                            || atcs.find(a => a?.nivel === 3)
-                            || atcs[0];
-                        const code = porNivel?.codigo || '';
+                    //
+                    // La elección del nivel vive en `_atcSubgrupo`, que comparte con la banda de
+                    // principios activos agrupada: tarjeta y chip tienen que caer en el MISMO
+                    // subgrupo, y dos copias de esta regla acabarían divergiendo.
+                    const sub = this._atcSubgrupo(med);
+                    if (sub) {
                         // Sin nomenclatura, el título es el CÓDIGO, no la frase «Sin nombre». El
                         // código identifica el grupo y un médico lo reconoce; «Sin nombre» no
                         // informa de nada y ocupa el sitio del dato. Se ve cuando CIMA no ha podido
                         // dar el nombre (ver `hydrateAtcNames`), no como estado normal.
-                        key = porNivel?.nombre ? `${code} - ${porNivel.nombre}` : code;
-                        subtitle = code;
+                        key = sub.nombre ? `${sub.code} - ${sub.nombre}` : sub.code;
+                        subtitle = sub.code;
                     }
                     break;
                 }
@@ -15396,22 +15415,77 @@ ${ftFechaDocsHtml}
         const paCounts = new Map();
 
         results.forEach(med => {
-            let nombres = [];
-            if (med.principiosActivos?.length > 0) {
-                nombres = med.principiosActivos.map(pa => pa.nombre).filter(Boolean);
-            } else if (med.pactivos) {
-                nombres = med.pactivos.split(/\s*[+/;]\s*/).map(p =>
-                    p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
-                ).filter(Boolean);
-            } else if (med.vtm?.nombre) {
-                nombres = [med.vtm.nombre];
-            }
-            nombres.forEach(n => { if (n) paCounts.set(n, (paCounts.get(n) || 0) + 1); });
+            this._paNombresChip(med).forEach(n => { if (n) paCounts.set(n, (paCounts.get(n) || 0) + 1); });
         });
 
         return Array.from(paCounts.entries())
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
+    }
+
+    /**
+     * Nombres de principio activo con los que un medicamento aparece en la banda de chips.
+     * Compartido por la banda plana y la agrupada por subgrupo: el mismo medicamento tiene que
+     * contar igual en las dos, o el número de un chip cambiaría según cómo se pinte la banda.
+     */
+    _paNombresChip(med) {
+        if (med.principiosActivos?.length > 0) {
+            return med.principiosActivos.map(pa => pa.nombre).filter(Boolean);
+        }
+        if (med.pactivos) {
+            return med.pactivos.split(/\s*[+/;]\s*/).map(p =>
+                p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
+            ).filter(Boolean);
+        }
+        if (med.vtm?.nombre) return [med.vtm.nombre];
+        return [];
+    }
+
+    /**
+     * Principios activos repartidos por SUBGRUPO TERAPÉUTICO (nivel 4 del ATC), para la banda
+     * de chips de Indicaciones.
+     *
+     * Petición clínica (2026-11-11): al buscar por indicación, ver los
+     * principios activos agrupados —osmóticos, de contacto, formadores de volumen…— para
+     * entender la farmacología de los grupos dentro de la indicación. La clasificación y sus
+     * palabras son de la AEMPS: MedCheck no clasifica nada, solo reparte por el código que
+     * cada medicamento ya trae.
+     *
+     * Un principio activo que esté en dos subgrupos aparece en LOS DOS, cada uno con su
+     * recuento (glicerol: enema y «otros laxantes»). Esconderlo en uno solo sería afirmar una
+     * pertenencia que el dato no dice.
+     *
+     * Devuelve `null` cuando agrupar no aporta: menos de dos subgrupos con ATC conocido. Los
+     * medicamentos sin ATC van a un grupo final con `code: ''`, para no perder sus chips.
+     *
+     * @returns {Array<{code: string, nombre: string|null, total: number, pas: Array<{name: string, count: number}>}>|null}
+     */
+    extractPAsBySubgroup(results) {
+        const grupos = new Map();
+        for (const med of results || []) {
+            const sub = this._atcSubgrupo(med);
+            const code = sub?.code || '';
+            if (!grupos.has(code)) grupos.set(code, { code, nombre: sub?.nombre || null, total: 0, cuentas: new Map() });
+            const g = grupos.get(code);
+            if (!g.nombre && sub?.nombre) g.nombre = sub.nombre;
+            g.total += 1;
+            for (const n of this._paNombresChip(med)) {
+                if (n) g.cuentas.set(n, (g.cuentas.get(n) || 0) + 1);
+            }
+        }
+        const conCodigo = [...grupos.values()].filter(g => g.code);
+        if (conCodigo.length < 2) return null;
+        return [...grupos.values()]
+            .filter(g => g.cuentas.size > 0)
+            // Mismo orden que los grupos de tarjetas (más medicamentos primero); el grupo sin ATC,
+            // al final siempre.
+            .sort((a, b) => (!a.code) - (!b.code) || b.total - a.total || a.code.localeCompare(b.code))
+            .map(g => ({
+                code: g.code,
+                nombre: g.nombre,
+                total: g.total,
+                pas: [...g.cuentas.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+            }));
     }
 
     // ============================================
@@ -16218,31 +16292,48 @@ ${ftFechaDocsHtml}
     /**
      * Renders PA filter chips (OR semantics, multi-select)
      */
-    renderPAFilterChips(paList) {
-        if (paList.length <= 1) return '';
-
-        const chipsHtml = paList.map(pa => {
-            const isActive = this.groupingState.activeIngredientFilters.has(pa.name);
-            return `
+    /** Un chip de principio activo. Único marcado para la banda plana y la agrupada: el
+     *  manejador de clics (`.pa-chip[data-pa]`) no distingue entre las dos. */
+    _paChipHtml(pa) {
+        const isActive = this.groupingState.activeIngredientFilters.has(pa.name);
+        return `
                 <button class="pa-chip ${isActive ? 'active' : ''}" data-pa="${pa.name}" title="Ctrl+click para añadir más PA (OR)">
                     ${pa.name}
                     <span class="route-count">${pa.count}</span>
                 </button>
             `;
-        }).join('');
+    }
+
+    /** Por encima de este número de subgrupos, las cajas nacen plegadas: «hipertensión» tiene
+     *  unos 38 y desplegadas ocuparían media pantalla antes del primer resultado. */
+    static get PA_SUBGRUPOS_ABIERTOS_MAX() { return 12; }
+
+    /**
+     * @param {Array<{name: string, count: number}>} paList - lista plana (facetada)
+     * @param {{subgrupos?: Array|null}} [opts] - salida de `extractPAsBySubgroup`; si llega,
+     *   la banda se pinta agrupada por subgrupo ATC. Si es `null`, plana como siempre.
+     */
+    renderPAFilterChips(paList, { subgrupos = null } = {}) {
+        if (paList.length <= 1) return '';
 
         const filterCount = this.groupingState.activeIngredientFilters.size;
         const clearBtn = filterCount > 0
             ? `<button class="pa-chip pa-chip-clear" data-pa=""><i class="fas fa-times"></i> Limpiar${filterCount > 1 ? ` (${filterCount})` : ''}</button>`
             : '';
 
-        const label = filterCount > 1
-            ? `<span class="pa-filter-label">PA activos (OR):</span>`
-            : `<span class="pa-filter-label">Principio activo:</span>`;
-
         const hint = filterCount === 0
             ? `<span class="pa-filter-hint"><kbd>Ctrl</kbd>+clic para seleccionar varios (OR)</span>`
             : '';
+
+        if (Array.isArray(subgrupos) && subgrupos.length >= 2) {
+            return this._renderPAChipsPorSubgrupo(subgrupos, { clearBtn, hint, filterCount });
+        }
+
+        const chipsHtml = paList.map(pa => this._paChipHtml(pa)).join('');
+
+        const label = filterCount > 1
+            ? `<span class="pa-filter-label">PA activos (OR):</span>`
+            : `<span class="pa-filter-label">Principio activo:</span>`;
 
         return `
             <div class="route-filter-chips pa-filter-chips">
@@ -16252,6 +16343,71 @@ ${ftFechaDocsHtml}
                 ${hint}
             </div>
         `;
+    }
+
+    /**
+     * Banda de principios activos agrupada por subgrupo ATC: una caja por subgrupo, con su
+     * nombre oficial encima y sus chips debajo, en una cuadrícula que se adapta al ancho (una
+     * columna en el móvil).
+     *
+     * Cada caja es un `<details>`: abierta si hay pocos subgrupos, plegada si hay más de
+     * `PA_SUBGRUPOS_ABIERTOS_MAX`. Una caja con un chip activo se abre siempre —el filtro
+     * puesto no puede quedar escondido—, y lo que el usuario abra o cierre a mano se respeta
+     * en los repintados (cada faceta reescribe la banda entera).
+     */
+    _renderPAChipsPorSubgrupo(subgrupos, { clearBtn = '', hint = '', filterCount = 0 } = {}) {
+        const activos = this.groupingState.activeIngredientFilters;
+        const manual = this._paSubgrupoManual || new Map();
+        const abiertasPorDefecto = subgrupos.length <= MedCheckApp.PA_SUBGRUPOS_ABIERTOS_MAX;
+
+        const cajas = subgrupos.map(g => {
+            const tieneActivo = g.pas.some(pa => activos.has(pa.name));
+            const porDefecto = abiertasPorDefecto || tieneActivo;
+            const abierta = tieneActivo || (manual.has(g.code) ? manual.get(g.code) : porDefecto);
+            const nombre = g.code
+                ? (g.nombre || this._describeATCCode(g.code) || g.code)
+                : 'Sin subgrupo ATC';
+            const codigo = g.code ? `<span class="pa-subgrupo-code">${this._escapeHtml(g.code)}</span>` : '';
+            return `
+                <details class="pa-subgrupo${tieneActivo ? ' has-active' : ''}" data-subgrupo="${this._escapeHtml(g.code)}" data-por-defecto="${porDefecto ? '1' : '0'}"${abierta ? ' open' : ''}>
+                    <summary class="pa-subgrupo-head" title="Subgrupo terapéutico ATC (nivel 4), nomenclatura de la AEMPS">
+                        <span class="pa-subgrupo-name">${this._escapeHtml(nombre)}</span>
+                        ${codigo}
+                        <span class="pa-subgrupo-n">${g.pas.length} PA</span>
+                    </summary>
+                    <div class="pa-subgrupo-chips">${g.pas.map(pa => this._paChipHtml(pa)).join('')}</div>
+                </details>
+            `;
+        }).join('');
+
+        const label = filterCount > 1
+            ? `<span class="pa-filter-label">PA activos (OR):</span>`
+            : `<span class="pa-filter-label">Principio activo por subgrupo:</span>`;
+
+        return `
+            <div class="pa-filter-chips pa-por-subgrupo">
+                <div class="pa-por-subgrupo-head">
+                    ${label}
+                    ${clearBtn}
+                    ${hint}
+                </div>
+                <div class="pa-subgrupos">${cajas}</div>
+            </div>
+        `;
+    }
+
+    /** Recuerda qué cajas de subgrupo abrió o cerró el usuario, para que un repintado no se las
+     *  cambie. Solo se guarda la DIFERENCIA con el estado por defecto. */
+    _wirePASubgrupos(root = document) {
+        if (!this._paSubgrupoManual) this._paSubgrupoManual = new Map();
+        root.querySelectorAll('details.pa-subgrupo').forEach(el => {
+            el.addEventListener('toggle', () => {
+                const code = el.dataset.subgrupo || '';
+                const porDefecto = el.dataset.porDefecto === '1';
+                if (el.open === porDefecto) this._paSubgrupoManual.delete(code);
+                else this._paSubgrupoManual.set(code, el.open);
+            });
+        });
     }
 
     /**
@@ -16577,7 +16733,11 @@ ${ftFechaDocsHtml}
         const snap = this._filterSnapshot();
 
         const routes = this.extractUniqueRoutes(this._applyResultFilters(universe, snap, { exclude: 'route' }));
-        const paList = this.extractUniquePrincipiosActivos(this._applyResultFilters(universe, snap, { exclude: 'pa' }));
+        const sinFiltroPA = this._applyResultFilters(universe, snap, { exclude: 'pa' });
+        const paList = this.extractUniquePrincipiosActivos(sinFiltroPA);
+        // La banda de PA se reparte por subgrupo ATC sobre EL MISMO conjunto facetado que la
+        // plana, así que los recuentos de un chip no cambian por pintarse agrupado.
+        const paSubgrupos = this.extractPAsBySubgroup(sinFiltroPA);
 
         const filteredResults = this._applyResultFilters(universe, snap);
 
@@ -16638,7 +16798,7 @@ ${ftFechaDocsHtml}
             <div id="ind-ai-slot">${indAiPanel}</div>
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, { showDoses: false, showEFG: true, parcial: fallidos.length > 0 })}
             ${this.renderRouteFilterChips(routes)}
-            ${this.renderPAFilterChips(paList)}
+            ${this.renderPAFilterChips(paList, { subgrupos: paSubgrupos })}
             ${this.renderGalenicFilterChips()}
             ${this.renderDoseFilterChips(universe, snap, { requireSinglePA: true, visibleResults: filteredResults })}
             <div id="grouped-results">
@@ -16649,6 +16809,7 @@ ${ftFechaDocsHtml}
         // Setup event listeners
         this.setupGroupingEventListeners(data, searchQuery);
         this.setupGroupedResultsEventListeners(resultsContainer);
+        this._wirePASubgrupos(resultsContainer);
 
         // El índice de envases llega async: rellena los huecos ya pintados (mismo patrón
         // de repintado que el índice de suministro, S29).

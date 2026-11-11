@@ -7554,6 +7554,93 @@ div.section-text th .ft-tras-hueco {
     color: var(--info);
 }
 
+/* Banda de PA agrupada por subgrupo ATC (Indicaciones, 2026-11-11). Cuadrícula que se adapta al
+   ancho: tantas columnas como quepan de ~13 rem, una sola en el móvil. `min(…, 100%)` evita que
+   una columna sea más ancha que la pantalla. */
+.pa-por-subgrupo {
+    display: block;
+}
+
+.pa-por-subgrupo-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    align-items: center;
+    margin-bottom: var(--space-xs);
+}
+
+.pa-subgrupos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
+    gap: var(--space-xs);
+    align-items: start;
+}
+
+.pa-subgrupo {
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    border-radius: var(--radius-md);
+    background: rgba(99, 102, 241, 0.03);
+    padding: 0.3rem 0.45rem;
+    min-width: 0;
+}
+
+.pa-subgrupo.has-active {
+    border-color: var(--info);
+}
+
+.pa-subgrupo-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    cursor: pointer;
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+    list-style: none;
+}
+
+.pa-subgrupo-head::-webkit-details-marker {
+    display: none;
+}
+
+.pa-subgrupo-head::before {
+    content: '▸';
+    font-size: 0.65rem;
+    color: var(--info);
+    transition: transform var(--transition-fast);
+}
+
+.pa-subgrupo[open] > .pa-subgrupo-head::before {
+    transform: rotate(90deg);
+}
+
+.pa-subgrupo-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.pa-subgrupo-code,
+.pa-subgrupo-n {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.pa-subgrupo-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding-top: 0.3rem;
+}
+
+/* Dentro de una caja estrecha, un nombre largo («macrogol 3350 + ácido ascórbico…») parte línea
+   en vez de desbordar la columna. */
+.pa-subgrupo-chips .pa-chip {
+    white-space: normal;
+    text-align: left;
+}
+
 @media (max-width: 640px) {
     .pa-filter-chips,
     .dose-filter-chips { gap: var(--space-xs); padding-top: var(--space-xs); }
