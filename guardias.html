@@ -7,7 +7,7 @@
   <title>Gestor de guardias de avisos y urgencias · Atención Primaria</title>
   <meta name="description"
     content="Reparte cada mes los avisos y urgencias de un equipo de Atención Primaria de forma equitativa y compensa los meses anteriores. Funciona en el navegador, sin enviar datos." />
-  <link rel="stylesheet" href="assets/css/guardias.css?v=20261111a" />
+  <link rel="stylesheet" href="assets/css/guardias.css?v=20261111b" />
 </head>
 
 <body>
@@ -24,6 +24,8 @@
           <button type="button" role="menuitem" data-guia="rapida">Guía rápida <small data-pasos="rapida"></small></button>
           <button type="button" role="menuitem" data-guia="configuracion">Configuración en detalle <small
               data-pasos="configuracion"></small></button>
+          <button type="button" role="menuitem" data-guia="novedades">Novedades de la v2.3 <small
+              data-pasos="novedades"></small></button>
           <button type="button" role="menuitem" data-accion="ir-manual">Manual de uso</button>
         </div>
       </div>
@@ -563,8 +565,9 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
     <!-- === MANUAL === -->
     <section id="manual" class="seccion manual" hidden aria-labelledby="tituloManual">
       <h2 id="tituloManual">Manual de uso</h2>
-      <p>Para una primera vuelta, la <b>❓ Ayuda</b> de arriba a la derecha tiene una guía rápida y un recorrido por
-        la configuración. Este manual es la referencia completa.</p>
+      <p>Para una primera vuelta, la <b>❓ Ayuda</b> de arriba a la derecha tiene una guía rápida, un recorrido por
+        la configuración y las novedades de la versión. La guía rápida se abre sola la primera vez que se entra con
+        cada versión nueva. Este manual es la referencia completa.</p>
       <ol class="indice">
         <li><a href="#m-que-hace">Qué hace</a></li>
         <li><a href="#m-empezar">Cómo empezar</a></li>
@@ -791,6 +794,8 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
             cada puesto sin cubrir y si el reparto es el mejor posible. Nueva columna <b>Días</b> en el resumen.</li>
           <li>Copia con formato también para Teams y Outlook, incluido el análisis.</li>
           <li>Aviso de «cambios sin exportar» y al cerrar la página si se ha cambiado un calendario o el histórico.</li>
+          <li>La guía rápida incluye el calendario editable y se abre sola una vez con cada versión nueva, aunque ya se
+            hubiera visto; en <b>❓ Ayuda → Novedades de la v2.3</b> está solo lo nuevo.</li>
         </ul>
         <p><b>v2.2 (noviembre de 2026)</b></p>
         <ul>
@@ -833,9 +838,9 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="assets/js/guardias-motor.js?v=20261111a"></script>
-  <script src="assets/js/guardias-app.js?v=20261111a"></script>
-  <script src="assets/js/guardias-guia.js?v=20261111a"></script>
+  <script src="assets/js/guardias-motor.js?v=20261111b"></script>
+  <script src="assets/js/guardias-app.js?v=20261111b"></script>
+  <script src="assets/js/guardias-guia.js?v=20261111b"></script>
 </body>
 
 </html>

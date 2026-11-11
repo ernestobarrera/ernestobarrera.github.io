@@ -1,8 +1,10 @@
 /*
  * Ayuda del gestor de guardias (guardias.html): menú «❓ Ayuda» y dos recorridos.
  *
- *  - Guía rápida: de cero a un mes cerrado. Se lanza sola la primera vez solo si
- *    el navegador no tiene datos (usuario nuevo).
+ *  - Guía rápida: de cero a un mes cerrado. Se lanza sola una vez por versión
+ *    (CLAVE_VISTA), tenga o no datos el navegador: así quien ya la vio conoce
+ *    las novedades. Desde el primer paso se puede saltar a «Novedades».
+ *  - Novedades: solo lo nuevo de la versión, para quien ya usa la herramienta.
  *  - Configuración en detalle: una parada por pestaña, para quien ya ha visto la
  *    rápida o hereda una configuración y quiere entenderla.
  *
@@ -14,13 +16,40 @@
 (() => {
   "use strict";
 
-  const CLAVE_VISTA = "guardiasGuiaVista_v1";
+  // Cambiar el sufijo en cada versión con novedades hace que la guía vuelva a salir a todos.
+  const CLAVE_VISTA = "guardiasGuiaVista_v2.3";
   const MARGEN = 16;
   const HOLGURA = 6;
 
   const app = () => window.GuardiasApp;
   const $ = (id) => document.getElementById(id);
   const contenedorDe = (id) => () => [$(id)?.closest(".table-container")];
+  const hayDatos = () => Boolean(app()?.resumen().medicos);
+  const sinCalendario = () => $("areaResultado")?.hidden !== false;
+  // En los pasos del resultado, si aún no hay calendario se avisa de dónde saldrá.
+  const siNoHayCalendario = (texto) => () =>
+    (sinCalendario() ? "<i>Aparecerá aquí cuando generes un mes.</i><br><br>" : "") + texto;
+
+  const TEXTO_EDITAR =
+    "Pulsa <b>cualquier guardia</b> para cambiarla. Solo se puede elegir entre los médicos de la lista: arriba salen " +
+    "los disponibles, ordenados de quien más le falta para su objetivo a quien más le sobra, y <b>«equilibra»</b> " +
+    "marca los cambios que acercan el reparto. También puedes intercambiar con otro puesto del mismo día." +
+    "<br><br>Todo se recalcula al momento. <b>✎</b> marca lo cambiado a mano y <b>⚠</b> lo que incumple la " +
+    "configuración. <b>↶ Deshacer</b> (<kbd>Ctrl</kbd>+<kbd>Z</kbd>) quita el último cambio y <b>⟳ Reajustar el " +
+    "resto</b> mantiene tus cambios y recoloca lo demás.";
+  const TEXTO_RESUMEN =
+    "<b>Días</b>: los que cada médico puede hacer guardia este mes (en su franja, sin ausencias). <b>Objetivo</b>: " +
+    "las guardias que le tocan en proporción a esos días y a su jornada." +
+    "<br><br>Por eso <b>es normal que unos hagan más guardias que otros</b>. Lo que dice si el reparto es justo es " +
+    "<b>Dif.</b> (asignadas − objetivo): verde, amarillo o rojo." +
+    "<br><br><b>Pulsa el nombre de un médico</b> para resaltar todas sus guardias en el calendario.";
+  const TEXTO_ANALISIS =
+    "Dice en una frase si el reparto está equilibrado y si es <b>el mejor posible</b> con esa configuración, " +
+    "explica cada puesto sin cubrir y, si has cambiado guardias a mano, propone <b>retoques</b> que se aplican con un botón.";
+  const TEXTO_COPIAR =
+    "Los botones de copiar dejan el calendario <b>en el portapapeles, con formato</b>: no se ve nada al pulsar, pero " +
+    "luego pegas con <kbd>Ctrl</kbd>+<kbd>V</kbd> en <b>Excel, en un chat de Teams o en un correo</b>." +
+    "<br><br>«Calendario, resumen y análisis» incluye también la tabla de cada médico y la explicación.";
 
   const RUTAS = {
     rapida: [
@@ -34,6 +63,7 @@
           "haya hecho de más o de menos en meses anteriores." +
           "<br><br>Todo se guarda solo, <b>en este navegador</b>: no se envía nada a ningún servidor." +
           "<br><br>Puedes salir con <kbd>Esc</kbd> y volver a verla en <b>❓ Ayuda</b>.",
+        extra: () => (hayDatos() ? { texto: "Solo novedades de la v2.3 ›", ruta: "novedades" } : null),
       },
       {
         titulo: () => (app().resumen().medicos ? "Ya hay datos en este navegador" : "¿Cómo empiezas?"),
@@ -104,19 +134,46 @@
         seccion: "calendario",
         texto:
           "Por defecto aparece el mes siguiente. Pulsa <b>Generar guardias</b>." +
-          '<br><br>Encima del calendario saldrán los avisos: una celda <span class="guia-descubierto">---</span> ' +
-          "es un puesto <b>sin cubrir</b>, y también se avisa de los MIXTO sin planificar." +
-          "<br><br>Para cambiar una guardia, <b>pulsa la celda</b> y elige entre los médicos de la lista: el resumen se " +
-          "recalcula solo. No cuenta hasta que lo guardes en el histórico.",
+          "<br><br>El reparto es <b>el mejor posible</b>: deja a cada médico lo más cerca que se puede de lo que le " +
+          "toca, respetando franjas, ausencias y el tope de 2 guardias por semana. El calendario se guarda: si " +
+          "cambias de mes y vuelves, sigue ahí.",
+      },
+      {
+        titulo: "Revisa y cambia guardias",
+        el: contenedorDe("tablaCalendario"),
+        seccion: "calendario",
+        texto: siNoHayCalendario(
+          'Encima del calendario salen los avisos: una celda <span class="guia-descubierto">---</span> es un puesto ' +
+            "<b>sin cubrir</b>.<br><br>" +
+            TEXTO_EDITAR
+        ),
+      },
+      {
+        titulo: "Lee el resumen",
+        el: contenedorDe("tablaResumen"),
+        seccion: "calendario",
+        texto: siNoHayCalendario(TEXTO_RESUMEN),
+      },
+      {
+        titulo: "Estadísticas y análisis",
+        el: "#estadisticasDetalladas",
+        seccion: "calendario",
+        texto: siNoHayCalendario(TEXTO_ANALISIS),
+      },
+      {
+        titulo: "Cópialo a Excel, Teams o un correo",
+        el: '[data-accion="copiar-calendario"], [data-accion="copiar-todo"]',
+        seccion: "calendario",
+        texto: siNoHayCalendario(TEXTO_COPIAR),
       },
       {
         titulo: "Cierra el mes en el histórico",
+        el: "#btnGuardarHistorico",
         seccion: "calendario",
         texto:
-          'Cuando el calendario sea el definitivo, pulsa <span class="guia-boton">💾 Guardar en el histórico</span> ' +
-          "<b>una vez por mes</b>." +
+          'Cuando el calendario sea el definitivo, pulsa <span class="guia-boton">💾 Guardar en el histórico</span>.' +
           "<br><br>Así se recuerda quién hizo de más o de menos y se compensa en los meses siguientes. " +
-          "Si no lo guardas, el próximo reparto no tendrá en cuenta este mes.",
+          "Si cambias el calendario después, la página avisa y el botón pasa a <b>Actualizar en el histórico</b>.",
       },
       {
         titulo: "Haz copia de seguridad",
@@ -125,8 +182,55 @@
           "Aquí ves cuándo se guardó por última vez. Pero ese guardado <b>solo existe en este navegador</b>: " +
           "si se borran los datos de navegación o cambias de ordenador, se pierde." +
           "<br><br>Al cerrar cada mes, pulsa <b>⬇ Exportar copia</b>: es tu respaldo y el fichero que pasarás a " +
-          "quien te sustituya. Si hay cambios sin exportar, aquí saldrá un aviso.",
+          "quien te sustituya. Si hay cambios sin exportar, aquí sale <b>⚠ Cambios sin exportar</b> y el botón se " +
+          "resalta hasta que lo hagas.",
         extra: { texto: "Configuración en detalle ›", ruta: "configuracion" },
+      },
+    ],
+
+    novedades: [
+      {
+        titulo: "Novedades de la v2.3",
+        seccion: "calendario",
+        texto:
+          "<ul><li><b>Reparto óptimo</b>: antes se decidía día a día y podía dejar a alguien a más de dos guardias de " +
+          "su objetivo aunque hubiera un reparto mejor. Ahora se calcula el mejor reparto posible del mes. " +
+          "Los objetivos no cambian.</li>" +
+          "<li><b>Calendario editable</b>, con todo recalculado al momento.</li>" +
+          "<li><b>Resumen y análisis</b> más claros, y <b>copia</b> también para Teams y correo.</li></ul>" +
+          "Te lo enseño en cinco pasos.",
+      },
+      {
+        titulo: "Cambia guardias pulsando",
+        el: contenedorDe("tablaCalendario"),
+        seccion: "calendario",
+        texto: siNoHayCalendario(TEXTO_EDITAR),
+      },
+      {
+        titulo: "Resumen: Días y resaltar",
+        el: contenedorDe("tablaResumen"),
+        seccion: "calendario",
+        texto: siNoHayCalendario(TEXTO_RESUMEN),
+      },
+      {
+        titulo: "Análisis en claro",
+        el: "#estadisticasDetalladas",
+        seccion: "calendario",
+        texto: siNoHayCalendario(TEXTO_ANALISIS),
+      },
+      {
+        titulo: "Copiar a Excel, Teams o correo",
+        el: '[data-accion="copiar-calendario"], [data-accion="copiar-todo"]',
+        seccion: "calendario",
+        texto: siNoHayCalendario(TEXTO_COPIAR),
+      },
+      {
+        titulo: "No olvides exportar",
+        el: "#zonaDatos",
+        texto:
+          "Cuando cambies un calendario o guardes un mes en el histórico, arriba sale <b>⚠ Cambios sin exportar</b>. " +
+          "Pulsa <b>⬇ Exportar copia</b> y sustituye el fichero compartido: el calendario, con tus cambios, va dentro." +
+          "<br><br>La guía completa sigue en <b>❓ Ayuda</b>.",
       },
     ],
 
@@ -420,7 +524,7 @@
       else if (accion === "anterior") mostrarPaso(indice - 1);
       else if (accion === "siguiente") mostrarPaso(indice + 1);
       else if (accion === "extra") {
-        const ruta = pasos[indice].extra?.ruta;
+        const ruta = valor(pasos[indice].extra)?.ruta;
         cerrar({ restaurar: false });
         if (ruta) iniciar(ruta);
       }
@@ -447,8 +551,9 @@
     caja.querySelector('[data-guia-accion="anterior"]').hidden = indice === 0;
     caja.querySelector('[data-guia-accion="salir"]').hidden = ultimo;
     const extra = caja.querySelector('[data-guia-accion="extra"]');
-    extra.hidden = !paso.extra;
-    extra.textContent = paso.extra ? paso.extra.texto : "";
+    const datosExtra = valor(paso.extra);
+    extra.hidden = !datosExtra;
+    extra.textContent = datosExtra ? datosExtra.texto : "";
     const siguiente = caja.querySelector('[data-guia-accion="siguiente"]');
     siguiente.textContent = ultimo ? "Entendido" : indice === 0 ? "Empezar ›" : "Siguiente ›";
 
@@ -578,8 +683,8 @@
 
   const arrancar = () => {
     prepararMenu();
-    const { medicos, meses } = app() ? app().resumen() : { medicos: 1, meses: 1 };
-    if (!leer(CLAVE_VISTA) && medicos === 0 && meses === 0) window.setTimeout(() => iniciar("rapida"), 500);
+    // Una vez por versión, a todos: los nuevos aprenden a usarla y los de antes ven las novedades.
+    if (app() && !leer(CLAVE_VISTA)) window.setTimeout(() => iniciar("rapida"), 500);
   };
 
   window.iniciarGuiaGuardias = iniciar;
