@@ -3099,6 +3099,25 @@ class CimaAPI {
     // ============================================
 
     /**
+     * Una ficha cuya sección no se pudo leer, con el motivo, para que la pantalla lo diga en vez
+     * de dar la sección por leída y sin menciones.
+     *   - `fallo`: CIMA no contestó o dio un error (red, 5xx, tiempo agotado). Reintentar tiene
+     *     sentido.
+     *   - `sin_seccion`: CIMA contestó que no expone ese texto (204, cuerpo vacío o la sección
+     *     vacía). Reintentar no cambia nada, pero tampoco es un «no aparece».
+     * @param {{nregistro: string, nombre: string}} med
+     * @param {Error|null} error - null si CIMA contestó con la sección vacía
+     */
+    static fichaNoLeida(med, error) {
+        const sinSeccion = !error || error.code === 'NO_CONTENT';
+        return {
+            nregistro: med?.nregistro,
+            nombre: med?.nombre || String(med?.nregistro || ''),
+            motivo: sinSeccion ? 'sin_seccion' : 'fallo',
+        };
+    }
+
+    /**
      * Analiza interacciones entre múltiples medicamentos
      * Consulta sección 4.5 de cada FT y busca menciones cruzadas
      * @param {Array} medicamentos - Array de {nregistro, nombre, pactivos}
@@ -3132,20 +3151,38 @@ class CimaAPI {
             }
         }));
 
+        // `noLeidas`: las fichas cuya 4.5 no se pudo leer (hallazgo 1 de la revisión de Fable,
+        // 11/11/2026). Antes el fallo se tragaba aquí con un `console.warn` y la pantalla decía
+        // «Sin coincidencias… en las secciones 4.5 de sus fichas técnicas» sin haber leído ninguna.
+        // Lo que no se ha leído no se puede dar por ausente: quien pinte esto lo mira primero.
         const results = {
             medicamentos: enriched.map(m => m.nombre),
             interactions: [],
             status: 'success',
-            sectionsAnalyzed: 0
+            sectionsAnalyzed: 0,
+            noLeidas: []
         };
 
         // Para cada medicamento, obtener sección 4.5 y buscar menciones de otros
         for (const med of enriched) {
             try {
-                const section45 = await this.getDocSeccion(med.nregistro, '4.5');
+                let section45;
+                try {
+                    section45 = await this.getDocSeccion(med.nregistro, '4.5');
+                } catch (error) {
+                    console.warn(`No se pudo obtener sección 4.5 de ${med.nombre}:`, error);
+                    results.noLeidas.push(CimaAPI.fichaNoLeida(med, error));
+                    continue;
+                }
+                if (!section45) {
+                    results.noLeidas.push(CimaAPI.fichaNoLeida(med, null));
+                    continue;
+                }
                 results.sectionsAnalyzed++;
 
-                if (!section45 || section45.length < 50) continue;
+                // Un texto corto («No se han realizado estudios de interacciones») SÍ es una
+                // lectura: no menciona a nadie, y eso es un cero real.
+                if (section45.length < 50) continue;
 
                 // Buscar menciones de los otros medicamentos
                 for (const otherMed of enriched) {
@@ -3170,7 +3207,9 @@ class CimaAPI {
                     }
                 }
             } catch (error) {
-                console.warn(`No se pudo obtener sección 4.5 de ${med.nombre}:`, error);
+                // Un fallo AL ANALIZAR una ficha ya leída: tampoco se puede dar por buena.
+                console.warn(`No se pudo analizar la sección 4.5 de ${med.nombre}:`, error);
+                results.noLeidas.push(CimaAPI.fichaNoLeida(med, error));
             }
         }
 
@@ -3192,16 +3231,30 @@ class CimaAPI {
         }
 
         const normalizedSymptom = sintoma.toLowerCase().trim();
+        // `noLeidas`, igual que en `analyzeInteractions` (hallazgo 2 de la revisión de Fable,
+        // 11/11/2026): un fallo de red devolvía lo mismo que «no aparece» y la pantalla pintaba
+        // «No encontrado» con el check verde.
         const results = {
             sintoma: sintoma,
-            matches: []
+            matches: [],
+            noLeidas: []
         };
 
         // Analizar cada medicamento
         const promises = medicamentos.map(async med => {
             try {
-                const content = await this.getDocSeccion(med.nregistro, '4.8');
-                if (!content) return null;
+                let content;
+                try {
+                    content = await this.getDocSeccion(med.nregistro, '4.8');
+                } catch (error) {
+                    console.warn(`No se pudo obtener sección 4.8 de ${med.nombre}:`, error);
+                    results.noLeidas.push(CimaAPI.fichaNoLeida(med, error));
+                    return null;
+                }
+                if (!content) {
+                    results.noLeidas.push(CimaAPI.fichaNoLeida(med, null));
+                    return null;
+                }
 
                 // Texto DECODIFICADO y plegado (ver `textoFT`): sobre el HTML crudo, «náuseas»
                 // no casaba con `n&#225;useas` y la respuesta era «no aparece».
@@ -3224,6 +3277,7 @@ class CimaAPI {
                 }
             } catch (error) {
                 console.warn(`Error analizando síntomas en ${med.nombre}:`, error);
+                results.noLeidas.push(CimaAPI.fichaNoLeida(med, error));
             }
             return null;
         });

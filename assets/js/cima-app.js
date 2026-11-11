@@ -7817,10 +7817,77 @@ class MedCheckApp {
     }
 
     /**
+     * Une las `noLeidas` de varias búsquedas sobre los mismos medicamentos (un síntoma por
+     * búsqueda). Un medicamento que falló en alguna cuenta como no leído; si en una falló la red y
+     * en otra CIMA dijo que no tiene la sección, manda el fallo, que es el que admite reintento.
+     */
+    _unirFichasNoLeidas(listas) {
+        const porNreg = new Map();
+        for (const lista of listas) {
+            for (const f of (lista || [])) {
+                const previa = porNreg.get(f.nregistro);
+                if (!previa || (f.motivo === 'fallo' && previa.motivo !== 'fallo')) porNreg.set(f.nregistro, f);
+            }
+        }
+        return [...porNreg.values()];
+    }
+
+    /**
+     * Aviso de fichas cuya sección no se pudo leer (hallazgos 1 y 2 de la revisión de Fable,
+     * 11/11/2026). Interacciones y síntoma decían «sin coincidencias» / «no encontrado» —este con
+     * el check verde— sin haber abierto la ficha. Regla: el texto de ausencia solo puede salir
+     * cuando no queda ninguna ficha sin leer; si queda alguna, lo que sale es esto.
+     *
+     * @param {Array<{nregistro, nombre, motivo}>} noLeidas - de `CimaAPI.fichaNoLeida`
+     * @param {string} seccion - '4.5' o '4.8'
+     * @param {number} total - medicamentos de la búsqueda
+     * @param {boolean} hayCoincidencias - si debajo se pintan coincidencias de las fichas leídas
+     * @param {string} reintentar - llamada `onclick` que repite la búsqueda entera
+     * @returns {string} HTML, o '' si no falta ninguna
+     */
+    _avisoFichasNoLeidas(noLeidas, seccion, total, hayCoincidencias, reintentar) {
+        if (!noLeidas || noLeidas.length === 0) return '';
+        const esc = v => this._escapeHtml(String(v ?? ''));
+        const n = noLeidas.length;
+        const ninguna = n >= total;
+        const titulo = ninguna
+            ? `No se pudo leer la sección ${seccion} de ningún medicamento`
+            : `Búsqueda incompleta: no se pudo leer la sección ${seccion} de ${n} de ${total} medicamentos`;
+        const detalle = ninguna
+            ? 'No se ha buscado nada: esto <strong>no</strong> es un «sin coincidencias».'
+            : hayCoincidencias
+                ? 'Lo de abajo sale solo de las fichas que sí se leyeron.'
+                : 'En las fichas que sí se leyeron no hay coincidencias, pero lo que no se ha leído <strong>no</strong> se puede dar por ausente.';
+        const motivo = f => f.motivo === 'fallo' ? 'CIMA no respondió' : `CIMA no ofrece la sección ${seccion} de esta ficha`;
+        const lista = noLeidas.map(f => `<li><strong>${esc(f.nombre)}</strong>: ${motivo(f)}</li>`).join('');
+        const hayFallo = noLeidas.some(f => f.motivo === 'fallo');
+        return `
+        <div class="safety-check-item warning">
+            <div class="safety-check-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="safety-check-content">
+                <div class="safety-check-title">${titulo}</div>
+                <div class="safety-check-detail">
+                    ${detalle}
+                    <ul>${lista}</ul>
+                    ${hayFallo ? `<button type="button" class="btn btn-sm btn-secondary" onclick="${reintentar}"><i class="fas fa-rotate-right"></i> Reintentar</button>` : ''}
+                </div>
+            </div>
+        </div>`;
+    }
+
+    /**
      * Displays interaction analysis results
      */
     displayInteractionResults(results) {
         const container = document.getElementById('interactions-results');
+        const noLeidas = results.noLeidas || [];
+        const aviso = this._avisoFichasNoLeidas(noLeidas, '4.5', results.medicamentos.length,
+            results.interactions.length > 0, 'app.performInteractionAnalysis()');
+
+        if (results.interactions.length === 0 && aviso) {
+            container.innerHTML = `<div class="safety-panel" style="margin-top: 1rem;">${aviso}</div>`;
+            return;
+        }
 
         if (results.interactions.length === 0) {
             container.innerHTML = `
@@ -7892,6 +7959,7 @@ class MedCheckApp {
                 </div>
                 <p class="combo-research-copy" style="margin: 0.25rem 0 0.5rem;">Coincidencias <strong>literales</strong> del nombre de un fármaco en la ficha de otro. MedCheck no clasifica su gravedad ni detecta interacciones por clase; valora con criterio profesional, ficha técnica/AEMPS o la consulta con IA de arriba.</p>
                 <div class="safety-checks">
+                    ${aviso}
                     ${interactionsHtml}
                 </div>
             </div>
@@ -8125,7 +8193,8 @@ class MedCheckApp {
             for (const { s, r } of perSymptom) {
                 for (const m of (r.matches || [])) matches.push({ ...m, sintoma: s });
             }
-            this.displaySymptomResults({ sintoma: symptoms.join(' / '), matches });
+            const noLeidas = this._unirFichasNoLeidas(perSymptom.map(({ r }) => r.noLeidas));
+            this.displaySymptomResults({ sintoma: symptoms.join(' / '), matches, noLeidas });
         } catch (error) {
             console.error('Analysis error:', error);
             resultsContainer.innerHTML = `
@@ -8141,6 +8210,14 @@ class MedCheckApp {
     displaySymptomResults(results) {
         const container = document.getElementById('adverse-results');
         const symptom = results.sintoma;
+        const noLeidas = results.noLeidas || [];
+        const aviso = this._avisoFichasNoLeidas(noLeidas, '4.8', this.comboDrugList.length,
+            results.matches.length > 0, 'app.performSymptomAnalysis()');
+
+        if (results.matches.length === 0 && aviso) {
+            container.innerHTML = `<div class="safety-panel mt-lg">${aviso}</div>`;
+            return;
+        }
 
         if (results.matches.length === 0) {
             container.innerHTML = `
@@ -8193,16 +8270,19 @@ class MedCheckApp {
                     <span class="badge badge-warning">${results.matches.length} coincidencia${results.matches.length > 1 ? 's' : ''}</span>
                 </div>
                 <div class="safety-checks">
+                    ${aviso}
                     ${matchesHtml}
                 </div>
                 ${(() => {
                     // Con multi-síntoma un fármaco puede aparecer en varias coincidencias: contar
                     // fármacos DISTINTOS con match (no nº de matches) sobre la lista de combo.
-                    const matchedDrugs = new Set(results.matches.map(m => m.med?.nregistro)).size;
-                    const rest = this.comboDrugList.length - matchedDrugs;
+                    // Los no leídos no entran en «el resto»: de esos no se sabe si lo mencionan.
+                    const conMatch = new Set(results.matches.map(m => m.med?.nregistro));
+                    const noLeidosSinMatch = noLeidas.filter(f => !conMatch.has(f.nregistro)).length;
+                    const rest = this.comboDrugList.length - conMatch.size - noLeidosSinMatch;
                     return rest > 0 ? `
                     <div class="p-md text-center text-muted text-sm border-t">
-                        El resto de medicamentos (${rest}) no mencionan estos términos.
+                        El resto de medicamentos ${noLeidas.length ? 'leídos ' : ''}(${rest}) no mencionan estos términos.
                     </div>` : '';
                 })()}
             </div>
@@ -21403,8 +21483,12 @@ ${ftFechaDocsHtml}
             const meds = favs.map(f => ({ nregistro: f.nregistro, nombre: f.nombre, pactivos: f.principioActivo || '' }));
             const report = await this.api.analyzeInteractions(meds);
             const interactions = (report && report.interactions) || [];
+            const aviso = this._avisoFichasNoLeidas(report?.noLeidas, '4.5', meds.length,
+                interactions.length > 0, 'app._runInteractionAnalysis()');
 
-            if (interactions.length === 0) {
+            if (interactions.length === 0 && aviso) {
+                resultDiv.innerHTML = aviso;
+            } else if (interactions.length === 0) {
                 resultDiv.innerHTML = '<p class="text-muted text-sm"><i class="fas fa-check-circle" style="color:#10b981"></i> No se detectaron menciones cruzadas entre tus favoritos en las secciones 4.5 de sus fichas técnicas.</p>';
             } else {
                 // Mapa nombre→nregistro para enlazar cada fármaco a su ficha.
@@ -21432,6 +21516,7 @@ ${ftFechaDocsHtml}
                 }).join('');
                 resultDiv.innerHTML = `
                     <p class="text-xs text-muted mb-sm">Menciones en sección 4.5 (no implican contraindicación automática; verifica la ficha). ${interactions.length} resultado${interactions.length === 1 ? '' : 's'}.</p>
+                    ${aviso}
                     <div>${items}</div>`;
             }
         } catch (e) {
