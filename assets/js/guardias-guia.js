@@ -106,7 +106,8 @@
           "Por defecto aparece el mes siguiente. Pulsa <b>Generar guardias</b>." +
           '<br><br>Encima del calendario saldrán los avisos: una celda <span class="guia-descubierto">---</span> ' +
           "es un puesto <b>sin cubrir</b>, y también se avisa de los MIXTO sin planificar." +
-          "<br><br>Si algo no cuadra, corrige y vuelve a generar: no cuenta hasta que lo guardes en el histórico.",
+          "<br><br>Para cambiar una guardia, <b>pulsa la celda</b> y elige entre los médicos de la lista: el resumen se " +
+          "recalcula solo. No cuenta hasta que lo guardes en el histórico.",
       },
       {
         titulo: "Cierra el mes en el histórico",
@@ -124,7 +125,7 @@
           "Aquí ves cuándo se guardó por última vez. Pero ese guardado <b>solo existe en este navegador</b>: " +
           "si se borran los datos de navegación o cambias de ordenador, se pierde." +
           "<br><br>Al cerrar cada mes, pulsa <b>⬇ Exportar copia</b>: es tu respaldo y el fichero que pasarás a " +
-          "quien te sustituya. Si pasa más de un mes sin copia, aquí saldrá un aviso.",
+          "quien te sustituya. Si hay cambios sin exportar, aquí saldrá un aviso.",
         extra: { texto: "Configuración en detalle ›", ruta: "configuracion" },
       },
     ],

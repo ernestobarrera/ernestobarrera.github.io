@@ -1031,3 +1031,224 @@ td.alerta-descubierto {
     transition: none;
   }
 }
+
+/* --- v2.3: calendario editable, análisis y avisos de exportación ----------------------------- */
+
+#btnExportar.pendiente {
+  box-shadow: 0 0 0 3px #fde68a;
+  background-color: #b45309;
+}
+
+#btnGuardarHistorico.pendiente {
+  box-shadow: 0 0 0 3px #fecaca;
+}
+
+.botonera button small {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.barra-edicion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  padding: 6px 10px;
+  background: var(--color-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--border-radius);
+}
+
+.estado-edicion {
+  flex: 1 1 260px;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+#tablaCalendario td.editable {
+  cursor: pointer;
+}
+
+#tablaCalendario td.editable:hover,
+#tablaCalendario td.editable:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+#tablaCalendario td.editada {
+  background-color: #f3e8ff;
+}
+
+#tablaCalendario td.editada::before {
+  content: "✎ ";
+  color: #7c3aed;
+}
+
+#tablaCalendario td.incidencia {
+  background-color: #fee2e2;
+  box-shadow: inset 0 0 0 2px #ef4444;
+}
+
+#tablaCalendario td.incidencia::before {
+  content: "⚠ ";
+  color: #b91c1c;
+}
+
+#tablaCalendario td.pasa-tope {
+  box-shadow: inset 0 0 0 2px #f59e0b;
+}
+
+#tablaCalendario td.resaltado {
+  background-color: #fde68a;
+  font-weight: 700;
+}
+
+tr.fila-resaltada td {
+  background-color: #fef9c3;
+}
+
+.enlace-medico {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
+.enlace-medico:hover,
+.enlace-medico[aria-pressed="true"] {
+  background: none;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.veredicto {
+  padding: 10px 14px;
+  border-radius: var(--border-radius);
+  border-left: 5px solid;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.veredicto-ok {
+  background: #f0fdf4;
+  border-color: #22c55e;
+  color: #14532d;
+}
+
+.veredicto-aviso {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #78350f;
+}
+
+.veredicto-mal {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #7f1d1d;
+}
+
+#estadisticasDetalladas h4 {
+  margin: 14px 0 4px;
+  font-size: 0.9rem;
+  color: var(--color-dark);
+}
+
+.lista-analisis,
+.lista-sugerencias {
+  margin: 0 0 6px 20px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.lista-analisis li + li,
+.lista-sugerencias li + li {
+  margin-top: 4px;
+}
+
+.lista-analisis li.cubrible {
+  color: #92400e;
+}
+
+.lista-analisis.incidencias li {
+  color: #991b1b;
+}
+
+.lista-sugerencias li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-puesto h4 {
+  margin: 12px 0 2px;
+  font-size: 0.85rem;
+}
+
+.editor-actual {
+  margin-bottom: 4px;
+}
+
+.lista-opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.lista-opciones.extras {
+  margin-top: 12px;
+}
+
+button.opcion-medico {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background: #ffffff;
+  color: var(--color-dark);
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+}
+
+button.opcion-medico:hover {
+  background: #eff6ff;
+  border-color: var(--color-primary);
+}
+
+button.opcion-medico.equilibra {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+button.opcion-medico.forzado {
+  border-style: dashed;
+  color: #7f1d1d;
+}
+
+.om-nombre {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.om-detalle {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+details.forzados {
+  margin-top: 12px;
+}
+
+details.forzados summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

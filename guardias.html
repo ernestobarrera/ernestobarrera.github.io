@@ -7,7 +7,7 @@
   <title>Gestor de guardias de avisos y urgencias · Atención Primaria</title>
   <meta name="description"
     content="Reparte cada mes los avisos y urgencias de un equipo de Atención Primaria de forma equitativa y compensa los meses anteriores. Funciona en el navegador, sin enviar datos." />
-  <link rel="stylesheet" href="assets/css/guardias.css?v=20261110a" />
+  <link rel="stylesheet" href="assets/css/guardias.css?v=20261111a" />
 </head>
 
 <body>
@@ -41,8 +41,8 @@
           <span id="estadoGuardado"></span>
           <span id="estadoCopia"></span>
         </div>
-        <button type="button" data-accion="exportar"
-          title="Descarga un fichero con la configuración y el histórico: tu copia de seguridad y lo que pasarías a otra persona">⬇
+        <button type="button" id="btnExportar" data-accion="exportar"
+          title="Descarga un fichero con la configuración, los calendarios y el histórico: tu copia de seguridad y lo que pasarías a otra persona">⬇
           Exportar copia</button>
         <button type="button" class="secondary" data-accion="importar"
           title="Carga una copia completa o un fichero antiguo de configuración o de histórico">⬆ Importar</button>
@@ -492,7 +492,7 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
           <label for="anio">Año</label>
           <input type="number" id="anio" min="2020" max="2100" />
         </div>
-        <button type="button" data-accion="generar" title="Generar guardias (Alt+G)">Generar guardias</button>
+        <button type="button" id="btnGenerar" data-accion="generar" title="Generar guardias (Alt+G)">Generar guardias</button>
       </div>
       <p id="pistaCalendario" class="pista"></p>
 
@@ -500,10 +500,21 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
         <h3 id="tituloResultado">Calendario de guardias</h3>
         <ul id="avisosResultado" class="avisos"></ul>
         <div class="botonera">
-          <button type="button" class="info" data-accion="copiar-calendario">📋 Copiar a Excel (solo calendario)</button>
-          <button type="button" class="info" data-accion="copiar-todo">📊 Copiar a Excel (calendario y resumen)</button>
+          <button type="button" class="info" data-accion="copiar-calendario"
+            title="Se pega con formato en Excel, Teams y Outlook">📋 Copiar calendario<small>Excel · Teams · correo</small></button>
+          <button type="button" class="info" data-accion="copiar-todo"
+            title="Calendario, resumen y análisis. Se pega con formato en Excel, Teams y Outlook">📊 Copiar calendario, resumen y análisis<small>Excel · Teams · correo</small></button>
           <button type="button" class="success" id="btnGuardarHistorico" data-accion="guardar-historico">💾 Guardar en
             histórico</button>
+        </div>
+        <div class="barra-edicion" role="group" aria-label="Edición del calendario">
+          <span id="estadoEdicion" class="estado-edicion"></span>
+          <button type="button" class="secondary pequeno" id="btnDeshacer" data-accion="deshacer"
+            title="Deshace el último cambio del calendario (Ctrl+Z)">↶ Deshacer</button>
+          <button type="button" class="pequeno" id="btnReajustar" data-accion="reajustar" hidden
+            title="Mantiene tus cambios a mano y recoloca el resto del mes para acercar a cada uno a su objetivo">⟳ Reajustar el resto</button>
+          <button type="button" class="danger pequeno" id="btnVolverGenerado" data-accion="volver-generado" hidden
+            title="Quita todos los cambios a mano y vuelve al calendario generado">Descartar cambios a mano</button>
         </div>
         <div class="table-container">
           <table id="tablaCalendario">
@@ -529,7 +540,8 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
                 <th>Médico</th>
                 <th>Turno</th>
                 <th>Jornada</th>
-                <th title="Guardias que le corresponden este mes">Objetivo</th>
+                <th title="Días laborables del mes en que puede hacer guardia: en su franja, sin ausencias ni días excluidos">Días</th>
+                <th title="Guardias que le corresponden este mes: proporcionales a sus días disponibles y a su jornada, más la compensación del histórico">Objetivo</th>
                 <th>Asignadas</th>
                 <th title="Asignadas menos objetivo">Dif.</th>
                 <th>AVI</th>
@@ -654,35 +666,53 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
         tramos; para deshacer parte de uno, elige esas fechas y pulsa <b>Quitar los cambios de esas fechas</b>. Los ya
         pasados se ocultan solos y se pueden borrar.</p>
 
-      <h3 id="m-generar">4. Generar el mes</h3>
+      <h3 id="m-generar">4. Generar, revisar y editar el mes</h3>
       <ol>
         <li>En <b>Calendario</b>, elige mes y año. Por defecto aparece el mes siguiente al actual.</li>
-        <li>Pulsa <b>Generar guardias</b>.</li>
+        <li>Pulsa <b>Generar guardias</b>. El calendario se guarda con el resto de datos: si cierras la página o
+          cambias de mes, al volver sigue ahí.</li>
         <li>Revisa los avisos que aparecen encima del calendario:
           <ul>
-            <li>Una celda <span class="valor-mal negrita">---</span> es un puesto <b>sin cubrir</b>: ese día no
-              quedaba nadie disponible en esa franja. Revisa ausencias y turnos.</li>
-            <li>Los médicos MIXTO sin planificación.</li>
-            <li>Los cambios de turno de ese mes: en el calendario, <b>⇄</b> marca a quien hace guardia un día en que
-              pasa consulta en la franja que no es la suya habitual.</li>
-            <li>Si ese mes ya está guardado en el histórico, o si has cambiado la configuración después de generar.</li>
+            <li>Una celda <span class="valor-mal negrita">---</span> es un puesto <b>sin cubrir</b>. En
+              «Estadísticas y análisis» se explica cada uno (por ejemplo, «solo hay un médico de tarde disponible»).</li>
+            <li>Una celda con <b>⚠</b> incumple la configuración: ausencia, día excluido, otra franja, dos puestos el
+              mismo día o más de dos guardias en la semana.</li>
+            <li>Los médicos MIXTO sin planificación y los cambios de turno del mes (<b>⇄</b>).</li>
+            <li>Si has cambiado la configuración después de generar: las guardias no se mueven solas, pero los números
+              ya están recalculados.</li>
           </ul>
         </li>
-        <li>Si algo no cuadra, corrige y vuelve a generar: no cuenta hasta que lo guardes en el histórico.</li>
-        <li>Copia el resultado a Excel con los botones de copiar.</li>
+        <li><b>Para cambiar una guardia, pulsa la celda.</b> Solo se puede elegir entre los médicos de la lista. Arriba
+          salen los disponibles en esa franja, ordenados de quien más le falta para su objetivo a quien más le sobra, y
+          con la marca «equilibra» si el cambio acerca el reparto. También puedes intercambiar con otro puesto del
+          mismo día, dejar el puesto sin cubrir o, para un acuerdo real, poner a alguien que crea una incidencia
+          (queda marcado con ⚠).</li>
+        <li>Cada cambio recalcula al momento el resumen, las estadísticas y los avisos, y queda marcado con <b>✎</b>.
+          <b>↶ Deshacer</b> (o <kbd>Ctrl</kbd>+<kbd>Z</kbd>) quita el último; <b>⟳ Reajustar el resto</b> mantiene tus
+          cambios y recoloca todo lo demás para acercar a cada uno a su objetivo; <b>Descartar cambios a mano</b>
+          vuelve al calendario generado.</li>
+        <li>Si quedan desequilibrios, «Retoques sugeridos» propone cambios de una sola guardia que acercan el reparto
+          sin crear incidencias. Se aplican con un botón.</li>
+        <li>Copia el resultado con los botones de copiar: se pega con formato en Excel, Teams y Outlook.</li>
       </ol>
-      <p>En el <b>resumen</b>, la columna <b>Dif.</b> es asignadas menos objetivo: verde hasta ±0,5, amarillo hasta
-        ±1,5 y rojo por encima. El análisis de equidad marca «revisar» si algún médico queda a más de 1,5 guardias de
-        su objetivo. En equipos pequeños es habitual: el tope de dos guardias por semana obliga a repartir a partes
-        iguales.</p>
+      <p><b>Cómo leer el resumen.</b> <b>Días</b> son los laborables del mes en que cada médico puede hacer guardia
+        (en su franja, sin ausencias ni días excluidos). El <b>objetivo</b> son las guardias que le tocan en proporción
+        a esos días y a su jornada, más la compensación del histórico. Por eso <b>es normal que unos hagan más
+        guardias que otros</b>: quien tiene vacaciones o jornada reducida tiene menos objetivo. Lo que dice si el
+        reparto es justo es la columna <b>Dif.</b> (asignadas menos objetivo): verde hasta ±0,5, amarillo hasta ±1,5
+        y rojo por encima. Pulsa el nombre de un médico para resaltar sus guardias en el calendario.</p>
 
       <h3 id="m-historico">5. Guardar en el histórico</h3>
-      <p>Cuando el calendario sea el definitivo, pulsa <span class="boton-muestra">💾 Guardar en histórico</span>
-        <b>una vez por mes</b>. Se guarda, para cada médico, la diferencia entre las guardias que hizo y las que le
+      <p>Cuando el calendario sea el definitivo, pulsa <span class="boton-muestra">💾 Guardar en histórico</span>. Se
+        guarda, para cada médico, la diferencia entre las guardias que hace (contando tus cambios a mano) y las que le
         tocaban. Ese dato es el que compensa los meses siguientes; si no se guarda, el próximo reparto no tendrá en
         cuenta este mes.</p>
-      <p>Si guardas un mes que ya estaba, se sustituye. Los meses guardados se ven y se pueden borrar en
-        <b>Parámetros Avanzados → Ver detalle por meses</b>.</p>
+      <p>Si cambias el calendario después de guardarlo, la página avisa de que el histórico ya no coincide y el botón
+        pasa a <b>Actualizar en el histórico</b>. Los meses guardados se ven y se pueden borrar en <b>Parámetros
+        Avanzados → Ver detalle por meses</b>.</p>
+      <p>Después de guardar o de editar, <b>exporta la copia</b>: arriba a la derecha aparece «⚠ Cambios sin exportar»
+        hasta que lo hagas, y la página avisa si intentas cerrarla con cambios del calendario o del histórico sin
+        exportar.</p>
 
       <h3 id="m-compensacion">6. La compensación histórica</h3>
       <p>El <b>saldo</b> de cada médico es la suma de sus diferencias en los meses guardados que caen dentro de la
@@ -693,18 +723,23 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
         nunca pasa del 30 % de su objetivo, y el total se reescala para que siga sumando los puestos del mes.</p>
 
       <h3 id="m-reglas">7. Cómo se reparte</h3>
-      <p>Día a día y puesto a puesto (avisos de mañana, urgencias de mañana, avisos de tarde, urgencias de tarde), se
-        elige entre los médicos activos que ese día pueden y tienen esa franja, sin repetir a nadie en el mismo día.
-        La franja de cada médico ese día sale, por este orden, de su cambio de turno para esa fecha, si lo tiene; si
-        no, de su turno o, si es MIXTO, de su plan semanal. Gana quien más puntos tiene:</p>
-      <ul>
-        <li>Primero, quien lleva menos guardias y más le faltan para su objetivo.</li>
-        <li>Se evita una <b>tercera guardia en la misma semana</b>: solo ocurre si no queda nadie más.</li>
-        <li>Se alternan avisos y urgencias, y se equilibra la proporción entre ambos.</li>
-        <li>Se reparten los lunes y los viernes.</li>
-        <li>Si hay empate, decide el orden de la lista de médicos o, si está activado, un desempate aleatorio con
-          semilla.</li>
-      </ul>
+      <p>Cada día tiene cuatro puestos: avisos y urgencias de mañana y de tarde. Solo pueden ir los médicos activos
+        que ese día están disponibles y tienen esa franja, y nadie ocupa dos puestos el mismo día. La franja de cada
+        médico ese día sale, por este orden, de su cambio de turno para esa fecha, si lo tiene; si no, de su turno o,
+        si es MIXTO, de su plan semanal.</p>
+      <p>Desde la v2.3 el reparto se calcula de una vez para todo el mes y es el <b>mejor posible</b> (no una
+        aproximación) en este orden de prioridades:</p>
+      <ol>
+        <li>Cubrir el máximo de puestos.</li>
+        <li>Pasar lo menos posible de <b>dos guardias por semana</b>, contando también las del mes anterior o
+          siguiente si su calendario está guardado.</li>
+        <li>Dejar a cada médico lo más cerca posible de su objetivo (se minimiza la suma de las diferencias al
+          cuadrado, que reparte el error entre todos en vez de cargarlo en uno).</li>
+        <li>Preferir una guardia por semana antes que dos.</li>
+      </ol>
+      <p>Sin cambiar cuántas guardias hace cada uno, después se reparten los lunes y los viernes, se evitan las
+        guardias en días seguidos y se equilibran avisos y urgencias, alternando el tipo. Con el desempate aleatorio
+        activado, la semilla solo elige entre repartos igual de buenos.</p>
 
       <h3 id="m-datos">8. Datos, copias y traspaso entre personas</h3>
       <ul>
@@ -722,8 +757,10 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
 
       <h3 id="m-limites">9. Límites conocidos</h3>
       <ul>
-        <li>La regla de la tercera guardia semanal solo ve el mes que se genera: en una semana partida entre dos meses
-          no cuenta las guardias del mes anterior.</li>
+        <li>En una semana partida entre dos meses, el tope de dos guardias solo cuenta las del otro mes si su
+          calendario está guardado en esta página (generado con la v2.3 o posterior).</li>
+        <li>Los calendarios se guardan en el navegador y en la copia exportada. Las copias de versiones anteriores
+          no traen calendarios: el histórico sí se conserva.</li>
         <li>Los festivos no se cargan solos: hay que añadirlos cada año.</li>
         <li>Si varias pestañas tienen la página abierta, el último cambio manda; las demás se actualizan al detectarlo.</li>
         <li>Si los cambios de turno llevan a mucha gente a la misma franja un día, la otra puede quedarse sin nadie: la
@@ -735,11 +772,26 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
 
       <h3 id="m-atajos">10. Atajos de teclado</h3>
       <p><kbd>Alt</kbd>+<kbd>M</kbd> Médicos · <kbd>Alt</kbd>+<kbd>C</kbd> Calendario · <kbd>Alt</kbd>+<kbd>G</kbd>
-        Generar (en Calendario) · <kbd>Alt</kbd>+<kbd>H</kbd> Manual · <kbd>Alt</kbd>+<kbd>S</kbd> Guardar ahora.
-        <kbd>Intro</kbd> en un formulario equivale a pulsar su botón.</p>
+        Generar (en Calendario) · <kbd>Alt</kbd>+<kbd>H</kbd> Manual · <kbd>Alt</kbd>+<kbd>S</kbd> Guardar ahora ·
+        <kbd>Ctrl</kbd>+<kbd>Z</kbd> Deshacer el último cambio del calendario. <kbd>Intro</kbd> en un formulario
+        equivale a pulsar su botón; en una celda del calendario, abre el cambio de guardia.</p>
 
       <h3 id="m-versiones">11. Versiones</h3>
       <div class="destacado">
+        <p><b>v2.3 (noviembre de 2026)</b></p>
+        <ul>
+          <li><b>Reparto óptimo.</b> Hasta la v2.2 el reparto se decidía día a día y podía dejar a alguien a más de dos
+            guardias de su objetivo aunque hubiera un reparto mejor. Ahora se calcula el mejor reparto posible del mes.
+            Los objetivos no cambian.</li>
+          <li><b>Calendario editable.</b> Se pulsa una guardia y se elige entre los médicos de la lista, con todo
+            recalculado en cascada, deshacer, «Reajustar el resto» y retoques sugeridos. El calendario de cada mes se
+            guarda y se exporta con la copia.</li>
+          <li>El tope de dos guardias por semana cuenta también las del mes vecino si su calendario está guardado.</li>
+          <li>Análisis del mes en lenguaje claro: qué es el objetivo, por qué unos hacen más que otros, el motivo de
+            cada puesto sin cubrir y si el reparto es el mejor posible. Nueva columna <b>Días</b> en el resumen.</li>
+          <li>Copia con formato también para Teams y Outlook, incluido el análisis.</li>
+          <li>Aviso de «cambios sin exportar» y al cerrar la página si se ha cambiado un calendario o el histórico.</li>
+        </ul>
         <p><b>v2.2 (noviembre de 2026)</b></p>
         <ul>
           <li>Cambios de turno en fechas concretas, para cualquier médico, con vista previa de su efecto y marca ⇄ en
@@ -768,7 +820,7 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
     </section>
 
     <footer class="footer">
-      <p>Gestor de guardias v2.2 · Los datos se quedan en este navegador · <a href="#" data-accion="ir-manual">Manual de
+      <p>Gestor de guardias v2.3 · Los datos se quedan en este navegador · <a href="#" data-accion="ir-manual">Manual de
           uso</a></p>
     </footer>
   </div>
@@ -781,9 +833,9 @@ SANZ GIL, EVA	Medicina de Familia	MIXTO	100"></textarea>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="assets/js/guardias-motor.js?v=20261110a"></script>
-  <script src="assets/js/guardias-app.js?v=20261110a"></script>
-  <script src="assets/js/guardias-guia.js?v=20261110a"></script>
+  <script src="assets/js/guardias-motor.js?v=20261111a"></script>
+  <script src="assets/js/guardias-app.js?v=20261111a"></script>
+  <script src="assets/js/guardias-guia.js?v=20261111a"></script>
 </body>
 
 </html>

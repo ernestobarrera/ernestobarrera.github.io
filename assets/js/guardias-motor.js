@@ -24,11 +24,21 @@
  *    que un cambio de turno mueve al médico de franja sin cambiar su objetivo.
  *  - Compensación: objetivo − saldo × factor, con un ajuste máximo del 30 % del
  *    objetivo base y renormalizado para que el total no cambie.
- *  - Puntuación de cada candidato: menos guardias y más déficit primero;
- *    −1000 si ya tiene 2 en la semana ISO; −50 si repite tipo y +20 si alterna;
- *    −10 si se desequilibra avisos/urgencias (fuera de 45–55 %); −3 por cada
- *    lunes o viernes previo si el día es lunes o viernes. Empates: orden de la
- *    lista de médicos, o desempate aleatorio con semilla si está activado.
+ *  - Reparto (v2.3, ver «Asignación»): óptimo exacto, en este orden de
+ *    prioridad: cubrir el máximo de puestos; romper lo menos posible el tope de
+ *    2 guardias por semana ISO (también entre meses, si se conoce el anterior);
+ *    mínima suma de (asignadas − objetivo)²; una por semana antes que dos.
+ *    Después, sin cambiar cuántas hace cada uno: reparto de lunes y viernes,
+ *    evitar días seguidos y equilibrar avisos/urgencias alternando el tipo.
+ *    Con aleatoriedad, la semilla solo elige entre soluciones igual de buenas.
+ *  - Todos los números (resumen, totales, incidencias) salen de
+ *    evaluarCalendario, que sirve igual para un calendario generado que para uno
+ *    editado a mano.
+ *
+ * HASTA LA v2.2 el reparto era voraz, día a día con una puntuación por
+ * candidato; podía dejar a alguien a más de 2 guardias de su objetivo cuando
+ * había reparto mejor (scripts/baselines/guardias-motor-v22.cjs lo conserva
+ * para comprobar que el óptimo nunca es peor).
  *
  * CAMBIOS DELIBERADOS RESPECTO AL MOTOR ANTERIOR (v2.1):
  *  - Factor de compensación 0 % ahora significa sin compensación (antes se
@@ -39,8 +49,10 @@
  *  - El histórico ya no se borra al salir de la ventana: solo deja de contar.
  *  - Las fechas se calculan en UTC, sin depender de la zona horaria del equipo.
  *
- * AÑADIDO EN LA v2.2: cambios de turno en fechas concretas. Sin ninguno, el
- * reparto es idéntico al de la v2.1 (lo vigila la misma línea base).
+ * AÑADIDO EN LA v2.2: cambios de turno en fechas concretas.
+ * AÑADIDO EN LA v2.3: reparto óptimo, calendarios guardados y editables
+ * (evaluarCalendario, puestos fijados y sugerirReajustes) y tope semanal entre
+ * meses (semanasPrevias). Los objetivos no cambian respecto a la v2.2.
  */
 ((raiz, fabrica) => {
   const motor = fabrica();
@@ -145,8 +157,35 @@
         semilla: Number.isFinite(semilla) ? semilla : null,
         rotacionInicial: algoritmo.rotacionInicial || 0,
       },
+      calendarios: normalizarCalendarios(entrada.calendarios),
       ultimaCopia: typeof entrada.ultimaCopia === "string" ? entrada.ultimaCopia : null,
+      ultimoCambio: typeof entrada.ultimoCambio === "string" ? entrada.ultimoCambio : null,
     };
+  };
+
+  /**
+   * Calendarios guardados por mes («AAAA-MM»): el que se ve y edita (`dias`), el
+   * último generado (`generados`) y los puestos cambiados a mano (`manuales`,
+   * «fecha|puesto»). Lo que no tenga esa forma se descarta.
+   */
+  const normalizarCalendarios = (valor) => {
+    const salida = {};
+    Object.entries(objeto(valor)).forEach(([clave, cal]) => {
+      if (!/^\d{4}-\d{2}$/.test(clave) || !cal || !Array.isArray(cal.dias)) return;
+      const limpiar = (dias) =>
+        lista(dias)
+          .filter((d) => d && desdeISO(d.fecha) && d.fecha.startsWith(`${clave}-`))
+          .map((d) => Object.fromEntries([["fecha", d.fecha], ...PUESTOS.map((p) => [p.clave, typeof d[p.clave] === "string" && d[p.clave] ? d[p.clave] : SIN_ASIGNAR])]));
+      salida[clave] = {
+        dias: limpiar(cal.dias),
+        generados: limpiar(Array.isArray(cal.generados) ? cal.generados : cal.dias),
+        manuales: lista(cal.manuales).filter((m) => typeof m === "string"),
+        generadoEl: typeof cal.generadoEl === "string" ? cal.generadoEl : null,
+        editadoEl: typeof cal.editadoEl === "string" ? cal.editadoEl : null,
+        firma: typeof cal.firma === "string" ? cal.firma : null,
+      };
+    });
+    return salida;
   };
 
   /** Qué trae un fichero importado: configuración, histórico o ambos. */
@@ -361,6 +400,8 @@
     const totalPuestos = laborables.length * PUESTOS.length;
 
     const disponibilidad = {};
+    const diasDisponibles = {};
+    const jornadas = {};
     let totalDisponibilidad = 0;
     activos.forEach((medico) => {
       let huecos = 0;
@@ -370,6 +411,8 @@
       });
       const reduccion = ctx.reducciones.get(medico.nombre);
       const jornada = reduccion ? reduccion.porcentaje / 100 : 1;
+      diasDisponibles[medico.nombre] = huecos / 2;
+      jornadas[medico.nombre] = Math.round(jornada * 100);
       disponibilidad[medico.nombre] = huecos * jornada;
       totalDisponibilidad += disponibilidad[medico.nombre];
     });
@@ -398,10 +441,42 @@
         ajustados[nombre] = parseFloat((ajustados[nombre] * escala).toFixed(2));
       });
     }
-    return { objetivos: ajustados, totalPuestos };
+    return { objetivos: ajustados, totalPuestos, diasDisponibles, jornadas, base };
   };
 
-  // --- Asignación --------------------------------------------------------------------
+  // --- Asignación (v2.3: reparto óptimo) ---------------------------------------------
+  //
+  // El reparto se hace en tres pasos. Solo el primero decide CUÁNTAS guardias
+  // hace cada médico; los otros dos solo reordenan sin cambiar esa cuenta.
+  //  1. Quién cubre cada franja de cada día: flujo de coste mínimo, que da la
+  //     solución exacta (no una aproximación) a este orden de prioridades:
+  //       a) cubrir el máximo de puestos;
+  //       b) romper el tope semanal las menos veces posibles;
+  //       c) acercar a cada médico a su objetivo: mínima suma de
+  //          (asignadas − objetivo)², que reparte el error en vez de cargarlo
+  //          en uno;
+  //       d) preferir una guardia por semana antes que dos.
+  //  2. Mejora por intercambios entre dos médicos de la misma franja en días
+  //     distintos, que no cambian las cuentas: reparte lunes y viernes y evita
+  //     guardias en días seguidos.
+  //  3. Dentro de cada franja, quién hace avisos y quién urgencias: equilibra
+  //     avisos/urgencias de cada médico y alterna el tipo.
+
+  const TOPE_SEMANAL = 2;
+  // Escalas de coste: cada prioridad pesa más que todas las siguientes juntas.
+  const PESO_COBERTURA = 1e13;
+  const PESO_TOPE = 1e10;
+  const PESO_EQUIDAD = 1e4;
+  const PESO_SEGUNDA_SEMANAL = 100;
+  const PESO_DIAS_SEGUIDOS = 60;
+  const PESO_LUNES_VIERNES = 30;
+
+  /** Semana ISO con su año («2026-W53»): el tope semanal cruza meses y años. */
+  const claveSemana = (fecha) => {
+    const d = new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    return `${d.getUTCFullYear()}-W${String(semanaISO(fecha)).padStart(2, "0")}`;
+  };
 
   // Generador pseudoaleatorio con semilla (Mulberry32).
   const mulberry32 = (semilla) => {
@@ -414,145 +489,488 @@
     };
   };
 
-  const elegir = (candidatos, cuentas, tipo, fecha, algoritmo) => {
-    if (candidatos.length === 0) return SIN_ASIGNAR;
-    const semana = semanaISO(fecha);
-    const diaSemana = fecha.getUTCDay();
-
-    const puntuados = candidatos.map((candidato) => {
-      const asignadas = cuentas.asignaciones[candidato] || 0;
-      let puntuacion = 100 - asignadas;
-      puntuacion += ((cuentas.objetivos[candidato] || 0) - asignadas) * 10;
-
-      if ((cuentas.porSemana[candidato]?.[semana] || 0) >= 2) puntuacion -= 1000;
-
-      const ultimoTipo = cuentas.ultimoTipo[candidato];
-      if (ultimoTipo === tipo && asignadas > 0) puntuacion -= 50;
-      else if (ultimoTipo && ultimoTipo !== tipo) puntuacion += 20;
-
-      if (asignadas > 0) {
-        const porcentajeAvisos = (cuentas.avisos[candidato] || 0) / asignadas;
-        if (tipo === "AVISOS" && porcentajeAvisos > 0.55) puntuacion -= 10;
-        else if (tipo === "URGENCIAS" && porcentajeAvisos < 0.45) puntuacion -= 10;
+  /** Red de flujo con costes. Caminos más baratos sucesivos (SPFA, admite costes negativos). */
+  const crearRed = () => {
+    const aristas = [];
+    const salientes = [];
+    const nodo = () => salientes.push([]) - 1;
+    const arista = (u, v, cap, coste) => {
+      salientes[u].push(aristas.length);
+      aristas.push({ v, cap, coste });
+      salientes[v].push(aristas.length);
+      aristas.push({ v: u, cap: 0, coste: -coste });
+      return aristas.length - 2;
+    };
+    const flujoCosteMinimo = (s, t) => {
+      const n = salientes.length;
+      for (;;) {
+        const dist = new Array(n).fill(Infinity);
+        const previa = new Array(n).fill(-1);
+        const enCola = new Array(n).fill(false);
+        const cola = [s];
+        dist[s] = 0;
+        enCola[s] = true;
+        for (let i = 0; i < cola.length; i++) {
+          const u = cola[i];
+          enCola[u] = false;
+          for (const e of salientes[u]) {
+            const a = aristas[e];
+            if (a.cap > 0 && dist[u] + a.coste < dist[a.v]) {
+              dist[a.v] = dist[u] + a.coste;
+              previa[a.v] = e;
+              if (!enCola[a.v]) {
+                enCola[a.v] = true;
+                cola.push(a.v);
+              }
+            }
+          }
+        }
+        // Solo se sigue mientras el camino abarata (todo puesto cubierto lo hace).
+        if (dist[t] === Infinity || dist[t] >= 0) return;
+        let cuello = Infinity;
+        for (let v = t; v !== s; v = aristas[previa[v] ^ 1].v) cuello = Math.min(cuello, aristas[previa[v]].cap);
+        for (let v = t; v !== s; v = aristas[previa[v] ^ 1].v) {
+          aristas[previa[v]].cap -= cuello;
+          aristas[previa[v] ^ 1].cap += cuello;
+        }
       }
+    };
+    return { nodo, arista, aristas, flujoCosteMinimo };
+  };
 
-      if (diaSemana === 1) puntuacion -= (cuentas.lunes[candidato] || 0) * 3;
-      else if (diaSemana === 5) puntuacion -= (cuentas.viernes[candidato] || 0) * 3;
+  // Coste de la j-ésima guardia de un médico en una misma semana.
+  // Lineal por encima del tope: cuenta cuántas veces se rompe, no reparte los excesos a costa de la equidad.
+  const costeSemanal = (j) => (j <= 1 ? 0 : j <= TOPE_SEMANAL ? PESO_SEGUNDA_SEMANAL : PESO_TOPE);
+  const costeSemanalAcumulado = (n) => {
+    let total = 0;
+    for (let j = 1; j <= n; j++) total += costeSemanal(j);
+    return total;
+  };
 
-      return { candidato, puntuacion };
+  /** Días laborables del mes con lo que el reparto necesita de cada uno. */
+  const laborablesDelMes = (ctx, anio, mes) => {
+    const dias = [];
+    for (let dia = 1; dia <= diasDelMes(anio, mes); dia++) {
+      const fecha = fechaUTC(anio, mes, dia);
+      if (esLaborable(ctx, fecha)) dias.push({ fecha, iso: aISO(fecha), semana: claveSemana(fecha), diaSemana: fecha.getUTCDay() });
+    }
+    return dias;
+  };
+
+  /** Puestos fijados a mano: «fecha|puesto» → médico (o --- si se quiere vacío). */
+  const indexarFijas = (fijas, laborables) => {
+    const fechas = new Set(laborables.map((l) => l.iso));
+    const indice = new Map();
+    lista(fijas).forEach((f) => {
+      if (f && typeof f.medico === "string" && f.medico && fechas.has(f.fecha) && PUESTOS.some((p) => p.clave === f.puesto)) {
+        indice.set(`${f.fecha}|${f.puesto}`, f.medico);
+      }
+    });
+    return indice;
+  };
+
+  /** Guardias de la semana que ya cuentan antes de repartir: las de meses vecinos. */
+  const indexarSemanasPrevias = (semanasPrevias) => {
+    const usado = {};
+    Object.entries(objeto(semanasPrevias)).forEach(([medico, semanas]) => {
+      Object.entries(objeto(semanas)).forEach(([semana, n]) => {
+        const cuenta = Number(n) || 0;
+        if (cuenta > 0) {
+          usado[medico] = usado[medico] || {};
+          usado[medico][semana] = (usado[medico][semana] || 0) + cuenta;
+        }
+      });
+    });
+    return usado;
+  };
+
+  const repartir = (cfg, ctx, anio, mes, objetivos, opciones) => {
+    const activos = cfg.medicos.filter((m) => m.activo);
+    const laborables = laborablesDelMes(ctx, anio, mes);
+    const porIso = new Map(laborables.map((l) => [l.iso, l]));
+    const fijas = indexarFijas(opciones.fijas, laborables);
+    const usadoSemana = indexarSemanasPrevias(opciones.semanasPrevias);
+    const usadoTotal = {};
+    const diasOcupados = new Set();
+    const contarSemana = (nombre, semana, delta) => {
+      usadoSemana[nombre] = usadoSemana[nombre] || {};
+      usadoSemana[nombre][semana] = (usadoSemana[nombre][semana] || 0) + delta;
+    };
+    fijas.forEach((medico, llave) => {
+      if (medico === SIN_ASIGNAR) return;
+      const iso = llave.slice(0, 10);
+      usadoTotal[medico] = (usadoTotal[medico] || 0) + 1;
+      contarSemana(medico, porIso.get(iso).semana, 1);
+      diasOcupados.add(`${medico}|${iso}`);
     });
 
-    puntuados.sort((a, b) => b.puntuacion - a.puntuacion);
-
-    if (algoritmo.usarAleatoriedad) {
-      const mejor = puntuados[0].puntuacion;
-      const empatados = puntuados.filter((c) => Math.abs(c.puntuacion - mejor) < 0.01);
-      if (empatados.length > 1) {
-        const rng = mulberry32((algoritmo.semilla ?? Date.now()) + fecha.getTime());
-        for (let i = empatados.length - 1; i > 0; i--) {
-          const j = Math.floor(rng() * (i + 1));
-          [empatados[i], empatados[j]] = [empatados[j], empatados[i]];
-        }
-        return empatados[0].candidato;
+    // Paso 1: flujo de coste mínimo.
+    const red = crearRed();
+    const S = red.nodo();
+    const T = red.nodo();
+    const nodoFranja = new Map();
+    laborables.forEach((l) =>
+      FRANJAS.forEach((franja) => {
+        const libres = PUESTOS.filter((p) => p.franja === franja && !fijas.has(`${l.iso}|${p.clave}`)).length;
+        if (libres === 0) return;
+        const n = red.nodo();
+        nodoFranja.set(`${l.iso}|${franja}`, n);
+        red.arista(n, T, libres, 0);
+      })
+    );
+    const algoritmo = cfg.configuracionAlgoritmo;
+    const rng = algoritmo.usarAleatoriedad ? mulberry32(((algoritmo.semilla ?? Date.now()) + anio * 12 + mes) >>> 0) : null;
+    const elegibles = new Map(); // nombre → Map(iso → franja)
+    const opcionesDia = [];
+    activos.forEach((medico) => {
+      const nombre = medico.nombre;
+      const huecos = [];
+      laborables.forEach((l) => {
+        if (diasOcupados.has(`${nombre}|${l.iso}`) || !puedeTrabajar(ctx, nombre, l.fecha)) return;
+        const franja = franjaDelDia(ctx, medico, l.fecha);
+        if (nodoFranja.has(`${l.iso}|${franja}`)) huecos.push({ ...l, franja });
+      });
+      elegibles.set(nombre, new Map(huecos.map((h) => [h.iso, h.franja])));
+      if (huecos.length === 0) return;
+      const nm = red.nodo();
+      // Objetivo en centésimas: (k − obj)² − (k − 1 − obj)² = 2k − 1 − 2·obj, en enteros.
+      const objetivoC = Math.round((objetivos[nombre] || 0) * 100);
+      const previas = usadoTotal[nombre] || 0;
+      for (let k = previas + 1; k <= previas + huecos.length; k++) {
+        red.arista(S, nm, 1, -PESO_COBERTURA + (200 * k - 100 - 2 * objetivoC) * PESO_EQUIDAD);
       }
+      const nodosSemana = new Map();
+      huecos.forEach((h) => {
+        let ns = nodosSemana.get(h.semana);
+        if (ns === undefined) {
+          ns = red.nodo();
+          nodosSemana.set(h.semana, ns);
+          const usado = usadoSemana[nombre]?.[h.semana] || 0;
+          const cuantos = huecos.filter((x) => x.semana === h.semana).length;
+          for (let j = usado + 1; j <= usado + cuantos; j++) red.arista(nm, ns, 1, costeSemanal(j));
+        }
+        const desempate = rng ? Math.floor(rng() * 10) : 0;
+        opcionesDia.push({ arista: red.arista(ns, nodoFranja.get(`${h.iso}|${h.franja}`), 1, desempate), nombre, iso: h.iso, franja: h.franja });
+      });
+    });
+    red.flujoCosteMinimo(S, T);
+
+    // Quién va a cada franja de cada día (sin los fijados), en orden de la lista.
+    const libres = new Map();
+    opcionesDia.forEach((o) => {
+      if (red.aristas[o.arista].cap !== 0) return;
+      const llave = `${o.iso}|${o.franja}`;
+      if (!libres.has(llave)) libres.set(llave, []);
+      libres.get(llave).push(o.nombre);
+      diasOcupados.add(`${o.nombre}|${o.iso}`);
+      usadoTotal[o.nombre] = (usadoTotal[o.nombre] || 0) + 1;
+      contarSemana(o.nombre, porIso.get(o.iso).semana, 1);
+    });
+
+    // Paso 2: intercambios que no cambian cuántas hace cada uno. Trabaja con
+    // índices de día: ocupado[nombre][i] = 1 si ese día ya tiene guardia.
+    const indice = new Map(laborables.map((l, i) => [l.iso, i]));
+    const siguiente = laborables.map((l) => indice.get(aISO(new Date(l.fecha.getTime() + 86400000))) ?? -1);
+    const ocupado = new Map();
+    const ocupacion = (nombre) => {
+      if (!ocupado.has(nombre)) ocupado.set(nombre, Uint8Array.from(laborables, (l) => (diasOcupados.has(`${nombre}|${l.iso}`) ? 1 : 0)));
+      return ocupado.get(nombre);
+    };
+    const costeSecundario = (nombre) => {
+      const dias = ocupacion(nombre);
+      let lunes = 0;
+      let viernes = 0;
+      let seguidos = 0;
+      for (let i = 0; i < dias.length; i++) {
+        if (!dias[i]) continue;
+        if (laborables[i].diaSemana === 1) lunes++;
+        else if (laborables[i].diaSemana === 5) viernes++;
+        if (siguiente[i] >= 0 && dias[siguiente[i]]) seguidos++;
+      }
+      let semanal = 0;
+      Object.values(usadoSemana[nombre] || {}).forEach((n) => (semanal += costeSemanalAcumulado(n)));
+      return semanal + seguidos * PESO_DIAS_SEGUIDOS + (lunes * lunes + viernes * viernes) * PESO_LUNES_VIERNES;
+    };
+    const mover = (nombre, desde, hasta) => {
+      const dias = ocupacion(nombre);
+      dias[desde] = 0;
+      dias[hasta] = 1;
+      contarSemana(nombre, laborables[desde].semana, -1);
+      contarSemana(nombre, laborables[hasta].semana, 1);
+    };
+    const puedeIr = (nombre, i, franja) => elegibles.get(nombre)?.get(laborables[i].iso) === franja && !ocupacion(nombre)[i];
+    const grupos = [...libres.entries()].map(([llave, nombres]) => {
+      const [iso, franja] = llave.split("|");
+      return { dia: indice.get(iso), franja, nombres };
+    });
+    grupos.sort((x, y) => x.dia - y.dia || x.franja.localeCompare(y.franja));
+    for (let pasada = 0; pasada < 30; pasada++) {
+      let mejora = false;
+      for (let i = 0; i < grupos.length; i++) {
+        for (let j = i + 1; j < grupos.length; j++) {
+          const A = grupos[i];
+          const B = grupos[j];
+          if (A.franja !== B.franja || A.dia === B.dia) continue;
+          for (let a = 0; a < A.nombres.length; a++) {
+            for (let b = 0; b < B.nombres.length; b++) {
+              const x = A.nombres[a];
+              const y = B.nombres[b];
+              if (x === y || !puedeIr(x, B.dia, A.franja) || !puedeIr(y, A.dia, A.franja)) continue;
+              const antes = costeSecundario(x) + costeSecundario(y);
+              mover(x, A.dia, B.dia);
+              mover(y, B.dia, A.dia);
+              if (costeSecundario(x) + costeSecundario(y) < antes) {
+                A.nombres[a] = y;
+                B.nombres[b] = x;
+                mejora = true;
+              } else {
+                mover(x, B.dia, A.dia);
+                mover(y, A.dia, B.dia);
+              }
+            }
+          }
+        }
+      }
+      if (!mejora) break;
     }
-    return puntuados[0].candidato;
+
+    // Paso 3: avisos o urgencias dentro de cada franja, en orden cronológico.
+    const orden = new Map(cfg.medicos.map((m, i) => [m.nombre, i]));
+    const avisos = {};
+    const urgencias = {};
+    const ultimoTipo = {};
+    const anotar = (nombre, tipo) => {
+      if (nombre === SIN_ASIGNAR) return;
+      if (tipo === "AVISOS") avisos[nombre] = (avisos[nombre] || 0) + 1;
+      else urgencias[nombre] = (urgencias[nombre] || 0) + 1;
+      ultimoTipo[nombre] = tipo;
+    };
+    const resultado = new Map();
+    laborables.forEach((l) => {
+      const registro = {};
+      FRANJAS.forEach((franja) => {
+        const puestos = PUESTOS.filter((p) => p.franja === franja);
+        puestos.forEach((p) => {
+          const fijo = fijas.get(`${l.iso}|${p.clave}`);
+          if (fijo !== undefined) registro[p.clave] = fijo;
+        });
+        const pendientes = [...(libres.get(`${l.iso}|${franja}`) || [])];
+        puestos.forEach((p) => {
+          if (registro[p.clave] !== undefined) return;
+          if (pendientes.length === 0) {
+            registro[p.clave] = SIN_ASIGNAR;
+            return;
+          }
+          // Primero quien más necesita este tipo para quedar a la par; luego quien hizo el otro la última vez.
+          const necesidad = (n) => (p.tipo === "AVISOS" ? (urgencias[n] || 0) - (avisos[n] || 0) : (avisos[n] || 0) - (urgencias[n] || 0));
+          const alterna = (n) => (ultimoTipo[n] && ultimoTipo[n] !== p.tipo ? 1 : 0);
+          pendientes.sort((a, b) => necesidad(b) - necesidad(a) || alterna(b) - alterna(a) || orden.get(a) - orden.get(b));
+          registro[p.clave] = pendientes.shift();
+        });
+        puestos.forEach((p) => anotar(registro[p.clave], p.tipo));
+      });
+      resultado.set(l.iso, registro);
+    });
+    return resultado;
   };
 
   /**
-   * Genera el calendario de un mes. `cfg` es el estado normalizado. No modifica
-   * `cfg`. Devuelve también los avisos que la interfaz debe enseñar.
+   * Por qué un médico no puede ocupar un puesto de esa franja ese día, o null si
+   * puede. Lo usan el recálculo y el editor, para que nunca discrepen.
    */
-  const generarCalendario = (cfg, anio, mes) => {
+  const motivoPuesto = (ctx, medico, fecha, franja) => {
+    if (!medico) return "desconocido";
+    if (!medico.activo) return "inactivo";
+    if (estaAusente(ctx, medico.nombre, fecha)) return "ausencia";
+    if (tieneDiaExcluido(ctx, medico.nombre, fecha)) return "dia-excluido";
+    if (tieneExclusionPuntual(ctx, medico.nombre, fecha)) return "exclusion-puntual";
+    if (franjaDelDia(ctx, medico, fecha) !== franja) return "otra-franja";
+    return null;
+  };
+
+  /** motivoPuesto para la interfaz: nombre, fecha ISO y franja. */
+  const comprobarPuesto = (cfg, nombre, iso, franja) => {
+    const fecha = desdeISO(iso);
+    if (!fecha) return "fecha-invalida";
+    const ctx = crearContexto(cfg);
+    if (!esLaborable(ctx, fecha)) return "no-laborable";
+    return motivoPuesto(ctx, cfg.medicos.find((m) => m.nombre === nombre), fecha, franja);
+  };
+
+  /** Prepara lo común a generar y a evaluar: contexto, saldos y objetivos del mes. */
+  const prepararMes = (cfg, anio, mes) => {
     const ctx = crearContexto(cfg);
     const saldos = saldosParaMes(cfg.historico, anio, mes);
     const factor = cfg.historico.factorCompensacion ?? FACTOR_POR_DEFECTO;
-    const { objetivos, totalPuestos } = calcularObjetivos(cfg, ctx, anio, mes, saldos, factor);
-    const algoritmo = cfg.configuracionAlgoritmo;
+    return { ctx, saldos, factor, ...calcularObjetivos(cfg, ctx, anio, mes, saldos, factor) };
+  };
 
-    const activos = cfg.medicos.filter((m) => m.activo);
-    const cuentas = {
-      objetivos,
-      asignaciones: {},
-      avisos: {},
-      urgencias: {},
-      lunes: {},
-      viernes: {},
-      porSemana: {},
-      ultimoTipo: {},
-    };
-    activos.forEach((m) => {
-      ["asignaciones", "avisos", "urgencias", "lunes", "viernes"].forEach((k) => {
-        cuentas[k][m.nombre] = 0;
-      });
-      cuentas.porSemana[m.nombre] = {};
-    });
-
+  /**
+   * Recalcula TODO a partir de un calendario (generado o editado a mano): el
+   * resumen, los totales y las incidencias contra la configuración actual. Es la
+   * única fuente de los números que se enseñan y de lo que se guarda en el
+   * histórico, para que un calendario editado se cuente igual que uno generado.
+   * `diasEntrada`: [{ fecha, avisos_manana, urgencias_manana, avisos_tarde, urgencias_tarde }].
+   */
+  const evaluarCalendario = (cfg, anio, mes, diasEntrada, opciones = {}) => {
+    const { ctx, saldos, factor, objetivos, totalPuestos, diasDisponibles, jornadas } = prepararMes(cfg, anio, mes);
+    const porFecha = new Map(lista(diasEntrada).filter((d) => d && typeof d.fecha === "string").map((d) => [d.fecha, d]));
+    const medicos = new Map(cfg.medicos.map((m) => [m.nombre, m]));
+    const cuentas = { asignaciones: {}, avisos: {}, urgencias: {}, lunes: {}, viernes: {} };
+    Object.keys(objetivos).forEach((n) => Object.values(cuentas).forEach((c) => (c[n] = 0)));
+    const semanas = indexarSemanasPrevias(opciones.semanasPrevias);
+    const fechasSemana = {};
+    const incidencias = [];
     const dias = [];
     let cubiertos = 0;
+
     for (let dia = 1; dia <= diasDelMes(anio, mes); dia++) {
       const fecha = fechaUTC(anio, mes, dia);
+      const iso = aISO(fecha);
       const diaSemana = fecha.getUTCDay();
       if (!esLaborable(ctx, fecha)) {
-        dias.push({
-          dia,
-          fecha: aISO(fecha),
-          esLaborable: false,
-          tipo: diaSemana === 0 || diaSemana === 6 ? "Fin de semana" : "Festivo",
-        });
+        dias.push({ dia, fecha: iso, esLaborable: false, tipo: diaSemana === 0 || diaSemana === 6 ? "Fin de semana" : "Festivo" });
         continue;
       }
-
-      const registro = { dia, fecha: aISO(fecha), esLaborable: true };
-      const disponibles = {
-        MAÑANA: cfg.medicos
-          .filter((m) => m.activo && puedeTrabajar(ctx, m.nombre, fecha) && cubreFranja(ctx, m, fecha, "MAÑANA"))
-          .map((m) => m.nombre),
-        TARDE: cfg.medicos
-          .filter((m) => m.activo && puedeTrabajar(ctx, m.nombre, fecha) && cubreFranja(ctx, m, fecha, "TARDE"))
-          .map((m) => m.nombre),
-      };
-      const hoy = [];
-
-      PUESTOS.forEach((puesto) => {
-        const candidatos = disponibles[puesto.franja].filter((c) => !hoy.includes(c));
-        const medico = elegir(candidatos, cuentas, puesto.tipo, fecha, algoritmo);
-        registro[puesto.clave] = medico;
-        if (medico === SIN_ASIGNAR) return;
-
+      const entrada = objeto(porFecha.get(iso));
+      const registro = { dia, fecha: iso, esLaborable: true };
+      const hoy = new Set();
+      PUESTOS.forEach((p) => {
+        const valor = typeof entrada[p.clave] === "string" && entrada[p.clave].trim() ? entrada[p.clave] : SIN_ASIGNAR;
+        registro[p.clave] = valor;
+        if (valor === SIN_ASIGNAR) return;
         cubiertos++;
-        hoy.push(medico);
-        if (puesto.tipo === "AVISOS") cuentas.avisos[medico] = (cuentas.avisos[medico] || 0) + 1;
-        else cuentas.urgencias[medico] = (cuentas.urgencias[medico] || 0) + 1;
-        cuentas.ultimoTipo[medico] = puesto.tipo;
-        cuentas.asignaciones[medico] = (cuentas.asignaciones[medico] || 0) + 1;
-        if (diaSemana === 1) cuentas.lunes[medico] = (cuentas.lunes[medico] || 0) + 1;
-        if (diaSemana === 5) cuentas.viernes[medico] = (cuentas.viernes[medico] || 0) + 1;
-        const semana = semanaISO(fecha);
-        if (!cuentas.porSemana[medico]) cuentas.porSemana[medico] = {};
-        cuentas.porSemana[medico][semana] = (cuentas.porSemana[medico][semana] || 0) + 1;
+        const incidencia = (tipo) => incidencias.push({ fecha: iso, puesto: p.clave, medico: valor, tipo });
+        const motivo = motivoPuesto(ctx, medicos.get(valor), fecha, p.franja);
+        if (motivo) incidencia(motivo);
+        if (hoy.has(valor)) incidencia("doble");
+        hoy.add(valor);
+        if (!(valor in cuentas.asignaciones)) return;
+        cuentas.asignaciones[valor]++;
+        if (p.tipo === "AVISOS") cuentas.avisos[valor]++;
+        else cuentas.urgencias[valor]++;
+        if (diaSemana === 1) cuentas.lunes[valor]++;
+        if (diaSemana === 5) cuentas.viernes[valor]++;
+        const semana = claveSemana(fecha);
+        semanas[valor] = semanas[valor] || {};
+        semanas[valor][semana] = (semanas[valor][semana] || 0) + 1;
+        fechasSemana[`${valor}|${semana}`] = [...(fechasSemana[`${valor}|${semana}`] || []), iso];
       });
       dias.push(registro);
     }
+    Object.entries(semanas).forEach(([medico, porSemana]) =>
+      Object.entries(porSemana).forEach(([semana, n]) => {
+        const fechas = fechasSemana[`${medico}|${semana}`];
+        if (n > TOPE_SEMANAL && fechas) incidencias.push({ fecha: fechas[fechas.length - 1], medico, tipo: "tope-semanal", semana, guardias: n, fechas });
+      })
+    );
+    incidencias.sort((a, b) => a.fecha.localeCompare(b.fecha) || String(a.medico).localeCompare(String(b.medico)));
 
     return {
       anio,
       mes,
       clave: claveMes(anio, mes),
       dias,
-      resumen: {
-        asignaciones: cuentas.asignaciones,
-        avisos: cuentas.avisos,
-        urgencias: cuentas.urgencias,
-        lunes: cuentas.lunes,
-        viernes: cuentas.viernes,
-        objetivos,
-      },
+      resumen: { ...cuentas, objetivos, diasDisponibles, jornadas },
       totales: { puestos: totalPuestos, cubiertos, descubiertos: totalPuestos - cubiertos },
+      incidencias,
       mixtosSinPlan: Array.from(ctx.mixtosSinPlan),
       cambiosTurno: analizarCambiosTurno(cfg, cambiosEfectivosDelMes(ctx, claveMes(anio, mes))),
       compensacion: { saldos, factor, meses: mesesQueCuentan(cfg.historico, anio, mes) },
     };
+  };
+
+  /**
+   * Genera el calendario de un mes. `cfg` es el estado normalizado y no se modifica.
+   * Opciones: `fijas` [{ fecha, puesto, medico }] son puestos decididos a mano que se
+   * respetan («reajustar el resto»); `semanasPrevias` { médico: { "2026-W49": n } }
+   * son guardias de meses vecinos que cuentan para el tope semanal.
+   */
+  const generarCalendario = (cfg, anio, mes, opciones = {}) => {
+    const { ctx, objetivos } = prepararMes(cfg, anio, mes);
+    const reparto = repartir(cfg, ctx, anio, mes, objetivos, objeto(opciones));
+    const dias = Array.from(reparto, ([fecha, registro]) => ({ fecha, ...registro }));
+    return evaluarCalendario(cfg, anio, mes, dias, opciones);
+  };
+
+  /** Médicos activos que pueden ir ese día a esa franja (para explicar un puesto vacío). */
+  const disponiblesEnFranja = (cfg, iso, franja) => {
+    const ctx = crearContexto(cfg);
+    const fecha = desdeISO(iso);
+    if (!fecha || !esLaborable(ctx, fecha)) return [];
+    return cfg.medicos.filter((m) => m.activo && puedeTrabajar(ctx, m.nombre, fecha) && franjaDelDia(ctx, m, fecha) === franja).map((m) => m.nombre);
+  };
+
+  /** Guardias de cada médico por semana ISO en un calendario (para el tope entre meses). */
+  const guardiasPorSemana = (dias) => {
+    const semanas = {};
+    lista(dias).forEach((d) => {
+      const fecha = desdeISO(d && d.fecha);
+      if (!fecha) return;
+      PUESTOS.forEach((p) => {
+        const medico = d[p.clave];
+        if (typeof medico !== "string" || !medico || medico === SIN_ASIGNAR) return;
+        const semana = claveSemana(fecha);
+        semanas[medico] = semanas[medico] || {};
+        semanas[medico][semana] = (semanas[medico][semana] || 0) + 1;
+      });
+    });
+    return semanas;
+  };
+
+  /**
+   * Cambios de un puesto a otro médico que acercan el reparto a los objetivos sin
+   * crear incidencias: cubren un puesto vacío o pasan una guardia de quien va por
+   * encima a quien va por debajo (solo si la diferencia entre ambos pasa de 1,
+   * porque si no el cambio no mejora a nadie). Para orientar retoques a mano.
+   */
+  const sugerirReajustes = (cfg, evaluacion, opciones = {}) => {
+    const ctx = crearContexto(cfg);
+    const r = evaluacion.resumen;
+    const desvio = (n) => (r.asignaciones[n] || 0) - (r.objetivos[n] || 0);
+    const semanas = indexarSemanasPrevias(opciones.semanasPrevias);
+    Object.entries(guardiasPorSemana(evaluacion.dias)).forEach(([m, s]) =>
+      Object.entries(s).forEach(([k, n]) => {
+        semanas[m] = semanas[m] || {};
+        semanas[m][k] = (semanas[m][k] || 0) + n;
+      })
+    );
+    const conIncidencia = new Set(evaluacion.incidencias.filter((i) => i.puesto).map((i) => `${i.fecha}|${i.puesto}`));
+    const activos = cfg.medicos.filter((m) => m.activo && m.nombre in r.objetivos);
+    const propuestas = [];
+    evaluacion.dias
+      .filter((d) => d.esLaborable)
+      .forEach((d) => {
+        const fecha = desdeISO(d.fecha);
+        const semana = claveSemana(fecha);
+        const hoy = new Set(PUESTOS.map((p) => d[p.clave]));
+        PUESTOS.forEach((p) => {
+          const actual = d[p.clave];
+          const vacio = actual === SIN_ASIGNAR;
+          if (!vacio && !(actual in r.objetivos)) return;
+          if (!vacio && conIncidencia.has(`${d.fecha}|${p.clave}`)) return;
+          activos.forEach((m) => {
+            if (m.nombre === actual || hoy.has(m.nombre)) return;
+            if (!puedeTrabajar(ctx, m.nombre, fecha) || franjaDelDia(ctx, m, fecha) !== p.franja) return;
+            if ((semanas[m.nombre]?.[semana] || 0) >= TOPE_SEMANAL) return;
+            const dY = desvio(m.nombre);
+            const cambio = vacio ? (dY + 1) ** 2 - dY ** 2 : 2 + 2 * dY - 2 * desvio(actual);
+            if (!vacio && cambio > -0.01) return;
+            propuestas.push({ fecha: d.fecha, puesto: p.clave, de: actual, a: m.nombre, cubre: vacio, mejora: -cambio });
+          });
+        });
+      });
+    // Primero cubrir huecos; luego la que más mejora. Una por pareja (de → a), la primera fecha.
+    propuestas.sort((x, y) => Number(y.cubre) - Number(x.cubre) || y.mejora - x.mejora || x.fecha.localeCompare(y.fecha));
+    const vistas = new Set();
+    return propuestas
+      .filter((p) => {
+        const llave = p.cubre ? `${p.fecha}|${p.puesto}` : `${p.de}>${p.a}`;
+        if (vistas.has(llave)) return false;
+        vistas.add(llave);
+        return true;
+      })
+      .slice(0, opciones.maximo || 8);
   };
 
   /** Lo que se guarda en el histórico de un mes: diferencia entre asignadas y objetivo. */
@@ -574,16 +992,24 @@
     let peor = { medico: null, desviacion: 0 };
     let maximo = -Infinity;
     let minimo = Infinity;
+    let sumaCuadrados = 0;
+    let fuera = 0;
     Object.keys(resultado.resumen.objetivos).forEach((medico) => {
       const asignadas = resultado.resumen.asignaciones[medico] || 0;
       const desviacion = asignadas - resultado.resumen.objetivos[medico];
       if (Math.abs(desviacion) > Math.abs(peor.desviacion)) peor = { medico, desviacion };
+      if (Math.abs(desviacion) > UMBRAL_DESVIACION) fuera++;
+      sumaCuadrados += desviacion * desviacion;
       maximo = Math.max(maximo, asignadas);
       minimo = Math.min(minimo, asignadas);
     });
     return {
       correcta: Math.abs(peor.desviacion) <= UMBRAL_DESVIACION,
       peor,
+      fuera,
+      sumaCuadrados: Math.round(sumaCuadrados * 100) / 100,
+      maximo: Number.isFinite(maximo) ? maximo : 0,
+      minimo: Number.isFinite(minimo) ? minimo : 0,
       rango: Number.isFinite(maximo) ? maximo - minimo : 0,
     };
   };
@@ -683,12 +1109,20 @@
     claveMes,
     desplazarMes,
     semanaISO,
+    claveSemana,
+    TOPE_SEMANAL,
     normalizarEstado,
     detectarFichero,
     mesesQueCuentan,
     saldosParaMes,
     saldoVigente,
     generarCalendario,
+    evaluarCalendario,
+    guardiasPorSemana,
+    sugerirReajustes,
+    disponiblesEnFranja,
+    comprobarPuesto,
+    normalizarCalendarios,
     analizarCambiosTurno,
     agruparCambiosTurno,
     diferenciasDelMes,

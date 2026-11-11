@@ -61,16 +61,43 @@ const cfgBase = (extra = {}) =>
 const filas = (r) => r.dias.filter((d) => d.esLaborable);
 const nombresDelDia = (d) => M.PUESTOS.map((p) => d[p.clave]);
 
-console.log("\nLínea base (motor anterior)");
+// Calidad de un reparto en el orden de prioridades del motor: cobertura, veces
+// que se rompe el tope semanal y suma de (asignadas − objetivo)².
+const calidad = (dias, objetivos, asignaciones) => {
+  let cubiertos = 0;
+  const semanas = {};
+  dias.forEach((d) => {
+    if (!d.esLaborable) return;
+    nombresDelDia(d).forEach((n) => {
+      if (n === M.SIN_ASIGNAR) return;
+      cubiertos++;
+      const k = `${n}|${M.claveSemana(M.desdeISO(d.fecha))}`;
+      semanas[k] = (semanas[k] || 0) + 1;
+    });
+  });
+  const exceso = Object.values(semanas).reduce((s, n) => s + Math.max(0, n - M.TOPE_SEMANAL), 0);
+  const cuadrados = Object.keys(objetivos).reduce((s, n) => s + ((asignaciones[n] || 0) - objetivos[n]) ** 2, 0);
+  return { cubiertos, exceso, cuadrados };
+};
+// El nuevo no puede ser peor que el viejo en ese orden (lexicográfico).
+const noPeor = (nuevo, viejo) =>
+  nuevo.cubiertos > viejo.cubiertos ||
+  (nuevo.cubiertos === viejo.cubiertos && (nuevo.exceso < viejo.exceso || (nuevo.exceso === viejo.exceso && nuevo.cuadrados <= viejo.cuadrados + 1e-9)));
+
+console.log("\nLínea base (motor anterior a la v2.1)");
 const base = JSON.parse(readFileSync(join(raiz, "scripts/baselines/guardias-motor-golden.json"), "utf8"));
 prueba(`la línea base tiene casos (${base.casos.length})`, () => cierto(base.casos.length >= 10, "menos de 10 casos"));
 base.casos.forEach((c) => {
-  prueba(`caso ${c.caso} (${c.mes}/${c.anio}) reparte igual que el motor anterior`, () => {
+  prueba(`caso ${c.caso} (${c.mes}/${c.anio}): mismos objetivos y reparto no peor que el anterior`, () => {
     const r = M.generarCalendario(M.normalizarEstado(c.cfg), c.anio, c.mes);
-    const dias = r.dias.map((d) => (d.esLaborable ? nombresDelDia(d) : d.tipo));
-    igual(dias, c.esperado.dias, "calendario");
     igual(r.resumen.objetivos, c.esperado.objetivos, "objetivos");
-    igual(r.resumen.asignaciones, c.esperado.asignaciones, "asignaciones");
+    const fechas = r.dias.map((d) => d.fecha);
+    const diasViejo = c.esperado.dias.map((d, i) =>
+      Array.isArray(d) ? Object.fromEntries([["fecha", fechas[i]], ["esLaborable", true], ...M.PUESTOS.map((p, j) => [p.clave, d[j]])]) : { fecha: fechas[i], esLaborable: false }
+    );
+    const viejo = calidad(diasViejo, c.esperado.objetivos, c.esperado.asignaciones);
+    const nuevo = calidad(r.dias, r.resumen.objetivos, r.resumen.asignaciones);
+    cierto(noPeor(nuevo, viejo), `peor que el anterior: ${JSON.stringify(nuevo)} frente a ${JSON.stringify(viejo)}`);
   });
 });
 
@@ -468,6 +495,220 @@ prueba("equidad: se mide contra el objetivo, no en guardias brutas", () => {
   const eq = M.evaluarEquidad(r);
   cierto(eq.rango > 2, "el rango bruto supera 2 por la jornada reducida");
   cierto(eq.correcta, `marca desequilibrio (peor: ${JSON.stringify(eq.peor)})`);
+});
+
+console.log("\nReparto óptimo, recálculo y edición (v2.3)");
+const V22 = require(join(raiz, "scripts/baselines/guardias-motor-v22.cjs"));
+const aleatorio = (semilla) => {
+  let s = semilla;
+  return () => {
+    let t = (s += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+// Configuraciones aleatorias reproducibles, con todo lo que admite la v2.2.
+const casoAleatorio = (semilla) => {
+  const r = aleatorio(semilla);
+  const ent = (a, b) => a + Math.floor(r() * (b - a + 1));
+  const elige = (xs) => xs[Math.floor(r() * xs.length)];
+  const anio = ent(2025, 2027);
+  const mes = ent(1, 12);
+  const ult = M.diasDelMes(anio, mes);
+  const iso = (d) => M.aISO(M.fechaUTC(anio, mes, d));
+  const franja = () => elige(["MAÑANA", "TARDE"]);
+  const medicos = Array.from({ length: ent(4, 18) }, (_, i) => ({ nombre: `MED${i}`, turno: elige(["MAÑANA", "TARDE", "MIXTO", "MIXTO"]), activo: r() > 0.1 }));
+  const nombres = medicos.map((m) => m.nombre);
+  const dias = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES"];
+  const historico = { meses: {}, factorCompensacion: elige([0, 0.25, 0.5, 1]), ventanaHistorico: ent(1, 6) };
+  for (let k = 1; k <= historico.ventanaHistorico; k++) {
+    if (r() < 0.5) continue;
+    const m = M.desplazarMes(anio, mes, -k);
+    historico.meses[M.claveMes(m.anio, m.mes)] = Object.fromEntries(nombres.filter(() => r() < 0.8).map((n) => [n, { diferencia: Math.round((r() * 6 - 3) * 100) / 100 }]));
+  }
+  return {
+    anio,
+    mes,
+    cfg: M.normalizarEstado({
+      medicos,
+      reducciones: nombres.filter(() => r() < 0.3).map((n) => ({ medico: n, porcentaje: elige([50, 75, 87, 100]), diasExcluidos: r() < 0.4 ? elige(dias) : "" })),
+      festivos: Array.from({ length: ent(0, 3) }, () => iso(ent(1, ult))),
+      ausencias: Array.from({ length: ent(0, 6) }, () => {
+        const a = ent(1, ult);
+        return { medico: elige(nombres), inicio: iso(a), fin: iso(Math.min(ult, a + ent(0, 10))) };
+      }),
+      exclusionesPuntuales: Array.from({ length: ent(0, 5) }, () => ({ medico: elige(nombres), fecha: iso(ent(1, ult)) })),
+      planificacionesTurnos: medicos.filter((m) => m.turno === "MIXTO" && r() < 0.7).map((m) => ({ medico: m.nombre, L: franja(), M: franja(), X: franja(), J: franja(), V: franja() })),
+      cambiosTurno: Array.from({ length: ent(0, 6) }, () => ({ medico: elige(nombres), fecha: iso(ent(1, ult)), turno: franja() })),
+      historico,
+      configuracionAlgoritmo: { usarAleatoriedad: r() < 0.3, semilla: ent(1, 99999) },
+    }),
+  };
+};
+
+const N_ALEATORIOS = 400;
+prueba(`en ${N_ALEATORIOS} configuraciones aleatorias: mismos objetivos y nunca peor que el motor v2.2`, () => {
+  let mejores = 0;
+  for (let i = 1; i <= N_ALEATORIOS; i++) {
+    const { anio, mes, cfg } = casoAleatorio(i * 7919);
+    const viejo = V22.generarCalendario(cfg, anio, mes);
+    const nuevo = M.generarCalendario(cfg, anio, mes);
+    igual(nuevo.resumen.objetivos, viejo.resumen.objetivos, `objetivos del caso ${i}`);
+    const cv = calidad(viejo.dias, viejo.resumen.objetivos, viejo.resumen.asignaciones);
+    const cn = calidad(nuevo.dias, nuevo.resumen.objetivos, nuevo.resumen.asignaciones);
+    cierto(noPeor(cn, cv), `caso ${i} (${mes}/${anio}) peor: ${JSON.stringify(cn)} frente a ${JSON.stringify(cv)}`);
+    if (cn.cuadrados < cv.cuadrados - 1e-9 || cn.exceso < cv.exceso) mejores++;
+  }
+  cierto(mejores > N_ALEATORIOS / 2, `solo mejora en ${mejores} de ${N_ALEATORIOS}`);
+});
+prueba("un calendario generado no tiene más incidencias que el tope semanal inevitable", () => {
+  for (let i = 1; i <= 150; i++) {
+    const { anio, mes, cfg } = casoAleatorio(i * 104729);
+    const r = M.generarCalendario(cfg, anio, mes);
+    const otras = r.incidencias.filter((x) => x.tipo !== "tope-semanal");
+    igual(otras, [], `incidencias del caso ${i}`);
+  }
+});
+prueba("evaluar un calendario generado devuelve exactamente lo mismo", () => {
+  for (let i = 1; i <= 60; i++) {
+    const { anio, mes, cfg } = casoAleatorio(i * 31337);
+    const r = M.generarCalendario(cfg, anio, mes);
+    igual(M.evaluarCalendario(cfg, anio, mes, r.dias), r, `caso ${i}`);
+  }
+});
+
+// Diciembre de 2026 del caso real que motivó la v2.3, con nombres sustituidos por letras.
+const casoReal = M.normalizarEstado({
+  medicos: [
+    ["A", "MAÑANA"], ["B", "MIXTO"], ["C", "MAÑANA"], ["D", "MIXTO"], ["E", "MAÑANA"],
+    ["F", "MAÑANA"], ["G", "MIXTO"], ["H", "MIXTO"], ["I", "MIXTO"], ["J", "MIXTO"],
+  ].map(([nombre, turno]) => ({ nombre, turno, activo: true })),
+  reducciones: [{ medico: "J", porcentaje: 87, diasExcluidos: "" }],
+  festivos: ["2026-12-07", "2026-12-08", "2026-12-24", "2026-12-25", "2026-12-31"],
+  ausencias: [
+    ["A", "2026-12-09", "2026-12-11"], ["A", "2026-12-17", "2026-12-18"], ["C", "2026-12-01", "2026-12-02"], ["C", "2026-12-09", "2026-12-09"],
+    ["C", "2026-12-23", "2026-12-30"], ["E", "2026-12-01", "2026-12-11"], ["F", "2026-12-02", "2026-12-03"], ["F", "2026-12-23", "2026-12-30"],
+    ["G", "2026-12-04", "2026-12-09"], ["D", "2026-12-28", "2026-12-30"], ["I", "2026-12-28", "2026-12-30"], ["J", "2026-12-28", "2026-12-30"],
+  ].map(([medico, inicio, fin]) => ({ medico, inicio, fin })),
+  planificacionesTurnos: [
+    ["B", "MAÑANA", "MAÑANA", "TARDE", "TARDE", "MAÑANA"], ["G", "TARDE", "MAÑANA", "TARDE", "TARDE", "MAÑANA"],
+    ["H", "MAÑANA", "TARDE", "MAÑANA", "MAÑANA", "TARDE"], ["I", "TARDE", "TARDE", "MAÑANA", "MAÑANA", "TARDE"],
+    ["J", "MAÑANA", "MAÑANA", "TARDE", "MAÑANA", "TARDE"], ["D", "TARDE", "TARDE", "MAÑANA", "MAÑANA", "TARDE"],
+  ].map(([medico, L, Ma, X, J, V]) => ({ medico, L, M: Ma, X, J, V })),
+});
+const real = M.generarCalendario(casoReal, 2026, 12);
+const equipo12 = cfgBase({ medicos: "ABCDEFGHIJKL".split("").map((n, i) => ({ nombre: n, turno: i < 6 ? "MAÑANA" : "TARDE", activo: true })) });
+prueba("caso real: el motor v2.2 dejaba a C en 3 con objetivo 5,6 (desviación 2,6)", () => {
+  const v = V22.generarCalendario(casoReal, 2026, 12);
+  igual(v.resumen.asignaciones.C, 3, "C con el motor anterior");
+  cerca(M.evaluarEquidad(v).peor.desviacion, -2.58, 0.01, "peor desviación anterior");
+});
+prueba("caso real: con el óptimo todos quedan a menos de 0,6 de su objetivo y nadie hace 3 en una semana", () => {
+  const eq = M.evaluarEquidad(real);
+  cierto(Math.abs(eq.peor.desviacion) <= 0.61, `peor ${JSON.stringify(eq.peor)}`);
+  igual([eq.minimo, eq.maximo], [5, 9], "de 5 a 9 guardias");
+  igual(real.totales.descubiertos, 2, "las 2 tardes sin nadie disponible siguen sin cubrir");
+  igual(real.incidencias, [], "incidencias");
+});
+prueba("caso real: los puestos sin cubrir son tardes con un solo médico disponible", () => {
+  const vacios = real.dias.filter((d) => d.esLaborable && nombresDelDia(d).includes(M.SIN_ASIGNAR)).map((d) => d.fecha);
+  igual(vacios, ["2026-12-28", "2026-12-29"], "fechas");
+  vacios.forEach((f) => cierto(real.dias.find((d) => d.fecha === f).urgencias_tarde === M.SIN_ASIGNAR, "queda vacía la urgencia, no el aviso"));
+});
+
+prueba("una edición a mano se recalcula en cascada y se marca la incidencia", () => {
+  const dias = JSON.parse(JSON.stringify(real.dias));
+  const dia = dias.find((d) => d.fecha === "2026-12-14");
+  const quitado = dia.avisos_manana;
+  dia.avisos_manana = "E"; // E es de mañana y está disponible el 14
+  const ev = M.evaluarCalendario(casoReal, 2026, 12, dias);
+  igual(ev.resumen.asignaciones.E, real.resumen.asignaciones.E + 1, "E suma una");
+  igual(ev.resumen.asignaciones[quitado], real.resumen.asignaciones[quitado] - 1, "el sustituido resta una");
+  igual(ev.resumen.objetivos, real.resumen.objetivos, "los objetivos no dependen del calendario");
+  const fuera = JSON.parse(JSON.stringify(real.dias));
+  fuera.find((d) => d.fecha === "2026-12-14").avisos_tarde = "A"; // A es de mañana
+  fuera.find((d) => d.fecha === "2026-12-09").avisos_manana = "A"; // A está ausente el 9
+  fuera.find((d) => d.fecha === "2026-12-15").urgencias_tarde = "ZETA"; // no existe
+  const tipos = M.evaluarCalendario(casoReal, 2026, 12, fuera).incidencias.map((i) => `${i.fecha}:${i.medico}:${i.tipo}`);
+  cierto(tipos.includes("2026-12-14:A:otra-franja"), `otra franja: ${tipos}`);
+  cierto(tipos.includes("2026-12-09:A:ausencia"), `ausencia: ${tipos}`);
+  cierto(tipos.includes("2026-12-15:ZETA:desconocido"), `desconocido: ${tipos}`);
+});
+prueba("se detectan dos puestos el mismo día y la 3.ª guardia de la semana", () => {
+  const dias = JSON.parse(JSON.stringify(real.dias));
+  const d14 = dias.find((d) => d.fecha === "2026-12-14");
+  d14.urgencias_manana = d14.avisos_manana;
+  const tipos = M.evaluarCalendario(casoReal, 2026, 12, dias).incidencias.map((i) => i.tipo);
+  cierto(tipos.includes("doble"), `doble: ${tipos}`);
+  const r = M.generarCalendario(equipo12, 2026, 11);
+  igual(r.incidencias, [], "con 6 por franja el reparto respeta el tope");
+  const semana = JSON.parse(JSON.stringify(r.dias));
+  ["2026-11-02", "2026-11-03", "2026-11-04"].forEach((f) => {
+    const d = semana.find((x) => x.fecha === f);
+    M.PUESTOS.forEach((p) => d[p.clave] === "A" && (d[p.clave] = "B"));
+    d.avisos_manana = "A";
+  });
+  const tope = M.evaluarCalendario(equipo12, 2026, 11, semana).incidencias.filter((i) => i.tipo === "tope-semanal" && i.medico === "A");
+  igual(tope.map((x) => x.semana), ["2026-W45"], "solo la semana del 2/11");
+  cierto(tope[0].guardias >= 3 && ["2026-11-02", "2026-11-03", "2026-11-04"].every((f) => tope[0].fechas.includes(f)), JSON.stringify(tope));
+});
+prueba("reajustar el resto respeta las celdas fijadas y sigue siendo lo mejor posible con ellas", () => {
+  const fijas = [
+    { fecha: "2026-12-01", puesto: "avisos_manana", medico: "B" },
+    { fecha: "2026-12-02", puesto: "avisos_tarde", medico: "J" },
+    { fecha: "2026-12-03", puesto: "urgencias_tarde", medico: M.SIN_ASIGNAR },
+  ];
+  const r = M.generarCalendario(casoReal, 2026, 12, { fijas });
+  fijas.forEach((f) => igual(r.dias.find((d) => d.fecha === f.fecha)[f.puesto], f.medico, `fijada ${f.fecha}`));
+  const eq = M.evaluarEquidad(r);
+  cierto(Math.abs(eq.peor.desviacion) < 1.5, `sigue equilibrado: ${JSON.stringify(eq.peor)}`);
+  igual(r.totales.cubiertos, real.totales.cubiertos - 1, "solo falta el puesto que se dejó vacío a propósito");
+});
+prueba("fijar todo el calendario devuelve el mismo calendario", () => {
+  const fijas = real.dias.filter((d) => d.esLaborable).flatMap((d) => M.PUESTOS.map((p) => ({ fecha: d.fecha, puesto: p.clave, medico: d[p.clave] })));
+  igual(M.generarCalendario(casoReal, 2026, 12, { fijas }).dias, real.dias, "calendario");
+});
+prueba("el tope semanal cuenta las guardias del mes anterior en la semana compartida", () => {
+  // Del 30/11 (lunes) al 4/12 es la misma semana ISO: si A y B ya hicieron 2 el 30/11, no repiten esa semana.
+  const cfg = equipo12;
+  const previas = { A: { [M.claveSemana(M.desdeISO("2026-11-30"))]: 2 }, B: { [M.claveSemana(M.desdeISO("2026-11-30"))]: 2 } };
+  const r = M.generarCalendario(cfg, 2026, 12, { semanasPrevias: previas });
+  const primera = filas(r).filter((d) => d.fecha <= "2026-12-04").flatMap(nombresDelDia);
+  cierto(!primera.includes("A") && !primera.includes("B"), `A o B repiten en la semana del 30/11: ${primera}`);
+  cierto(!filas(M.generarCalendario(cfg, 2026, 12)).filter((d) => d.fecha <= "2026-12-04").every((d) => !nombresDelDia(d).includes("A")), "sin previas A sí entra");
+});
+prueba("las sugerencias pasan guardias de quien va por encima a quien va por debajo, sin crear incidencias", () => {
+  const dias = JSON.parse(JSON.stringify(real.dias));
+  // Se desequilibra a propósito: B hace las mañanas de C.
+  dias.filter((d) => d.esLaborable && ["2026-12-15", "2026-12-21"].includes(d.fecha)).forEach((d) => {
+    M.PUESTOS.forEach((p) => d[p.clave] === "C" && (d[p.clave] = "H"));
+  });
+  const ev = M.evaluarCalendario(casoReal, 2026, 12, dias);
+  const sugerencias = M.sugerirReajustes(casoReal, ev);
+  cierto(sugerencias.length > 0, "no sugiere nada");
+  const s = sugerencias.find((x) => !x.cubre);
+  cierto(s && ev.resumen.asignaciones[s.de] - ev.resumen.objetivos[s.de] > ev.resumen.asignaciones[s.a] - ev.resumen.objetivos[s.a] + 1, "va de más a menos");
+  dias.find((d) => d.fecha === s.fecha)[s.puesto] = s.a;
+  const tras = M.evaluarCalendario(casoReal, 2026, 12, dias);
+  cierto(M.evaluarEquidad(tras).sumaCuadrados < M.evaluarEquidad(ev).sumaCuadrados, "la sugerencia mejora");
+  igual(tras.incidencias.length, ev.incidencias.length, "no añade incidencias");
+});
+prueba("un hueco cubrible se sugiere cubrir el primero", () => {
+  const dias = JSON.parse(JSON.stringify(real.dias));
+  dias.find((d) => d.fecha === "2026-12-14").urgencias_tarde = M.SIN_ASIGNAR;
+  const s = M.sugerirReajustes(casoReal, M.evaluarCalendario(casoReal, 2026, 12, dias));
+  cierto(s[0] && s[0].cubre && s[0].fecha === "2026-12-14" && s[0].puesto === "urgencias_tarde", JSON.stringify(s[0]));
+});
+prueba("avisos y urgencias: cada médico queda a una de la paridad como mucho, salvo puestos únicos", () => {
+  const r = M.generarCalendario(cfgBase(), 2026, 11);
+  Object.keys(r.resumen.objetivos).forEach((n) => cierto(Math.abs(r.resumen.avisos[n] - r.resumen.urgencias[n]) <= 1, `${n}: ${r.resumen.avisos[n]}/${r.resumen.urgencias[n]}`));
+});
+prueba("rendimiento: 18 médicos en un mes largo tarda menos de 1 s", () => {
+  const cfg = M.normalizarEstado({ medicos: Array.from({ length: 18 }, (_, i) => ({ nombre: `M${i}`, turno: ["MAÑANA", "TARDE", "MIXTO"][i % 3], activo: true })) });
+  const t = Date.now();
+  M.generarCalendario(cfg, 2026, 3);
+  cierto(Date.now() - t < 1000, `${Date.now() - t} ms`);
 });
 
 console.log(`\n${pasan} pasan, ${fallos} fallan`);
