@@ -391,26 +391,35 @@ class CimaAPI {
      * La petición por nregistro va siempre sin analítica: la del CN, o la de texto si no hay
      * acierto, es la que cuenta, como antes.
      *
+     * Un fallo de la consulta por registro NO es «no es un registro» (hallazgo 12 de la revisión
+     * de Fable, 11/11/2026): antes `.catch(() => null)` lo convertía en eso, se buscaba el número
+     * como texto, CIMA daba 0 y la pantalla decía «sin resultados» de un medicamento que existe.
+     * Ahora el error sube, igual que el del CN. Un 204 de CIMA sí es «no hay».
+     *
      * @returns {Promise<Object|null>} `null` si la consulta no es un número, o si no tiene forma
      *   de CN y no es ningún registro: entonces decide quien llama (normalmente, buscar texto).
+     * @throws si la consulta por registro falla y no hay un CN encontrado que la haga innecesaria
      */
     async searchByNumber(query, filters = {}, options = {}) {
         const q = String(query || '').trim();
         if (!/^\d+$/.test(q)) return null;
         const noTrack = { ...options, headers: { ...options.headers, 'X-MC-Autocomplete': '1' } };
         const porRegistro = this.searchMedicamentos({ nregistro: q, ...filters }, noTrack)
-            .catch(() => null);
+            .then(r => ({ r }), error => (error?.code === 'NO_CONTENT' ? { r: null } : { error }));
 
         if (!/^\d{6,7}$/.test(q)) {
-            const r = await porRegistro;
+            const { r, error } = await porRegistro;
+            if (error) throw error;
             return r?.resultados?.length ? r : null;
         }
 
-        // Si el CN falla, el error sube como antes; el nregistro es un añadido y su fallo no.
-        const [porCN, reg] = await Promise.all([
+        // Si el CN falla, el error sube como antes. El nregistro es un añadido: su fallo solo se
+        // calla si el CN encontró algo; si no, decir «sin resultados» escondería un registro.
+        const [porCN, { r: reg, error: errorRegistro }] = await Promise.all([
             this.searchMedicamentos({ cn: q, ...filters }, options),
             porRegistro,
         ]);
+        if (errorRegistro && !porCN?.resultados?.length) throw errorRegistro;
         const vistos = new Set();
         const resultados = [...(porCN?.resultados || []), ...(reg?.resultados || [])]
             .filter(m => !vistos.has(m.nregistro) && vistos.add(m.nregistro));
@@ -496,42 +505,35 @@ class CimaAPI {
     // NOTAS DE SEGURIDAD Y MATERIALES INFORMATIVOS
     // ============================================
 
-    /**
-     * Obtener notas de seguridad de un medicamento
-     * Las notas contienen alertas oficiales de la AEMPS sobre seguridad del fármaco
-     * @param {string} nregistro - Número de registro del medicamento
-     * @returns {Promise<Array>} Array de notas con fecha, tipo, url, etc.
-     */
-    async getNotas(nregistro) {
-        try {
-            const response = await this._request(`/notas/${nregistro}`);
-            // Normalizar respuesta - puede venir vacía, null, o con datos
-            if (!response) return [];
-            return Array.isArray(response) ? response : [response];
-        } catch (error) {
-            console.warn(`No hay notas de seguridad para ${nregistro}`);
-            return [];
-        }
-    }
+    // `getNotas` vive más abajo (NOTAS DE SEGURIDAD Y ALERTAS). Aquí había otra definición, anterior, que
+    // tragaba el error y devolvía [] («sin notas»): JavaScript se queda con la última de la clase,
+    // así que era código muerto, pero habría vuelto a mandar si alguien borraba la buena. Se quitó
+    // el 11/11/2026 (hallazgo 15 de la revisión de Fable).
 
     /**
      * Obtener materiales informativos de seguridad
      * Incluye guías para profesionales/pacientes, tarjetas de alerta, vídeos, etc.
+     *
+     * Un fallo SUBE como error (hallazgo 9 de la revisión de Fable, 11/11/2026): antes devolvía
+     * listas vacías y la pantalla lo pintaba como «no tiene materiales», con check verde en
+     * favoritos. Solo un 204 o un cuerpo vacío de CIMA es «no hay».
      * @param {string} nregistro - Número de registro del medicamento
-     * @returns {Promise<Array>} Array de materiales con tipo, url, descripción
+     * @returns {Promise<{profesional: Array, paciente: Array}>}
+     * @throws si CIMA no responde o responde con error
      */
     async getMateriales(nregistro) {
+        let response;
         try {
-            const response = await this._request(`/materiales/${nregistro}`);
-            if (!response) return { profesional: [], paciente: [] };
-            return {
-                profesional: response.listaDocsProfesional || [],
-                paciente: response.listaDocsPaciente || []
-            };
+            response = await this._request(`/materiales/${nregistro}`);
         } catch (error) {
-            console.warn(`No hay materiales informativos para ${nregistro}`, error);
-            return { profesional: [], paciente: [] };
+            if (error?.code === 'NO_CONTENT') return { profesional: [], paciente: [] };
+            throw error;
         }
+        if (!response) return { profesional: [], paciente: [] };
+        return {
+            profesional: response.listaDocsProfesional || [],
+            paciente: response.listaDocsPaciente || []
+        };
     }
 
     /**
@@ -544,28 +546,29 @@ class CimaAPI {
         // que ocultó media verdad en searchByATC: hoy /materiales devuelve 281 de 300, así que
         // el día que el catálogo pase de 300 se truncaría en silencio, sin error. Se pagina
         // contra totalFilas y se avisa si aun así falta algo.
+        //
+        // Un fallo SUBE como error (hallazgo 9 de la revisión de Fable, 11/11/2026): antes se
+        // devolvía [] y la vista Materiales se quedaba en «0 medicamentos» hasta recargar. Un
+        // catálogo sin `resultados` tampoco es «vacío»: hoy tiene ~280 entradas.
         const PAGE_SIZE = 300;
         const MAX_PAGES = 10;
-        try {
-            const first = await this._request(`/materiales?pagina=1&pageSize=${PAGE_SIZE}`);
-            if (!first || !first.resultados) return [];
-            const all = [...first.resultados];
-            const totalFilas = first.totalFilas || all.length;
-            const actualPageSize = all.length || PAGE_SIZE;
-            const totalPages = Math.min(Math.ceil(totalFilas / actualPageSize), MAX_PAGES);
-            for (let pagina = 2; pagina <= totalPages; pagina += 1) {
-                const page = await this._request(`/materiales?pagina=${pagina}&pageSize=${PAGE_SIZE}`);
-                if (!page || !page.resultados || !page.resultados.length) break;
-                all.push(...page.resultados);
-            }
-            if (all.length < totalFilas) {
-                console.warn(`Catálogo de materiales incompleto: ${all.length} de ${totalFilas}`);
-            }
-            return all;
-        } catch (error) {
-            console.warn('Error cargando catálogo de materiales', error);
-            return [];
+        const first = await this._request(`/materiales?pagina=1&pageSize=${PAGE_SIZE}`);
+        if (!first || !Array.isArray(first.resultados)) {
+            throw new Error('CIMA devolvió el catálogo de materiales sin resultados');
         }
+        const all = [...first.resultados];
+        const totalFilas = first.totalFilas || all.length;
+        const actualPageSize = all.length || PAGE_SIZE;
+        const totalPages = Math.min(Math.ceil(totalFilas / actualPageSize), MAX_PAGES);
+        for (let pagina = 2; pagina <= totalPages; pagina += 1) {
+            const page = await this._request(`/materiales?pagina=${pagina}&pageSize=${PAGE_SIZE}`);
+            if (!page || !page.resultados || !page.resultados.length) break;
+            all.push(...page.resultados);
+        }
+        if (all.length < totalFilas) {
+            console.warn(`Catálogo de materiales incompleto: ${all.length} de ${totalFilas}`);
+        }
+        return all;
     }
 
     // ============================================

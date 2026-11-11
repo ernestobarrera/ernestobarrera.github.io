@@ -45,7 +45,7 @@ const fetchFalso = async (url) => respuesta(await red(String(url)));
 // ── DOM mínimo ───────────────────────────────────────────────────────────────────────────────
 const nodos = new Map();
 const nodo = (id) => {
-    if (!nodos.has(id)) nodos.set(id, { id, innerHTML: '', disabled: false, value: '' });
+    if (!nodos.has(id)) nodos.set(id, { id, innerHTML: '', disabled: false, value: '', dataset: {}, classList: { add() { }, remove() { } } });
     return nodos.get(id);
 };
 const sandbox = {
@@ -238,6 +238,134 @@ console.log('\n— El nombre de la ficha se escapa —');
     const html = app._avisoFichasNoLeidas([{ nregistro: '1', nombre: '<img src=x onerror=alert(1)>', motivo: 'fallo' }], '4.5', 2, false, 'x()');
     ok('sin HTML inyectado en el aviso', !html.includes('<img') && html.includes('&lt;img'));
     ok('sin fichas no leídas, el aviso está vacío', app._avisoFichasNoLeidas([], '4.5', 2, false, 'x()') === '');
+}
+
+// ── 3. El resto de la familia (hallazgos 4, 9, 12 y 15 de Fable) ─────────────────────────────
+// La red se enruta por ruta: `rutas[ruta]` es la respuesta; lo que no está, red cortada.
+const porRuta = (rutas) => (url) => {
+    const u = new URL(url);
+    const clave = u.pathname + (u.search ? u.search.replace(/&.*$/, '') : '');
+    const f = rutas[clave] ?? rutas[u.pathname];
+    if (f === undefined || f === 'CORTE') throw new TypeError('Failed to fetch');
+    if (f === '503') return { status: 503, body: { error: 'no disponible' } };
+    if (f === '204') return { status: 204, body: '' };
+    if (f && f.status) return f;
+    return { status: 200, body: f };
+};
+
+console.log('\n— PGx (hallazgo 4) —');
+{
+    red = porRuta({});
+    ok('detalle con red cortada: null (fallo), no «found:false»', (await nuevaApi().getPgxByNregistro('51001')) === null);
+    red = porRuta({ '/pharmacogenomics/by-register/51001': { status: 404, body: { nregistro: '51001', found: false } } });
+    const no = await nuevaApi().getPgxByNregistro('51001');
+    ok('404 del Worker: found:false (ausencia de verdad)', no?.found === false, JSON.stringify(no));
+
+    const app = nuevaApp([]);
+    red = porRuta({});
+    nodos.delete('pgx-content');
+    await app.loadPharmacogenomics('51001');
+    const pgx = nodo('pgx-content');
+    ok('pestaña con red cortada: NO dice «Sin biomarcadores»', !pgx.innerHTML.includes('Sin biomarcadores'), pgx.innerHTML.slice(0, 200));
+    ok('pestaña con red cortada: dice que no se pudo consultar y ofrece Reintentar', pgx.innerHTML.includes('No se pudo consultar la información farmacogenómica') && pgx.innerHTML.includes("app.loadPharmacogenomics('51001')"));
+    ok('pestaña con red cortada: no queda marcada como cargada (volver a ella reintenta)', pgx.dataset.loaded !== 'true');
+
+    red = porRuta({ '/pharmacogenomics/by-register/51001': { status: 404, body: { nregistro: '51001', found: false } } });
+    await app.loadPharmacogenomics('51001');
+    ok('ausencia REAL (404 found:false): sigue diciendo «Sin biomarcadores»', pgx.innerHTML.includes('Sin biomarcadores') && pgx.dataset.loaded === 'true');
+
+    // Índice ligero: falla al arrancar y se recupera en la siguiente ficha.
+    const app2 = nuevaApp([]);
+    app2._pgxSet = null;
+    red = porRuta({});
+    ok('índice con red cortada: no carga y lo dice (false)', (await app2._asegurarIndicePgx()) === false && app2._pgxSet === null);
+    red = porRuta({ '/pharmacogenomics/index-light': { nregistros: ['51001'], _meta: {} } });
+    ok('índice: el fallo no se memoiza, el siguiente intento carga', (await app2._asegurarIndicePgx()) === true && app2._pgxSet?.has('51001'));
+}
+
+console.log('\n— Materiales (hallazgo 9) —');
+{
+    red = porRuta({});
+    let lanzado = false;
+    try { await nuevaApi().getMateriales('51001'); } catch { lanzado = true; }
+    ok('materiales de una ficha con red cortada: el error sube (no «no tiene»)', lanzado);
+    red = porRuta({ '/materiales/51001': '204' });
+    const vacio = await nuevaApi().getMateriales('51001');
+    ok('204 de CIMA: listas vacías (ausencia de verdad)', vacio.profesional.length === 0 && vacio.paciente.length === 0);
+    red = porRuta({ '/materiales': '503' });
+    lanzado = false;
+    try { await nuevaApi().getMaterialesCatalogo(); } catch { lanzado = true; }
+    ok('catálogo con 503: el error sube (no [])', lanzado);
+
+    // Vista Materiales: avisa y no se queda con un catálogo vacío en memoria.
+    const app = nuevaApp([]);
+    app.content = nodo('content-materiales');
+    red = porRuta({});
+    await app.renderMaterials();
+    ok('vista con red cortada: dice que no se pudo consultar y ofrece Reintentar', app.content.innerHTML.includes('No se pudo consultar el catálogo de materiales') && app.content.innerHTML.includes('app.renderMaterials()'));
+    ok('vista con red cortada: no guarda catálogo (el reintento vuelve a pedirlo)', app._materialesCatalogo === undefined || app._materialesCatalogo === null);
+
+    // Ficha, pestaña Documentación.
+    nodos.delete('docs-materiales');
+    red = porRuta({});
+    await app.loadMateriales('51001');
+    const docs = nodo('docs-materiales');
+    ok('ficha con red cortada: el bloque dice que no se pudieron consultar, no desaparece', docs.innerHTML.includes('No se pudieron consultar') && docs.innerHTML.includes("app.loadMateriales('51001')"), docs.innerHTML.slice(0, 200));
+    ok('ficha con red cortada: no queda marcada como cargada', docs.dataset.loaded !== 'true');
+
+    // Favoritos, «Comprobar materiales».
+    app.getFavorites = () => [
+        { nregistro: SINTROM.nregistro, nombre: SINTROM.nombre },
+        { nregistro: IBU.nregistro, nombre: IBU.nombre },
+    ];
+    nodo('btn-load-materials');
+    red = porRuta({});
+    await app._loadCollectionMaterials();
+    const fav = nodo('materials-result').innerHTML;
+    ok('favoritos con red cortada: NO dice «Ninguno…» ni pinta el check verde', !fav.includes('Ninguno de tus favoritos') && !fav.includes('#10b981'), fav.slice(0, 200));
+    ok('favoritos con red cortada: lo dice, nombra los dos y ofrece Reintentar', fav.includes('No se pudo consultar ningún favorito') && fav.includes('SINTROM') && fav.includes('app._loadCollectionMaterials()'));
+
+    const SIN_DOCS = { listaDocsProfesional: [], listaDocsPaciente: [] };
+    red = porRuta({ '/materiales/51001': SIN_DOCS });
+    await app._loadCollectionMaterials();
+    const fav2 = nodo('materials-result').innerHTML;
+    ok('favoritos parcial: «1 de 2», sin check verde, y «los demás» sin materiales', fav2.includes('1 de 2') && !fav2.includes('#10b981') && fav2.includes('Los demás favoritos'), fav2.slice(0, 300));
+
+    red = porRuta({ '/materiales/51001': SIN_DOCS, '/materiales/62001': SIN_DOCS });
+    await app._loadCollectionMaterials();
+    ok('cero REAL en favoritos: sigue el «Ninguno…» con check', nodo('materials-result').innerHTML.includes('Ninguno de tus favoritos'));
+}
+
+console.log('\n— Búsqueda por número de registro (hallazgo 12) —');
+{
+    red = porRuta({});
+    let error = null;
+    try { await nuevaApi().searchByNumber('65432', {}); } catch (e) { error = e; }
+    ok('5 cifras con red cortada: el error sube (no null → «sin resultados»)', !!error);
+
+    red = porRuta({ '/medicamentos?nregistro=65432': { resultados: [], totalFilas: 0 } });
+    ok('5 cifras que no son registro: null, sigue por texto como antes', (await nuevaApi().searchByNumber('65432', {})) === null);
+    red = porRuta({ '/medicamentos?nregistro=65432': '204' });
+    ok('5 cifras con 204: null (no es un fallo)', (await nuevaApi().searchByNumber('65432', {})) === null);
+
+    red = porRuta({ '/medicamentos?cn=712729': { resultados: [], totalFilas: 0 } });
+    error = null;
+    try { await nuevaApi().searchByNumber('712729', {}); } catch (e) { error = e; }
+    ok('7 cifras: CN sin acierto y registro fallido → error, no «sin resultados»', !!error);
+
+    red = porRuta({ '/medicamentos?cn=712729': { resultados: [{ nregistro: '70000' }], totalFilas: 1 } });
+    const r = await nuevaApi().searchByNumber('712729', {});
+    ok('7 cifras: CN encontrado y registro fallido → sale el CN', r?.resultados?.[0]?.nregistro === '70000');
+}
+
+console.log('\n— getNotas (hallazgo 15) —');
+{
+    const definiciones = apiSrc.match(/^\s+async getNotas\(/gm) || [];
+    ok('una sola definición de getNotas (la que traga el error, borrada)', definiciones.length === 1, `${definiciones.length} definiciones`);
+    red = porRuta({});
+    let lanzado = false;
+    try { await nuevaApi().getNotas('51001'); } catch { lanzado = true; }
+    ok('getNotas con red cortada: el error sube', lanzado);
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTODO OK');

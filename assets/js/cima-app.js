@@ -454,11 +454,10 @@ class MedCheckApp {
         // Índice ligero de nregistros con biomarcador farmacogenómico (AEMPS).
         // Una sola request por sesión, cacheada 24h en localStorage.
         // Si falla, los badges PGx simplemente no aparecen — el resto funciona igual.
+        // Si falla aquí, se reintenta al abrir cada ficha (ver `_asegurarIndicePgx`).
         this._pgxSet = null;
         this._pgxMeta = null;
-        this.api.getPgxIndexLight()
-            .then(res => { if (res) { this._pgxSet = res.set; this._pgxMeta = res.meta; } })
-            .catch(() => { /* silencioso */ });
+        this._asegurarIndicePgx();
 
         // If legal already accepted, process URL params now
         if (this.hasAcceptedLegalDisclaimer() || isDemoMode) {
@@ -9493,14 +9492,30 @@ class MedCheckApp {
     async renderMaterials() {
         this.content.innerHTML = '<div class="loading-spinner"></div>';
 
-        // Carga catálogo de materiales y mapa nregistro+ATC en paralelo
+        // Carga catálogo de materiales y mapa nregistro+ATC en paralelo.
+        // Si el catálogo falla, se dice y NO se guarda nada: antes quedaba `[]` en memoria y la
+        // vista se quedaba en «0 medicamentos» hasta recargar (hallazgo 9 de Fable, 11/11/2026).
         if (!this._materialesCatalogo || !this._materialesCatalogMap) {
-            const [catalogoRaw, catalogMap] = await Promise.all([
-                this.api.getMaterialesCatalogo(),
-                fetch('assets/data/materiales-catalog.json')
-                    .then(r => r.ok ? r.json() : {})
-                    .catch(() => ({})),
-            ]);
+            let catalogoRaw, catalogMap;
+            try {
+                [catalogoRaw, catalogMap] = await Promise.all([
+                    this.api.getMaterialesCatalogo(),
+                    fetch('assets/data/materiales-catalog.json')
+                        .then(r => r.ok ? r.json() : {})
+                        .catch(() => ({})),
+                ]);
+            } catch (error) {
+                this.content.innerHTML = `
+                <div class="view-container">
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--text-muted); opacity: 0.4;"></i>
+                        <h3>No se pudo consultar el catálogo de materiales</h3>
+                        <p class="text-muted">CIMA no ha respondido. Esto <strong>no</strong> quiere decir que no haya materiales informativos.</p>
+                        <button type="button" class="btn btn-secondary" onclick="app.renderMaterials()"><i class="fas fa-rotate-right"></i> Reintentar</button>
+                    </div>
+                </div>`;
+                return;
+            }
             this._materialesCatalogMap = catalogMap; // nombre → {nregistro, atcCodigo, atcNombre}
             // Enriquecer cada item del catálogo con nregistro y ATC del JSON estático
             this._materialesCatalogo = catalogoRaw.map(item => {
@@ -10554,7 +10569,13 @@ class MedCheckApp {
                 // y renderPresentationsDetailItem. Cacheado tras la primera llamada.
                 this.api.getSuministroIndex()
                     .then(idx => { this._supplyIndex = idx; })
-                    .catch(() => {})
+                    .catch(() => {}),
+                // El índice PGx decide si hay pestaña PGx. Si no cargó al arrancar, se reintenta
+                // aquí, con tope de espera: un Worker colgado no puede retrasar la ficha.
+                this._pgxSet ? null : Promise.race([
+                    this._asegurarIndicePgx(),
+                    new Promise(r => setTimeout(r, 3000)),
+                ]),
             ]);
             // Otra ficha pedida mientras cargaba esta (J/K seguidas): solo se pinta la última.
             if (this._nregEnPanel !== String(nregistro)) return;
@@ -14094,16 +14115,58 @@ ${ftFechaDocsHtml}
     }
 
     /**
+     * Índice ligero PGx (qué nregistros tienen biomarcador): lo pide el arranque y, si allí falló,
+     * cada apertura de ficha. Antes un fallo al arrancar dejaba la sesión entera sin insignias ni
+     * pestaña PGx y nada lo decía (hallazgo 4 de la revisión de Fable, 11/11/2026). Una petición
+     * en vuelo se comparte; un fallo no se memoiza, para que la siguiente ficha vuelva a probar.
+     * @returns {Promise<boolean>} si el índice está cargado
+     */
+    _asegurarIndicePgx() {
+        if (this._pgxSet) return Promise.resolve(true);
+        if (!this._pgxIndexEnVuelo) {
+            this._pgxIndexEnVuelo = this.api.getPgxIndexLight()
+                .then(res => {
+                    if (res) { this._pgxSet = res.set; this._pgxMeta = res.meta; }
+                    return !!res;
+                })
+                .catch(() => false)
+                .finally(() => { this._pgxIndexEnVuelo = null; });
+        }
+        return this._pgxIndexEnVuelo;
+    }
+
+    /**
      * Carga lazy de la pestaña Farmacogenómica del modal.
      * Fuente: Nomenclátor AEMPS vía Worker (KV). Refrescado diariamente por GitHub Action.
-     * Si falla la consulta, mensaje discreto — no rompe el modal.
+     *
+     * `null` de `getPgxByNregistro` es un FALLO, no «sin biomarcadores»: la pestaña solo existe
+     * porque el índice dice que este medicamento sí tiene (hallazgo 4 de la revisión de Fable,
+     * 11/11/2026). Antes se pintaban igual y se marcaba como cargada, sin poder reintentar.
+     * Solo `found: false` (404 del Worker) es ausencia.
      */
     async loadPharmacogenomics(nregistro) {
         const container = document.getElementById('pgx-content');
         if (!container) return;
         try {
             const data = await this.api.getPgxByNregistro(nregistro);
-            if (!data || data.found === false) {
+            if (!data) {
+                const nregJs = String(nregistro).replace(/[^0-9A-Za-z]/g, '');
+                container.innerHTML = `
+                    <div class="safety-check-item warning">
+                        <div class="safety-check-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="safety-check-content">
+                            <div class="safety-check-title">No se pudo consultar la información farmacogenómica</div>
+                            <div class="safety-check-detail">
+                                El índice de la AEMPS indica que este medicamento tiene biomarcadores, pero el detalle no ha llegado: esto <strong>no</strong> es un «sin biomarcadores».
+                                <div><button type="button" class="btn btn-sm btn-secondary" onclick="app.loadPharmacogenomics('${nregJs}')"><i class="fas fa-rotate-right"></i> Reintentar</button></div>
+                            </div>
+                        </div>
+                    </div>`;
+                container.classList.remove('loading-placeholder');
+                delete container.dataset.loaded;
+                return;
+            }
+            if (data.found === false) {
                 container.innerHTML = `<p class="text-muted">Sin biomarcadores farmacogenómicos registrados en el Nomenclátor AEMPS para este medicamento.</p>`;
                 container.dataset.loaded = 'true';
                 return;
@@ -14578,7 +14641,17 @@ ${ftFechaDocsHtml}
                     ${renderGroup(paciente, 'Para pacientes', 'user-circle')}
                 </section>`;
         } catch (error) {
-            container.innerHTML = '';
+            // Un fallo no es «no tiene»: antes el bloque desaparecía aunque la cabecera dijera
+            // «Mat. Inf.» (hallazgo 9 de Fable, 11/11/2026). Sin `loaded`, volver a la pestaña
+            // también reintenta.
+            const nregJs = String(nregistro).replace(/[^0-9A-Za-z]/g, '');
+            delete container.dataset.loaded;
+            container.innerHTML = `
+                <section class="doccomp-bloque doccomp-materiales">
+                    <h4 class="doccomp-tit"><i class="fas fa-file-medical-alt text-material"></i> Materiales informativos</h4>
+                    <p class="text-muted"><i class="fas fa-exclamation-triangle"></i> No se pudieron consultar en CIMA. Esto <strong>no</strong> quiere decir que no los haya.
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="app.loadMateriales('${nregJs}')"><i class="fas fa-rotate-right"></i> Reintentar</button></p>
+                </section>`;
         }
     }
 
@@ -21010,18 +21083,39 @@ ${ftFechaDocsHtml}
 
         const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
         const found = [];
+        // Un favorito que no se pudo consultar NO es «sin materiales» (hallazgo 9 de Fable,
+        // 11/11/2026): antes se omitía y, con CIMA caído, salía el «Ninguno…» con check verde.
+        const fallidos = [];
         await Promise.all(targets.map(async fav => {
             try {
                 const mats = await this.api.getMateriales(fav.nregistro);
                 const docs = [...(mats.profesional || []), ...(mats.paciente || [])];
                 if (docs.length > 0) found.push({ fav, profesional: mats.profesional || [], paciente: mats.paciente || [] });
-            } catch (e) { /* sin materiales: se omite */ }
+            } catch (e) { fallidos.push(fav); }
         }));
 
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-rotate"></i> Volver a comprobar'; }
 
+        const esc = v => this._escapeHtml(String(v ?? ''));
+        const avisoFallidos = fallidos.length === 0 ? '' : `
+            <div class="safety-check-item warning">
+                <div class="safety-check-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="safety-check-content">
+                    <div class="safety-check-title">${fallidos.length >= targets.length
+                        ? 'No se pudo consultar ningún favorito'
+                        : `Comprobación incompleta: no se pudieron consultar ${fallidos.length} de ${targets.length} favoritos`}</div>
+                    <div class="safety-check-detail">
+                        CIMA no respondió. De estos <strong>no</strong> se sabe si tienen materiales:
+                        <ul>${fallidos.map(f => `<li><strong>${esc(f.nombre)}</strong></li>`).join('')}</ul>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="app._loadCollectionMaterials()"><i class="fas fa-rotate-right"></i> Reintentar</button>
+                    </div>
+                </div>
+            </div>`;
+
         if (found.length === 0) {
-            result.innerHTML = `<p class="text-muted text-sm"><i class="fas fa-circle-check" style="color:#10b981"></i> Ninguno de tus favoritos tiene materiales informativos de seguridad publicados.</p>`;
+            result.innerHTML = avisoFallidos
+                ? `${avisoFallidos}${fallidos.length < targets.length ? '<p class="text-muted text-sm">Los demás favoritos no tienen materiales informativos de seguridad publicados.</p>' : ''}`
+                : `<p class="text-muted text-sm"><i class="fas fa-circle-check" style="color:#10b981"></i> Ninguno de tus favoritos tiene materiales informativos de seguridad publicados.</p>`;
             return;
         }
 
@@ -21053,6 +21147,7 @@ ${ftFechaDocsHtml}
         const blocks = this._renderRxBySpecialty(found, x => x.fav, medBlock);
 
         result.innerHTML = `
+            ${avisoFallidos}
             <p class="text-sm text-muted mb-sm"><strong>${found.length}</strong> medicamento${found.length === 1 ? '' : 's'} de tu colección con materiales, agrupados por especialidad:</p>
             ${blocks}
         `;
