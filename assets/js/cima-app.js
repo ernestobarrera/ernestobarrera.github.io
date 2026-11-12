@@ -4175,9 +4175,13 @@ class MedCheckApp {
         const fallidos = this._indicacionFallidos(data);
         if (!fallidos.length) return '';
         const total = data?.consulta?.intentados?.length || fallidos.length;
+        // «incompleto» = el grupo respondió pero no entero (`searchByATC` coteja con `totalDeclarado`).
+        const incompletos = new Set((data?.consulta?.fallidos || [])
+            .filter(f => f.motivo === 'incompleto').map(f => String(f.atc)));
         const lista = fallidos.map((code) => {
             const desc = this._describeATCCode(code);
-            return `<strong>${this._escapeHtml(code)}</strong>${desc ? ` ${this._escapeHtml(desc)}` : ''}`;
+            const nota = incompletos.has(code) ? ' (llegó incompleto)' : '';
+            return `<strong>${this._escapeHtml(code)}</strong>${desc ? ` ${this._escapeHtml(desc)}` : ''}${nota}`;
         }).join(' · ');
         const reintentando = !!this._indReintentando;
         return `
@@ -9184,6 +9188,13 @@ class MedCheckApp {
 
         try {
             const data = await this.api.getSuministro();
+            const parcialHtml = this._supplyParcialHtml(data);
+
+            // Vacía pero incompleta no es «sin problemas»: es una consulta que no llegó entera.
+            if (data && data.length === 0 && data.completo === false) {
+                this.content.innerHTML = parcialHtml;
+                return;
+            }
 
             if (!data || data.length === 0) {
                 this.content.innerHTML = `
@@ -9216,6 +9227,7 @@ class MedCheckApp {
                         <span class="badge badge-danger">${data.length}</span>
                     </h3>
                 </div>
+                ${parcialHtml}
 
                 <div class="supply-stats-bar">
                     <div class="supply-stat supply-stat-danger" onclick="app.setSupplyFilter('all', document.querySelector('.supply-filter-tag[data-filter=all]'))" style="cursor:pointer">
@@ -9270,7 +9282,7 @@ class MedCheckApp {
                 </div>
 
                 <div class="supply-count-bar">
-                    Mostrando <span id="supply-visible-count">${data.length}</span> de ${data.length} problemas
+                    Mostrando <span id="supply-visible-count">${data.length}</span> de ${data.length} problemas${data.completo === false && Number.isInteger(data.declaradas) ? ` recibidos (CIMA declara ${data.declaradas})` : ''}
                 </div>
             `;
 
@@ -9280,6 +9292,28 @@ class MedCheckApp {
         } catch (error) {
             this.handleSearchError(this.content, error);
         }
+    }
+
+    /**
+     * Aviso de lista de suministro incompleta (`CimaAPI.getSuministro` con `completo: false`): una
+     * página no llegó o CIMA cambió el recuento a mitad. Va dentro del render, como el de
+     * Indicaciones, y «Reintentar» vuelve a pedirla entera (una lista incompleta no se cachea).
+     */
+    _supplyParcialHtml(data) {
+        if (!data || data.completo !== false) return '';
+        const declaradas = Number.isInteger(data.declaradas) ? data.declaradas : null;
+        const recibidas = Number.isInteger(data.recibidas) ? data.recibidas : data.length;
+        return `
+            <div class="ind-parcial" role="status">
+                <p><i class="fas fa-triangle-exclamation"></i> <strong>Lista incompleta.</strong>
+                ${declaradas !== null
+                    ? `CIMA declara ${declaradas} problemas de suministro y solo han llegado ${recibidas}.`
+                    : `CIMA no dio un recuento fiable y han llegado ${recibidas} problemas de suministro.`}
+                Los que faltan no aparecen ni en la lista ni en el buscador de esta pestaña.</p>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="app.renderSupply()">
+                    <i class="fas fa-rotate-right"></i> Reintentar
+                </button>
+            </div>`;
     }
 
     renderSupplyCard(item) {
@@ -9797,8 +9831,24 @@ class MedCheckApp {
 
         try {
             const data = await this.api.getRegistroCambios();
-            const alerts = this.normalizeRegistroCambios(data)
-                .sort((a, b) => this._parseCimaDate(b.fecha) - this._parseCimaDate(a.fecha));
+            const alerts = this._ordenarAlertas(this.normalizeRegistroCambios(data));
+            const cobertura = this._alertasCobertura(data, alerts.length);
+
+            // Sin filas pero con recuento declarado no es «sin alertas»: es una respuesta vacía.
+            if (alerts.length === 0 && cobertura.total > 0) {
+                this.content.innerHTML = `
+                    <div class="view-container">
+                        <div class="ind-parcial" role="status">
+                            <p><i class="fas fa-triangle-exclamation"></i> <strong>No se pudo leer el registro de cambios.</strong>
+                            CIMA declara ${cobertura.total.toLocaleString('es-ES')} cambios en los últimos 7 días, pero no ha entregado ninguno.</p>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="app.renderAlerts()">
+                                <i class="fas fa-rotate-right"></i> Reintentar
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
 
             if (alerts.length === 0) {
                 this.content.innerHTML = `
@@ -9817,14 +9867,22 @@ class MedCheckApp {
                         <h3 class="supply-title">
                             <i class="fas fa-bell text-warning"></i>
                             Cambios recientes en CIMA
-                            <span class="badge badge-warning">${alerts.length}</span>
+                            <span class="badge badge-warning">${cobertura.total.toLocaleString('es-ES')}</span>
                         </h3>
                     </div>
+                    ${cobertura.mostrados < cobertura.total ? `
+                    <p class="text-muted mb-md">
+                        <strong>Se muestran ${cobertura.mostrados} de los ${cobertura.total.toLocaleString('es-ES')} cambios</strong>
+                        que el registro de cambios de CIMA declara en los últimos 7 días. CIMA entrega
+                        ${cobertura.recibidos} por consulta y sin ordenar por fecha, así que esto es una muestra:
+                        no son necesariamente los más recientes y pueden faltar altas y bajas.
+                        Van primero las bajas y altas que han llegado.
+                    </p>` : `
                     <p class="text-muted mb-md">
                         Altas, bajas y modificaciones comunicadas por el registro de cambios de CIMA en los últimos 7 días.
-                    </p>
+                    </p>`}
                     <div class="results-grid">
-                        ${alerts.slice(0, 50).map(alert => this.renderAlertCard(alert)).join('')}
+                        ${alerts.slice(0, MedCheckApp.ALERTAS_TOPE).map(alert => this.renderAlertCard(alert)).join('')}
                     </div>
                 </div>
             `;
@@ -9832,6 +9890,30 @@ class MedCheckApp {
         } catch (error) {
             this.handleSearchError(this.content, error);
         }
+    }
+
+    /** Tarjetas que pinta la pestaña Alertas. */
+    static get ALERTAS_TOPE() { return 50; }
+
+    /**
+     * Cuánto de lo declarado llega a la pantalla (hallazgo 7 de la revisión de Fable, 11/11/2026).
+     * `/registroCambios` declara ~12.800 cambios por semana, entrega 200 por página, no filtra por
+     * tipo (ignora `tipoCambio`) y no ordena por fecha: medido el 12/11/2026. Antes se pintaban 50
+     * bajo una insignia «200» y el texto «los últimos 7 días», como si fueran todos.
+     * @returns {{total: number, recibidos: number, mostrados: number}}
+     */
+    _alertasCobertura(data, recibidos) {
+        const declarados = Number.isInteger(data?.totalFilas) && data.totalFilas >= 0 ? data.totalFilas : null;
+        const total = declarados !== null ? Math.max(declarados, recibidos) : recibidos;
+        return { total, recibidos, mostrados: Math.min(recibidos, MedCheckApp.ALERTAS_TOPE) };
+    }
+
+    /** Bajas, luego altas, luego el resto; dentro de cada tipo, lo más reciente primero. */
+    _ordenarAlertas(alerts) {
+        const prioridad = { baja: 0, alta: 1 };
+        return alerts.sort((a, b) =>
+            ((prioridad[a.tipo] ?? 2) - (prioridad[b.tipo] ?? 2))
+            || (this._parseCimaDate(b.fecha) - this._parseCimaDate(a.fecha)));
     }
 
     normalizeRegistroCambios(data) {

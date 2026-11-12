@@ -12,6 +12,15 @@ class CimaAPI {
     // Cuánto se espera a CIMA antes de darlo por caído. Ver `_request`.
     static REQUEST_TIMEOUT_MS = 15000;
 
+    // Tope de páginas de 200 en una búsqueda por ATC. Solo se piden las que CIMA declara, así que
+    // subirlo no cuesta nada hasta que un grupo crece. Con 10 (2.000 filas), C09 sin la casilla
+    // «Comercializado» quedaba a 30 filas del corte (1.970, medido el 12/11/2026) y, desde que
+    // `searchByATC` coteja contra el total declarado, ese corte haría fallar el grupo entero.
+    static ATC_MAX_PAGINAS = 20;
+
+    // Tope de páginas de 200 para la lista de problemas de suministro (919 filas el 12/11/2026).
+    static SUMINISTRO_MAX_PAGINAS = 10;
+
     constructor() {
         // Configuración de proxies
         // Opción 1: Proxy público CORS (para desarrollo/pruebas)
@@ -1054,12 +1063,27 @@ class CimaAPI {
 
         console.log(`🔍 Buscando ATC ${upperCode}...`);
 
-        const { resultados, totalFilas } = await this.searchMedicamentosAll({
+        const { resultados, totalFilas, totalDeclarado } = await this.searchMedicamentosAll({
             atc: upperCode,
             comerc: options.comercializados !== false ? 1 : undefined
-        }, { analyticsOptions });
+        }, { analyticsOptions, maxPages: CimaAPI.ATC_MAX_PAGINAS });
 
         console.log(`📥 Recuperados ${resultados.length} de ${totalFilas} resultados`);
+
+        // Lo recibido se coteja con lo que CIMA DECLARÓ, antes del filtro de prefijo (hallazgo 6 de
+        // la revisión de Fable, 11/11/2026). Una página que llega `200 OK` con `resultados: []`, una
+        // que cambia el `totalFilas` a mitad o el tope de páginas dejaban un grupo cortado que se
+        // pintaba como entero. Ahora es un error con código, y `_consultarGruposATC` lo manda a
+        // `fallidos` con motivo «incompleto»: lista marcada como parcial y «Reintentar ese grupo».
+        if (!Number.isInteger(totalDeclarado) || resultados.length < totalDeclarado) {
+            const err = new Error(totalDeclarado === null
+                ? `CIMA no dio un recuento fiable del grupo ATC ${upperCode} (llegaron ${resultados.length}): la lista puede estar incompleta`
+                : `CIMA entregó ${resultados.length} de ${totalDeclarado} medicamentos del grupo ATC ${upperCode}: la lista está incompleta`);
+            err.code = 'LISTA_INCOMPLETA';
+            err.recibidos = resultados.length;
+            err.declarados = totalDeclarado;
+            throw err;
+        }
 
         let allResults = resultados;
         if (allResults.length === 0) {
@@ -1320,7 +1344,9 @@ class CimaAPI {
                 }
             } catch (error) {
                 console.warn(`Error searching ATC ${atcCode}:`, error);
-                fallidos.push({ atc: atcCode, motivo: error?.code === 'TIMEOUT' ? 'timeout' : 'error' });
+                const motivo = error?.code === 'TIMEOUT' ? 'timeout'
+                    : error?.code === 'LISTA_INCOMPLETA' ? 'incompleto' : 'error';
+                fallidos.push({ atc: atcCode, motivo });
             }
         }
 
@@ -3888,7 +3914,17 @@ class CimaAPI {
     // ============================================
 
     /**
-     * Obtener todos los problemas de suministro activos
+     * Obtener todos los problemas de suministro activos.
+     *
+     * Hasta el 12/11/2026 era UNA petición: CIMA sirve 200 por página y declara 919 en
+     * `totalFilas`, así que la pestaña Suministro enseñaba los 200 de inicio más reciente (el
+     * último mes) como si fueran todos, y el índice que da fechas a la insignia salía de esas
+     * mismas 200 (hallazgo 3 de la revisión de Fable). Ahora pagina contra `totalFilas`.
+     *
+     * Devuelve un array (los activos), con dos propiedades más: `declaradas` (el `totalFilas` de
+     * CIMA, o null si no lo dio legible) y `completo`. Si una página falla, la lista vuelve con
+     * lo que llegó y `completo: false`, para que la pantalla diga «N de M» y ofrezca reintentar;
+     * esa lista NO se guarda en caché. Si falla la primera página, el error sube.
      */
     async getSuministro() {
         const cacheKey = 'suministro-activos';
@@ -3897,17 +3933,47 @@ class CimaAPI {
             return this.cache.get(cacheKey).data;
         }
 
-        const data = await this._request('/psuministro', {}, false);
+        const filasDe = data => (Array.isArray(data) ? data : (Array.isArray(data?.resultados) ? data.resultados : []));
+        const first = await this._request('/psuministro', {}, false);
+        let filas = filasDe(first);
+        const declaradas = Number.isInteger(first?.totalFilas) && first.totalFilas >= 0 ? first.totalFilas : null;
+        let completo = Array.isArray(first) || declaradas !== null;
 
-        // Filtrar solo activos
-        let activos = [];
-        if (Array.isArray(data)) {
-            activos = data.filter(p => p.activo);
-        } else if (data.resultados) {
-            activos = data.resultados.filter(p => p.activo);
+        if (declaradas !== null && declaradas > filas.length && filas.length) {
+            const paginas = Math.ceil(declaradas / filas.length);
+            const hasta = Math.min(paginas, CimaAPI.SUMINISTRO_MAX_PAGINAS);
+            const pedidas = [];
+            for (let pagina = 2; pagina <= hasta; pagina += 1) {
+                // Secundarias: la apertura de Suministro cuenta UNA vez en la analítica, como antes.
+                pedidas.push(this._request(`/psuministro?pagina=${pagina}`, { headers: { 'X-MC-Autocomplete': '1' } }, false));
+            }
+            const resto = await Promise.allSettled(pedidas);
+            for (const r of resto) {
+                if (r.status !== 'fulfilled') { completo = false; continue; }
+                if (r.value?.totalFilas !== declaradas) completo = false;
+                filas = filas.concat(filasDe(r.value));
+            }
+            if (paginas > hasta) completo = false;
         }
 
-        this._setCache(cacheKey, activos);
+        // Sin duplicados por CN: si CIMA mueve una fila de página entre dos peticiones, no se cuenta dos veces.
+        const vistos = new Set();
+        filas = filas.filter(p => {
+            if (!p || p.cn == null) return true;
+            const k = String(p.cn);
+            if (vistos.has(k)) return false;
+            vistos.add(k);
+            return true;
+        });
+        if (declaradas !== null && filas.length < declaradas) completo = false;
+
+        const activos = filas.filter(p => p && p.activo);
+        activos.recibidas = filas.length;
+        activos.declaradas = declaradas;
+        activos.completo = completo;
+
+        if (completo) this._setCache(cacheKey, activos);
+        else console.warn(`Problemas de suministro incompletos: ${filas.length} de ${declaradas ?? '¿?'}`);
         return activos;
     }
 
@@ -3968,7 +4034,9 @@ class CimaAPI {
         idx.byNregistro = byNregistro;
         idx.byName = byName;
         idx.normalizeName = normalize;
-        this._setCache(cacheKey, idx);
+        // Un índice hecho con una lista a medias no se guarda: el siguiente que lo pida reintenta.
+        idx.completo = activos.completo !== false;
+        if (idx.completo) this._setCache(cacheKey, idx);
         return idx;
     }
 
