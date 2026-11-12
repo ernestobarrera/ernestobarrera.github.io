@@ -18945,9 +18945,11 @@ ${ftFechaDocsHtml}
         const masAntigua = fechas.length ? this._formatShortageDateLong(new Date(Math.min(...fechas))) : null;
         const fallidos = (this._favEstadoFallidos || []).filter(x => viejos.some(f => String(f.nregistro) === String(x.nregistro)));
         const hayFallo = fallidos.some(x => x.motivo === 'fallo');
-        const lista = fallidos.length
-            ? `<ul>${fallidos.map(x => `<li><strong>${esc(x.nombre)}</strong>${x.motivo === 'no_expuesto' ? ' (CIMA ya no lo expone)' : ''}</li>`).join('')}</ul>`
-            : '';
+        const items = fallidos.map(x => `<li><strong>${esc(x.nombre)}</strong>${x.motivo === 'no_expuesto' ? ' (CIMA ya no lo expone)' : ''}</li>`).join('');
+        // Con muchos, plegada: una lista de 18 nombres tapaba los propios favoritos.
+        const lista = !fallidos.length ? ''
+            : fallidos.length > 5 ? `<details><summary>Ver los ${fallidos.length}</summary><ul>${items}</ul></details>`
+            : `<ul>${items}</ul>`;
         return `
             <div class="safety-check-item warning">
                 <div class="safety-check-icon"><i class="fas fa-exclamation-triangle"></i></div>

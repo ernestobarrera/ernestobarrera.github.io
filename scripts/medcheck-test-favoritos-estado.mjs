@@ -248,6 +248,19 @@ console.log('\n— Concurrencia —');
     ok('10 comprobados, 1 cambiado', res.comprobados === 10 && res.cambiados === 1, JSON.stringify(res));
 }
 
+// ── 5b. Muchos sin comprobar: lista plegada ──────────────────────────────────────────────────
+console.log('\n— Muchos sin comprobar: lista plegada —');
+{
+    const app = nuevaApp(Array.from({ length: 7 }, (_, i) => fav(String(700 + i), `MED ${i}`)));
+    red = () => { throw new TypeError('Failed to fetch'); };
+    await app._refrescarEstadoFavoritos(); await esperarRonda(app);
+    const aviso = app._favEstadoAvisoHtml(app.getFavorites());
+    ok('más de 5: dentro de <details> «Ver los 7»', aviso.includes('<details><summary>Ver los 7</summary>') && aviso.includes('MED 6'), aviso.slice(0, 300));
+    const app2 = nuevaApp([fav('800', 'UNO'), fav('801', 'DOS')]);
+    await app2._refrescarEstadoFavoritos(); await esperarRonda(app2);
+    ok('5 o menos: lista a la vista', !app2._favEstadoAvisoHtml(app2.getFavorites()).includes('<details>'));
+}
+
 // ── 6. Fuera de Mi Perfil no se repinta nada ─────────────────────────────────────────────────
 console.log('\n— Vista cambiada antes de terminar —');
 {
