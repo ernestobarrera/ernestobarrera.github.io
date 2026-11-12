@@ -10072,14 +10072,21 @@ class MedCheckApp {
         const doSearch = () => {
             clearTimeout(s.debounce);
             s.debounce = setTimeout(async () => {
+                // Cada consulta lleva su número y solo pinta la última (hallazgo 13 de Fable,
+                // 11/11/2026): la espera entre teclas no basta si el Worker tarda (arranque en frío) y
+                // la respuesta de «ator» llega después de la de «atorvastatina 40».
+                const miConsulta = s.seq = (s.seq || 0) + 1;
+                const vigente = () => miConsulta === s.seq;
                 $container.innerHTML = `<div class="sns-loading"><span class="sns-spinner"></span> Buscando...</div>`;
                 try {
                     const params = new URLSearchParams({ q: s.query });
                     if (s.tipo !== 'all') params.set('tipo', s.tipo);
                     if (!s.includeBaja) params.set('solo_alta', '1');
                     const res = await fetch(`${workerBase}/sns-catalog/search?${params}`, { signal: AbortSignal.timeout(10000) });
+                    if (!vigente()) return;
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     const data = await res.json();
+                    if (!vigente()) return;
                     const items = data.results || [];
                     const total = data.total ?? items.length;
                     const limited = data.truncated ? ' · lista limitada: acote la búsqueda' : '';
@@ -10107,6 +10114,7 @@ class MedCheckApp {
                         });
                     }
                 } catch (err) {
+                    if (!vigente()) return;
                     $container.innerHTML = `<div class="sns-empty sns-error">
                         <i class="fas fa-exclamation-triangle"></i>
                         <div class="sns-empty-title">Error al buscar</div>
