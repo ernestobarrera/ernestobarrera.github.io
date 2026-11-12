@@ -3930,7 +3930,7 @@ class CimaAPI {
      *
      * TODAS LAS PÁGINAS DE LA MISMA FOTO. El Worker cachea cada URL de CIMA una hora en el edge y
      * el navegador otra hora (`max-age=3600`). La página 1 la pide cada arranque, así que solía
-     * venir de otro momento que las demás: el 12/11 Ernesto vio «CIMA declara 937 y solo han
+     * venir de otro momento que las demás: en la prueba del 12/11 salió «CIMA declara 937 y solo han
      * llegado 835» sin que fallara nada (página 1 de una foto con 937, el resto de otra con 919, y
      * las filas corridas de página). Por eso las páginas llevan un `foto=` común (tramo de 10
      * minutos): se cachean juntas. CIMA y la analítica del Worker ignoran ese parámetro. Si aun así
