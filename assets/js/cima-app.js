@@ -139,6 +139,54 @@ class MedCheckApp {
         'anomalía citogenética de deleción 5q aislada': 'Síndrome 5q- → respuesta a lenalidomida.',
     };
 
+    /**
+     * Atajo desde la HCE: ¿hay que revisar la selección antes de buscar? (punto 15 de la cola,
+     * hallazgo 10 de Fable, 12/11/2026). Devuelve el motivo, o null si puede buscarse sola.
+     * Una selección deliberada de fármaco es corta y no lleva identificadores; un DNI/NIE, una
+     * fecha o «APELLIDO, NOMBRE» delatan que se arrastró la línea del paciente. Un falso positivo
+     * cuesta un clic (precarga y revisión); un falso negativo manda datos del paciente al Worker,
+     * a la analítica y a CIMA. Por eso la regla es amplia: «AMOXICILINA, ACIDO CLAVULANICO» también
+     * se para, y está bien que se pare.
+     * @param {string} term
+     * @returns {null|'larga'|'identificador'}
+     */
+    static motivoRevisionAtajo(term) {
+        const t = String(term || '').trim();
+        if (!t) return null;
+        if (t.length > 80 || t.split(/\s+/).length > 10) return 'larga';
+        const pareceDatoDePaciente = [
+            /\b\d{8}[\s-]?[A-Z]\b/i,                        // DNI
+            /\b[XYZ][\s-]?\d{7}[\s-]?[A-Z]\b/i,             // NIE
+            /\b\d{1,2}([/.-])\d{1,2}\1(?:\d{4}|\d{2})\b/,   // fecha dd/mm/aa(aa), mismo separador
+            /[A-ZÁÉÍÓÚÜÑ]{2,},\s*[A-ZÁÉÍÓÚÜÑ]{2,}/,        // «APELLIDO, NOMBRE» en mayúsculas
+        ];
+        return pareceDatoDePaciente.some(re => re.test(t)) ? 'identificador' : null;
+    }
+
+    /**
+     * El atajo nuevo (12/11/2026) lleva la selección tras «#», que el navegador no envía al
+     * servidor: así no llega a los registros de GitHub Pages al abrir la página, que es lo único
+     * que ningún filtro de la app puede impedir. Se lee una sola vez, se guarda en memoria y se
+     * borra de la barra de direcciones; `view` y `source` pasan a la query para que la atribución
+     * y el router sigan leyendo de donde siempre.
+     * @returns {string|null} la selección ('' si el atajo se pulsó sin seleccionar), o null si la
+     *   URL no viene del atajo nuevo
+     */
+    static adoptarSeleccionDelAtajo(loc = globalThis.window?.location, hist = globalThis.window?.history) {
+        const hash = String(loc?.hash || '').replace(/^#/, '');
+        if (!hash) return null;
+        const enHash = new URLSearchParams(hash);
+        if (enHash.get('source') !== 'bookmarklet') return null;
+        const query = new URLSearchParams(loc.search || '');
+        query.delete('q');
+        for (const [k, v] of enHash) {
+            if (k !== 'q') query.set(k, v);
+        }
+        const limpia = (loc.pathname || '') + (query.toString() ? `?${query}` : '');
+        try { hist?.replaceState?.({}, '', limpia); } catch (_) { /* sin historial: seguimos */ }
+        return enHash.get('q') || '';
+    }
+
     constructor() {
         this.api = window.cimaAPI;
 
@@ -182,8 +230,15 @@ class MedCheckApp {
         // Analytics globals — leídos por cima-api.js en cada petición al Worker
         window._mcCurrentView    = 'buscar';
         window._mcActiveContexts = null;
+        // Atajo nuevo: la selección viene tras «#». Tiene que leerse ANTES que nada mire la URL,
+        // porque deja `source` en la query y quita la selección de la barra de direcciones.
+        // El atajo antiguo la trae en `?q=`: sigue funcionando, y se le avisa de que reinstale.
+        this._seleccionAtajo = MedCheckApp.adoptarSeleccionDelAtajo();
+        const _urlInicial = new URLSearchParams(window.location.search);
+        this._atajoAntiguo = this._seleccionAtajo === null
+            && _urlInicial.get('source') === 'bookmarklet' && _urlInicial.has('q');
         // Fuente de apertura: 'bookmarklet' si la app se abrio desde el atajo seguro, 'app' si acceso directo
-        const _urlSrc = new URLSearchParams(window.location.search).get('source');
+        const _urlSrc = _urlInicial.get('source');
         window._mcSource = _urlSrc === 'bookmarklet' ? 'bookmarklet' : 'app';
         // La atribucion 'bookmarklet' debe sobrevivir hasta la PRIMERA busqueda (que puede
         // ser diferida: el atajo precarga el termino pero el usuario confirma con un clic).
@@ -10445,6 +10500,7 @@ class MedCheckApp {
                             <span>Buscar en MedCheck</span>
                         </a>
                         <p class="bookmarklet-helper">¿Prefieres hacerlo a mano? Copia el codigo y crea tu el marcador.</p>
+                        <p class="bookmarklet-helper">Si lo instalaste antes del 13/11/2026, sustituyelo por este: el antiguo envia la seleccion al servidor de la pagina al abrirla.</p>
                         <div class="bookmarklet-actions">
                             <button type="button" class="btn btn-primary" id="copy-bookmarklet-btn">
                                 <i class="fas fa-copy"></i> Copiar atajo
@@ -10467,7 +10523,7 @@ class MedCheckApp {
                     <details class="bookmarklet-card bookmarklet-code-panel">
                         <summary class="bookmarklet-summary">Ver javascript completo</summary>
                         <textarea class="bookmarklet-code" id="bookmarklet-code" readonly></textarea>
-                        <p class="bookmarklet-note">Solo usa el texto que seleccionas y abre MedCheck en una pestana nueva.</p>
+                        <p class="bookmarklet-note">Solo usa el texto que seleccionas y abre MedCheck en una pestana nueva. La seleccion viaja en una parte de la direccion que el navegador no envia a ningun servidor. Si es larga o parece llevar datos del paciente (DNI/NIE, una fecha, «APELLIDO, NOMBRE»), MedCheck no busca: te la deja escrita para que la revises.</p>
                     </details>
                 </div>
             </div>
@@ -10522,11 +10578,23 @@ class MedCheckApp {
         };
         return meta[status] || { label: 'Estado: informacion', badge: 'badge-info' };
     }
+    /** Atajo antiguo (selección en `?q=`): se pide reinstalarlo, una vez por dispositivo. */
+    _avisarAtajoAntiguo() {
+        const CLAVE = 'medcheck_atajo_antiguo_avisado';
+        try {
+            if (localStorage.getItem(CLAVE)) return;
+            localStorage.setItem(CLAVE, '1');
+        } catch (_) { /* sin almacenamiento: se avisa igual */ }
+        this.showToast('Hay una versión más privada del atajo: reinstálalo desde el botón «Atajo seguro».', 'info');
+    }
+
     getBookmarkletCode() {
         // Atajo seguro (Opcion B): lee SOLO la seleccion (operacion pasiva), no inyecta DOM
-        // ni overlay en la pagina origen, no altera la HCE. Lleva el texto a MedCheck via URL,
-        // donde el usuario revisa/confirma antes de buscar (precarga, no auto-ejecuta).
-        return "javascript:(()=>{const s=(window.getSelection?window.getSelection().toString():'').replace(/\\s+/g,' ').trim();const u=new URL('https://ernestobarrera.github.io/medcheck.html');u.searchParams.set('view','search');u.searchParams.set('source','bookmarklet');if(s)u.searchParams.set('q',s);const w=window.open(u.toString(),'_blank','noopener,noreferrer');if(w)try{w.opener=null}catch(e){}})();";
+        // ni overlay en la pagina origen, no altera la HCE. Lleva el texto a MedCheck tras «#»
+        // (12/11/2026, antes en `?q=`): el navegador no envía esa parte al servidor, así que la
+        // selección no queda en los registros de GitHub Pages. MedCheck la busca sola si es corta
+        // y no parece llevar datos del paciente (`motivoRevisionAtajo`); si no, la precarga.
+        return "javascript:(()=>{const s=(window.getSelection?window.getSelection().toString():'').replace(/\\s+/g,' ').trim();const u=new URL('https://ernestobarrera.github.io/medcheck.html');const p=new URLSearchParams({view:'search',source:'bookmarklet'});if(s)p.set('q',s);u.hash=p.toString();const w=window.open(u.toString(),'_blank','noopener,noreferrer');if(w)try{w.opener=null}catch(e){}})();";
     }
 
     trackModalTab(med, tab) {
@@ -17656,6 +17724,12 @@ ${ftFechaDocsHtml}
      */
     async processURLParams() {
         const params = this.getURLParams();
+        // Selección del atajo nuevo (venía tras «#» y ya no está en la URL): solo en la primera
+        // lectura. Ni Atrás ni recargar la vuelven a buscar.
+        if (typeof this._seleccionAtajo === 'string') {
+            if (this._seleccionAtajo) params.q = this._seleccionAtajo;
+            this._seleccionAtajo = null;
+        }
 
         // If no params, load default view
         if (Object.keys(params).length === 0) {
@@ -17794,22 +17868,34 @@ ${ftFechaDocsHtml}
             // Atajo desde la HCE: automatico con red de seguridad. Una seleccion deliberada
             // de farmaco es corta (nombre comercial o principio activo, pocas palabras); en ese
             // caso lanzamos la busqueda directamente, misma experiencia que escribir a mano.
-            // Si el texto es anormalmente largo (posible arrastre accidental de una linea de la
-            // HCE con datos del paciente), NO auto-buscamos: precargamos, damos foco y pedimos
-            // revision, para no enviar a CIMA texto no verificado. Humano en el bucle solo
-            // cuando aporta valor real.
+            // Si el texto es anormalmente largo o parece llevar datos del paciente (DNI/NIE, fecha,
+            // «APELLIDO, NOMBRE»: `motivoRevisionAtajo`), NO auto-buscamos: precargamos, damos
+            // foco y pedimos revision, para no enviar a CIMA texto no verificado. Humano en el
+            // bucle solo cuando aporta valor real.
             if (params.source === 'bookmarklet') {
                 const term = (params.q || '').trim();
-                const looksClean = term.length <= 80 && term.split(/\s+/).length <= 10;
-                if (looksClean) {
+                const motivo = MedCheckApp.motivoRevisionAtajo(term);
+                if (!motivo) {
                     this.performSearch({ preserveFilters: true });
                 } else {
                     if (searchInput) {
                         searchInput.focus();
                         searchInput.select();
                     }
-                    this.showToast('Tu selección es larga: revísala antes de buscar por si arrastró datos del paciente.', 'warning');
+                    // Atajo antiguo: la selección vino en `?q=`. Al servidor ya llegó al abrir la
+                    // página, pero se quita de la barra de direcciones para que no se copie con el
+                    // enlace ni se quede así en el historial de la pestaña.
+                    if (this._atajoAntiguo) {
+                        const sinSeleccion = new URLSearchParams(window.location.search);
+                        sinSeleccion.delete('q');
+                        const qs = sinSeleccion.toString();
+                        try { window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : '')); } catch (_) { /* seguimos */ }
+                    }
+                    this.showToast(motivo === 'larga'
+                        ? 'Tu selección es larga: revísala antes de buscar por si arrastró datos del paciente.'
+                        : 'Tu selección parece llevar datos del paciente (DNI/NIE, una fecha o «APELLIDO, NOMBRE»): revísala antes de buscar.', 'warning');
                 }
+                if (this._atajoAntiguo) this._avisarAtajoAntiguo();
                 // No reseteamos _mcSource aqui: si no auto-buscamos, la busqueda que el usuario
                 // confirme debe seguir atribuida al atajo. El reset de un solo disparo vive en
                 // performSearch().
