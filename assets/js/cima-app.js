@@ -18583,6 +18583,11 @@ ${ftFechaDocsHtml}
             specialtyOverride: extra.specialtyOverride || med.specialtyOverride || null,
             sadmansOverride: extra.sadmansOverride || med.sadmansOverride || null,
             addedAt: extra.addedAt || new Date().toISOString(),
+            // Cuándo se leyeron de CIMA `psum`, `notas` y `materialesInf` (hallazgo 8 de Fable,
+            // 11/11/2026). Sin las tres marcas en el origen no se finge que están al día: queda a
+            // null y Mi Perfil las pide al abrirse.
+            estadoAt: extra.estadoAt || (['psum', 'notas', 'materialesInf'].every(k => typeof med[k] === 'boolean')
+                ? new Date().toISOString() : null),
             viewCount: extra.viewCount || 0,
             lastViewedAt: extra.lastViewedAt || null
         };
@@ -18803,6 +18808,163 @@ ${ftFechaDocsHtml}
         return this.getFavorites().filter(f => this._favIsIncomplete(f)).length;
     }
 
+    // ── Estado vivo de los favoritos: suministro, alertas y materiales ────────────────────────
+    //
+    // Hallazgo 8 de Fable (11/11/2026): `psum`, `notas` y `materialesInf` se guardaban el día del
+    // alta y nadie los volvía a leer. Un favorito de junio que entra en desabastecimiento en octubre
+    // seguía sin insignia, y «Reunir materiales» no consultaba los que no la tenían. Ahora Mi Perfil
+    // los refresca al abrirse (una petición secundaria por favorito: sin analítica) y lo que no se
+    // pudo comprobar se dice con su fecha, nunca como si estuviera al día.
+
+    static FAV_ESTADO_TTL_MS = 6 * 3600 * 1000;
+    static FAV_ESTADO_CONCURRENCIA = 4;
+
+    /** Fecha (ISO) de la última lectura de las marcas; los registros anteriores al 12/11/2026, la del alta. */
+    _favEstadoFecha(f) {
+        return f?.estadoAt || f?.addedAt || null;
+    }
+
+    _favEstadoVigente(f, ahora = Date.now()) {
+        const t = Date.parse(f?.estadoAt || '');
+        return Number.isFinite(t) && (ahora - t) < MedCheckApp.FAV_ESTADO_TTL_MS;
+    }
+
+    /**
+     * Relee de CIMA las tres marcas de los favoritos que no estén al día (`forzar`: todos).
+     * Devuelve `{ comprobados, cambiados, fallidos }`; `fallidos` lleva `{ nregistro, nombre, motivo }`
+     * con motivo `fallo` (CIMA no respondió) o `no_expuesto` (204: CIMA ya no lo expone).
+     * Una sola ronda en vuelo: una segunda llamada recibe la misma promesa.
+     */
+    _refrescarEstadoFavoritos({ forzar = false } = {}) {
+        if (this._favEstadoEnCurso) return this._favEstadoEnCurso;
+        const ahora = Date.now();
+        const objetivos = this.getFavorites().filter(f => forzar || !this._favEstadoVigente(f, ahora));
+        if (objetivos.length === 0) {
+            this._favEstadoFallidos = [];
+            return Promise.resolve({ comprobados: 0, cambiados: 0, fallidos: [] });
+        }
+        this._favEstadoProgreso = { total: objetivos.length };
+        this._pintarAvisoEstadoFavoritos();
+
+        const ronda = (async () => {
+            const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
+            const leidos = new Map();
+            const fallidos = [];
+            const cola = [...objetivos];
+            const trabajador = async () => {
+                while (cola.length) {
+                    const f = cola.shift();
+                    try {
+                        const d = await this.api.getMedicamento(f.nregistro, noTrack);
+                        if (!d) throw Object.assign(new Error('vacío'), { code: 'NO_CONTENT' });
+                        leidos.set(String(f.nregistro), { psum: !!d.psum, notas: !!d.notas, materialesInf: !!d.materialesInf });
+                    } catch (e) {
+                        fallidos.push({ nregistro: f.nregistro, nombre: f.nombre, motivo: e?.code === 'NO_CONTENT' ? 'no_expuesto' : 'fallo' });
+                    }
+                }
+            };
+            await Promise.all(Array.from({ length: Math.min(MedCheckApp.FAV_ESTADO_CONCURRENCIA, cola.length) }, trabajador));
+
+            // Releer tras los await: entretanto se ha podido añadir, quitar o etiquetar un favorito.
+            const favs = this.getFavorites();
+            const at = new Date().toISOString();
+            let cambiados = 0;
+            for (const f of favs) {
+                const n = leidos.get(String(f.nregistro));
+                if (!n) continue;
+                if (n.psum !== !!f.psum || n.notas !== !!f.notas || n.materialesInf !== !!f.materialesInf) cambiados++;
+                Object.assign(f, n, { estadoAt: at });
+            }
+            if (leidos.size > 0) this._saveFavorites(favs);
+            return { comprobados: leidos.size, cambiados, fallidos };
+        })();
+
+        this._favEstadoEnCurso = ronda;
+        ronda.then(res => {
+            this._favEstadoFallidos = res.fallidos;
+        }, () => {
+            this._favEstadoFallidos = objetivos.map(f => ({ nregistro: f.nregistro, nombre: f.nombre, motivo: 'fallo' }));
+        }).finally(() => {
+            this._favEstadoEnCurso = null;
+            this._favEstadoProgreso = null;
+            this._trasRefrescarEstadoFavoritos(ronda);
+        });
+        return ronda;
+    }
+
+    /** Repinta lo que depende de las marcas si Mi Perfil sigue abierto. */
+    async _trasRefrescarEstadoFavoritos(ronda) {
+        let res = null;
+        try { res = await ronda; } catch (_) { /* el aviso ya lo dice */ }
+        if (this.currentView !== 'profile') return;
+        const seccion = this._profileSection || 'favorites';
+        if (res?.cambiados > 0 && (seccion === 'favorites' || seccion === 'analytics')) {
+            const input = document.getElementById('fav-search-input');
+            const q = input ? input.value : '';
+            if (seccion === 'favorites') this._refreshFavoritesSection();
+            else this._activateProfileSection('analytics', false);
+            const nuevo = document.getElementById('fav-search-input');
+            if (q && nuevo) { nuevo.value = q; this._filterFavorites(q); }
+        } else {
+            this._pintarAvisoEstadoFavoritos();
+        }
+    }
+
+    _reintentarEstadoFavoritos() {
+        this._refrescarEstadoFavoritos();
+    }
+
+    _pintarAvisoEstadoFavoritos() {
+        const el = document.getElementById('fav-estado');
+        if (el) el.innerHTML = this._favEstadoAvisoHtml(this.getFavorites());
+    }
+
+    /**
+     * Aviso de Mi Perfil sobre la frescura de las marcas. Vacío si todas están al día.
+     * Con favoritos sin comprobar dice de qué fecha son sus insignias (la más antigua).
+     */
+    _favEstadoAvisoHtml(favs) {
+        if (!favs?.length) return '';
+        if (this._favEstadoProgreso) {
+            const n = this._favEstadoProgreso.total;
+            return `<p class="text-muted text-sm"><span class="loading-spinner-sm"></span> Comprobando en CIMA el suministro, las alertas y los materiales de ${n} favorito${n === 1 ? '' : 's'}…</p>`;
+        }
+        const ahora = Date.now();
+        const viejos = favs.filter(f => !this._favEstadoVigente(f, ahora));
+        if (viejos.length === 0) return '';
+        const esc = v => this._escapeHtml(String(v ?? ''));
+        const fechas = viejos.map(f => Date.parse(this._favEstadoFecha(f) || '')).filter(Number.isFinite);
+        const masAntigua = fechas.length ? this._formatShortageDateLong(new Date(Math.min(...fechas))) : null;
+        const fallidos = (this._favEstadoFallidos || []).filter(x => viejos.some(f => String(f.nregistro) === String(x.nregistro)));
+        const hayFallo = fallidos.some(x => x.motivo === 'fallo');
+        const lista = fallidos.length
+            ? `<ul>${fallidos.map(x => `<li><strong>${esc(x.nombre)}</strong>${x.motivo === 'no_expuesto' ? ' (CIMA ya no lo expone)' : ''}</li>`).join('')}</ul>`
+            : '';
+        return `
+            <div class="safety-check-item warning">
+                <div class="safety-check-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="safety-check-content">
+                    <div class="safety-check-title">${viejos.length === favs.length ? 'No se pudo comprobar ningún favorito' : `No se pudieron comprobar ${viejos.length} de ${favs.length} favoritos`}</div>
+                    <div class="safety-check-detail">
+                        Sus insignias de suministro, alertas AEMPS y materiales son ${masAntigua ? `a fecha de <strong>${esc(masAntigua)}</strong> o posterior` : 'de una fecha desconocida'} y pueden no estar al día.
+                        ${lista}
+                        ${hayFallo || !fallidos.length ? '<button type="button" class="btn btn-sm btn-secondary" onclick="app._reintentarEstadoFavoritos()"><i class="fas fa-rotate-right"></i> Reintentar</button>' : ''}
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    /** Sufijo de la insignia: fecha de la marca si no está al día; título siempre con la fecha. */
+    _favEstadoInsignia(fav) {
+        const t = Date.parse(this._favEstadoFecha(fav) || '');
+        const fecha = Number.isFinite(t) ? this._formatShortageDateLong(new Date(t)) : null;
+        const vigente = this._favEstadoVigente(fav);
+        return {
+            titulo: fecha ? ` (CIMA, comprobado el ${fecha})` : ' (CIMA, sin fecha de comprobación)',
+            sufijo: vigente ? '' : ` · a ${fecha ? this._formatShortageDateShort(new Date(t)) : '¿?'}`,
+        };
+    }
+
     incrementFavoriteViewCount(nregistro) {
         const favs = this.getFavorites();
         const fav = favs.find(f => f.nregistro === nregistro);
@@ -18857,6 +19019,8 @@ ${ftFechaDocsHtml}
         this.content.querySelectorAll('.profile-subnav-btn').forEach(b => {
             b.addEventListener('click', () => this._activateProfileSection(b.dataset.section, true));
         });
+        // Suministro, alertas y materiales de los favoritos: en segundo plano, sin bloquear la vista.
+        this._refrescarEstadoFavoritos().catch(() => { });
     }
 
     /** Devuelve el HTML de una sub-sección del perfil. */
@@ -18971,6 +19135,8 @@ ${ftFechaDocsHtml}
             </div>
         `;
 
+        const avisoEstado = `<div id="fav-estado">${this._favEstadoAvisoHtml(favs)}</div>`;
+
         const list = mode === 'tag' ? this._renderFavoritesByTag(viewFavs)
             : mode === 'pa' ? this._renderFavoritesByActiveIngredient(viewFavs)
             : mode === 'indication' ? this._renderFavoritesByIndication(viewFavs)
@@ -18986,7 +19152,7 @@ ${ftFechaDocsHtml}
                 <a href="https://list.essentialmeds.org/" target="_blank" rel="noopener">WHO EML</a> · CC BY-NC-SA 3.0 IGO. Cruce por ATC; no marca los esenciales sin ATC en la lista.</span>
             </div>
         ` : '';
-        return repairBanner + drillChip + toolbar + list + emlLegend;
+        return repairBanner + avisoEstado + drillChip + toolbar + list + emlLegend;
     }
 
     /** Coincidencia de un favorito con un filtro drill-down de la analítica. */
@@ -20533,8 +20699,11 @@ ${ftFechaDocsHtml}
         if (fav.triangulo) badgesTags.push(this._badgeSeguimientoAdicional({ compacto: true }));
         if (this._isHospitalUse(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Uso Hospitalario — solo farmacia hospitalaria"><i class="fas fa-hospital"></i> H</span>');
         else if (this._isDiagnosticoHospitalario(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Diagnóstico Hospitalario — prescripción iniciada en hospital"><i class="fas fa-hospital"></i> DH</span>');
-        if (fav.psum) badgesTags.push('<span class="badge badge-neutral badge-xs" title="Problema de suministro (nomenclátor CIMA)"><i class="fas fa-boxes"></i> Suministro</span>');
-        if (fav.notas) badgesTags.push('<span class="badge badge-warning badge-xs">AEMPS</span>');
+        // Las dos marcas vivas llevan su fecha (hallazgo 8 de Fable): en el título siempre y, si no
+        // se pudo comprobar hoy, también a la vista.
+        const est = (fav.psum || fav.notas) ? this._favEstadoInsignia(fav) : null;
+        if (fav.psum) badgesTags.push(`<span class="badge badge-neutral badge-xs" title="Problema de suministro${est.titulo}"><i class="fas fa-boxes"></i> Suministro${est.sufijo}</span>`);
+        if (fav.notas) badgesTags.push(`<span class="badge badge-warning badge-xs" title="Notas de seguridad de la AEMPS${est.titulo}">AEMPS${est.sufijo}</span>`);
         const emlBadge = this._emlBadgeHtml(fav.atcCodigo, { compact: true });
         if (emlBadge) badgesTags.push(emlBadge);
 
@@ -21157,9 +21326,12 @@ ${ftFechaDocsHtml}
         if (!result) return;
 
         const favs = this.getFavorites();
-        // Si hay marcas, consultar solo esos; si no, comprobar todos (favoritos antiguos).
+        // Si hay marcas, consultar los marcados y además los que no estén al día (su marca puede ser
+        // de cuando no tenían materiales: hallazgo 8 de Fable); si no hay ninguna, todos.
         const flagged = favs.filter(f => f.materialesInf);
-        const targets = flagged.length > 0 ? flagged : favs;
+        const targets = flagged.length > 0
+            ? favs.filter(f => f.materialesInf || !this._favEstadoVigente(f))
+            : favs;
 
         if (btn) { btn.disabled = true; btn.innerHTML = '<div class="loading-spinner-sm"></div> Consultando fichas…'; }
 
