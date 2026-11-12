@@ -156,9 +156,32 @@ console.log('\n— Suministro (h3), capa de datos —');
     const d3 = await nuevaApi().getSuministro();
     ok('página 2 con 200 OK y vacía: incompleto', d3.completo === false && d3.length === 719);
 
-    red = redSuministro(919, { 4: { totalFilas: 921 } });
+    red = redSuministro(919, { 4: { totalFilas: 921 } }); peticiones = [];
     const d4 = await nuevaApi().getSuministro();
-    ok('el total cambia a mitad: incompleto', d4.completo === false);
+    ok('el total no cuadra ni repitiendo: incompleto', d4.completo === false);
+    ok('…tras una sola repetición (10 peticiones, no más)', psum() === 10, String(psum()));
+
+    // EL CASO REAL DEL 12/11: la página 1 sale de una caché de otro momento (937) y las demás,
+    // frescas (919). Con la caché por URL, la foto común (`t…`) puede seguir mezclada; la propia
+    // (`u…`) no está en ninguna caché y llega coherente.
+    const filaVieja = (i) => ({ ...filaSum(i + 5000), cn: String(900000 + i) });
+    red = (u) => {
+        const p = Number(u.searchParams.get('pagina') || 1);
+        const foto = u.searchParams.get('foto') || '';
+        if (p === 1 && foto.startsWith('t')) {
+            return { status: 200, body: { totalFilas: 937, resultados: Array.from({ length: 200 }, (_, k) => filaVieja(k)) } };
+        }
+        return redSuministro(919)(u);
+    };
+    peticiones = []; cabeceras = [];
+    const dv = await nuevaApi().getSuministro();
+    ok('página 1 de otra foto: se repite sola y llegan los 919, sin aviso', dv.completo === true && dv.length === 919 && dv.declaradas === 919, `${dv.length} ${dv.completo} ${dv.declaradas}`);
+    const sum2 = cabeceras.filter(c => c.url.includes('/psuministro'));
+    ok('cada pasada lleva UNA foto común, y la repetición otra distinta', sum2.length === 10
+        && new Set(sum2.slice(0, 5).map(c => new URL(c.url).searchParams.get('foto'))).size === 1
+        && new Set(sum2.slice(5).map(c => new URL(c.url).searchParams.get('foto'))).size === 1
+        && new URL(sum2[0].url).searchParams.get('foto') !== new URL(sum2[5].url).searchParams.get('foto'), JSON.stringify(sum2.map(c => c.url.split('?')[1])));
+    ok('la repetición no vuelve a contar en la analítica', sum2.length === 10 && !sum2[0].secundaria && sum2.slice(1).every(c => c.secundaria));
 
     red = redSuministro(150); peticiones = [];
     const d5 = await nuevaApi().getSuministro();

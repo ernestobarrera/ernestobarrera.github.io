@@ -20,6 +20,8 @@ class CimaAPI {
 
     // Tope de páginas de 200 para la lista de problemas de suministro (919 filas el 12/11/2026).
     static SUMINISTRO_MAX_PAGINAS = 10;
+    // Tramo de la «foto» común de las páginas de suministro. Ver `getSuministro`.
+    static SUMINISTRO_FOTO_MS = 10 * 60 * 1000;
 
     constructor() {
         // Configuración de proxies
@@ -3925,6 +3927,15 @@ class CimaAPI {
      * CIMA, o null si no lo dio legible) y `completo`. Si una página falla, la lista vuelve con
      * lo que llegó y `completo: false`, para que la pantalla diga «N de M» y ofrezca reintentar;
      * esa lista NO se guarda en caché. Si falla la primera página, el error sube.
+     *
+     * TODAS LAS PÁGINAS DE LA MISMA FOTO. El Worker cachea cada URL de CIMA una hora en el edge y
+     * el navegador otra hora (`max-age=3600`). La página 1 la pide cada arranque, así que solía
+     * venir de otro momento que las demás: el 12/11 Ernesto vio «CIMA declara 937 y solo han
+     * llegado 835» sin que fallara nada (página 1 de una foto con 937, el resto de otra con 919, y
+     * las filas corridas de página). Por eso las páginas llevan un `foto=` común (tramo de 10
+     * minutos): se cachean juntas. CIMA y la analítica del Worker ignoran ese parámetro. Si aun así
+     * los totales no cuadran (el edge desalojó una página), se repite UNA vez con una foto propia,
+     * que no puede estar en ninguna caché.
      */
     async getSuministro() {
         const cacheKey = 'suministro-activos';
@@ -3933,28 +3944,13 @@ class CimaAPI {
             return this.cache.get(cacheKey).data;
         }
 
-        const filasDe = data => (Array.isArray(data) ? data : (Array.isArray(data?.resultados) ? data.resultados : []));
-        const first = await this._request('/psuministro', {}, false);
-        let filas = filasDe(first);
-        const declaradas = Number.isInteger(first?.totalFilas) && first.totalFilas >= 0 ? first.totalFilas : null;
-        let completo = Array.isArray(first) || declaradas !== null;
-
-        if (declaradas !== null && declaradas > filas.length && filas.length) {
-            const paginas = Math.ceil(declaradas / filas.length);
-            const hasta = Math.min(paginas, CimaAPI.SUMINISTRO_MAX_PAGINAS);
-            const pedidas = [];
-            for (let pagina = 2; pagina <= hasta; pagina += 1) {
-                // Secundarias: la apertura de Suministro cuenta UNA vez en la analítica, como antes.
-                pedidas.push(this._request(`/psuministro?pagina=${pagina}`, { headers: { 'X-MC-Autocomplete': '1' } }, false));
-            }
-            const resto = await Promise.allSettled(pedidas);
-            for (const r of resto) {
-                if (r.status !== 'fulfilled') { completo = false; continue; }
-                if (r.value?.totalFilas !== declaradas) completo = false;
-                filas = filas.concat(filasDe(r.value));
-            }
-            if (paginas > hasta) completo = false;
+        const tramo = Math.floor(Date.now() / CimaAPI.SUMINISTRO_FOTO_MS);
+        let lectura = await this._leerSuministro(`t${tramo}`, true);
+        if (!lectura.coherente) {
+            console.warn('Problemas de suministro: páginas de fotos distintas; se repite sin caché');
+            lectura = await this._leerSuministro(`u${Date.now()}`, false);
         }
+        let { filas, declaradas, completo } = lectura;
 
         // Sin duplicados por CN: si CIMA mueve una fila de página entre dos peticiones, no se cuenta dos veces.
         const vistos = new Set();
@@ -3975,6 +3971,41 @@ class CimaAPI {
         if (completo) this._setCache(cacheKey, activos);
         else console.warn(`Problemas de suministro incompletos: ${filas.length} de ${declaradas ?? '¿?'}`);
         return activos;
+    }
+
+    /**
+     * Una pasada por las páginas de `/psuministro`, todas con el mismo `foto`. `coherente` es
+     * false si alguna página trajo otro `totalFilas` que la primera: mezcla de fotos, no fallo.
+     * @param {string} foto - marcador común de las URL (ver `getSuministro`)
+     * @param {boolean} cuentaApertura - la primera página va a la analítica (solo en la 1.ª pasada)
+     * @private
+     */
+    async _leerSuministro(foto, cuentaApertura) {
+        const secundaria = { headers: { 'X-MC-Autocomplete': '1' } };
+        const filasDe = data => (Array.isArray(data) ? data : (Array.isArray(data?.resultados) ? data.resultados : []));
+        const first = await this._request(`/psuministro?pagina=1&foto=${foto}`, cuentaApertura ? {} : secundaria, false);
+        let filas = filasDe(first);
+        const declaradas = Number.isInteger(first?.totalFilas) && first.totalFilas >= 0 ? first.totalFilas : null;
+        let completo = Array.isArray(first) || declaradas !== null;
+        let coherente = true;
+
+        if (declaradas !== null && declaradas > filas.length && filas.length) {
+            const paginas = Math.ceil(declaradas / filas.length);
+            const hasta = Math.min(paginas, CimaAPI.SUMINISTRO_MAX_PAGINAS);
+            const pedidas = [];
+            for (let pagina = 2; pagina <= hasta; pagina += 1) {
+                // Secundarias: la apertura de Suministro cuenta UNA vez en la analítica, como antes.
+                pedidas.push(this._request(`/psuministro?pagina=${pagina}&foto=${foto}`, secundaria, false));
+            }
+            const resto = await Promise.allSettled(pedidas);
+            for (const r of resto) {
+                if (r.status !== 'fulfilled') { completo = false; continue; }
+                if (r.value?.totalFilas !== declaradas) { completo = false; coherente = false; }
+                filas = filas.concat(filasDe(r.value));
+            }
+            if (paginas > hasta) completo = false;
+        }
+        return { filas, declaradas, completo, coherente };
     }
 
     /**
