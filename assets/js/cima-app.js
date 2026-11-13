@@ -4066,7 +4066,12 @@ class MedCheckApp {
         `;
 
         try {
-            const data = await this.api.searchByATC(atcCode, { comercializados: this._soloComercializados(), noTrack: true });
+            // Por `_consultarGruposATC`, como las búsquedas por indicación: así el grupo lleva su
+            // `consulta` y, si quedaron medicamentos sin verificar o llegó incompleto, el aviso,
+            // el reintento y el traspaso a IA lo dicen (hallazgo 5 de Fable). Un fallo entero
+            // sigue llegando como error (`CONSULTA_FALLIDA`).
+            const { resultados, consulta } = await this.api._consultarGruposATC([atcCode], { comercializados: this._soloComercializados(), noTrack: true });
+            const data = { resultados, totalFilas: resultados.length, consulta };
 
             // Create a synthetic matchedIndication for display
             data.matchedIndication = { label, atc: atcCode };
@@ -4222,6 +4227,17 @@ class MedCheckApp {
     }
 
     /**
+     * Grupos que respondieron pero con medicamentos cuyo ATC no se pudo comprobar (motivo
+     * `sin-verificar`, hallazgo 5 de Fable): ATC → cuántos. Lo verificado de esos grupos SÍ está
+     * en la lista; por eso no se tachan ni se cuentan como «no consultados».
+     */
+    _indicacionSinVerificar(data) {
+        return new Map((data?.consulta?.fallidos || [])
+            .filter(f => f.motivo === 'sin-verificar')
+            .map(f => [String(f.atc), Number(f.sinVerificar) || 0]));
+    }
+
+    /**
      * Aviso de lista incompleta. Va DENTRO del render, no en un toast: un toast se pierde al
      * repintar con la primera faceta, y la lista seguiría incompleta sin decirlo.
      * @param {number} recuperados - medicamentos de los grupos que sí respondieron (antes de facetas)
@@ -4239,16 +4255,39 @@ class MedCheckApp {
             return `<strong>${this._escapeHtml(code)}</strong>${desc ? ` ${this._escapeHtml(desc)}` : ''}${nota}`;
         }).join(' · ');
         const reintentando = !!this._indReintentando;
-        return `
+        const boton = `
+                <button type="button" class="btn btn-sm btn-secondary" onclick="app._reintentarGruposFallidos()" ${reintentando ? 'disabled' : ''}>
+                    <i class="fas fa-rotate-right"></i> ${reintentando ? 'Reintentando…' : `Reintentar ${fallidos.length === 1 ? 'ese grupo' : 'esos grupos'}`}
+                </button>`;
+        const sinVerificar = this._indicacionSinVerificar(data);
+        if (!sinVerificar.size) {
+            return `
             <div class="ind-parcial" role="status">
                 <p><i class="fas fa-triangle-exclamation"></i> <strong>Lista incompleta.</strong>
                 No se ${fallidos.length === 1 ? 'pudo' : 'pudieron'} consultar ${fallidos.length} de ${total} grupos ATC: ${lista}.
                 ${recuperados
                     ? `Se muestran los ${recuperados} medicamentos de los grupos que respondieron; los de ${fallidos.length === 1 ? 'ese grupo' : 'esos grupos'} no están.`
-                    : `Los grupos que respondieron no tienen medicamentos para esta búsqueda; ${fallidos.length === 1 ? 'en el que falló' : 'en los que fallaron'} puede haberlos.`}</p>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="app._reintentarGruposFallidos()" ${reintentando ? 'disabled' : ''}>
-                    <i class="fas fa-rotate-right"></i> ${reintentando ? 'Reintentando…' : `Reintentar ${fallidos.length === 1 ? 'ese grupo' : 'esos grupos'}`}
-                </button>
+                    : `Los grupos que respondieron no tienen medicamentos para esta búsqueda; ${fallidos.length === 1 ? 'en el que falló' : 'en los que fallaron'} puede haberlos.`}</p>${boton}
+            </div>`;
+        }
+        // Hay grupos que respondieron a medias: se dicen aparte, porque lo suyo verificado SÍ está.
+        const ausentes = fallidos.filter(c => !sinVerificar.has(c));
+        const listaDe = codes => codes.map((code) => {
+            const desc = this._describeATCCode(code);
+            const nota = incompletos.has(code) ? ' (llegó incompleto)'
+                : sinVerificar.has(code) ? ` (${sinVerificar.get(code)} sin verificar)` : '';
+            return `<strong>${this._escapeHtml(code)}</strong>${desc ? ` ${this._escapeHtml(desc)}` : ''}${nota}`;
+        }).join(' · ');
+        const nSinVerificar = [...sinVerificar.values()].reduce((s, n) => s + n, 0);
+        const aMedias = [...sinVerificar.keys()];
+        return `
+            <div class="ind-parcial" role="status">
+                <p><i class="fas fa-triangle-exclamation"></i> <strong>Lista incompleta.</strong>
+                ${ausentes.length ? `No se ${ausentes.length === 1 ? 'pudo' : 'pudieron'} consultar ${ausentes.length} de ${total} grupos ATC: ${listaDe(ausentes)}; sus medicamentos no están. ` : ''}
+                En ${aMedias.length === 1 ? 'el grupo' : 'los grupos'} ${listaDe(aMedias)} no se pudo comprobar el ATC de ${nSinVerificar} ${nSinVerificar === 1 ? 'medicamento' : 'medicamentos'} porque CIMA no respondió: no se muestran, y puede que pertenezcan al grupo.
+                ${recuperados
+                    ? `Se muestran los ${recuperados} medicamentos que sí se pudieron comprobar.`
+                    : 'Entre los comprobados no hay medicamentos para esta búsqueda; entre los que faltan puede haberlos.'}</p>${boton}
             </div>`;
     }
 
@@ -4283,7 +4322,7 @@ class MedCheckApp {
             if (this.lastIndicationResults !== data) return;
             this._fusionarReintentoIndicacion(data, nuevo.consulta, anadidos, resumen);
             const quedan = this._indicacionFallidos(data).length;
-            this.showToast(quedan ? `Siguen sin responder ${quedan} grupo(s) ATC` : 'Lista completa: todos los grupos ATC han respondido', quedan ? 'warning' : 'success');
+            this.showToast(quedan ? `La lista sigue incompleta en ${quedan} grupo(s) ATC` : 'Lista completa: todos los grupos ATC han respondido', quedan ? 'warning' : 'success');
         } catch (error) {
             // `CONSULTA_FALLIDA`: ninguno de los reintentados respondió. La lista se queda como
             // estaba, todavía marcada como incompleta.
@@ -6746,13 +6785,17 @@ class MedCheckApp {
         // La rama de fallback puede dejar texto libre en `atc`: solo se envían códigos con forma de ATC.
         // Un grupo que no respondió no es «consultado»: va aparte, y el prompt avisa de que la lista
         // de principios activos puede estar incompleta (2026-11-02).
-        const fallidos = new Set(this._indicacionFallidos(data).map(c => c.toUpperCase()));
+        // Uno con medicamentos sin verificar SÍ se consultó: va con los consultados y, además, en
+        // `sinVerificar`, para que el prompt diga que pueden faltar (hallazgo 5 de Fable).
+        const nSinVerificar = new Map([...this._indicacionSinVerificar(data)].map(([c, n]) => [c.toUpperCase(), n]));
+        const fallidos = new Set(this._indicacionFallidos(data).map(c => c.toUpperCase()).filter(c => !nSinVerificar.has(c)));
         const conForma = codes.filter(c => /^[A-Z]\d{2}([A-Z]{1,2}(\d{2})?)?$/i.test(c)).map(c => ({
             codigo: c.toUpperCase(),
             nombre: (atcCode && c.toUpperCase() === String(atcCode).toUpperCase() && mi.label) ? mi.label : this._describeATCCode(c),
         }));
         const consultados = conForma.filter(c => !fallidos.has(c.codigo));
         const noConsultados = conForma.filter(c => fallidos.has(c.codigo));
+        const sinVerificar = conForma.filter(c => nSinVerificar.has(c.codigo)).map(c => ({ ...c, n: nSinVerificar.get(c.codigo) }));
         const meds = Array.isArray(filtered) ? filtered : [];
 
         const presentes = new Map();
@@ -6779,7 +6822,7 @@ class MedCheckApp {
         const sinVia = meds.filter(m => !(m.viasAdministracion || []).some(v => v?.nombre)).length;
         const formas = [...new Set(meds.map(m => this._consultForma(m)).filter(Boolean))];
         return {
-            kind: 'grupo', pas, atcs, consultados, noConsultados, vias, sinVia, formas, total: meds.length,
+            kind: 'grupo', pas, atcs, consultados, noConsultados, sinVerificar, vias, sinVia, formas, total: meds.length,
             indicacion: (!atcCode && mi?.label) ? mi.label : null, nombre: null,
         };
     }
@@ -6797,6 +6840,7 @@ class MedCheckApp {
         if (scope.formas.length) partes.push(this._consultListaPas(scope.formas, 4));
         if (scope.vias.length) partes.push(scope.vias.length === 1 ? `vía ${scope.vias[0]}` : `vías ${scope.vias.join(', ')}`);
         if (scope.noConsultados?.length) partes.push(`lista incompleta: sin respuesta de ${scope.noConsultados.map(c => c.codigo).join(', ')}`);
+        if (scope.sinVerificar?.length) partes.push(`lista incompleta: medicamentos sin verificar en ${scope.sinVerificar.map(c => c.codigo).join(', ')}`);
         return partes.join(' — ');
     }
 
@@ -7061,6 +7105,10 @@ class MedCheckApp {
             else if (scope.vias.length > 1) lines.push(`- Vías presentes: ${scope.vias.join(', ')} (si la respuesta cambia con la vía, distingue por vía).`);
             if (scope.sinVia) lines.push(`- Vía no declarada en CIMA para ${scope.sinVia} de ${scope.total} medicamentos.`);
             if (scope.noConsultados?.length) lines.push(`- LISTA INCOMPLETA: no se pudieron consultar los ATC ${atcTxt(scope.noConsultados)}. Pueden faltar principios activos de esos grupos; no concluyas que no existen.`);
+            if (scope.sinVerificar?.length) {
+                const n = scope.sinVerificar.reduce((s, c) => s + c.n, 0);
+                lines.push(`- LISTA INCOMPLETA: en los ATC ${atcTxt(scope.sinVerificar)} no se pudo comprobar el ATC de ${n} medicamento(s), que no se incluyen. Pueden faltar principios activos de esos grupos; no concluyas que no existen.`);
+            }
             lines.push('Si la respuesta depende de la molécula, la forma, la concentración o la población, distingue.');
             if (duda) lines.push('', `PREGUNTA DEL CLÍNICO (responde PRIMERO qué sostienen las fuentes, bajo qué condiciones y qué no permiten concluir; sin datos identificables): ${duda}`);
         }
@@ -17094,8 +17142,16 @@ ${ftFechaDocsHtml}
         // sistémico era deducirlo. El nombre no cuesta ninguna petición (árbol curado local).
         const miAtcCodes = mi ? (Array.isArray(mi.atc) ? mi.atc : [mi.atc]).filter(Boolean) : [];
         // Un grupo que no respondió no se rotula como «consultado»: va tachado y lo dice.
+        // Uno que respondió con medicamentos sin verificar no se tacha: lo suyo verificado está.
+        const sinVerificar = this._indicacionSinVerificar(data);
         const miAtcList = miAtcCodes.map((code) => {
             const desc = this._describeATCCode(code);
+            const n = sinVerificar.get(String(code));
+            if (n !== undefined) {
+                return `<span class="match-atc-code" title="Respondió, pero no se pudo comprobar el ATC de ${n} medicamento(s): esos no están en la lista">${this._escapeHtml(String(code))}</span>`
+                    + (desc ? `<span class="match-atc-name">${this._escapeHtml(desc)}</span>` : '')
+                    + `<span class="match-atc-fallo">${n} sin verificar</span>`;
+            }
             const fallo = fallidos.includes(String(code));
             return `<span class="match-atc-code${fallo ? ' is-fallido' : ''}"${fallo ? ' title="No se pudo consultar: sus medicamentos no están en la lista"' : ''}>${this._escapeHtml(String(code))}</span>`
                 + (desc ? `<span class="match-atc-name${fallo ? ' is-fallido' : ''}">${this._escapeHtml(desc)}</span>` : '')
@@ -17105,8 +17161,10 @@ ${ftFechaDocsHtml}
         const miFilterNote = miFs
             ? ` <span class="match-filter" title="Esta indicación lleva criba adicional por ficha técnica: de ${miFs.candidates} candidatos por grupo ATC se muestran los ${miFs.matched} cuya sección 4.1 (indicaciones autorizadas) recoge este uso. Solo algunas indicaciones sensibles llevan esta criba.">verificados en ficha (4.1): ${miFs.matched} de ${miFs.candidates}</span>`
             : '';
-        const miAtcTitle = fallidos.length
+        const miAtcTitle = fallidos.length > sinVerificar.size
             ? 'Grupos ATC de esta indicación; los tachados no se pudieron consultar'
+            : fallidos.length
+            ? 'Grupos ATC de esta indicación; en los marcados faltan medicamentos que no se pudieron verificar'
             : miFs
             ? 'Grupos ATC consultados para esta indicación'
             : 'Grupos ATC consultados — mapeo orientativo por clase terapéutica, sin criba por ficha técnica';

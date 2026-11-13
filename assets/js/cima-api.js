@@ -1089,8 +1089,10 @@ class CimaAPI {
 
         let allResults = resultados;
         if (allResults.length === 0) {
-            return { resultados: [], totalFilas: 0 };
+            return { resultados: [], totalFilas: 0, sinVerificar: [] };
         }
+        /** nregistro de los que no se pudo comprobar el ATC porque CIMA no respondió. */
+        const sinVerificar = [];
 
         // FILTRO ESTRICTO: solo medicamentos cuyo ATC COMIENCE con el código buscado
         // La API CIMA hace match de substring, no de prefijo, causando falsos positivos
@@ -1150,7 +1152,17 @@ class CimaAPI {
                 }
             }
 
-            // Verificar TODOS los medicamentos sin datos ATC (en lotes paralelos)
+            // Verificar TODOS los medicamentos sin datos ATC (en lotes paralelos).
+            //
+            // Una verificación que FALLA no es un descarte (hallazgo 5 de la revisión de Fable,
+            // 11/11/2026). Antes el `catch` devolvía `valid: false` y el medicamento se contaba
+            // como falso positivo: el grupo constaba como completo y ni el aviso de lista
+            // incompleta ni el traspaso a IA se enteraban. Pesa sobre todo con el índice ATC
+            // caducado, cuando TODO va por aquí. El medicamento sigue sin pintarse —podría ser un
+            // falso positivo de verdad (CIMA hace match por subcadena)—, pero se DECLARA en
+            // `sinVerificar` y `_consultarGruposATC` manda el grupo a `fallidos`.
+            // Un 204 (CIMA responde que no lo expone) o una ficha sin ATC SÍ son respuestas: se
+            // descartan como antes.
             if (needsVerification.length > 0) {
                 console.log(`🔎 Verificando ${needsVerification.length} medicamentos sin ATC en respuesta...`);
 
@@ -1172,7 +1184,8 @@ class CimaAPI {
                             }
                             return { med, valid: false };
                         } catch (e) {
-                            return { med, valid: false };
+                            if (e?.code === 'NO_CONTENT') return { med, valid: false };
+                            return { med, valid: false, fallo: true };
                         }
                     });
 
@@ -1180,6 +1193,8 @@ class CimaAPI {
                     for (const r of results) {
                         if (r.valid) {
                             filtered.push(r.med);
+                        } else if (r.fallo) {
+                            sinVerificar.push(String(r.med.nregistro));
                         } else {
                             rejected++;
                         }
@@ -1189,6 +1204,9 @@ class CimaAPI {
 
             if (rejected > 0) {
                 console.log(`🚫 Filtrados ${rejected} falsos positivos (ATC no coincide con prefijo ${upperCode})`);
+            }
+            if (sinVerificar.length > 0) {
+                console.warn(`⚠️ ATC ${upperCode}: ${sinVerificar.length} medicamentos sin verificar (CIMA no respondió)`);
             }
 
             allResults = filtered;
@@ -1211,7 +1229,9 @@ class CimaAPI {
 
         return {
             resultados: unique,
-            totalFilas: unique.length
+            totalFilas: unique.length,
+            // Un nregistro repetido en la respuesta que sí se verificó por la otra copia ya está.
+            sinVerificar: [...new Set(sinVerificar)].filter(n => !seen.has(n)),
         };
     }
 
@@ -1272,9 +1292,9 @@ class CimaAPI {
         }
 
         // 3. Fallback: si parece código ATC, búsqueda directa
+        // Por el mismo camino que las demás, para que lleve `consulta` (hallazgo 5 de Fable).
         if (/^[A-Z]\d{2}/i.test(query)) {
-            const results = await this.searchByATC(query.toUpperCase(), options);
-            return { ...results, matchedIndication: { label: query, atc: query } };
+            return this._executeIndicationSearch({ label: query, atc: query.toUpperCase(), term: normalizedQuery }, options);
         }
 
         return { resultados: [], totalFilas: 0, noMatch: true };
@@ -1330,8 +1350,12 @@ class CimaAPI {
      * Si ningún grupo responde, lanza `CONSULTA_FALLIDA`: un fallo total es un error de consulta,
      * nunca un cero. «Sin resultados» solo puede decirlo una búsqueda que se completó.
      *
+     * Motivos de `fallidos`: `error` y `timeout` (no respondió; sus medicamentos no están),
+     * `incompleto` (llegó cortado; tampoco están) y `sin-verificar` (respondió, pero de
+     * `sinVerificar` medicamentos no se pudo comprobar el ATC: lo verificado SÍ está).
+     *
      * @returns {Promise<{resultados: Array, consulta: {intentados: string[], completos: string[],
-     *   fallidos: Array<{atc: string, motivo: string}>, candidatos: string[]}}>}
+     *   fallidos: Array<{atc: string, motivo: string, sinVerificar?: number}>, candidatos: string[]}}>}
      */
     async _consultarGruposATC(atcCodes, options = {}) {
         const completos = [];
@@ -1340,7 +1364,11 @@ class CimaAPI {
         for (const atcCode of atcCodes) {
             try {
                 const results = await this.searchByATC(atcCode, options);
-                completos.push(atcCode);
+                // Respondió, pero hubo medicamentos cuyo ATC no se pudo comprobar (hallazgo 5 de
+                // Fable): lo verificado se conserva y el grupo NO consta como completo.
+                const sinVerificar = results.sinVerificar?.length || 0;
+                if (sinVerificar) fallidos.push({ atc: atcCode, motivo: 'sin-verificar', sinVerificar });
+                else completos.push(atcCode);
                 if (results.resultados && results.resultados.length > 0) {
                     allResults = allResults.concat(results.resultados);
                 }
@@ -1366,7 +1394,8 @@ class CimaAPI {
             fallidos,
             candidatos: resultados.map(med => med.nregistro),
         };
-        if (!completos.length && fallidos.length) {
+        // Un grupo `sin-verificar` SÍ respondió: no cuenta para el fallo total.
+        if (!completos.length && fallidos.length && fallidos.every(f => f.motivo !== 'sin-verificar')) {
             const err = new Error(`No se pudo consultar ninguno de los ${fallidos.length} grupos ATC`);
             err.code = 'CONSULTA_FALLIDA';
             err.consulta = consulta;

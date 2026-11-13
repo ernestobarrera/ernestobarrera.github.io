@@ -96,11 +96,20 @@ const respuesta503 = () => ({
  * CIMA de mentira. `plan[atc]` = lista de páginas; cada página es un array de medicamentos o
  * `'fallo'`. `totalFilas` se declara como la suma, para que se pidan todas.
  */
-function cargarAPI(plan) {
+function cargarAPI(plan, detalle = {}) {
     const pedidas = [];
     const fetchImpl = async (url) => {
         const u = new URL(url, 'https://cima.test');
         pedidas.push(u.pathname + u.search);
+        // Detalle de un medicamento (verificación en vivo del ATC). `detalle[nregistro]`:
+        // 'fallo' (503), '204' (CIMA no lo expone) o el ATC5 que trae la ficha.
+        if (u.pathname.endsWith('/medicamento')) {
+            const nreg = u.searchParams.get('nregistro');
+            const d = detalle[nreg];
+            if (d === 'fallo') return respuesta503();
+            if (d === '204') return { ok: true, status: 204, statusText: 'No Content', headers: { get: () => '' }, text: async () => '' };
+            return respuestaJson(d ? med(nreg, d) : {});
+        }
         if (u.pathname.endsWith('/medicamentos')) {
             const atc = u.searchParams.get('atc');
             const pagina = Number(u.searchParams.get('pagina') || 1);
@@ -332,6 +341,107 @@ console.log('— 6. El reintento —');
     await app._reintentarGruposFallidos();
     ok('reintento fallido: sigue incompleta y sigue diciéndolo', data.consulta.fallidos.length === 1 && app._indicacionParcialHtml(data, 1).includes('Lista incompleta'));
     ok('…y se puede volver a reintentar', app._indReintentando === false);
+}
+
+// --- 7. Verificación en vivo que falla (hallazgo 5 de Fable, punto 17 de la cola) -------------
+// CIMA devuelve medicamentos sin `atcs`, el índice ATC no sirve (caducado: en el sandbox no hay
+// índice) y la ficha de uno no responde. Antes se contaba como falso positivo y el grupo constaba
+// como completo. Ahora va a `sin-verificar`, sin perder lo verificado.
+console.log('— 7. Un medicamento que no se pudo verificar no es un falso positivo —');
+const sinAtc = (nregistro) => ({ nregistro: String(nregistro), nombre: `MED ${nregistro}` });
+{
+    const { api } = cargarAPI(
+        { C09AA: [[sinAtc(100), sinAtc(101), sinAtc(102), sinAtc(103)]] },
+        { 100: 'C09AA01', 101: 'fallo', 102: 'S01BC10', 103: '204' });
+    const r = await api.searchByATC('C09AA', { noTrack: true });
+    ok('searchByATC conserva el verificado', JSON.stringify(r.resultados.map(m => m.nregistro)) === '["100"]', JSON.stringify(r.resultados.map(m => m.nregistro)));
+    ok('…y declara el que no se pudo verificar', JSON.stringify(r.sinVerificar) === '["101"]', JSON.stringify(r.sinVerificar));
+    ok('un falso positivo real (S01BC10) y un 204 siguen descartándose, no van a sinVerificar', !(r.sinVerificar || []).includes('102') && !(r.sinVerificar || []).includes('103'));
+}
+{
+    const { api } = cargarAPI(
+        { C09AA: [[sinAtc(100), sinAtc(101)]], C09CA: [[med(200, 'C09CA01')]] },
+        { 100: 'C09AA01', 101: 'fallo' });
+    const r = await api._executeIndicationSearch({ atc: ['C09AA', 'C09CA'], label: 'hipertensión', term: 'hipertension' }, {});
+    ok('el grupo con un sin verificar NO consta como completo', JSON.stringify(r.consulta.completos) === '["C09CA"]', JSON.stringify(r.consulta.completos));
+    ok('va a fallidos con motivo «sin-verificar» y cuántos', r.consulta.fallidos.length === 1 && r.consulta.fallidos[0].atc === 'C09AA'
+        && r.consulta.fallidos[0].motivo === 'sin-verificar' && r.consulta.fallidos[0].sinVerificar === 1, JSON.stringify(r.consulta.fallidos));
+    ok('lo verificado de ese grupo SÍ está en la lista', r.resultados.some(m => m.nregistro === '100') && r.resultados.some(m => m.nregistro === '200'));
+    ok('el sin verificar no se pinta', !r.resultados.some(m => m.nregistro === '101'));
+    ok('ni entra en candidatos: el reintento podrá sumarlo', !r.consulta.candidatos.includes('101'));
+}
+{
+    // Un solo grupo, que respondió a medias: no es un fallo total.
+    const { api } = cargarAPI({ C09AA: [[sinAtc(100), sinAtc(101)]] }, { 100: 'C09AA01', 101: 'fallo' });
+    let err = null, r = null;
+    try { r = await api._consultarGruposATC(['C09AA'], {}); } catch (e) { err = e; }
+    ok('un grupo «sin-verificar» solo NO lanza CONSULTA_FALLIDA', !err && r?.resultados?.length === 1, err?.message);
+}
+{
+    // Con la verificación al día, nada cambia.
+    const { api } = cargarAPI({ C09AA: [[sinAtc(100), sinAtc(102)]] }, { 100: 'C09AA01', 102: 'S01BC10' });
+    const r = await api._consultarGruposATC(['C09AA'], {});
+    ok('sin fallos de verificación, el grupo es completo y no hay fallidos', JSON.stringify(r.consulta.completos) === '["C09AA"]' && !r.consulta.fallidos.length);
+}
+{
+    // Las entradas de la vista Indicaciones que no pasaban por `_consultarGruposATC`.
+    // La firma lleva `options = {}`: el bloque se corta en el cierre del método, no en la primera llave.
+    const iArbol = appSrc.indexOf('async searchByATCCode(');
+    const arbol = appSrc.slice(iArbol, appSrc.indexOf('\n    }\n', iArbol));
+    ok('el árbol ATC pasa por _consultarGruposATC', arbol.includes('this.api._consultarGruposATC(') && !arbol.includes('this.api.searchByATC('));
+    const porIndicacion = bloqueDesde(apiSrc, 'async searchByIndication(');
+    ok('el código ATC tecleado pasa por _executeIndicationSearch', !porIndicacion.includes('this.searchByATC('));
+}
+
+const datosSinVerificar = () => ({
+    resultados: [med(100, 'C09AA01'), med(200, 'C09CA01')],
+    totalFilas: 2,
+    matchedIndication: { label: 'hipertensión', term: 'hipertension', atc: ['C09AA', 'C09CA'] },
+    consulta: { intentados: ['C09AA', 'C09CA'], completos: ['C09CA'], fallidos: [{ atc: 'C09AA', motivo: 'sin-verificar', sinVerificar: 2 }], candidatos: ['100', '200'] },
+});
+{
+    const app = nuevaApp();
+    const html = app._indicacionParcialHtml(datosSinVerificar(), 2);
+    ok('el aviso dice «Lista incompleta» y cuántos sin verificar', html.includes('Lista incompleta') && html.includes('C09AA') && html.includes('2 medicamentos') && html.includes('(2 sin verificar)'), html);
+    ok('…no dice que los medicamentos del grupo no están (lo verificado sí está)', !html.includes('no están.') && html.includes('Se muestran los 2 medicamentos que sí se pudieron comprobar'));
+    ok('…y ofrece reintentar', html.includes('_reintentarGruposFallidos()'));
+    const mixto = datosSinVerificar();
+    mixto.consulta.intentados.push('C09DA');
+    mixto.consulta.fallidos.push({ atc: 'C09DA', motivo: 'error' });
+    const htmlMixto = app._indicacionParcialHtml(mixto, 2);
+    ok('mezclado con un grupo caído, dice los dos casos', htmlMixto.includes('1 de 3 grupos ATC') && htmlMixto.includes('C09DA') && htmlMixto.includes('sus medicamentos no están') && htmlMixto.includes('(2 sin verificar)'), htmlMixto);
+    const sinCero = app._indicacionParcialHtml({ ...datosSinVerificar(), resultados: [] }, 0);
+    ok('con cero comprobados, no dice «sin resultados»: entre los que faltan puede haberlos', sinCero.includes('entre los que faltan puede haberlos'));
+}
+{
+    const app = nuevaApp();
+    const data = datosSinVerificar();
+    const scope = app._consultScopeFromResults(data, data.resultados);
+    ok('IA: el grupo sin verificar cuenta como consultado, no como «no consultado»', scope.consultados.some(c => c.codigo === 'C09AA') && !scope.noConsultados.length);
+    ok('IA: …y va en sinVerificar con su número', scope.sinVerificar?.length === 1 && scope.sinVerificar[0].codigo === 'C09AA' && scope.sinVerificar[0].n === 2);
+    const prompt = app._composeConsultPrompt(scope, { selected: ['guias'] });
+    ok('el prompt dice LISTA INCOMPLETA y que no concluya que no existen', prompt.includes('LISTA INCOMPLETA') && prompt.includes('no se pudo comprobar el ATC de 2') && prompt.includes('no concluyas que no existen'), prompt);
+    ok('la línea «Sobre:» también lo dice', app._consultScopeLabel(scope).includes('sin verificar en C09AA'));
+}
+{
+    // Reintento: vuelve a pedir el grupo y suma solo el que ahora sí se verificó.
+    const app = nuevaApp();
+    const data = datosSinVerificar();
+    app.lastIndicationResults = data;
+    app.lastIndicationQuery = 'hipertensión';
+    app.displayIndicationResults = () => {};
+    let pedidos = null;
+    app.api = {
+        _consultarGruposATC: async (codigos) => { pedidos = codigos; return { resultados: [med(100, 'C09AA01'), med(101, 'C09AA02')], consulta: { intentados: codigos, completos: codigos, fallidos: [], candidatos: ['100', '101'] } }; },
+    };
+    await app._reintentarGruposFallidos();
+    ok('el reintento pide el grupo sin verificar', JSON.stringify(pedidos) === '["C09AA"]', JSON.stringify(pedidos));
+    ok('…suma el nuevo sin duplicar y la lista queda completa', data.resultados.length === 3 && !data.consulta.fallidos.length && data.consulta.completos.includes('C09AA'));
+}
+{
+    // Cabecera: el grupo no se tacha, se marca.
+    const disp = bloqueDesde(appSrc, 'displayGroupedIndicationResults(data, searchQuery) {');
+    ok('la cabecera marca «N sin verificar» sin tacharlo', disp.includes('_indicacionSinVerificar(data)') && disp.includes('sin verificar</span>'));
 }
 
 console.log(fallos ? `\n${fallos} fallo(s)` : '\nOK');
