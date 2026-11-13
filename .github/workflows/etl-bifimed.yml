@@ -74,6 +74,19 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+      - name: Setup Node (trozos)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # Punto 8 de la cola de MedCheck (C1 de la revisión del 11/11): los trozos se construyen y se
+      # cotejan con el JSON ANTES de publicar nada. Si fallan aquí, el ETL para con `:full`, `:meta`
+      # y los trozos del mes anterior, coherentes entre sí. Si se dejara para el final, un fallo
+      # dejaría `:full` del mes nuevo y los trozos del viejo, y con CATALOGOS_TROZOS activa la pestaña
+      # Financiación contestaría del mes anterior. No escribe en KV ni necesita credenciales.
+      - name: Verificar trozos (antes de publicar nada)
+        run: node scripts/kv-trozos/publicar-trozos.mjs --catalogo bifimed --entrada bifimed_catalog.json
+
       - name: Publicar a Cloudflare KV
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -115,11 +128,6 @@ jobs:
       # nuevo sin CATALOGOS_TROZOS). El publicador verifica todos los CN contra el JSON, relee lo
       # escrito y mueve el puntero lo último; si algo no casa, el Worker sigue con el release
       # anterior, entero. Formato y orden: `scripts/kv-trozos/`. Coste: 66 escrituras por pasada.
-      - name: Setup Node (trozos)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
       - name: Publicar trozos versionados a Cloudflare KV
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}

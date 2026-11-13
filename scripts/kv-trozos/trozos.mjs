@@ -26,11 +26,24 @@ import { createHash } from 'node:crypto';
 export const FORMATO = 1;
 export const N_TROZOS = 64;
 
-/** Qué campo del meta declara el total de CN de cada catálogo. */
+/**
+ * Qué declara el meta de cada catálogo. En BIFIMED, `total_cn` = `len(by_cn)`. En el Nomenclátor,
+ * `total_products` = `len(items)` cuenta FILAS del Excel, y `by_cn` las deduplica
+ * (`build_sns_catalog.py`): una fila con el CN repetido no es un `by_cn` incompleto, y exigir
+ * `total_products === by_cn` tumbaría la publicación del mes (revisión del 11/11, C1). Por eso ahí
+ * se cotejan las filas con `items` y los CN distintos de `items` con `by_cn`.
+ */
 export const CATALOGOS = {
     'bifimed':     { total: (meta) => meta?.total_cn },
-    'sns-catalog': { total: (meta) => meta?.total_products },
+    'sns-catalog': { total: (meta) => meta?.total_products, filas: (doc) => doc.items },
 };
+
+/** Filas del origen cuyo CN ya había salido antes (0 si el catálogo no trae filas). */
+export function filasRepetidas(catalogo, doc) {
+    const filas = CATALOGOS[catalogo]?.filas?.(doc);
+    if (!Array.isArray(filas)) return 0;
+    return filas.length - new Set(filas.map((f) => f?.cn)).size;
+}
 
 export function anchoTrozo(n) {
     return Math.max(2, String(n - 1).length);
@@ -127,8 +140,14 @@ export function verificarRelease(doc, rel) {
     const totalMeta = CATALOGOS[rel.catalogo].total(doc.meta);
     const cnsOrigen = Object.keys(doc.by_cn);
 
+    const filas = CATALOGOS[rel.catalogo].filas?.(doc);
     if (typeof totalMeta !== 'number') err(`el meta no declara el total de CN de ${rel.catalogo}`);
-    else if (totalMeta !== cnsOrigen.length) err(`el meta declara ${totalMeta} CN y by_cn trae ${cnsOrigen.length}`);
+    else if (Array.isArray(filas)) {
+        const distintos = new Set(filas.map((f) => f?.cn));
+        if (totalMeta !== filas.length) err(`el meta declara ${totalMeta} filas e items trae ${filas.length}`);
+        if (distintos.size !== cnsOrigen.length) err(`items trae ${distintos.size} CN distintos y by_cn ${cnsOrigen.length}`);
+        for (const cn of cnsOrigen) if (!distintos.has(cn)) { err(`CN ${cn} está en by_cn y no en items`); break; }
+    } else if (totalMeta !== cnsOrigen.length) err(`el meta declara ${totalMeta} CN y by_cn trae ${cnsOrigen.length}`);
     if (rel.manifiesto.total_cn !== cnsOrigen.length) err('el manifiesto no cuenta los CN de origen');
     if (rel.trozos.length !== n || rel.manifiesto.trozos.length !== n) err('número de trozos incoherente');
     if (!RID_RE.test(rel.release_id)) err('release_id mal formado');

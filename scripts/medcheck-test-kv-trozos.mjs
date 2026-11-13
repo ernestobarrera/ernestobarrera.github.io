@@ -16,12 +16,15 @@
  *   3. el publicador escribe trozos y manifiesto, los relee, y SOLO ENTONCES mueve el puntero;
  *      si una relectura no casa, el puntero no se toca;
  *   4. no reescribe lo que ya está activo, y limpia releases viejos conservando el activo y el
- *      anterior (la vuelta atrás), sin tumbar la publicación si la limpieza falla.
+ *      anterior (la vuelta atrás), sin tumbar la publicación si la limpieza falla;
+ *   5. los ETL verifican los trozos ANTES de publicar `:full` (C1 de la revisión del 11/11), y un
+ *      CN repetido en las filas del Nomenclátor no tumba la publicación.
  * El lector vive en el Worker (repo privado) y su test importa `trozos.mjs` de aquí.
  *
  * Uso: node scripts/medcheck-test-kv-trozos.mjs
  */
-import { construirRelease, verificarRelease, claves, trozoDe, canonico, N_TROZOS } from './kv-trozos/trozos.mjs';
+import { readFileSync } from 'node:fs';
+import { construirRelease, verificarRelease, filasRepetidas, claves, trozoDe, canonico, N_TROZOS } from './kv-trozos/trozos.mjs';
 import { publicar } from './kv-trozos/publicar-trozos.mjs';
 
 let fallos = 0;
@@ -83,8 +86,22 @@ console.log('\n2) Los trozos traen exactamente el origen');
 
     const d2 = doc(); d2.meta.total_cn = 499;
     ok('detecta un meta que no cuadra con by_cn', verificarRelease(d2, construirRelease('bifimed', d2)).some((e) => /declara 499/.test(e)));
-    const sns = { meta: { total_products: 1 }, items: [], by_cn: { '0140001': { cn: '0140001' } } };
+    const sns = { meta: { total_products: 1 }, items: [{ cn: '0140001' }], by_cn: { '0140001': { cn: '0140001' } } };
     ok('Nomenclátor: el total sale de total_products', verificarRelease(sns, construirRelease('sns-catalog', sns)).length === 0);
+
+    // C1 (revisión del 11/11): total_products cuenta filas del Excel y by_cn las deduplica. Un CN
+    // repetido en el Excel del Ministerio no puede tumbar la publicación del mes.
+    const rep = { meta: { total_products: 3 }, items: [{ cn: '0140001' }, { cn: '0140002' }, { cn: '0140001' }],
+        by_cn: { '0140001': { cn: '0140001' }, '0140002': { cn: '0140002' } } };
+    const eRep = verificarRelease(rep, construirRelease('sns-catalog', rep));
+    ok('Nomenclátor: un CN repetido en las filas no tumba la publicación', eRep.length === 0, eRep.join('; '));
+    ok('…y se cuenta como fila repetida', filasRepetidas('sns-catalog', rep) === 1 && filasRepetidas('bifimed', doc()) === 0);
+    const corto = { ...rep, by_cn: { '0140001': { cn: '0140001' } } };
+    ok('Nomenclátor: un by_cn al que le falta un CN de items sigue fallando',
+        verificarRelease(corto, construirRelease('sns-catalog', corto)).some((e) => /CN distintos/.test(e)));
+    const filasMal = { ...rep, meta: { total_products: 2 } };
+    ok('Nomenclátor: un total_products que no cuadra con items sigue fallando',
+        verificarRelease(filasMal, construirRelease('sns-catalog', filasMal)).some((e) => /declara 2 filas/.test(e)));
 }
 
 function kvFalso() {
@@ -145,6 +162,23 @@ console.log('\n4) Idempotencia y limpieza');
     kvL.fallarLimpieza = true;
     const infL = await publicar(r1, kvL, silencio);
     ok('si la limpieza falla, la publicación sigue siendo válida y lo avisa', infL.puntero && infL.avisos.length === 1);
+}
+
+console.log('\n5) Orden en los ETL: verificar antes de :full, publicar después de :meta (C1)');
+for (const [wf, cat] of [['etl-bifimed', 'bifimed'], ['etl-sns-catalog', 'sns-catalog']]) {
+    const y = readFileSync(new URL(`../.github/workflows/${wf}.yml`, import.meta.url), 'utf8');
+    const pasos = y.split(/\n(?=      - name: )/);
+    const i = (re) => pasos.findIndex((p) => re.test(p));
+    const verificar = i(new RegExp(`publicar-trozos\\.mjs --catalogo ${cat} --entrada \\S+\\s*$`, 'm'));
+    const publicarT = i(new RegExp(`publicar-trozos\\.mjs --catalogo ${cat} .*--publicar`));
+    const full = i(new RegExp(`values/${cat}%3Afull`));
+    const meta = i(new RegExp(`values/${cat}%3Ameta`));
+    const node = i(/actions\/setup-node/);
+    ok(`${wf}: hay paso de verificar sin --publicar`, verificar > 0);
+    ok(`${wf}: verificar va antes de publicar :full`, verificar > 0 && full > verificar, `${verificar} / ${full}`);
+    ok(`${wf}: Node se instala antes de verificar`, node >= 0 && node < verificar);
+    ok(`${wf}: verificar no lleva credenciales de KV`, verificar > 0 && !/CF_API_TOKEN/.test(pasos[verificar]));
+    ok(`${wf}: los trozos se publican después de :full y :meta`, publicarT > meta && meta > full, `${full} / ${meta} / ${publicarT}`);
 }
 
 console.log(fallos ? `\n${fallos} FALLOS` : '\nTODO OK');

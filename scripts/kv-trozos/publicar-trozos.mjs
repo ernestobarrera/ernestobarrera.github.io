@@ -2,9 +2,15 @@
 /**
  * Publica en Cloudflare KV un catálogo partido en trozos versionados (formato en `trozos.mjs`).
  *
- * Lo llaman los ETL de BIFIMED y del Nomenclátor DESPUÉS de publicar `:full` y `:meta`, que se
- * siguen escribiendo igual: un Worker viejo (o uno nuevo con los trozos desactivados) tiene que
- * seguir encontrando el blob entero. Eso es la vuelta atrás.
+ * Lo llaman los ETL de BIFIMED y del Nomenclátor DOS veces:
+ *   - sin --publicar, ANTES de publicar `:full` y `:meta`: si el release no se puede construir o
+ *     no casa con el origen, el ETL para sin mover nada. Si no, `:full` sería del mes nuevo y los
+ *     trozos del anterior hasta la pasada siguiente: con los trozos activos, Financiación diría
+ *     «financiado» de un CN retirado y las marcas del índice se apagarían en todas las sesiones
+ *     (revisión del 11/11, C1);
+ *   - con --publicar, DESPUÉS de `:full` y `:meta`, que se siguen escribiendo igual: un Worker
+ *     viejo (o uno nuevo con los trozos desactivados) tiene que seguir encontrando el blob entero.
+ *     Eso es la vuelta atrás.
  *
  * ORDEN, y por qué:
  *   1. construir el release y verificarlo contra el origen (todos los CN, todos los campos);
@@ -28,7 +34,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { construirRelease, verificarRelease, claves, sha256hex, RID_RE } from './trozos.mjs';
+import { construirRelease, verificarRelease, filasRepetidas, claves, sha256hex, RID_RE } from './trozos.mjs';
 
 /**
  * `api` abstrae KV para poder probarlo sin red: get(clave) → Buffer|null, putBulk([{key,value}]),
@@ -181,6 +187,11 @@ async function main(argv) {
     if (errores.length) {
         console.error(`[trozos] ${catalogo}: el release NO coincide con el origen:\n  - ${errores.join('\n  - ')}`);
         return 1;
+    }
+    const repetidas = filasRepetidas(catalogo, doc);
+    if (repetidas) {
+        const m = `[trozos] ${catalogo}: ${repetidas} filas del origen repiten un CN ya visto; by_cn se queda con la última, igual que :full`;
+        console.log(process.env.GITHUB_ACTIONS ? `::warning::${m}` : m);
     }
     const tam = rel.trozos.map((t) => t.bytes);
     console.log(`[trozos] ${catalogo}: release ${rel.release_id}, ${rel.manifiesto.total_cn} CN en ${rel.n_trozos} trozos `
