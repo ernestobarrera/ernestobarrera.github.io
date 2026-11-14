@@ -2017,6 +2017,7 @@ class MedCheckApp {
             }
 
             this.displaySearchResults(this.lastSearchResults);
+            this._marcarEstadoApi(!rawData.incompleta);
 
             // Avisar si los resultados son de medicamentos no comercializados
             if (retiradosAviso) {
@@ -2032,6 +2033,7 @@ class MedCheckApp {
             }
 
         } catch (error) {
+            this._marcarEstadoApi(false);
             this.handleSearchError(resultsContainer, error);
         }
     }
@@ -2132,6 +2134,33 @@ class MedCheckApp {
 
         const primaryResults = await Promise.allSettled(primarySearches);
 
+        // Una consulta rechazada que NO sea `NO_CONTENT` (respuesta vacía de CIMA) es una consulta
+        // que no se leyó. Hasta el 14/11/2026 se saltaba con `continue` y, si fallaban todas, la
+        // lista vacía se pintaba como «Sin resultados» (revisión de diseño de Fable, A0). Ahora:
+        // todas fallidas → error; alguna fallida → la lista sale marcada como incompleta.
+        let consultas = 0, fallidas = 0, ultimoError = null;
+        const contar = (resultados) => {
+            for (const r of resultados) {
+                consultas++;
+                if (r.status === 'rejected' && r.reason?.code !== 'NO_CONTENT') { fallidas++; ultimoError = r.reason; }
+            }
+        };
+        contar(primaryResults);
+        const cierre = (lista) => {
+            if (!lista.length && fallidas) {
+                if (fallidas === consultas) throw ultimoError;
+                const err = new Error('Búsqueda sin leer del todo');
+                err.code = 'BUSQUEDA_SIN_LEER';
+                err.consulta = { consultas, fallidas };
+                throw err;
+            }
+            return {
+                resultados: this._sortMedsByQueryRelevance(lista, query),
+                totalFilas: lista.length,
+                ...(fallidas ? { incompleta: { consultas, fallidas } } : {})
+            };
+        };
+
         // Combinar y deduplicar resultados primarios
         const seen = new Set();
         let allResults = [];
@@ -2147,12 +2176,7 @@ class MedCheckApp {
         }
 
         // Si hay resultados de fase 1, usarlos (son los más relevantes)
-        if (allResults.length > 0) {
-            return {
-                resultados: this._sortMedsByQueryRelevance(allResults, query),
-                totalFilas: allResults.length
-            };
-        }
+        if (allResults.length > 0) return cierre(allResults);
 
         // FASE 2: Fallback a palabras individuales solo si fase 1 no encuentra nada
         const expandedWords = new Set(words);
@@ -2168,6 +2192,7 @@ class MedCheckApp {
         }
 
         const fallbackResults = await Promise.allSettled(fallbackSearches);
+        contar(fallbackResults);
 
         for (const result of fallbackResults) {
             if (result.status !== 'fulfilled') continue;
@@ -2179,10 +2204,7 @@ class MedCheckApp {
             }
         }
 
-        return {
-            resultados: this._sortMedsByQueryRelevance(allResults, query),
-            totalFilas: allResults.length
-        };
+        return cierre(allResults);
     }
 
     /**
@@ -2745,7 +2767,16 @@ class MedCheckApp {
         // Group results
         const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
 
+        const inc = data.incompleta;
+        const franjaIncompleta = inc ? `
+            <div class="ind-parcial" role="status">
+                <p><i class="fas fa-triangle-exclamation"></i> <strong>Lista incompleta.</strong>
+                No ${inc.fallidas === 1 ? 'respondió 1' : `respondieron ${inc.fallidas}`} de las ${inc.consultas} consultas a CIMA de esta búsqueda: puede faltar algún medicamento.</p>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="app.performSearch({ preserveFilters: true })"><i class="fas fa-rotate-right"></i> Reintentar</button>
+            </div>` : '';
+
         resultsContainer.innerHTML = `
+            ${franjaIncompleta}
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data)}
             ${this.renderRouteFilterChips(routes)}
             ${this.renderPAFilterChips(paList)}
@@ -15510,6 +15541,19 @@ ${ftFechaDocsHtml}
                     </p>
                 </div>
             `;
+        } else if (error.code === 'BUSQUEDA_SIN_LEER') {
+            const { consultas = 0, fallidas = 0 } = error.consulta || {};
+            message = 'No se pudo consultar CIMA del todo';
+            help = `
+                <div class="ind-parcial" role="status">
+                    <p><i class="fas fa-triangle-exclamation"></i>
+                        No ${fallidas === 1 ? 'respondió 1' : `respondieron ${fallidas}`} de las ${consultas} consultas de esta búsqueda y las que respondieron no traen medicamentos.
+                        <strong>No significa que no haya</strong>: repite la búsqueda en unos segundos o consúltalo en
+                        <a href="https://cima.aemps.es/cima/publico/home.html" target="_blank" rel="noopener">CIMA</a>.
+                    </p>
+                    ${container?.id === 'search-results' ? `<button type="button" class="btn btn-sm btn-secondary" onclick="app.performSearch({ preserveFilters: true })"><i class="fas fa-rotate-right"></i> Reintentar</button>` : ''}
+                </div>
+            `;
         } else if (error.code === 'TIMEOUT') {
             message = 'CIMA no responde';
             help = `
@@ -15570,6 +15614,14 @@ ${ftFechaDocsHtml}
         }, 3000);
     }
 
+
+    /** El punto del pie refleja la última búsqueda real, no solo la sonda del arranque (A0). */
+    _marcarEstadoApi(ok) {
+        const indicator = document.getElementById('api-status');
+        if (!indicator) return;
+        indicator.classList.toggle('online', !!ok);
+        indicator.classList.toggle('offline', !ok);
+    }
 
     async checkAPIStatus() {
         const indicator = document.getElementById('api-status');

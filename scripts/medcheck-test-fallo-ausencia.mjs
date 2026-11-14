@@ -358,6 +358,44 @@ console.log('\n— Búsqueda por número de registro (hallazgo 12) —');
     ok('7 cifras: CN encontrado y registro fallido → sale el CN', r?.resultados?.[0]?.nregistro === '70000');
 }
 
+console.log('\n— Buscador principal por texto (revisión de diseño de Fable, 14/11, A0) —');
+{
+    // El camino más usado de la aplicación. Con el Worker caído decía «Sin resultados» para
+    // ibuprofeno; con una de las consultas paralelas caída daba una lista parcial como completa.
+    const appBusca = () => { const a = Object.create(MedCheckApp.prototype); a.api = nuevaApi(); return a; };
+    const ENA = { nregistro: '60001', nombre: 'ENALAPRIL CINFA 20 mg' };
+    const ACE = { nregistro: '60002', nombre: 'ACETENSIL 20 mg' };
+
+    red = porRuta({});
+    let error = null;
+    try { await appBusca()._performSmartSearch('ibuprofeno', { comerc: 1 }); } catch (e) { error = e; }
+    ok('red cortada: el error sube (no lista vacía → «Sin resultados»)', !!error && error.code !== 'BUSQUEDA_SIN_LEER', error?.code || String(error));
+
+    red = porRuta({ '/medicamentos?nombre=enalapril': { resultados: [ENA], totalFilas: 1 }, '/medicamentos?practiv1=enalapril': 'CORTE' });
+    const r = await appBusca()._performSmartSearch('enalapril', { comerc: 1 });
+    ok('una consulta caída y otra con datos: sale la lista, marcada como incompleta',
+        r.resultados.length === 1 && r.incompleta?.fallidas === 1 && r.incompleta?.consultas === 2, JSON.stringify(r));
+
+    red = porRuta({ '/medicamentos?nombre=enalapril': { resultados: [ENA], totalFilas: 1 }, '/medicamentos?practiv1=enalapril': { resultados: [ACE], totalFilas: 1 } });
+    const r2 = await appBusca()._performSmartSearch('enalapril', { comerc: 1 });
+    ok('todo leído: lista completa, sin marca de incompleta', r2.resultados.length === 2 && !r2.incompleta, JSON.stringify(r2));
+
+    red = porRuta({ '/medicamentos?nombre=zzqq': '204', '/medicamentos?practiv1=zzqq': { resultados: [], totalFilas: 0 } });
+    const r3 = await appBusca()._performSmartSearch('zzqq', { comerc: 1 });
+    ok('cero REAL (204 y lista vacía): vacío sin error ni marca', r3.resultados.length === 0 && !r3.incompleta, JSON.stringify(r3));
+
+    red = porRuta({ '/medicamentos?nombre=zzqq': { resultados: [], totalFilas: 0 }, '/medicamentos?practiv1=zzqq': 'CORTE' });
+    error = null;
+    try { await appBusca()._performSmartSearch('zzqq', { comerc: 1 }); } catch (e) { error = e; }
+    ok('una caída y la otra vacía: error BUSQUEDA_SIN_LEER, nunca «Sin resultados»',
+        error?.code === 'BUSQUEDA_SIN_LEER' && error.consulta?.fallidas >= 1, error?.code || String(error));
+
+    const cont = { id: 'search-results', innerHTML: '' };
+    appBusca().handleSearchError(cont, error);
+    ok('la pantalla dice que no significa que no haya, y ofrece reintentar',
+        /No significa que no haya/.test(cont.innerHTML) && /Reintentar/.test(cont.innerHTML) && !/Sin resultados/.test(cont.innerHTML));
+}
+
 console.log('\n— getNotas (hallazgo 15) —');
 {
     const definiciones = apiSrc.match(/^\s+async getNotas\(/gm) || [];
