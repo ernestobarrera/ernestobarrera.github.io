@@ -332,45 +332,9 @@ class MedCheckApp {
             ['V',   { name: 'Varios / Hospitalaria', icon: 'flask', color: '#94a3b8' }]
         ];
 
-        // SADMANS — fármacos a suspender temporalmente en enfermedad aguda con
-        // riesgo de deshidratación (vómitos/diarrea/fiebre), por riesgo de fracaso
-        // renal agudo. Mnemónico estándar, derivable por ATC. Orden: prefijo largo
-        // primero. NO procede de CIMA; es regla clínica determinista.
-        this.SADMANS_RULES = [
-            ['A10BK', 'iSGLT2'],
-            ['A10BB', 'Sulfonilurea'],
-            ['A10BA', 'Metformina'],
-            ['A10BD', 'Comb. con metformina/iSGLT2'],
-            ['C09B', 'IECA (combinación)'],
-            ['C09A', 'IECA'],
-            ['C09D', 'ARA-II (combinación)'],
-            ['C09C', 'ARA-II'],
-            ['C03',  'Diurético'],
-            ['M01A', 'AINE']
-        ];
-
-        // Monitorización analítica recomendada tras prescripción. Tabla clínica
-        // curada (conocimiento estándar), derivable por ATC. Educativa/orientativa,
-        // NO exhaustiva y NO procedente de CIMA: verificar siempre la ficha técnica.
-        this.MONITORING_RULES = [
-            ['C10AA',   'Transaminasas (basal); CK si mialgias'],
-            ['C09',     'Creatinina y potasio (basal y 1–2 sem tras inicio/ajuste)'],
-            ['C03D',    'Potasio y función renal (ahorradores de potasio)'],
-            ['C03',     'Iones (Na/K) y función renal'],
-            ['A10BA',   'Función renal (FG); vitamina B12 si uso prolongado'],
-            ['A10BK',   'Función renal'],
-            ['C01AA05', 'Digoxinemia, función renal y potasio'],
-            ['C01BD01', 'Función tiroidea y hepática; Rx tórax (amiodarona)'],
-            ['B01AA',   'INR periódico (anticoagulante cumarínico)'],
-            ['B01AF',   'Función renal (ajuste de dosis del ACOD)'],
-            ['H03AA',   'TSH'],
-            ['M04AA',   'Función renal y transaminasas (alopurinol)'],
-            ['N05AN01', 'Litemia, función renal y tiroidea'],
-            ['N03AG01', 'Hemograma y transaminasas (valproato)'],
-            ['L04AX03', 'Hemograma, transaminasas y función renal (metotrexato)'],
-            ['L01BA01', 'Hemograma, transaminasas y función renal (metotrexato)'],
-            ['N05A',    'Perfil metabólico (glucemia, lípidos, peso) — antipsicóticos']
-        ];
+        // SADMANS_RULES y MONITORING_RULES (qué suspender en enfermedad aguda, qué analítica
+        // pedir) se retiraron el 14/11/2026: eran consejo terapéutico propio, no texto oficial
+        // (dossier de cualificación, B5; «espejo, no juez»).
 
         // Vademécum esencial de Atención Primaria — lista por PRINCIPIO ACTIVO
         // (no marcas). Base: WHO Model List of Essential Medicines 23.ª (2023);
@@ -6205,32 +6169,25 @@ class MedCheckApp {
 
             <details class="search-box combo-ficha-panel combo-collapse" id="combo-ficha-details" ${this._comboFichaOpen ? 'open' : ''}>
                 <summary class="combo-collapse-summary">
-                    <span class="combo-collapse-title"><i class="fas fa-file-medical"></i> Buscar en la ficha técnica oficial (AEMPS)</span>
-                    <span class="combo-collapse-meta">menciones literales · secciones 4.5 y 4.8</span>
+                    <span class="combo-collapse-title"><i class="fas fa-file-medical"></i> Leer en la ficha técnica oficial (AEMPS)</span>
+                    <span class="combo-collapse-meta">secciones 4.5 y 4.8 · una ficha cada vez</span>
                 </summary>
                 <div class="combo-collapse-body">
-                    <p class="combo-research-copy">Búsqueda <strong>dentro del texto oficial</strong> de la ficha técnica: encuentra menciones literales, no detecta interacciones descritas por clase ni razona sobre ellas (para eso, la consulta con IA de arriba).</p>
-                    <div class="combo-grid">
-                        <div class="search-box search-box-compact combo-action-card">
-                            <div class="combo-card-kicker"><i class="fas fa-file-medical"></i> Ficha técnica · 4.5</div>
-                            <h3 style="color: var(--primary);"><i class="fas fa-random"></i> Interacciones fármaco–fármaco</h3>
-                            <p class="text-muted text-sm mb-sm">Menciones cruzadas <strong>por nombre de fármaco</strong> dentro del texto de la sección 4.5 (necesita 2 o más).</p>
-                            <button class="btn btn-primary btn-compact w-full" onclick="app.performInteractionAnalysis()" ${n < 2 ? 'disabled' : ''}>
-                                <i class="fas fa-search-plus"></i> Buscar en fichas (4.5)
-                            </button>
-                            <div id="interactions-results"></div>
-                        </div>
-
-                        <div class="search-box search-box-compact combo-action-card">
-                            <div class="combo-card-kicker"><i class="fas fa-file-medical"></i> Ficha técnica · 4.8</div>
-                            <h3 style="color: var(--primary);"><i class="fas fa-user-md"></i> Fármaco–síntoma</h3>
-                            <p class="text-muted text-sm mb-sm">Busca los síntomas añadidos arriba <strong>dentro del texto</strong> de la sección 4.8 (unidos por <strong>OR</strong>).</p>
-                            <button id="combo-symptom-btn" class="btn btn-primary btn-compact w-full" onclick="app.performSymptomAnalysis()" ${(n === 0 || !hasSymptom) ? 'disabled' : ''}>
-                                <i class="fas fa-microscope"></i> Buscar en fichas (4.8)
-                            </button>
-                            <div id="adverse-results"></div>
-                        </div>
-                    </div>
+                    <p class="combo-research-copy">Abre la sección de cada medicamento de la lista, con su texto literal. MedCheck <strong>no cruza</strong> las fichas entre sí ni busca en ellas por ti.</p>
+                    ${n === 0 ? '<p class="text-muted text-sm">Añade medicamentos a la lista para abrir sus fichas.</p>' : `
+                    <div class="combo-ficha-list">
+                        ${this.comboDrugList.map(med => {
+                            const nreg = this._escapeHtml(String(med.nregistro)).replace(/'/g, "\\'");
+                            return `
+                        <div class="combo-ficha-row">
+                            <span class="combo-ficha-name" title="${this._escapeHtml(med.nombre)}">${this._escapeHtml(med.nombre)}</span>
+                            <span class="combo-ficha-links">
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${nreg}','interactions')" title="Abrir la sección 4.5 de su ficha técnica"><i class="fas fa-random"></i> 4.5 Interacciones</button>
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${nreg}','adverse')" title="Abrir la sección 4.8 de su ficha técnica"><i class="fas fa-notes-medical"></i> 4.8 Reacciones</button>
+                            </span>
+                        </div>`;
+                        }).join('')}
+                    </div>`}
                 </div>
             </details>
             </div>
@@ -14670,24 +14627,13 @@ ${ftFechaDocsHtml}
     }
     /**
      * Detecta información sobre intervalo QT en secciones 4.4 y 4.5 de la FT.
-     * Si el fármaco está en AZCERT/CredibleMeds, el tab aparece siempre.
-     * Si hay texto QT en la FT, se muestra resaltado con TreeWalker.
+     * La pestaña solo aparece si la ficha técnica habla del QT: espejo, no juez. Hasta el
+     * 14/11/2026 también aparecía con una clasificación de riesgo de AZCERT/CredibleMeds copiada
+     * a mano en el código; se retiró por no ser fuente oficial, no actualizarse y no tener
+     * licencia confirmada para ir dentro de un programa (dossier de cualificación, B4).
      */
     async loadQTDetection(nregistro, medNombre) {
         try {
-            const med = this.currentMed;
-            const activePrinciple = (med?.principiosActivos?.[0]?.nombre || '').toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const normalize = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const cls = CimaAPI.QT_RISK_CLASSIFICATION;
-
-            // Clasificación previa: ¿está este fármaco en la lista AZCERT/CredibleMeds?
-            const isClassified =
-                cls.known.some(d => activePrinciple.includes(normalize(d))) ||
-                cls.conditional.some(d => activePrinciple.includes(normalize(d))) ||
-                cls.possible.some(d => activePrinciple.includes(normalize(d))) ||
-                cls.special_lqts.some(d => activePrinciple.includes(normalize(d)));
-
             // Buscar en 4.4 (advertencias) y 4.5 (interacciones) en paralelo
             const [res44, res45] = await Promise.allSettled([
                 this.api.getDocSeccion(nregistro, '4.4'),
@@ -14705,8 +14651,8 @@ ${ftFechaDocsHtml}
             const qtRegex = new RegExp(CimaAPI.QT_DETECTION_REGEX.source, 'gi');
             const hasQTText = qtRegex.test(combinedPlain);
 
-            // Tab aparece si: fármaco clasificado en AZCERT o texto FT menciona QT
-            if (!isClassified && !hasQTText) return;
+            // La pestaña aparece solo si el texto de la ficha menciona el QT
+            if (!hasQTText) return;
             // Con J/K el panel ya puede enseñar otro producto: no se le cuelga el QT de este.
             if (this._nregEnPanel !== String(nregistro)) return;
 
@@ -14727,61 +14673,11 @@ ${ftFechaDocsHtml}
     }
 
     injectQTTab(nregistro, medNombre, displayHtml, matchCount) {
-        // Resolver clasificación de riesgo por principio activo (fuente: AZCERT/CredibleMeds)
-        const med = this.currentMed;
-        const activePrinciple = (med?.principiosActivos?.[0]?.nombre || '').toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-        const normalize = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        const cls = CimaAPI.QT_RISK_CLASSIFICATION;
-
-        let riskLevel = null;
-        let riskLabel = '';
-        let riskClass = '';
-        let riskNote = '';
-
-        if (cls.known.some(d => activePrinciple.includes(normalize(d)))) {
-            riskLevel = 'known';
-            riskLabel = 'Riesgo conocido de TdP';
-            riskClass = 'qt-risk-known';
-        } else if (cls.conditional.some(d => activePrinciple.includes(normalize(d)))) {
-            riskLevel = 'conditional';
-            riskLabel = 'Riesgo condicionado';
-            riskClass = 'qt-risk-conditional';
-        } else if (cls.possible.some(d => activePrinciple.includes(normalize(d)))) {
-            riskLevel = 'possible';
-            riskLabel = 'Riesgo posible';
-            riskClass = 'qt-risk-possible';
-        } else if (cls.special_lqts.some(d => activePrinciple.includes(normalize(d)))) {
-            riskLevel = 'special';
-            riskLabel = 'Riesgo específico en SQTL congénito';
-            riskClass = 'qt-risk-special';
-            riskNote = 'Este fármaco no prolonga el QT en población general, pero debe evitarse en pacientes con síndrome de QT largo congénito diagnosticado o sospechado.';
-        }
-
         // Resaltar términos QT y ECG — solo si hay texto FT disponible
         const ftHtml = (displayHtml || '').trim();
         const hasFTText = ftHtml.length > 0;
-
-        const riskBadgeHtml = riskLevel ? `
-            <div class="qt-risk-badge ${riskClass}">
-                <i class="fas fa-heartbeat"></i>
-                <strong>${riskLabel}</strong>
-                <span style="font-size:0.75rem;opacity:0.7;">(AZCERT/CredibleMeds)</span>
-            </div>
-            ${riskNote ? `<p class="qt-risk-note">${riskNote}</p>` : ''}` : '';
-
-        // Factores potenciadores — evidencia alta (CredibleMeds/AZCERT) + Boletín GV 2023
-        const riskFactorsHtml = `
-            <p class="qt-factors-note">
-                <strong>Factores que potencian el riesgo:</strong>
-                hipopotasemia (&lt;3,5 mEq/L), hipomagnesemia (&lt;1,7 mg/dL), hipocalcemia,
-                bradicardia o bloqueo AV, sexo femenino, hipotiroidismo, edad ≥65 años,
-                insuficiencia renal (FG &lt;30 mL/min), hepatopatía grave,
-                combinación con otros fármacos alargadores del QT,
-                síndrome de QT largo congénito.
-                <span style="font-size:0.75em;opacity:0.65;">(CredibleMeds/AZCERT; Boletín FT GV 2023, Tabla 5)</span>
-            </p>`;
+        // Sin texto de la ficha no hay nada que espejar: no se abre la pestaña.
+        if (!hasFTText) return;
 
         const ftSectionHtml = hasFTText ? `
                 <div class="qt-highlight-legend">
@@ -14790,12 +14686,7 @@ ${ftFechaDocsHtml}
                 </div>
                 <div id="qt-section-text" class="section-text qt-section-text">
                     ${ftHtml}
-                </div>` : `
-                <p class="qt-factors-note" style="margin-top:0.5rem;">
-                    <i class="fas fa-info-circle" style="opacity:0.5;"></i>
-                    La ficha técnica no incluye texto específico sobre QT en las secciones 4.4 y 4.5.
-                    La clasificación de riesgo procede de AZCERT/CredibleMeds.
-                </p>`;
+                </div>` : '';
 
         const tabContent = `
             <div class="qt-tab-wrapper">
@@ -14803,10 +14694,8 @@ ${ftFechaDocsHtml}
                     <h4 style="margin:0;"><i class="fas fa-heartbeat"></i> Intervalo QT</h4>
                     ${hasFTText ? `<button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('qt-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Intervalo QT')" title="Copiar a la historia clínica: lo seleccionado o el texto entero, con su fuente"><i class="fas fa-copy"></i></button>` : ''}
                 </div>
-                ${riskBadgeHtml}
                 ${ftSectionHtml}
-                ${riskFactorsHtml}
-                <p class="qt-footnote">Clasificación de riesgo: AZCERT/CredibleMeds. Texto FT: CIMA/AEMPS. Consulte siempre la FT completa antes de prescribir.</p>
+                <p class="qt-footnote">Texto literal de la ficha técnica (CIMA/AEMPS), secciones 4.4 y 4.5. Consulte la ficha técnica completa.</p>
             </div>`;
 
         // Inyectar contenido en el tab placeholder
@@ -19273,7 +19162,7 @@ ${ftFechaDocsHtml}
                     ${navBtn('favorites', 'star', 'Favoritos', `<span class="subnav-count">${favs.length}</span>`)}
                     ${navBtn('essentials', 'clipboard-list', 'Esenciales')}
                     ${navBtn('analytics', 'chart-bar', 'Analítica')}
-                    ${navBtn('prescription', 'notes-medical', 'Prescripción')}
+                    ${navBtn('prescription', 'dna', 'Farmacogenómica')}
                     ${navBtn('materials', 'file-medical-alt', 'Materiales')}
                     ${navBtn('export', 'right-left', 'Importar / Exportar')}
                 </div>
@@ -19481,13 +19370,7 @@ ${ftFechaDocsHtml}
             n > 0 ? `${n} favorito${n > 1 ? 's' : ''} reparado${n > 1 ? 's' : ''}` : 'No se pudo reparar (revisa la conexión)',
             n > 0 ? 'success' : 'warning'
         );
-        // El banner vive también en Prescripción: se repinta la sección desde la que se pulsó.
-        if (this._profileSection === 'prescription') {
-            const container = document.getElementById('profile-section-content');
-            if (container) container.innerHTML = this._renderPrescriptionSection();
-        } else {
-            this._refreshFavoritesSection();
-        }
+        this._refreshFavoritesSection();
     }
 
     /** Agrupado por etiquetas de usuario (un favorito puede aparecer en varias). */
@@ -21043,7 +20926,6 @@ ${ftFechaDocsHtml}
         this._tagEditorNreg = fav.nregistro;
         this._tagEditorDraft = [...(fav.tags || [])];
         this._tagEditorSpecialty = fav.specialtyOverride || '';
-        this._tagEditorSadmans = fav.sadmansOverride || 'auto';
 
         let overlay = document.getElementById('fav-tags-modal');
         if (!overlay) {
@@ -21083,7 +20965,6 @@ ${ftFechaDocsHtml}
             }
             return null;
         })();
-        const autoSadmans = this._sadmansRuleCategory(fav);
         const current = this._tagEditorSpecialty || '';
         const options = this._allSpecialties().map(s =>
             `<option value="${s}" ${current === s ? 'selected' : ''}>${s}</option>`
@@ -21109,14 +20990,6 @@ ${ftFechaDocsHtml}
                     ${options}
                 </select>
                 <p class="tag-editor-hint">Corrige aquí la especialidad si la asignación automática por ATC no encaja en tu caso.</p>
-
-                <label class="tag-editor-sublabel"><i class="fas fa-triangle-exclamation"></i> SADMANS (suspender en enfermedad aguda)</label>
-                <select class="search-input tag-specialty-select" onchange="app._tagEditorSadmans=this.value">
-                    <option value="auto" ${this._tagEditorSadmans === 'auto' ? 'selected' : ''}>Automático${autoSadmans ? ` (sí: ${autoSadmans})` : ' (no)'}</option>
-                    <option value="include" ${this._tagEditorSadmans === 'include' ? 'selected' : ''}>Forzar incluir</option>
-                    <option value="exclude" ${this._tagEditorSadmans === 'exclude' ? 'selected' : ''}>Forzar excluir</option>
-                </select>
-                <p class="tag-editor-hint">Por defecto se decide por el código ATC. Cámbialo solo si discrepas con la asignación automática.</p>
 
                 <div class="tag-editor-actions">
                     <button class="btn btn-secondary" onclick="app._closeTagEditor()">Cancelar</button>
@@ -21151,7 +21024,6 @@ ${ftFechaDocsHtml}
     _saveTagEditor() {
         this.setFavoriteTags(this._tagEditorNreg, this._tagEditorDraft);
         this.setFavoriteSpecialty(this._tagEditorNreg, this._tagEditorSpecialty);
-        this.setFavoriteSadmans(this._tagEditorNreg, this._tagEditorSadmans);
         this._closeTagEditor();
         this._refreshFavoritesSection();
         this.showToast('Favorito actualizado', 'success');
@@ -21328,71 +21200,6 @@ ${ftFechaDocsHtml}
     // PROFILE — Prescription support (ayudas a la prescripción)
     // ============================================
 
-    /** Explicador desplegable de cómo se calcula una ayuda por reglas ATC. */
-    _rxRulesExplainer(rules, kindLabel) {
-        const rows = rules.map(([p, c]) => `<tr><td><code>${p}</code></td><td>${c}</td></tr>`).join('');
-        return `
-            <details class="rx-explain">
-                <summary><i class="fas fa-circle-question"></i> Cómo se calcula y qué cubre</summary>
-                <div class="rx-explain-body">
-                    <p>Se asigna por <strong>código ATC</strong> del medicamento (por prefijo). Como el ATC es independiente del nombre comercial, <strong>funciona con cualquier marca, nombre de fantasía o asociación</strong>: cuenta la sustancia/clase, no el envase. Requiere que el favorito tenga su ATC completo; si faltan, pulsa «Reparar» en Favoritos.</p>
-                    <table class="rx-rules-table"><thead><tr><th>ATC empieza por</th><th>${kindLabel}</th></tr></thead><tbody>${rows}</tbody></table>
-                    <p class="text-muted">Reglas deterministas mantenidas en la app (editables en el código, no en CIMA). Orientativas.</p>
-                </div>
-            </details>
-        `;
-    }
-
-    /** Categoría SADMANS según la regla ATC, sin override (o null). */
-    _sadmansRuleCategory(f) {
-        const code = (f.atcCodigo || '').toUpperCase();
-        if (!code) return null;
-        for (const [prefix, cat] of this.SADMANS_RULES) {
-            if (code.startsWith(prefix)) return cat;
-        }
-        return null;
-    }
-
-    /**
-     * Categoría SADMANS final de un favorito (o null). Respeta la corrección
-     * manual del usuario: 'exclude' fuerza fuera, 'include' fuerza dentro.
-     */
-    _sadmansCategory(f) {
-        const ov = f.sadmansOverride;
-        if (ov === 'exclude') return null;
-        const ruleCat = this._sadmansRuleCategory(f);
-        if (ov === 'include') return ruleCat || 'Manual';
-        return ruleCat;
-    }
-
-    /** Fija la corrección manual de SADMANS de un favorito ('auto'|'include'|'exclude'). */
-    setFavoriteSadmans(nregistro, value) {
-        const favs = this.getFavorites();
-        const fav = favs.find(f => String(f.nregistro) === String(nregistro));
-        if (!fav) return;
-        fav.sadmansOverride = (value === 'include' || value === 'exclude') ? value : null;
-        this._saveFavorites(favs);
-    }
-
-    /** Acción rápida desde el panel: fija override y re-renderiza Prescripción. */
-    _setSadmansOverride(nregistro, value) {
-        this.setFavoriteSadmans(nregistro, value);
-        const container = document.getElementById('profile-section-content');
-        if (container) container.innerHTML = this._renderPrescriptionSection();
-        this.showToast(value === 'exclude' ? 'Excluido de SADMANS' : 'Restaurado a automático', 'info');
-    }
-
-    /** Monitorización analítica recomendada para un favorito (lista, puede ser vacía). */
-    _monitoringFor(f) {
-        const code = (f.atcCodigo || '').toUpperCase();
-        if (!code) return [];
-        const out = [];
-        for (const [prefix, text] of this.MONITORING_RULES) {
-            if (code.startsWith(prefix)) out.push(text);
-        }
-        return [...new Set(out)];
-    }
-
     /** Fila compacta para las listas transversales (clic abre la ficha). */
     _renderRxRow(fav, rightHtml, tab = 'safety') {
         const safeNreg = String(fav.nregistro).replace(/'/g, "\\'");
@@ -21432,20 +21239,16 @@ ${ftFechaDocsHtml}
     }
 
     /**
-     * Ayudas a la prescripción restringidas a la colección: SADMANS, monitorización
-     * analítica y farmacogenómica. Todo se calcula en local (ATC + índice PGx); no
-     * hay fuente externa que refrescar. Es un segundo eje de revisión por tema clínico.
+     * Farmacogenómica de la colección: qué favoritos tienen biomarcador en el índice PGx de la
+     * AEMPS. Hasta el 14/11/2026 esta sección también pintaba SADMANS y monitorización analítica
+     * con tablas propias; se retiraron (dossier de cualificación, B5).
      */
     _renderPrescriptionSection() {
         const favs = this.getFavorites();
         if (favs.length === 0) {
-            return `<div class="profile-empty"><i class="fas fa-notes-medical"></i><h3>Sin favoritos</h3><p>Guarda medicamentos para revisar aquí ayudas a la prescripción.</p></div>`;
+            return `<div class="profile-empty"><i class="fas fa-notes-medical"></i><h3>Sin favoritos</h3><p>Guarda medicamentos para ver aquí cuáles tienen biomarcador farmacogenético.</p></div>`;
         }
 
-        // SADMANS
-        const sadmans = favs.map(f => ({ f, cat: this._sadmansCategory(f) })).filter(x => x.cat);
-        // Monitorización
-        const monitoring = favs.map(f => ({ f, items: this._monitoringFor(f) })).filter(x => x.items.length > 0);
         // Farmacogenómica (índice local)
         const pgxReady = !!this._pgxSet;
         const pgx = pgxReady ? favs.filter(f => this._pgxSet.has(String(f.nregistro))) : [];
@@ -21453,69 +21256,7 @@ ${ftFechaDocsHtml}
         const disclaimer = `
             <div class="export-note">
                 <i class="fas fa-circle-info"></i>
-                Ayuda educativa <strong>orientativa</strong> calculada a partir del código ATC de tu colección. No procede de CIMA, no es exhaustiva y no sustituye la ficha técnica ni el criterio clínico.
-            </div>
-        `;
-        // Sin esto, un favorito guardado con el ATC truncado no casa con ninguna regla y el panel
-        // afirma «ninguno»: la ausencia se leería como dato cuando es falta de dato.
-        const atcPendientes = favs.filter(f => this._favAtcIncompleto(f)).length;
-        const atcAviso = atcPendientes > 0 ? `
-            <div class="fav-repair-banner" id="fav-repair-banner">
-                <div class="fav-repair-text">
-                    <i class="fas fa-triangle-exclamation"></i>
-                    <span><strong>${atcPendientes}</strong> favorito${atcPendientes > 1 ? 's' : ''} guardado${atcPendientes > 1 ? 's' : ''} con el código ATC incompleto. <strong>Hasta repararlo${atcPendientes > 1 ? 's' : ''}, estas listas pueden omitirlo${atcPendientes > 1 ? 's' : ''}</strong>. Reparar consulta la ficha oficial de AEMPS una sola vez.</span>
-                </div>
-                <button class="btn btn-sm btn-primary" onclick="app._handleRepairFavorites()" title="Descargar la ficha oficial y completar el código ATC">
-                    <i class="fas fa-wand-magic-sparkles"></i> Reparar
-                </button>
-            </div>
-        ` : '';
-
-        // Panel SADMANS — con override por fármaco (excluir / restaurar)
-        const sadmansExcluded = favs.filter(f => f.sadmansOverride === 'exclude');
-        const sadmansRow = (x) => {
-            const atc = (x.f.atcCodigo || '').slice(0, 5);
-            const safeNreg = String(x.f.nregistro).replace(/'/g, "\\'");
-            const manual = x.f.sadmansOverride === 'include';
-            const right = `<span class="rx-tag rx-tag-warn" title="Asignado por ATC ${x.f.atcCodigo || '—'}${manual ? ' · incluido manualmente' : ''}">${x.cat}${manual ? ' ·M' : ''}</span>${atc ? `<span class="rx-atc">${atc}</span>` : ''}<button class="rx-excl-btn" onclick="event.stopPropagation(); app._setSadmansOverride('${safeNreg}','exclude')" title="Quitar de SADMANS (corrección manual)">&times;</button>`;
-            return this._renderRxRow(x.f, right, 'safety');
-        };
-        const excludedHtml = sadmansExcluded.length ? `
-            <details class="rx-excluded">
-                <summary><i class="fas fa-eye-slash"></i> Excluidos manualmente (${sadmansExcluded.length})</summary>
-                <div class="rx-excluded-body">
-                    ${sadmansExcluded.map(f => {
-                        const safeNreg = String(f.nregistro).replace(/'/g, "\\'");
-                        return `<div class="rx-excl-row"><span>${f.nombre}</span><button class="btn btn-sm btn-secondary" onclick="app._setSadmansOverride('${safeNreg}','auto')"><i class="fas fa-rotate-left"></i> Restaurar</button></div>`;
-                    }).join('')}
-                </div>
-            </details>` : '';
-        const sadmansPanel = `
-            <div class="rx-panel">
-                <h4 class="rx-panel-title rx-title-warn"><i class="fas fa-triangle-exclamation"></i> Suspender en enfermedad aguda (SADMANS) <span class="rx-count">${sadmans.length}</span></h4>
-                <p class="rx-panel-sub">Considerar pausa temporal ante enfermedad aguda con riesgo de deshidratación (vómitos, diarrea, fiebre), por riesgo de fracaso renal agudo. <strong>S</strong>ulfonilureas, <strong>A</strong>RA-II, <strong>D</strong>iuréticos, <strong>M</strong>etformina, <strong>A</strong>INE, IECA y i<strong>S</strong>GLT2. Corrige casos concretos con <strong>×</strong> (excluir) o desde el editor del favorito (incluir/excluir).</p>
-                ${this._rxRulesExplainer(this.SADMANS_RULES, 'Categoría')}
-                ${sadmans.length === 0
-                    ? `<p class="text-muted text-sm">Ninguno de tus favoritos entra en SADMANS.</p>`
-                    : sadmans.sort((a, b) => a.cat.localeCompare(b.cat)).map(sadmansRow).join('')}
-                ${excludedHtml}
-            </div>
-        `;
-
-        // Panel monitorización
-        const monitoringRow = (x) => {
-            const atc = (x.f.atcCodigo || '').slice(0, 5);
-            const right = x.items.map(t => `<span class="rx-monitor">${t}</span>`).join('') + (atc ? `<span class="rx-atc">${atc}</span>` : '');
-            return this._renderRxRow(x.f, right, 'safety');
-        };
-        const monitoringPanel = `
-            <div class="rx-panel">
-                <h4 class="rx-panel-title rx-title-info"><i class="fas fa-vial"></i> Requieren monitorización analítica <span class="rx-count">${monitoring.length}</span></h4>
-                <p class="rx-panel-sub">Controles de laboratorio recomendados tras iniciar o ajustar el tratamiento.</p>
-                ${this._rxRulesExplainer(this.MONITORING_RULES, 'Qué monitorizar')}
-                ${monitoring.length === 0
-                    ? `<p class="text-muted text-sm">Ningún favorito con monitorización en la tabla.</p>`
-                    : this._renderRxBySpecialty(monitoring, x => x.f, monitoringRow)}
+                Medicamentos de tu colección con biomarcador farmacogenético en el Nomenclátor de la AEMPS. Abre cada ficha para leer qué dice.
             </div>
         `;
 
@@ -21534,10 +21275,7 @@ ${ftFechaDocsHtml}
 
         return `
             <div class="prescription-section">
-                ${atcAviso}
                 ${disclaimer}
-                ${sadmansPanel}
-                ${monitoringPanel}
                 ${pgxPanel}
             </div>
         `;
@@ -21994,12 +21732,6 @@ ${ftFechaDocsHtml}
                         <div class="top-viewed-list">
                             ${topViewedHtml}
                         </div>
-                        <div class="mt-sm">
-                            <button class="btn btn-sm btn-secondary" onclick="app._runInteractionAnalysis()" id="btn-analyze-interactions">
-                                <i class="fas fa-random"></i> Analizar interacciones de mi colección
-                            </button>
-                        </div>
-                        <div id="interaction-analysis-result" class="mt-sm"></div>
                     </div>
                 </div>
 
@@ -22916,12 +22648,12 @@ ${ftFechaDocsHtml}
                     },
                     {
                         target: '.profile-subnav-btn[data-section="prescription"]',
-                        title: 'Prescripción',
-                        icon: 'fa-notes-medical',
+                        title: 'Farmacogenómica',
+                        icon: 'fa-dna',
                         action: { type: 'profileSection', section: 'prescription' },
                         body: `
-                            <p>Prescripción cruza tu colección con SADMANS, monitorización analítica y farmacogenómica indexada.</p>
-                            <p class="guide-case"><strong>Caso</strong>Antes de una consulta de crónicos ves de golpe cuáles de tus fármacos habituales piden control analítico y cuáles hay que suspender en un día de enfermedad intercurrente.</p>
+                            <p>Farmacogenómica reúne los medicamentos de tu colección que tienen biomarcador farmacogenético en el Nomenclátor de la AEMPS.</p>
+                            <p class="guide-case"><strong>Caso</strong>Quieres saber cuáles de tus medicamentos habituales tienen un biomarcador citado por la AEMPS, para leer en su ficha qué dice.</p>
                         `,
                     },
                     {

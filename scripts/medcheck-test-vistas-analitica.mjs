@@ -198,22 +198,19 @@ if (!existsSync(rutaWorker)) {
   };
   const construir = new Function('med', 'extra', cuerpoMetodo('    _buildFavoriteRecord(med, extra = {}) {'));
   const incompleto = new Function('f', cuerpoMetodo('    _favAtcIncompleto(f) {'));
-  const reglasTxt = (APP.match(/this\.SADMANS_RULES = (\[[\s\S]*?\]);/) || [])[1];
-  const ctx = { _inferAtcLetter: () => '', SADMANS_RULES: new Function(`return ${reglasTxt}`)() };
-  const sadmans = new Function('f', cuerpoMetodo('    _sadmansRuleCategory(f) {'));
+  // SADMANS se retiró el 14/11/2026 (dossier de cualificación, B5); queda el contrato del ATC.
+  const ctx = { _inferAtcLetter: () => '' };
 
   const fav = construir.call(ctx, dianben, {});
   ok('el favorito guarda el ATC de nivel 5', fav.atcCodigo === 'A10BA02', `guardó ${fav.atcCodigo}`);
   ok('el rótulo de grupo sigue siendo el de nivel 3', fav.atcNombre === 'FARMACOS HIPOGLUCEMIANTES EXCLUYENDO INSULINAS');
   ok('agrupación L1/L2 intacta', fav.atcNivel1 === 'A' && fav.atcNivel2 === 'A10');
   ok('marca atcHoja', fav.atcHoja === true);
-  ok('metformina entra en SADMANS', sadmans.call(ctx, fav) === 'Metformina');
   ok('un favorito nuevo no pide reparación', incompleto.call(ctx, fav) === false);
 
   // MUTANTE: el registro tal como se guardaba antes del arreglo.
   const antiguo = { ...fav, atcCodigo: 'A10B' };
   delete antiguo.atcHoja;
-  ok('MUTANTE: con el ATC de nivel 3 SADMANS no casa (por eso se avisa)', sadmans.call(ctx, antiguo) === null);
   ok('un favorito antiguo pide reparación', incompleto.call(ctx, antiguo) === true);
   ok('un ATC inferido por nombre no pide reparación eterna', incompleto.call(ctx, { ...antiguo, atcInferido: true }) === false);
 
