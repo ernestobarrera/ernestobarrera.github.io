@@ -15567,14 +15567,18 @@ ${ftFechaDocsHtml}
                 </div>
             `;
         } else if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
-            message = 'Error de conexión';
+            // Antes hablaba de CORS y de «configurar el proxy de Cloudflare»: información interna
+            // que el usuario no puede usar (lo vio Ernesto el 14/11 al probar A0 sin red).
+            message = 'No se pudo conectar con CIMA';
             help = `
-                <div style="margin-top: 1rem; padding: 1rem; background: var(--warning-light); border-radius: var(--radius-md);">
-                    <p><strong>¿Por qué ocurre?</strong></p>
-                    <p class="text-muted" style="font-size: 0.85rem;">
-                        La API de CIMA puede bloquear algunas peticiones desde el navegador (CORS).
-                        Para funcionalidad completa, configura el proxy de Cloudflare.
+                <div class="ind-parcial" role="status">
+                    <p><i class="fas fa-triangle-exclamation"></i>
+                        Puede ser tu conexión o un corte pasajero del servicio.
+                        <strong>No significa que no haya medicamentos</strong>: repite la búsqueda en unos
+                        segundos o consúltalo en
+                        <a href="https://cima.aemps.es/cima/publico/home.html" target="_blank" rel="noopener">CIMA</a>.
                     </p>
+                    ${container?.id === 'search-results' ? `<button type="button" class="btn btn-sm btn-secondary" onclick="app.performSearch({ preserveFilters: true })"><i class="fas fa-rotate-right"></i> Reintentar</button>` : ''}
                 </div>
             `;
         }

@@ -394,6 +394,12 @@ console.log('\n— Buscador principal por texto (revisión de diseño de Fable, 
     appBusca().handleSearchError(cont, error);
     ok('la pantalla dice que no significa que no haya, y ofrece reintentar',
         /No significa que no haya/.test(cont.innerHTML) && /Reintentar/.test(cont.innerHTML) && !/Sin resultados/.test(cont.innerHTML));
+
+    const sinRed = { id: 'search-results', innerHTML: '' };
+    appBusca().handleSearchError(sinRed, new TypeError('Failed to fetch'));
+    ok('sin red: mensaje para el usuario, sin jerga interna (CORS, proxy, Cloudflare)',
+        /No se pudo conectar con CIMA/.test(sinRed.innerHTML) && /Reintentar/.test(sinRed.innerHTML)
+        && !/CORS|proxy|Cloudflare/i.test(sinRed.innerHTML), sinRed.innerHTML);
 }
 
 console.log('\n— getNotas (hallazgo 15) —');
