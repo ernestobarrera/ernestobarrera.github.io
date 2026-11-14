@@ -35,6 +35,7 @@ import crypto from 'node:crypto';
 import {
     FUENTE_URL, FUENTE_PAGINA, normalizar, analizarTitulo, fechaIso, urlAbsoluta,
     verificarRegistro, emparejarTodas, colapsarVersiones, validarFuente, quitarEtiquetas,
+    aWebPublica, ENLACE_PUBLICO, MAX_APARTADOS,
 } from './ipt-lib.mjs';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -116,10 +117,32 @@ for (const [nr, atc] of Object.entries(atcIndex)) (registrosPorAtc[atc] = regist
 
 const { clases } = JSON.parse(readFileSync(join(RAIZ, 'scripts', 'etl-ipt', 'clases.json'), 'utf8'));
 
+// ── 2b. Enlaces en servidores internos de la AEMPS ───────────────────────────
+// Se reescriben a la web pública con la misma ruta, pero solo se publican si esa ruta responde.
+// Con `--fuente` local (pruebas sin red) no se comprueba y se dan por buenos.
+async function existe(url) {
+    for (const method of ['HEAD', 'GET']) {
+        try {
+            const r = await fetch(url, { method, headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(20000) });
+            if (r.ok) return true;
+            if (r.status !== 405) return false;
+        } catch { /* se prueba con GET; si también falla, no existe */ }
+    }
+    return false;
+}
+const rutaPublicaOk = new Map();
+for (const r of fuente) {
+    const u = urlAbsoluta(r.link);
+    const p = u ? aWebPublica(u) : null;
+    if (p?.reescrito && !rutaPublicaOk.has(p.u)) rutaPublicaOk.set(p.u, FUENTE_LOCAL ? true : await existe(p.u));
+}
+
 // ── 3. Análisis de títulos ───────────────────────────────────────────────────
 console.log('Fase 2: análisis de títulos...');
 const entradas = [];
 const sinParsear = [];
+const reescritos = [];   // enlace interno de la AEMPS llevado a su web pública
+const apartados = [];    // filas que no se publican, contadas en `_meta`
 for (const r of fuente) {
     const base = {
         // Texto literal de la AEMPS, sin su marcado (`<sup>177</sup>Lu`): el cliente lo escapa y lo
@@ -132,6 +155,19 @@ for (const r of fuente) {
         enf: enfermedades[r.illness] || null,
     };
     if (!base.u) { sinParsear.push({ t: base.t, motivo: 'enlace no válido' }); continue; }
+    const pub = aWebPublica(base.u);
+    if (pub.reescrito) {
+        if (!rutaPublicaOk.get(pub.u)) {
+            apartados.push({ t: base.t, u: base.u, motivo: 'servidor interno de la AEMPS y la ruta pública no responde' });
+            continue;
+        }
+        reescritos.push({ t: base.t, de: base.u, a: pub.u });
+        base.u = pub.u;
+    }
+    if (!ENLACE_PUBLICO.test(base.u)) {
+        apartados.push({ t: base.t, u: base.u, motivo: 'enlace fuera de la web pública de la AEMPS' });
+        continue;
+    }
     const tn = normalizar(base.t);
     const clase = clases.find(c => tn.includes(normalizar(c.coincide)));
     if (clase) { entradas.push({ ...base, tipo: 'clase', grupo: clase.grupo, atc5: clase.atc5 }); continue; }
@@ -144,6 +180,9 @@ const colapso = colapsarVersiones(entradas);
 entradas.length = 0;
 entradas.push(...colapso.entradas);
 console.log(`  ${(tasaParseo * 100).toFixed(1)} % analizados · ${sinParsear.length} sin patrón · ${colapso.retiradas} versión(es) antigua(s) duplicada(s) retirada(s)`);
+if (reescritos.length) console.log(`  ${reescritos.length} enlace(s) de un servidor interno de la AEMPS llevado(s) a su web pública`);
+if (apartados.length) console.warn(`  ${apartados.length} fila(s) apartada(s): ${apartados.map(a => a.motivo).join('; ')}`);
+if (apartados.length > fuente.length * MAX_APARTADOS) abortar(`${apartados.length} filas con enlace fuera de la web pública de la AEMPS (más del ${MAX_APARTADOS * 100} %)`);
 if (tasaParseo < 0.95) abortar(`solo se analiza el ${(tasaParseo * 100).toFixed(1)} % de los títulos`);
 
 // ── 4. Resolución de marcas contra CIMA ──────────────────────────────────────
@@ -257,6 +296,8 @@ const indice = {
         novedades,
         sin_resolver: sinResolver,
         sin_parsear: sinParsear,
+        enlaces_reescritos: reescritos,
+        apartados,
     },
     ipts: Object.fromEntries(Object.keys(ipts).sort().map(k => [k, ipts[k]])),
     por_nregistro: ordenar(porNregistro),

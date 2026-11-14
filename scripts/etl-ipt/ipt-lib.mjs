@@ -109,6 +109,34 @@ export function urlAbsoluta(link) {
 }
 
 /**
+ * Servidores de la propia AEMPS que a veces aparecen en la fuente y no son su web pública. Caso
+ * real (03/11/2026): el IPT de teplizumab enlazaba a `pre-webaemps.aemps.es`, que no responde
+ * desde fuera, mientras la MISMA ruta en `www.aemps.gob.es` sirve el PDF. Antes, esa sola fila
+ * tumbaba el banco y congelaba el índice entero: una fragilidad nuestra, no un fallo de la fuente.
+ */
+export const HOSTS_INTERNOS_AEMPS = ['pre-webaemps.aemps.es'];
+
+/** Todo enlace que publica el índice va a la web pública de la AEMPS por https. */
+export const ENLACE_PUBLICO = /^https:\/\/www\.aemps\.gob\.es\//;
+
+/** Por encima de esta fracción de filas apartadas, el ETL aborta: ya no es una fila rara. */
+export const MAX_APARTADOS = 0.01;
+
+/**
+ * Lleva a la web pública un enlace que la fuente da en un servidor interno de la AEMPS, con la
+ * misma ruta. `reescrito` avisa de que hay que comprobar que la ruta pública responde.
+ */
+export function aWebPublica(u) {
+    try {
+        const url = new URL(u);
+        if (HOSTS_INTERNOS_AEMPS.includes(url.hostname.toLowerCase())) {
+            return { u: AEMPS_ORIGEN + url.pathname + url.search, reescrito: true };
+        }
+    } catch { /* no es una URL: la decide quien llama */ }
+    return { u, reescrito: false };
+}
+
+/**
  * ¿El nombre de CIMA es de esta marca? Prefijo por PALABRA COMPLETA: «XARELTO 10 mg» sí es
  * Xarelto, pero «VICTOZAX» no sería Victoza. Sin esta frontera, una marca corta arrastraría
  * a cualquier producto que empezara igual.

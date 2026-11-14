@@ -28,6 +28,7 @@ import vm from 'node:vm';
 import {
     analizarTitulo, esDeLaMarca, casaDci, verificarRegistro, emparejarTodas,
     colapsarVersiones, validarFuente, fechaIso, urlAbsoluta, quitarEtiquetas,
+    aWebPublica, ENLACE_PUBLICO, MAX_APARTADOS,
 } from './etl-ipt/ipt-lib.mjs';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -128,6 +129,21 @@ console.log('\n3) actualizaciones y enlaces compartidos');
     const muchas = Array.from({ length: 600 }, () => ({ subgroup: 'A10', title: 't', date: 'd', link: 'l', version: '1' }));
     ok('una caída > 10 % frente a la pasada anterior aborta', validarFuente(muchas, { minimoAnterior: 800 }).length > 0);
     ok('y una fuente sana pasa', validarFuente(muchas, { minimoAnterior: 620 }).length === 0);
+}
+
+console.log('\n3b) un enlace a un servidor interno de la AEMPS no congela el índice');
+{
+    const interno = 'https://pre-webaemps.aemps.es/medicamentosUsoHumano/informesPublicos/docs/2026/IPT-480-teizeild-teplizumab.pdf';
+    const p = aWebPublica(interno);
+    ok('se lleva a la web pública con la misma ruta', p.reescrito
+        && p.u === 'https://www.aemps.gob.es/medicamentosUsoHumano/informesPublicos/docs/2026/IPT-480-teizeild-teplizumab.pdf', p.u);
+    ok('y el resultado cumple el contrato de enlace público', ENLACE_PUBLICO.test(p.u));
+    const normal = 'https://www.aemps.gob.es/a.pdf';
+    ok('un enlace ya público no se toca', !aWebPublica(normal).reescrito && aWebPublica(normal).u === normal);
+    ok('un dominio ajeno no se reescribe (se aparta, no se disfraza)',
+        !aWebPublica('https://ejemplo.org/a.pdf').reescrito && !ENLACE_PUBLICO.test('https://ejemplo.org/a.pdf'));
+    ok('lo que no es URL no rompe', aWebPublica('no es url').reescrito === false);
+    ok('el umbral de filas apartadas es pequeño (≤ 1 %)', MAX_APARTADOS > 0 && MAX_APARTADOS <= 0.01);
 }
 
 console.log('\n4) el índice commiteado cumple su contrato');
