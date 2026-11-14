@@ -7,6 +7,8 @@
    CSS Variables - Clinical Color Palette
    ============================================ */
 :root {
+    /* La app es solo oscura: sin esto, barras de desplazamiento y controles nativos salen claros (Fable, A8). */
+    color-scheme: dark;
     /* Primary Colors */
     --primary: #0ea5e9;
     --primary-dark: #0284c7;

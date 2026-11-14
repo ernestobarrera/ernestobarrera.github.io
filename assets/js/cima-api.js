@@ -2977,9 +2977,16 @@ class CimaAPI {
                 .trim();
 
             // Recortar para mostrar solo preview
-            const preview = plainText.length > 300
-                ? plainText.substring(0, 300) + '...'
-                : plainText;
+            // Corta en el final de frase más cercano (o, si no hay, en el último espacio): antes se
+            // cortaba a media palabra («tiene disminuido el vo...», Fable A15).
+            let preview = plainText;
+            if (plainText.length > 300) {
+                const trozo = plainText.substring(0, 300);
+                const punto = trozo.lastIndexOf('. ');
+                const espacio = trozo.lastIndexOf(' ');
+                preview = punto >= 150 ? trozo.substring(0, punto + 1) + ' ...'
+                    : (espacio > 0 ? trozo.substring(0, espacio) : trozo) + '...';
+            }
 
             results.checks.push({
                 context: null, // No es contexto específico
@@ -3895,7 +3902,9 @@ class CimaAPI {
             // en su propio `<p>`, que es como maqueta CIMA—, cortar también aquí dejaba el
             // extracto en «...Lactancia...», que no dice nada. El riesgo está solo a la
             // izquierda, que es donde vive el tema anterior.
-            const end = Math.min(plainText.length, hallazgo.idx + hallazgo.largo + 100);
+            let end = Math.min(plainText.length, hallazgo.idx + hallazgo.largo + 100);
+            // Sin cortar la última palabra (como mucho 30 caracteres más).
+            for (let tope = Math.min(plainText.length, end + 30); end < tope && /\S/.test(plainText[end]); end++);
             const excerpt = '...' + plainText.substring(start, end).trim() + '...';
 
             return {
