@@ -491,5 +491,61 @@ console.log('\n— El control se pinta siempre; lo que espera al índice es su v
         /no suman el total/.test(conIndice), true);
 }
 
+// ── Hallazgo 11 (Fable, 11/11): el sello del dato SERVIDO se coteja con el del índice ──
+// Al cargar, el índice se compara con /bifimed/meta; esto cubre que by-cn sirva otra generación.
+{
+    const nuevo = () => {
+        const a = Object.create(MedCheckApp.prototype);
+        Object.assign(a, {
+            _financingIndexUsable: true,
+            _financingIndex: { '1': ['x'] },
+            _financingVisado: {},
+            _financingIndexMeta: { catalog_id: 'AAA' },
+        });
+        return a;
+    };
+    const conSello = (id) => ({ found: true, _meta: { download_date: '2026-11-13', ...(id ? { catalog_id: id } : {}) } });
+
+    const igual = nuevo();
+    check('mismo sello: el índice sigue en uso',
+        [igual._cotejarSelloFinanciacion([conSello('AAA'), conSello('AAA')]), igual._financingIndexUsable], [false, true]);
+
+    const distinto = nuevo();
+    check('otro sello en cualquiera de las respuestas: el índice se retira',
+        [distinto._cotejarSelloFinanciacion([conSello('AAA'), conSello('BBB')]), distinto._financingIndexUsable], [true, false]);
+    check('y con él el resolutor de la ficha deja de responder desde el índice (vuelve al camino en vivo)',
+        distinto._financingSummaryFromIndex('1'), null);
+    check('y la faceta deja de filtrar',
+        distinto._financingIndexUsable === false && Object.keys(distinto._financingIndex).length === 0, true);
+
+    const sinSello = nuevo();
+    check('sin catalog_id (Worker sin trozos o vuelta atrás) no se afirma nada: el índice sigue',
+        [sinSello._cotejarSelloFinanciacion([conSello(null)]), sinSello._financingIndexUsable], [false, true]);
+
+    const cargando = nuevo();
+    cargando._financingIndexUsable = false;
+    cargando._financingIndexMeta = null;
+    check('con el índice aún cargando no se decide aquí, pero se recuerda el sello servido',
+        [cargando._cotejarSelloFinanciacion([conSello('BBB')]), cargando._financingSelloServido], [false, 'BBB']);
+
+    // La carga del índice coteja ese sello recordado: índice AAA, meta AAA, ficha ya vio BBB.
+    sandbox.AbortSignal = AbortSignal; // la carga pone tiempo máximo a /meta
+    const fetchOriginal = sandbox.fetch;
+    const respuesta = (body) => Promise.resolve({ ok: true, json: () => Promise.resolve(body) });
+    sandbox.fetch = (url) => (String(url).includes('/bifimed/meta')
+        ? respuesta({ catalog_id: 'AAA' })
+        : respuesta({ fin: { '1': ['x'] }, _meta: { catalog_id: 'AAA' } }));
+    const tarde = Object.create(MedCheckApp.prototype);
+    Object.assign(tarde, { api: { cloudflareProxy: 'https://w' }, _financingSelloServido: 'BBB' });
+    await tarde._loadFinancingIndex('idx.json');
+    check('si la ficha ya sirvió otra generación, el índice que llega después no se usa',
+        tarde._financingIndexUsable, false);
+    const bien = Object.create(MedCheckApp.prototype);
+    Object.assign(bien, { api: { cloudflareProxy: 'https://w' }, _financingSelloServido: 'AAA' });
+    await bien._loadFinancingIndex('idx.json');
+    check('y si es la misma, se usa', bien._financingIndexUsable, true);
+    sandbox.fetch = fetchOriginal;
+}
+
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);

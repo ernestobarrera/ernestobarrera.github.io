@@ -13241,6 +13241,7 @@ ${ftFechaDocsHtml}
             await Promise.all(pending.map(async (cn) => {
                 const j = await this._consultarFinanciacionCn(`${workerBase}/bifimed/by-cn/${cn}`, headers);
                 if (j.error) { result.set(cn, { found: false, sit: '', error: true }); return; }
+                this._cotejarSelloFinanciacion([j]);
                 const d = { found: !!j.found, sit: j.situacion_financiacion || '', visado: !!j.visado };
                 result.set(cn, d);
                 cache[cn] = { t: now, d };
@@ -13826,6 +13827,10 @@ ${ftFechaDocsHtml}
                 if (meta.catalog_id !== data._meta.catalog_id) {
                     throw new Error('índice y catálogo son de generaciones distintas');
                 }
+                // Una ficha abierta mientras el índice cargaba ya pudo traer su sello (hallazgo 11).
+                if (this._financingSelloServido && this._financingSelloServido !== data._meta.catalog_id) {
+                    throw new Error('la ficha sirvió otra generación que el índice');
+                }
                 this._financingIndexMeta = data._meta;
                 this._financingIndex = fin;
                 // `null` en un índice anterior al 02/11/2026: entonces no se afirma nada del visado.
@@ -13841,6 +13846,54 @@ ${ftFechaDocsHtml}
                 return this._financingIndex;
             });
         return this._financingIndexPromise;
+    }
+
+    /**
+     * Coteja el sello del dato SERVIDO con el del índice (hallazgo 11 de Fable, 11/11/2026).
+     *
+     * Al cargar, el índice se compara con `/bifimed/meta`; pero la pestaña Financiación pinta lo que
+     * devuelve `/bifimed/by-cn`, y meta y dato pueden no ser la misma generación: un ETL cortado
+     * entre las dos escrituras, o la hora de caché de `/meta`. Entonces la tarjeta (índice) y la
+     * pestaña (dato) dirían cosas distintas del mismo medicamento sin que nadie lo notara.
+     *
+     * Desde el Worker `3e680ec` (13/11) cada `by-cn` de BIFIMED trae su `catalog_id`. Si no casa
+     * con el del índice, el índice se retira para toda la sesión: mismo fallo en CERRADO que al
+     * cargar. Sin `catalog_id` (Worker sin trozos, vuelta atrás) no se afirma nada y todo sigue
+     * como estaba. Si el índice aún está cargando, el sello se recuerda y lo coteja la carga.
+     *
+     * Devuelve `true` si ha retirado el índice.
+     */
+    _cotejarSelloFinanciacion(respuestas) {
+        const sellos = (respuestas || []).map(r => r?._meta?.catalog_id).filter(Boolean);
+        if (!sellos.length) return false;
+        if (!this._financingSelloServido) this._financingSelloServido = sellos[0];
+        const delIndice = this._financingIndexMeta?.catalog_id;
+        if (!this._financingIndexUsable || !delIndice) return false;
+        const ajeno = sellos.find(s => s !== delIndice);
+        if (!ajeno) return false;
+        this._retirarIndiceFinanciacion(`la ficha sirve ${ajeno} y el índice es ${delIndice}`);
+        return true;
+    }
+
+    /**
+     * Deja de usar el índice: marcas de la lista ocultas, faceta oculta y, si estaba marcada, se
+     * desmarca por su propio manejador, que vuelve a pintar la lista entera. La ficha Información
+     * vuelve sola al camino en vivo, porque `_financingSummaryFromIndex` mira el mismo indicador.
+     */
+    _retirarIndiceFinanciacion(motivo) {
+        console.warn('[financiación] índice retirado:', motivo);
+        this._financingIndex = {};
+        this._financingVisado = null;
+        this._financingIndexUsable = false;
+        if (typeof document === 'undefined' || !document.querySelectorAll) return;
+        document.querySelectorAll('[data-fin-nreg]').forEach((slot) => { slot.hidden = true; slot.innerHTML = ''; });
+        const wrap = document.getElementById('financiacion-filter-wrap');
+        if (wrap) wrap.hidden = true;
+        document.querySelectorAll('.financiacion-filter').forEach((cb) => {
+            if (!cb.checked) return;
+            cb.checked = false;
+            cb.dispatchEvent(new Event('change'));
+        });
     }
 
     /**
@@ -14075,6 +14128,11 @@ ${ftFechaDocsHtml}
                 Promise.all(cns.map(cn => this._consultarFinanciacionCn(`${workerBase}/sns-catalog/by-cn/${cn}`, analyticsHeaders))),
                 Promise.all(cns.map(cn => this._consultarFinanciacionCn(`${workerBase}/bifimed/by-cn/${cn}`, analyticsHeaders))),
             ]);
+            // Si el dato de la pestaña es de otra generación que el índice, la línea de Información
+            // se pintó con el índice: se vuelve a pintar en vivo para que las dos digan lo mismo.
+            if (this._cotejarSelloFinanciacion(bifimedResults) && this.currentMed?.nregistro === med?.nregistro) {
+                this._hydrateFinancingSummary(med);
+            }
 
             const found = snsResults.filter(r => r.found);
             // Un CN que no se pudo consultar no es un CN que no figure. Sin esto, dos fallos de red
