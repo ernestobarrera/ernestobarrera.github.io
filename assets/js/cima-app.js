@@ -276,20 +276,20 @@ class MedCheckApp {
 
         // ATC Clinical Info Dictionary - practical information per class
         this.ATC_CLINICAL_INFO = {
-            'A': { class: 'Digestivo', icon: 'utensils', color: '#10b981', tip: 'Tomar con comida si causa molestias GI' },
-            'B': { class: 'Sangre', icon: 'tint', color: '#ef4444', tip: 'Vigilar signos de sangrado' },
-            'C': { class: 'Cardiovascular', icon: 'heartbeat', color: '#f59e0b', tip: 'Control TA y FC regular' },
-            'D': { class: 'Dermatológico', icon: 'hand-paper', color: '#8b5cf6', tip: 'Aplicar capa fina' },
-            'G': { class: 'Genitourinario', icon: 'venus-mars', color: '#ec4899', tip: 'Revisar interacción hormonal' },
-            'H': { class: 'Hormonal', icon: 'adjust', color: '#6366f1', tip: 'No suspender bruscamente' },
-            'J': { class: 'Antiinfeccioso', icon: 'virus', color: '#14b8a6', tip: 'Completar pauta prescrita' },
-            'L': { class: 'Antineoplásico', icon: 'radiation', color: '#f43f5e', tip: 'Precauciones especiales' },
-            'M': { class: 'Musculoesquelético', icon: 'bone', color: '#0ea5e9', tip: 'Evitar >7 días sin revisión si AINE' },
-            'N': { class: 'Sist. Nervioso', icon: 'brain', color: '#a855f7', tip: 'Puede afectar conducción' },
-            'P': { class: 'Antiparasitario', icon: 'bug', color: '#22c55e', tip: 'Tratar contactos si indicado' },
-            'R': { class: 'Respiratorio', icon: 'lungs', color: '#38bdf8', tip: 'Técnica inhalatoria correcta' },
-            'S': { class: 'Órganos Sentidos', icon: 'eye', color: '#fbbf24', tip: 'Revisar conservación tras abrir' },
-            'V': { class: 'Varios', icon: 'flask', color: '#94a3b8', tip: '' }
+            'A': { class: 'Digestivo', icon: 'utensils', color: '#10b981' },
+            'B': { class: 'Sangre', icon: 'tint', color: '#ef4444' },
+            'C': { class: 'Cardiovascular', icon: 'heartbeat', color: '#f59e0b' },
+            'D': { class: 'Dermatológico', icon: 'hand-paper', color: '#8b5cf6' },
+            'G': { class: 'Genitourinario', icon: 'venus-mars', color: '#ec4899' },
+            'H': { class: 'Hormonal', icon: 'adjust', color: '#6366f1' },
+            'J': { class: 'Antiinfeccioso', icon: 'virus', color: '#14b8a6' },
+            'L': { class: 'Antineoplásico', icon: 'radiation', color: '#f43f5e' },
+            'M': { class: 'Musculoesquelético', icon: 'bone', color: '#0ea5e9' },
+            'N': { class: 'Sist. Nervioso', icon: 'brain', color: '#a855f7' },
+            'P': { class: 'Antiparasitario', icon: 'bug', color: '#22c55e' },
+            'R': { class: 'Respiratorio', icon: 'lungs', color: '#38bdf8' },
+            'S': { class: 'Órganos Sentidos', icon: 'eye', color: '#fbbf24' },
+            'V': { class: 'Varios', icon: 'flask', color: '#94a3b8' }
         };
 
         // Reglas ATC → especialidad clínica. Orden: de prefijo más específico a
@@ -379,7 +379,7 @@ class MedCheckApp {
             { area: 'Digestivo', name: 'Metoclopramida', pa: 'metoclopramida', atc: 'A03FA01', note: 'Procinético/antiemético' },
             { area: 'Digestivo', name: 'Lactulosa', pa: 'lactulosa', atc: 'A06AD11', note: 'Laxante osmótico' },
             // Dolor / Musculoesquelético / Reumatología
-            { area: 'Dolor / Musculoesquelético', name: 'Paracetamol', pa: 'paracetamol', atc: 'N02BE01', note: '1.er escalón analgésico' },
+            { area: 'Dolor / Musculoesquelético', name: 'Paracetamol', pa: 'paracetamol', atc: 'N02BE01', note: 'Analgésico y antipirético' },
             { area: 'Dolor / Musculoesquelético', name: 'Ibuprofeno', pa: 'ibuprofeno', atc: 'M01AE01', note: 'AINE' },
             { area: 'Dolor / Musculoesquelético', name: 'Naproxeno', pa: 'naproxeno', atc: 'M01AE02', inn: 'naproxen', note: 'AINE' },
             { area: 'Dolor / Musculoesquelético', name: 'Tramadol', pa: 'tramadol', atc: 'N02AX02', note: 'Opioide menor' },
@@ -397,7 +397,7 @@ class MedCheckApp {
             { area: 'Salud mental', name: 'Lorazepam', pa: 'lorazepam', atc: 'N05BA06', note: 'Benzodiacepina (EML: diazepam)' },
             { area: 'Salud mental', name: 'Quetiapina', pa: 'quetiapina', atc: 'N05AH04', note: 'Antipsicótico' },
             // Neurología
-            { area: 'Neurología', name: 'Pregabalina', pa: 'pregabalina', atc: 'N03AX16', isNew: true, note: 'Gabapentinoide — dolor neuropático (vigilar mal uso)' },
+            { area: 'Neurología', name: 'Pregabalina', pa: 'pregabalina', atc: 'N03AX16', isNew: true, note: 'Gabapentinoide — dolor neuropático' },
             { area: 'Neurología', name: 'Gabapentina', pa: 'gabapentina', atc: 'N03AX12', note: 'Gabapentinoide' },
             { area: 'Neurología', name: 'Amitriptilina', pa: 'amitriptilina', atc: 'N06AA09', note: 'Dolor neuropático/depresión' },
             { area: 'Neurología', name: 'Levetiracetam', pa: 'levetiracetam', atc: 'N03AX14', note: 'Antiepiléptico' },
@@ -8761,7 +8761,7 @@ class MedCheckApp {
                 <i class="fas fa-exclamation-triangle"></i>
                 <div>
                     <strong>Estrecho margen terapéutico (NTI)</strong>
-                    <span>La sustitución por genérico requiere <strong>monitorización estrecha</strong>. Pequeñas variaciones de dosis pueden causar efectos tóxicos o sub-terapéuticos.</span>
+                    <span>CIMA lo marca como <strong>no sustituible</strong> por estrecho margen terapéutico. Lo que dice sobre dosis y vigilancia está en su ficha técnica.</span>
                 </div>
             </div>
         ` : '';
@@ -19698,7 +19698,7 @@ ${ftFechaDocsHtml}
         `;
 
         sortedL1.forEach((l1, idx) => {
-            const atcInfo = this.ATC_CLINICAL_INFO[l1] || { class: l1, icon: 'pills', color: '#94a3b8', tip: '' };
+            const atcInfo = this.ATC_CLINICAL_INFO[l1] || { class: l1, icon: 'pills', color: '#94a3b8' };
             const totalL1 = Object.values(grouped[l1]).flat().length;
             const isFirst = idx === 0;
 
