@@ -1993,7 +1993,7 @@ class MedCheckApp {
                     <div class="empty-state">
                         <i class="fas fa-search-minus"></i>
                         <h3>Sin resultados</h3>
-                        <p>No se encontraron medicamentos para "${query}"</p>
+                        <p>No se encontraron medicamentos para "${this._escapeHtml(query)}"</p>
                     </div>
                 `;
                 return;
@@ -2021,7 +2021,7 @@ class MedCheckApp {
             // Avisar si los resultados son de medicamentos no comercializados
             if (retiradosAviso) {
                 this.showToast(
-                    `"${query}" no tiene presentaciones comercializadas actualmente. Mostrando registros históricos.`,
+                    `"${this._escapeHtml(query)}" no tiene presentaciones comercializadas actualmente. Mostrando registros históricos.`,
                     'warning'
                 );
             }
@@ -4118,7 +4118,7 @@ class MedCheckApp {
         resultsContainer.innerHTML = `
             <div class="text-center p-xl">
                 <div class="loading-spinner mb-md"></div>
-                <p class="text-muted">Buscando medicamentos para "${query}"...</p>
+                <p class="text-muted">Buscando medicamentos para "${this._escapeHtml(query)}"...</p>
             </div>
         `;
 
@@ -4136,7 +4136,7 @@ class MedCheckApp {
                 resultsContainer.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-code-branch" style="color: var(--warning);"></i>
-                        <h3>"${query}" puede referirse a varias cosas</h3>
+                        <h3>"${this._escapeHtml(query)}" puede referirse a varias cosas</h3>
                         <p class="text-xs text-secondary mt-sm">Elige la indicación que buscas:</p>
                         <div class="indication-chips mt-sm">
                             ${data.candidates.map((c) => {
@@ -4160,7 +4160,7 @@ class MedCheckApp {
                     <div class="empty-state">
                         <i class="fas fa-lightbulb" style="color: var(--warning);"></i>
                         <h3>Término no reconocido</h3>
-                        <p>No encontramos "${query}" en nuestro diccionario.</p>
+                        <p>No encontramos "${this._escapeHtml(query)}" en nuestro diccionario.</p>
                         <p class="text-xs text-secondary mt-sm">Prueba con sinónimos o explora las categorías arriba.</p>
                         <div class="mt-md">
                             <p class="text-muted">Términos similares que sí reconocemos:</p>
@@ -4186,8 +4186,8 @@ class MedCheckApp {
                         <i class="fas fa-search-minus"></i>
                         <h3>Sin resultados</h3>
                         <p>${this._soloComercializados()
-                            ? `No hay medicamentos comercializados para "${query}". Prueba a desmarcar «Comercializado» para incluir los autorizados que no se comercializan.`
-                            : `No hay ningún medicamento, ni comercializado ni retirado, para "${query}"`}</p>
+                            ? `No hay medicamentos comercializados para "${this._escapeHtml(query)}". Prueba a desmarcar «Comercializado» para incluir los autorizados que no se comercializan.`
+                            : `No hay ningún medicamento, ni comercializado ni retirado, para "${this._escapeHtml(query)}"`}</p>
                     </div>
                 `;
                 return;
@@ -8565,7 +8565,7 @@ class MedCheckApp {
                     <div class="empty-state">
                         <i class="fas fa-exchange-alt"></i>
                         <h3>Sin resultados</h3>
-                        <p>No se encontró "${query}"</p>
+                        <p>No se encontró "${this._escapeHtml(query)}"</p>
                     </div>
                 `;
                 return;
@@ -8604,7 +8604,7 @@ class MedCheckApp {
                     <div class="empty-state">
                         <i class="fas fa-info-circle"></i>
                         <h3>Sin principio activo identificado</h3>
-                        <p>No se pudo determinar el principio activo de "${query}"</p>
+                        <p>No se pudo determinar el principio activo de "${this._escapeHtml(query)}"</p>
                     </div>
                 `;
                 return;
