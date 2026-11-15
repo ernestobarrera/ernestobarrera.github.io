@@ -131,9 +131,13 @@ const S44_SOLO_ROTULO =
 console.log('\n— El enlace acepta la frase que casó —');
 ok('`_ftUrlSeccion` recibe el ancla de texto',
     /_ftUrlSeccion\(med, seccion, match = null\)/.test(appSrc));
-ok('y los dos renderizadores de checks se la pasan',
-    (appSrc.match(/_ftUrlSeccion\(med, check\.section, check\.match\)/g) || []).length === 2,
-    'modal y Safety Checker: si solo cambia uno, la mitad de la aplicación se queda atrás');
+// Desde el 15/11/2026 hay UN solo renderizador de checks (`_renderSafetyCheckItem`), que usan
+// las secciones clave y los atajos de la pestaña Seguridad. El Safety Checker suelto, que era el
+// segundo, se retiró con el contexto global.
+ok('y el renderizador de checks se la pasa',
+    (appSrc.match(/_ftUrlSeccion\(med, check\.section, check\.match\)/g) || []).length === 1
+        && /_renderSafetyCheckItem\(med, check, esFoco = false\)/.test(appSrc),
+    'un solo sitio: si vuelven a ser dos, que no se quede uno atrás');
 
 console.log('\n— El ancla es un trozo de frase, no la palabra suelta —');
 {

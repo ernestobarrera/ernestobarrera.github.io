@@ -200,16 +200,11 @@ class MedCheckApp {
         this.LEGAL_ACCEPT_KEY = 'medcheck_legal_accepted';
         this._legalAcceptedInMemory = false;
 
-        // Patient Context State
-        this.patientContext = {
-            pregnancy: false,
-            lactation: false,
-            elderly: false,
-            driving: false,
-            hepatic: false,
-            renal: false,
-            dysphagia: false
-        };
+        // SIN CONTEXTO GLOBAL desde el 15/11/2026. Hasta entonces la cabecera llevaba un
+        // conmutador (embarazo, renal…) que se quedaba puesto, ponía avisos en las tarjetas y se
+        // «limpiaba para un nuevo paciente»: un estado de paciente, que es lo que acerca una
+        // herramienta a producto sanitario (`medcheck-docs/2026-11-14_partes-criticas.md`, B1).
+        // Ahora son atajos sin estado dentro de la pestaña Seguridad: ver `verAtajoSeguridad`.
 
         // Search State Persistence
         this.lastSearchQuery = '';
@@ -447,7 +442,6 @@ class MedCheckApp {
         this.checkLegalDisclaimer();
 
         this.setupNavigation();
-        this.setupPatientContext();
         this.setupModal();
         this.setupBookmarkletModal();
         this.setupGuide();
@@ -783,108 +777,6 @@ class MedCheckApp {
         };
         const focusId = focusTargets[viewName];
         if (focusId) setTimeout(() => document.getElementById(focusId)?.focus(), 60);
-    }
-
-    // ============================================
-    // PATIENT CONTEXT MANAGEMENT
-    // ============================================
-
-    setupPatientContext() {
-        // Toggle buttons (including the new I.Renal toggle)
-        document.querySelectorAll('.context-toggle').forEach(toggle => {
-            toggle.addEventListener('click', () => {
-                const context = toggle.dataset.context;
-                this.patientContext[context] = !this.patientContext[context];
-                toggle.classList.toggle('active', this.patientContext[context]);
-                this._updateAnalyticsContext();
-                // Refresh current view to update context alerts on cards
-                this.refreshCurrentResults();
-            });
-        });
-
-        // Clear context button
-        const clearBtn = document.getElementById('clear-context');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                this.clearPatientContext();
-            });
-        }
-    }
-
-    clearPatientContext() {
-        // Reset state
-        this.patientContext = {
-            pregnancy: false,
-            lactation: false,
-            elderly: false,
-            driving: false,
-            hepatic: false,
-            renal: false,
-            dysphagia: false
-        };
-
-        // Reset UI - just toggle buttons now
-        document.querySelectorAll('.context-toggle').forEach(toggle => {
-            toggle.classList.remove('active');
-        });
-
-        this._updateAnalyticsContext();
-        this.showToast('Contexto limpiado', 'success');
-        this.refreshCurrentResults();
-    }
-
-    /**
-     * Actualiza los globals de analítica con la vista y contexto activos.
-     * Leídos por cima-api.js al construir cada petición al Worker.
-     */
-    _updateAnalyticsContext() {
-        const active = Object.entries(this.patientContext)
-            .filter(([, v]) => v)
-            .map(([k]) => MedCheckApp._CONTEXT_ANALYTICS_MAP[k] || k)
-            .join(',');
-        window._mcActiveContexts = active || null;
-    }
-
-    /**
-     * Refresca los resultados actuales para reflejar cambios de contexto
-     */
-    refreshCurrentResults() {
-        // Si hay resultados de indicaciones guardados - re-renderizar completamente
-        if (this.lastIndicationResults && this.currentView === 'indications') {
-            this.displayIndicationResults(
-                this.lastIndicationResults,
-                this.lastIndicationResults.matchedIndication?.label || this.lastIndicationQuery
-            );
-        }
-
-        // Si hay resultados de búsqueda guardados - re-renderizar completamente
-        // para manejar correctamente la estructura de grupos colapsables
-        if (this._lastSearchData && this.currentView === 'search') {
-            this.displaySearchResults(this._lastSearchData);
-        }
-
-        // Si hay resultados de equivalencias guardados - re-aplicar filtros para re-renderizar
-        if (this.equivAllResults && this.currentView === 'equivalences') {
-            this.applyEquivFilters();
-        }
-    }
-
-    getActiveContextSummary() {
-        const active = [];
-        if (this.patientContext.pregnancy) active.push('Embarazo');
-        if (this.patientContext.lactation) active.push('Lactancia');
-        if (this.patientContext.elderly) active.push('>65 años');
-        if (this.patientContext.hepatic) active.push('I.Hepática');
-        if (this.patientContext.renal) active.push('I.Renal');
-        if (this.patientContext.gfr) active.push(`FG ${this.patientContext.gfr}`);
-        if (this.patientContext.driving) active.push('Conducción');
-        if (this.patientContext.dysphagia) active.push('Disfagia/sonda');
-
-        return active.length > 0 ? active.join(', ') : 'Sin contexto definido';
-    }
-
-    hasActiveContext() {
-        return Object.values(this.patientContext).some(v => v === true || (typeof v === 'number' && v > 0));
     }
 
     /**
@@ -4725,48 +4617,8 @@ class MedCheckApp {
         if (!this._hasFichaTecnicaSeccionada(med)) badges.push('<span class="badge badge-sin-ft" title="CIMA no publica ficha técnica con secciones para este registro, así que no hay Indicaciones, Posología, Interacciones ni Seguridad que mostrar. Ocurre en importaciones paralelas y en medicamentos antiguos; la información clínica está en el registro principal del mismo producto."><i class="fas fa-file-circle-xmark"></i> Sin ficha técnica</span>');
         if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'documentacion')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
 
-        // Accesos contextuales de la tarjeta.
-        //
-        // Cada uno lleva SU clave de contexto hasta el modal (`focusContext`), que abre la
-        // pestaña de Seguridad con ese check resaltado y enfocado en vez de arriba del todo.
-        // Hasta el 22/09/2026 los seis llamaban a `openMedDetails(nreg, 'safety')` a secas:
-        // el botón sabía qué contexto habías pulsado y lo olvidaba por el camino.
-        //
-        // EMBARAZO Y LACTANCIA VAN SEPARADOS desde esa misma fecha. Eran un único «Revisar
-        // Emb/Lact» heredado de cuando ambos enseñaban el mismo extracto —el principio de la
-        // 4.6, que en casi todas las fichas es embarazo—. Desde 2fcfea4 cada contexto trae el
-        // suyo, centrado en su propia mención, así que un botón conjunto ya no puede decir a
-        // cuál de los dos lleva. Solo se pinta el que esté activo: con un solo contexto
-        // activo hay un solo acceso, como antes.
-        //
-        // La sección va en el `title` de los cinco que la tienen fija. Es el dato que el
-        // médico contrasta contra la ficha oficial, y hasta ahora solo lo decía embarazo.
-        const contextAlerts = [];
-        const accesoContexto = (clave, icono, etiqueta, ayuda) =>
-            `<div class="context-alert-inline warning clickable" title="${ayuda}" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety', { focusContext: '${clave}' })"><i class="fas fa-${icono}"></i> ${etiqueta}</div>`;
-        // Conducción no es como los otros cinco: se pinta solo si `med.conduc`, que es un dato
-        // estructurado de CIMA sobre ESTE medicamento, no la mera presencia del contexto.
-        if (this.patientContext.driving && med.conduc) {
-            contextAlerts.push(accesoContexto('driving', 'car', 'Conducción', 'Afecta a la conducción — ver sección 4.7'));
-        }
-        if (this.patientContext.pregnancy) {
-            contextAlerts.push(accesoContexto('pregnancy', 'baby', 'Revisar Embarazo', 'Ver sección 4.6 — Fertilidad, embarazo y lactancia'));
-        }
-        if (this.patientContext.lactation) {
-            contextAlerts.push(accesoContexto('lactation', 'person-breastfeeding', 'Revisar Lactancia', 'Ver sección 4.6 — Fertilidad, embarazo y lactancia'));
-        }
-        if (this.patientContext.renal) {
-            contextAlerts.push(accesoContexto('renal', 'droplet', 'Revisar Renal', 'Insuficiencia renal — ver sección 4.4'));
-        }
-        if (this.patientContext.hepatic) {
-            contextAlerts.push(accesoContexto('hepatic', 'disease', 'Revisar Hep.', 'Insuficiencia hepática — ver sección 4.4'));
-        }
-        if (this.patientContext.elderly) {
-            contextAlerts.push(accesoContexto('elderly', 'user-clock', '>65', 'Paciente mayor — ver sección 4.4'));
-        }
-        if (this.patientContext.dysphagia) {
-            contextAlerts.push(accesoContexto('dysphagia', 'glass-water', 'Revisar Disfagia', 'Disfagia o sonda — ver secciones 3, 4.2 y 6.6'));
-        }
+        // Sin accesos contextuales desde el 15/11/2026: los pintaba un contexto de paciente
+        // global que ya no existe. El atajo vive en la pestaña Seguridad (`verAtajoSeguridad`).
 
         // Principio activo desde la API - sin fallback del nombre comercial
         let pActivo = '';
@@ -4911,9 +4763,8 @@ class MedCheckApp {
                     ${excTag}
                 </div>
 
-                ${(badges.length > 0 || contextAlerts.length > 0) ? `
+                ${badges.length > 0 ? `
                 <div class="result-card-badges">
-                    ${contextAlerts.join('')}
                     ${badges.join('')}
                 </div>` : ''}
 
@@ -5259,122 +5110,6 @@ class MedCheckApp {
     }
 
 
-    // ============================================
-    // SAFETY CHECKER VIEW
-    // ============================================
-
-    renderSafetyChecker() {
-        const contextSummary = this.getActiveContextSummary();
-        const selectionBanner = this.renderSelectionBanner();
-
-        // Pre-fill with selected medication if available
-        const prefillValue = this.selectedMedication?.nombre || '';
-
-        this.content.innerHTML = `
-            ${selectionBanner}
-            <div class="search-box">
-                <h3 style="margin-bottom: 1rem; color: var(--primary);">
-                    <i class="fas fa-shield-alt"></i> Seguridad por contexto (ficha técnica)
-                </h3>
-                <p class="text-muted mb-md">
-                    Muestra las secciones de la ficha (4.4/4.6/4.7) según el contexto marcado.
-                </p>
-                <div class="search-input-wrapper">
-                    <i class="fas fa-pills"></i>
-                    <input type="text" id="safety-input" class="search-input"
-                           placeholder="Nombre del medicamento..."
-                           value="${prefillValue}">
-                    <button id="safety-btn" class="search-btn">Consultar ficha</button>
-                </div>
-                <p class="mt-sm text-muted" style="font-size: 0.85rem;">
-                    <i class="fas fa-user-injured"></i> Contexto actual: <strong>${contextSummary}</strong>
-                </p>
-            </div>
-            <div id="safety-results"></div>
-`;
-
-        document.getElementById('safety-btn').addEventListener('click', () => this.performSafetyCheck());
-        document.getElementById('safety-input').addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') this.performSafetyCheck();
-        });
-
-        // Si no hay contexto, mostrar aviso
-        if (!this.hasActiveContext()) {
-            document.getElementById('safety-results').innerHTML = `
-    <div class="empty-state" style="background: var(--warning-light); border-radius: var(--radius-lg); padding: 2rem;">
-                    <i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i>
-                    <h3>Sin contexto de paciente</h3>
-                    <p>Activa alguna condición en la barra superior para obtener análisis personalizados</p>
-                </div>
-    `;
-        } else if (prefillValue) {
-            // Auto-run safety check if we have a selected medication and context
-            this.performSafetyCheck();
-        }
-    }
-
-    async performSafetyCheck() {
-        const query = document.getElementById('safety-input').value.trim();
-        if (query.length < 2) return;
-
-        const resultsContainer = document.getElementById('safety-results');
-        resultsContainer.innerHTML = `
-    <div class="text-center p-xl">
-                <div class="loading-spinner mb-md"></div>
-                <p class="text-muted">Analizando fichas técnicas en tiempo real...</p>
-                <p class="text-xs text-secondary mt-sm">Buscando evidencias clínicas para tu paciente</p>
-            </div> `;
-
-        try {
-            // 1. Buscar el medicamento (solo comercializados para mayor relevancia)
-            const searchData = await this.api.smartSearch(query, { comerc: 1 });
-
-            if (!searchData.resultados || searchData.resultados.length === 0) {
-                resultsContainer.innerHTML = `
-    <div class="empty-state">
-                        <i class="fas fa-search-minus"></i>
-                        <h3>Medicamento no encontrado</h3>
-                        <p>Prueba con otro nombre o principio activo</p>
-                    </div> `;
-                return;
-            }
-
-            // 2. Tomar los primeros 3 resultados y analizarlos en paralelo
-            const topMeds = searchData.resultados.slice(0, 3);
-
-            // Renderizamos un contenedor vacío para ir llenándolo o todo de una vez
-            // Para mejor UX, esperamos a todos (parallel)
-            const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
-            const analysisPromises = topMeds.map(async med => {
-                try {
-                    // Obtener detalles completos — follow-up, no registrar en analítica
-                    const details = await this.api.getMedicamento(med.nregistro, noTrack);
-
-                    // Análisis profundo usando la API
-                    const safetyReport = await this.api.analyzeSafety(med.nregistro, this.patientContext);
-
-                    return { details, safetyReport };
-                } catch (e) {
-                    console.error('Error analizando med:', med.nombre, e);
-                    return null;
-                }
-            });
-
-            const results = await Promise.all(analysisPromises);
-            const validResults = results.filter(r => r !== null);
-
-            if (validResults.length > 0) {
-                let html = validResults.map(r => this.renderSafetyPanel(r.details, r.safetyReport)).join('');
-                resultsContainer.innerHTML = html;
-            } else {
-                resultsContainer.innerHTML = '<p class="text-center text-danger">Error al analizar los medicamentos. Inténtalo de nuevo.</p>';
-            }
-
-        } catch (error) {
-            this.handleSearchError(resultsContainer, error);
-        }
-    }
-
     _renderContextPassages(med, check, scope) {
         if (!Array.isArray(check.sections)) return '';
         const esc = value => this._escapeHtml(String(value ?? ''));
@@ -5454,114 +5189,6 @@ class MedCheckApp {
         void destino.offsetWidth;
         destino.classList.add('is-flash');
         setTimeout(() => destino.classList.remove('is-flash'), 1600);
-    }
-
-    renderSafetyPanel(med, safetyReport) {
-        const checks = safetyReport.checks;
-
-        // Si no hay checks (porque no hay contexto o falló), mostrar estado neutro
-        if (!checks || checks.length === 0) {
-            return `
-    <div class="safety-panel mb-md">
-                    <div class="safety-header neutral">
-                        <div>
-                            <span class="safety-drug-name">${med.nombre}</span>
-                            <div class="safety-context-summary">${med.labtitular}</div>
-                        </div>
-                    </div>
-                    <div class="p-md text-center text-muted">
-                        <i class="fas fa-info-circle mb-sm" style="font-size: 1.5rem;"></i>
-                        <p>No hay menciones específicas para el contexto marcado. <strong>Esto no descarta riesgos</strong>: revisa la ficha completa.</p>
-                        <p class="text-xs">Activa condiciones del paciente (embarazo, renal, etc.) para ver las secciones relevantes de la ficha.</p>
-                    </div>
-                </div> `;
-        }
-
-        const checksHtml = checks.map(check => {
-            let icon = 'info-circle';
-            let colorClass = 'text-info';
-
-            if (check.status === 'danger') { icon = 'ban'; colorClass = 'text-danger'; }
-            else if (check.status === 'warning') { icon = 'exclamation-triangle'; colorClass = 'text-warning'; }
-            else if (check.status === 'safe') { icon = 'check-circle'; colorClass = 'text-success'; }
-            else if (check.status === 'unknown') { icon = 'question-circle'; colorClass = 'text-secondary'; }
-            const statusMeta = this.getSafetyStatusMeta(check.status);
-
-            // Lógica para mostrar evidencia o mensaje
-            const evidenceHtml = check.sections
-                ? this._renderContextPassages(med, check, 'search')
-                : check.excerpt
-                ? `<div class="safety-evidence"> "${check.excerpt}"</div> `
-                : '';
-
-            // Botón para ver sección completa
-            const viewSectionBtn = check.section && !check.sections
-                ? `<button class="btn-text" onclick = "app.openSectionViewer('${safetyReport.nregistro}', '${check.section}', '${med.nombre}')">
-    <i class="fas fa-book-open"></i> Ver Sección ${check.section}
-                   </button> `
-                : '';
-
-            // LA FUENTE ÍNTEGRA, AL LADO DEL VISOR. Añadido el 19/09/2026: `getDocSeccion`
-            // limpia el HTML y con él se van las TABLAS, así que la 4.8 —una tabla de reacciones
-            // por órgano y frecuencia— llegaba aplanada a párrafo corrido. El HTML de CIMA la
-            // conserva y además deja saltar a las secciones vecinas. No sustituye al visor: son
-            // dos cosas distintas y las dos valen.
-            const urlSeccion = this._ftUrlSeccion(med, check.section, check.match);
-            // El title dice a qué palabra lleva cuando lleva a una: el médico sabe antes de
-            // pulsar si va a aterrizar sobre la mención o en la cabecera del apartado.
-            const tituloCima = check.match
-                ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
-                : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
-            const verEnCimaBtn = urlSeccion && !check.sections
-                ? `<a class="btn-text" href="${urlSeccion}" ${this._destinoCima(urlSeccion)}
-                       title="${tituloCima}">
-                       <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
-                : '';
-
-            return `
-    <div class="safety-check-item ${check.status}">
-                    <div class="safety-check-icon">
-                        <i class="fas fa-${icon}"></i>
-                    </div>
-                    <div class="safety-check-content">
-                        <div class="safety-check-header">
-                            <span class="safety-check-title">${check.label}</span>
-                            <span class="badge ${statusMeta.badge} safety-status-badge">${statusMeta.label}</span>
-                             ${viewSectionBtn}${verEnCimaBtn}
-                        </div>
-                        <div class="safety-check-detail ${colorClass}">
-                            <strong>${check.message}</strong>
-                        </div>
-                        ${evidenceHtml}
-                    </div>
-                </div>
-    `;
-        }).join('');
-
-        return `
-    <div class="safety-panel mb-md">
-                <div class="safety-header">
-                    <div>
-                        <span class="safety-drug-name">${med.nombre}</span>
-                        <div class="safety-context-summary">
-                            ${med.principiosActivos?.[0]?.nombre || ''} · ${med.labtitular}
-                        </div>
-                    </div>
-                    ${med.triangulo ? this._badgeSeguimientoAdicional() : ''}
-                </div>
-                <div class="safety-checks">
-                    ${checksHtml}
-                </div>
-                <div class="safety-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${med.nregistro}')">
-                        <i class="fas fa-file-medical"></i> Ficha Completa
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="app.searchEquivalences('${med.nombre}')">
-                        <i class="fas fa-exchange-alt"></i> Alternativas
-                    </button>
-                </div>
-            </div>
-    `;
     }
 
     // Nuevo método para abrir el visor de secciones
@@ -10603,16 +10230,22 @@ class MedCheckApp {
         document.body.style.overflow = '';
     }
 
+    /**
+     * Rótulo de cada bloque de Seguridad. Desde el 15/11/2026 dice QUÉ se enseña, no cómo de
+     * grave es: «alerta crítica», «revisar» o «sin hallazgo» eran palabras de juez sobre un texto
+     * que es de la ficha, y «Estado: informacion» (A15 de la revisión de diseño) no decía nada.
+     * `danger`, `warning` y `safe` solo salen del camino sin DOMParser (`_analyzeSection`).
+     */
     getSafetyStatusMeta(status) {
         const meta = {
-            danger: { label: 'Estado: alerta critica', badge: 'badge-danger' },
-            warning: { label: 'Estado: revisar', badge: 'badge-warning' },
-            review: { label: 'Estado: verificar fuente', badge: 'badge-info' },
-            safe: { label: 'Estado: sin hallazgo en este modulo', badge: 'badge-success' },
-            unknown: { label: 'Estado: no determinado', badge: 'badge-neutral' },
-            neutral: { label: 'Estado: informacion', badge: 'badge-neutral' }
+            danger: { label: 'Mención en la ficha', badge: 'badge-neutral' },
+            warning: { label: 'Mención en la ficha', badge: 'badge-neutral' },
+            review: { label: 'Pasajes de la ficha', badge: 'badge-info' },
+            safe: { label: 'Sin mención literal', badge: 'badge-neutral' },
+            unknown: { label: 'No se pudo leer', badge: 'badge-neutral' },
+            neutral: { label: 'Apartado de la ficha', badge: 'badge-neutral' }
         };
-        return meta[status] || { label: 'Estado: informacion', badge: 'badge-info' };
+        return meta[status] || { label: 'Apartado de la ficha', badge: 'badge-info' };
     }
     /** Atajo antiguo (selección en `?q=`): se pide reinstalarlo, una vez por dispositivo. */
     _avisarAtajoAntiguo() {
@@ -10755,7 +10388,8 @@ class MedCheckApp {
             const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
             const [med, safetyReport] = await Promise.all([
                 this.api.getMedicamento(nregistro, noTrack),
-                this.api.analyzeSafety(nregistro, this.patientContext).catch(err => {
+                // Solo las tres secciones clave: los contextos se piden a demanda desde su atajo.
+                this.api.analyzeSafety(nregistro, {}).catch(err => {
                     console.error('Error analyzing safety in modal:', err);
                     return { checks: [] }; // Fallback
                 }),
@@ -12232,18 +11866,21 @@ ${ftFechaDocsHtml}
     }
 
     /**
-     * Lleva la vista y el foco al check del contexto que abrió el modal.
+     * Abre el atajo del contexto con el que se pidió la ficha (`options.focusContext`).
      *
-     * Se llama después de pintar `modalBody`, así que el nodo ya existe. Si ese contexto no
-     * produjo check porque CIMA no devuelve la sección (`status === 'unknown'`, que
-     * `renderModalSafetyTab` agrupa en la nota del pie), no hay nada que enfocar y no se
-     * hace nada: la degradación de «Sin ficha técnica» sigue exactamente igual.
+     * Se llama después de pintar `modalBody`, así que la fila de atajos ya existe. Desde el
+     * 15/11/2026 ningún botón de la app pasa `focusContext` (lo pasaban los avisos de las
+     * tarjetas, que se retiraron con el contexto global); se conserva para poder abrir Seguridad
+     * con un atajo ya puesto, que es exactamente lo que hace pulsarlo.
      */
     _focusSafetyContext() {
         const ctx = this._pendingFocusContext;
         this._pendingFocusContext = null;
-        if (!ctx) return;
-        const item = this.modalBody.querySelector(`.safety-check-item[data-context="${ctx}"]`);
+        if (ctx) this.verAtajoSeguridad(ctx);
+    }
+
+    /** Lleva el check a la vista y le da el foco de teclado. */
+    _enfocarCheckSeguridad(item) {
         if (!item) return;
         // `matchMedia` puede no existir en el entorno de tests; sin él, sin animación.
         const sinMovimiento = !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
@@ -12256,9 +11893,142 @@ ${ftFechaDocsHtml}
         item.focus({ preventScroll: true });
     }
 
+    /**
+     * ATAJOS DE CONTEXTO, desde el 15/11/2026 (decisión de Ernesto sobre el dossier, parte B1).
+     *
+     * Sustituyen al conmutador global de la cabecera. Aquel se quedaba puesto entre fichas, ponía
+     * avisos en las tarjetas y se «limpiaba para un nuevo paciente»: era un estado de paciente. Un
+     * atajo es una pregunta sobre ESTA ficha —«qué dice sobre embarazo»— y muestra los pasajes de
+     * los apartados oficiales, con la misma extracción de siempre (`analyzeSafety`), sin añadir
+     * nada propio.
+     *
+     * Sin estado: uno abierto cada vez, pulsarlo otra vez lo cierra, y otra ficha empieza sin
+     * ninguno. Los apartados se piden al pulsar, no al abrir la ficha: así no se cuentan en la
+     * analítica lecturas que nadie ha pedido.
+     */
+    _atajosSeguridadHtml() {
+        const botones = MedCheckApp._ATAJOS_SEGURIDAD.map(([clave, icono, etiqueta, secciones]) =>
+            `<button type="button" class="safety-atajo" data-context="${clave}" aria-pressed="false"
+                title="Pasajes de la ficha técnica sobre ${etiqueta.toLowerCase()} (${secciones === '4.6' || secciones === '4.7' ? 'apartado' : 'apartados'} ${secciones})"
+                onclick="app.verAtajoSeguridad('${clave}')"><i class="fas fa-${icono}" aria-hidden="true"></i> ${etiqueta}<small>${secciones}</small></button>`).join('');
+        return `<div class="safety-atajos" role="group" aria-label="Qué dice la ficha técnica sobre">
+            <span class="safety-atajos-label">Qué dice la ficha sobre:</span>
+            <div class="safety-atajos-botones">${botones}</div>
+        </div>
+        <div id="safety-atajo-resultado" class="safety-atajo-resultado" aria-live="polite"></div>`;
+    }
+
+    async verAtajoSeguridad(ctx, { reintento = false } = {}) {
+        const med = this.currentMed;
+        const cont = this.modalBody?.querySelector('#safety-atajo-resultado');
+        const atajo = MedCheckApp._ATAJOS_SEGURIDAD.find(a => a[0] === ctx);
+        if (!med || !cont || !atajo) return;
+        const [, , etiqueta, secciones] = atajo;
+        const yaAbierto = !reintento && cont.dataset.context === ctx;
+        this.modalBody.querySelectorAll('.safety-atajo').forEach(b =>
+            b.setAttribute('aria-pressed', String(!yaAbierto && b.dataset.context === ctx)));
+        if (yaAbierto) {
+            cont.innerHTML = '';
+            delete cont.dataset.context;
+            return;
+        }
+        cont.dataset.context = ctx;
+        cont.innerHTML = `<div class="safety-atajo-cargando"><div class="loading-spinner"></div> Leyendo ${secciones} de la ficha técnica…</div>`;
+
+        const nreg = String(med.nregistro);
+        let check = null;
+        try {
+            const informe = await this.api.analyzeSafety(nreg, { [ctx]: true }, {
+                soloContextos: true,
+                // La única petición que sabe a qué contexto pertenece: el Worker lo anota.
+                peticion: { headers: { 'X-MC-Context': MedCheckApp._CONTEXT_ANALYTICS_MAP[ctx] || ctx } },
+            });
+            check = (informe?.checks || []).find(c => c.context === ctx) || null;
+        } catch (err) {
+            console.warn(`Atajo ${ctx} de ${nreg}:`, err);
+        }
+        // Otra ficha, otro atajo o el mismo cerrado mientras llegaba: solo pinta el último.
+        if (!cont.isConnected || cont.dataset.context !== ctx || String(this.currentMed?.nregistro) !== nreg) return;
+
+        if (!check || check.status === 'unknown') {
+            // Un fallo de lectura no es «la ficha no dice nada»: se dice que no se pudo leer.
+            cont.innerHTML = `<div class="safety-unknown-note">
+                <i class="fas fa-question-circle"></i>
+                <span>No se pudo leer en CIMA lo que la ficha dice sobre ${this._escapeHtml(etiqueta.toLowerCase())} (${secciones}).
+                <button type="button" class="btn-text" onclick="app.verAtajoSeguridad('${ctx}', { reintento: true })">Reintentar</button>
+                o revisar la ficha técnica completa desde «Ficha y prospecto».</span>
+            </div>`;
+            return;
+        }
+        cont.innerHTML = this._renderSafetyCheckItem(med, check, true);
+        this._enfocarCheckSeguridad(cont.querySelector('.safety-check-item'));
+    }
+
+    _renderSafetyCheckItem(med, check, esFoco = false) {
+        let icon = 'info-circle';
+        let colorClass = 'text-info';
+        if (check.status === 'danger') { icon = 'ban'; colorClass = 'text-danger'; }
+        else if (check.status === 'warning') { icon = 'exclamation-triangle'; colorClass = 'text-warning'; }
+        else if (check.status === 'review') { icon = 'search'; colorClass = 'text-primary'; }
+        else if (check.status === 'unknown') { icon = 'question-circle'; colorClass = 'text-muted'; }
+        else if (check.status === 'safe') { icon = 'check-circle'; colorClass = 'text-success'; }
+        const statusMeta = this.getSafetyStatusMeta(check.status);
+
+        const evidenceHtml = check.sections
+            ? this._renderContextPassages(med, check, 'modal')
+            : check.excerpt
+            ? `<div class="safety-evidence">"${check.excerpt}"</div>`
+            : '';
+
+        const viewSectionBtn = check.section && !check.sections
+            ? `<button class="btn-text" onclick="app.openSectionViewer('${med.nregistro}', '${check.section}', '${med.nombre}')">
+                         <i class="fas fa-book-open"></i> Ver Sección ${check.section}
+                       </button>`
+            : '';
+
+        // LA FUENTE ÍNTEGRA, AL LADO DEL VISOR. Añadido el 19/09/2026: `getDocSeccion`
+        // limpia el HTML y con él se van las TABLAS, así que la 4.8 —una tabla de reacciones
+        // por órgano y frecuencia— llegaba aplanada a párrafo corrido. El HTML de CIMA la
+        // conserva y además deja saltar a las secciones vecinas. No sustituye al visor: son
+        // dos cosas distintas y las dos valen.
+        const urlSeccion = this._ftUrlSeccion(med, check.section, check.match);
+        // El title dice a qué palabra lleva cuando lleva a una: el médico sabe antes de
+        // pulsar si va a aterrizar sobre la mención o en la cabecera del apartado.
+        const tituloCima = check.match
+            ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
+            : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
+        const verEnCimaBtn = urlSeccion && !check.sections
+            ? `<a class="btn-text" href="${urlSeccion}" ${this._destinoCima(urlSeccion)}
+                   title="${tituloCima}">
+                   <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
+            : '';
+
+        // El check del atajo pulsado se marca y `_enfocarCheckSeguridad` lo trae al viewport.
+        // `tabindex="-1"` lo hace enfocable por programa sin meterlo en el orden natural de
+        // tabulación, que sigue siendo el de los botones.
+        const ctxAttr = check.context ? ` data-context="${check.context}"` : '';
+
+        return `
+                <div class="safety-check-item ${check.status}${esFoco ? ' is-focused' : ''}"${ctxAttr}${esFoco ? ' tabindex="-1"' : ''}>
+                    <div class="safety-check-icon">
+                        <i class="fas fa-${icon}"></i>
+                    </div>
+                    <div class="safety-check-content">
+                        <div class="safety-check-header">
+                            <span class="safety-check-title">${check.label}</span>
+                            <span class="badge ${statusMeta.badge} safety-status-badge">${statusMeta.label}</span>
+                            ${viewSectionBtn}${verEnCimaBtn}
+                        </div>
+                        <div class="safety-check-detail ${colorClass}">${check.message}</div>
+                        ${evidenceHtml}
+                    </div>
+                </div>`;
+    }
+
     renderModalSafetyTab(med, safetyReport) {
-        // Seguimiento adicional: regulatorio, va antes y con cualquier contexto (o ninguno).
+        // Seguimiento adicional: regulatorio, va antes que todo lo demás.
         const avisoSA = this._avisoSeguimientoAdicional(med);
+        const atajos = this._atajosSeguridadHtml();
         const allChecks = safetyReport ? safetyReport.checks : [];
         // H17: las secciones que CIMA no devuelve ('unknown') se agrupan en una nota
         // compacta al pie en vez de tarjetas completas — menos ruido, mismo aviso honesto.
@@ -12271,82 +12041,22 @@ ${ftFechaDocsHtml}
     </div>` : '';
 
         if (allChecks.length === 0) {
-            return `${avisoSA}
-    <div class="empty-state">
-                     <i class="fas fa-check-circle text-success" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                    <p class="text-muted">No se detectaron alertas de seguridad para el contexto actual.</p>
-                </div>
-    `;
+            // Hasta el 15/11/2026 decía «No se detectaron alertas de seguridad» con un check
+            // verde: un veredicto, y además falso cuando la causa es que CIMA no sirvió nada.
+            return `${avisoSA}${atajos}
+    <div class="safety-unknown-note">
+        <i class="fas fa-question-circle"></i>
+        No hay texto de las secciones 4.4, 4.6 y 4.7 que mostrar para este medicamento. Eso no significa que la ficha no tenga advertencias: revisar la ficha técnica completa desde «Ficha y prospecto».
+    </div>`;
         }
 
         if (checks.length === 0) {
-            return `${avisoSA}<div class="safety-panel">${unknownNote}</div>`;
+            return `${avisoSA}${atajos}<div class="safety-panel">${unknownNote}</div>`;
         }
 
-        return `${avisoSA}
+        return `${avisoSA}${atajos}
     <div class="safety-panel">
-        ${checks.map(check => {
-            let icon = 'info-circle';
-            let colorClass = 'text-info';
-            if (check.status === 'danger') { icon = 'ban'; colorClass = 'text-danger'; }
-            else if (check.status === 'warning') { icon = 'exclamation-triangle'; colorClass = 'text-warning'; }
-            else if (check.status === 'review') { icon = 'search'; colorClass = 'text-primary'; }
-            else if (check.status === 'unknown') { icon = 'question-circle'; colorClass = 'text-muted'; }
-            else if (check.status === 'safe') { icon = 'check-circle'; colorClass = 'text-success'; }
-            const statusMeta = this.getSafetyStatusMeta(check.status);
-
-            const evidenceHtml = check.sections
-                ? this._renderContextPassages(med, check, 'modal')
-                : check.excerpt
-                ? `<div class="safety-evidence">"${check.excerpt}"</div>`
-                : '';
-
-            const viewSectionBtn = check.section && !check.sections
-                ? `<button class="btn-text" onclick="app.openSectionViewer('${med.nregistro}', '${check.section}', '${med.nombre}')">
-                             <i class="fas fa-book-open"></i> Ver Sección ${check.section}
-                           </button>`
-                : '';
-
-            // LA FUENTE ÍNTEGRA, AL LADO DEL VISOR. Añadido el 19/09/2026: `getDocSeccion`
-            // limpia el HTML y con él se van las TABLAS, así que la 4.8 —una tabla de reacciones
-            // por órgano y frecuencia— llegaba aplanada a párrafo corrido. El HTML de CIMA la
-            // conserva y además deja saltar a las secciones vecinas. No sustituye al visor: son
-            // dos cosas distintas y las dos valen.
-            const urlSeccion = this._ftUrlSeccion(med, check.section, check.match);
-            // El title dice a qué palabra lleva cuando lleva a una: el médico sabe antes de
-            // pulsar si va a aterrizar sobre la mención o en la cabecera del apartado.
-            const tituloCima = check.match
-                ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
-                : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
-            const verEnCimaBtn = urlSeccion && !check.sections
-                ? `<a class="btn-text" href="${urlSeccion}" ${this._destinoCima(urlSeccion)}
-                       title="${tituloCima}">
-                       <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
-                : '';
-
-            // El check del contexto que abrió el modal se marca aquí y `_focusSafetyContext`
-            // lo trae al viewport. `tabindex="-1"` lo hace enfocable por programa sin meterlo
-            // en el orden natural de tabulación, que seguiría siendo el de los botones.
-            const esFoco = !!check.context && check.context === this._pendingFocusContext;
-            const ctxAttr = check.context ? ` data-context="${check.context}"` : '';
-
-            return `
-                    <div class="safety-check-item ${check.status}${esFoco ? ' is-focused' : ''}"${ctxAttr}${esFoco ? ' tabindex="-1"' : ''}>
-                        <div class="safety-check-icon">
-                            <i class="fas fa-${icon}"></i>
-                        </div>
-                        <div class="safety-check-content">
-                            <div class="safety-check-header">
-                                <span class="safety-check-title">${check.label}</span>
-                                <span class="badge ${statusMeta.badge} safety-status-badge">${statusMeta.label}</span>
-                                ${viewSectionBtn}${verEnCimaBtn}
-                            </div>
-                            <div class="safety-check-detail ${colorClass}">${check.message}</div>
-                            ${evidenceHtml}
-                        </div>
-                    </div>`;
-        }).join('')
-            }
+        ${checks.map(check => this._renderSafetyCheckItem(med, check)).join('')}
             ${unknownNote}
             </div>
     `;
@@ -17494,9 +17204,8 @@ ${ftFechaDocsHtml}
 
     /**
      * Piezas que solo se ven en móvil (el CSS las oculta por encima de 768 px):
-     *  - Botón «Contexto» en la fila de la marca, con la barra de contexto plegada tras él. Con
-     *    iconos sin rótulo no se sabía qué era cada uno (en táctil no hay tooltip), y con rótulo
-     *    ocupaban tres filas. El botón dice EN PALABRAS qué contexto está activo.
+     *  (Hasta el 15/11/2026 había además un botón «Contexto» que desplegaba la barra de contexto;
+     *  se fue con ella. La cabecera en móvil sigue sin la barra: solo quedaba «Atajo seguro».)
      *  - Barra fina del apartado en la ficha: con el texto bajado dice qué fármaco y qué apartado
      *    se leen, y tocarla sube a las pestañas. Sustituye a dejar fijas las propias pestañas, que
      *    en móvil ocupan cuatro filas.
@@ -17504,35 +17213,6 @@ ${ftFechaDocsHtml}
      *    y desde el resultado 40 volver al buscador o a otra vista exigía deslizar hasta arriba.
      */
     setupMovil() {
-        const marca = document.querySelector('.header-brand');
-        const barra = document.getElementById('patient-context');
-        const cabecera = document.querySelector('.app-header');
-        if (marca && barra && cabecera && !document.getElementById('contexto-movil')) {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.id = 'contexto-movil';
-            btn.className = 'contexto-movil';
-            btn.setAttribute('aria-controls', 'patient-context');
-            btn.setAttribute('aria-expanded', 'false');
-            marca.appendChild(btn);
-            const pintar = () => {
-                const activos = [...barra.querySelectorAll('.context-toggle.active span')]
-                    .map(s => s.textContent.trim()).filter(Boolean);
-                btn.classList.toggle('has-active', activos.length > 0);
-                btn.title = activos.length ? `Contexto activo: ${activos.join(', ')}` : 'Contexto del paciente';
-                btn.innerHTML = '<i class="fas fa-user-injured" aria-hidden="true"></i>'
-                    + `<span>${activos.length ? this._escapeHtml(activos.join(', ')) : 'Contexto'}</span>`
-                    + '<i class="fas fa-chevron-down contexto-movil-flecha" aria-hidden="true"></i>';
-            };
-            pintar();
-            btn.addEventListener('click', () => {
-                btn.setAttribute('aria-expanded', String(cabecera.classList.toggle('contexto-abierto')));
-            });
-            // Se observa la clase de los botones en vez de engancharse a su lógica: cualquier vía
-            // que active o limpie el contexto (botón, «Limpiar», guía) queda reflejada sin tocarla.
-            new MutationObserver(pintar).observe(barra, { subtree: true, attributes: true, attributeFilter: ['class'] });
-        }
-
         const panelFicha = this.modal?.querySelector('.modal-content');
         if (panelFicha && !document.getElementById('ficha-apartado')) {
             const barraFicha = document.createElement('div');
@@ -22107,27 +21787,16 @@ ${ftFechaDocsHtml}
                                 <li><i class="fas fa-chart-column"></i> utilización · ¿cuánto se usa de verdad?</li>
                                 <li><i class="fas fa-boxes"></i> suministro · ¿está disponible?</li>
                                 <li><i class="fas fa-bell"></i> alertas · ¿ha salido algo nuevo?</li>
-                                <li><i class="fas fa-file-medical-alt"></i> materiales · ¿qué le doy al paciente?</li>
+                                <li><i class="fas fa-file-medical-alt"></i> materiales · ¿qué material oficial hay?</li>
                                 <li><i class="fas fa-star"></i> perfil · ¿qué manejo yo?</li>
                             </ul>
-                            <p>La <span class="guide-highlight">seguridad por contexto</span> no es una pestaña: se consulta dentro de la ficha de cada medicamento, ajustada al contexto que actives.</p>
-                        `,
-                        position: 'bottom',
-                    },
-                    {
-                        target: '.context-toggles',
-                        title: '4. Contexto antes de decidir',
-                        icon: 'fa-user-injured',
-                        body: `
-                            <p>Activa embarazo, lactancia, edad, conducción, renal, hepática o disfagia/sonda <span class="guide-highlight">antes</span> de consultar: la ficha se lee después con ese contexto puesto.</p>
-                            <p>Los botones ajustan la lectura de la ficha a una situación general; no introduzcas datos que identifiquen a una persona. La ausencia de una señal no demuestra ausencia de riesgo.</p>
-                            <p class="guide-case"><strong>Caso</strong>Mujer embarazada con una infección urinaria. Activas «Embarazo», abres el antibiótico y la pestaña Seguridad te sube lo que la ficha técnica dice en su sección 4.6, en vez de dejarlo enterrado en el PDF.</p>
+                            <p>Lo que dice la ficha sobre <span class="guide-highlight">embarazo, edad avanzada, insuficiencia renal o conducción</span> no es una vista aparte: está en la pestaña Seguridad de cada medicamento.</p>
                         `,
                         position: 'bottom',
                     },
                     {
                         target: '.modal-tabs',
-                        title: '5. Abrir la ficha',
+                        title: '4. Abrir la ficha',
                         icon: 'fa-window-maximize',
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
@@ -22135,6 +21804,17 @@ ${ftFechaDocsHtml}
                             <p>Algunas pestañas <span class="guide-highlight">solo aparecen si hay algo que enseñar</span>: Alertas AEMPS, PGx, Financiación, Utilización y QT. Que no estén significa que ese medicamento no tiene ese contenido; no hay que buscarlas.</p>
                             <p>En <span class="guide-key">Evidencia</span>, si PubMed no reconoce un término —pasa al escribirlo en español—, <span class="guide-highlight">lo avisa</span>: un recuento bajo puede ser de idioma, no de evidencia.</p>
                             <p>La guía abre un medicamento de ejemplo para recorrer la ficha con datos reales.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-safety .safety-atajos',
+                        title: '5. Qué dice la ficha sobre…',
+                        icon: 'fa-shield-alt',
+                        action: { type: 'modalTab', tab: 'safety' },
+                        body: `
+                            <p>En <span class="guide-key">Seguridad</span>, cada atajo lleva a lo que la ficha técnica dice sobre embarazo, lactancia, edad avanzada, conducción, insuficiencia renal o hepática, y disfagia o sonda: los pasajes de sus apartados oficiales, con enlace a CIMA.</p>
+                            <p>Se abre uno cada vez y no se queda puesto al pasar a otra ficha. Si no aparece ningún pasaje, eso no significa que la ficha no diga nada: el enlace lleva al apartado completo.</p>
+                            <p class="guide-case"><strong>Caso</strong>Duda sobre un antibiótico en el embarazo: abres su ficha, pulsas «Embarazo» y lees lo que dice su 4.6, sin buscarlo en el PDF.</p>
                         `,
                     },
                     {
@@ -22263,25 +21943,25 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '.context-toggle[data-context="dysphagia"]',
+                        target: '.safety-atajo[data-context="dysphagia"]',
                         title: 'Disfagia o sonda: volver a las instrucciones originales',
                         icon: 'fa-glass-water',
-                        action: { type: 'view', view: 'search' },
+                        action: { type: 'modalTab', tab: 'safety' },
                         body: `
-                            <p>Este contexto dirige la revisión hacia los apartados <strong>3, 4.2 y 6.6</strong>: forma farmacéutica, forma de administración y manipulación.</p>
-                            <p>Al activarlo tú, Seguridad reúne los pasajes que publica la ficha. Comprueba condiciones y restricciones; la ausencia de una mención no autoriza triturar ni administrar por sonda.</p>
-                            <p>La guía señala el botón sin cambiar tu contexto.</p>
+                            <p>Este atajo de Seguridad lleva a los apartados <strong>3, 4.2 y 6.6</strong>: forma farmacéutica, forma de administración y manipulación.</p>
+                            <p>Al pulsarlo, Seguridad reúne los pasajes que publica la ficha. Comprueba condiciones y restricciones; la ausencia de una mención no autoriza triturar ni administrar por sonda.</p>
+                            <p>La guía señala el botón sin pulsarlo.</p>
                         `,
                     },
                     {
                         target: '.modal-tab[data-tab="safety"]',
-                        title: 'Seguridad por contexto',
+                        title: 'Seguridad: lo que dice la ficha',
                         icon: 'fa-shield-alt',
                         action: { type: 'modalTab', tab: 'safety' },
                         body: `
-                            <p>Seguridad cruza la ficha con el contexto activo: embarazo, lactancia, edad, conducción, renal, hepática o disfagia/sonda.</p>
-                            <p>Organiza las señales de seguridad relevantes según ese contexto; la valoración final es clínica. El enlace a la ficha abre la sección y señala el pasaje o epígrafe original cuando se puede localizar.</p>
-                            <p class="guide-case"><strong>Caso</strong>Revisión de un mayor de 80 años polimedicado: con el contexto «Mayor de 65» puesto, recorres su lista y ves de un vistazo cuáles llevan advertencia por edad.</p>
+                            <p>Seguridad enseña las secciones 4.4, 4.6 y 4.7 y, con sus atajos, los pasajes que la ficha dedica a embarazo, lactancia, edad avanzada, conducción, insuficiencia renal o hepática, y disfagia o sonda.</p>
+                            <p>El texto es el de la ficha, sin valoración propia. El enlace abre la sección en CIMA y señala el pasaje o epígrafe original cuando se puede localizar.</p>
+                            <p class="guide-case"><strong>Caso</strong>Duda sobre si un hipnótico lleva advertencias para la edad avanzada: pulsas «Edad avanzada» y lees los pasajes de su 4.2 y su 4.4.</p>
                         `,
                     },
                     {
@@ -22292,7 +21972,7 @@ ${ftFechaDocsHtml}
                         body: `
                             <p>Dos pestañas de verificación dirigida sobre la ficha técnica: <span class="guide-highlight">Interacciones</span> (4.5) y <span class="guide-highlight">Reacciones</span> (4.8), una al lado de la otra.</p>
                             <p>La guía abre Interacciones; Reacciones queda al lado cuando la duda sea de tolerabilidad.</p>
-                            <p class="guide-case"><strong>Caso</strong>Paciente con mareo desde hace tres semanas y varios fármacos nuevos. Reacciones te dice cuál de ellos lo declara en su 4.8, antes de atribuirlo a otra cosa.</p>
+                            <p class="guide-case"><strong>Caso</strong>Duda sobre si un medicamento recoge el mareo entre sus reacciones adversas: Reacciones enseña su 4.8 con la frecuencia que da la ficha.</p>
                         `,
                     },
                     {
@@ -22313,7 +21993,7 @@ ${ftFechaDocsHtml}
                         body: `
                             <p><span class="guide-key">Documentación</span> reúne lo oficial que acompaña a la ficha: los <span class="guide-highlight">informes de posicionamiento terapéutico (IPT)</span> de la AEMPS —que CIMA no publica—, los <span class="guide-highlight">materiales informativos</span> (tarjetas de paciente, guías de dosificación, vídeos) y el informe de evaluación y el plan de riesgos.</p>
                             <p>Si el medicamento tiene IPT propio, la pestaña lo avisa con la marca <span class="guide-highlight">IPT</span> sin necesidad de abrirla. En un genérico verás el IPT de la marca evaluada, rotulado como tal.</p>
-                            <p class="guide-case"><strong>Caso</strong>Inicias un anticoagulante oral. Aquí están los criterios de uso de los ACOD de la AEMPS y la tarjeta de paciente oficial para dársela en la misma consulta.</p>
+                            <p class="guide-case"><strong>Caso</strong>Duda sobre los criterios de uso de un anticoagulante oral: aquí están el informe de la AEMPS sobre los ACOD y la tarjeta de paciente oficial.</p>
                         `,
                     },
                     {
@@ -22351,7 +22031,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'modalTab', tab: 'financing' },
                         body: `
                             <p>Cuando el medicamento tiene código nacional consultable, esta pestaña resume su situación en el SNS: financiación, aportación del paciente y precio por presentación.</p>
-                            <p class="guide-case"><strong>Caso</strong>El paciente dice que «esto lo paga entero». Compruebas si la presentación está financiada y con qué aportación antes de cambiar la receta.</p>
+                            <p class="guide-case"><strong>Caso</strong>Duda sobre si una presentación está financiada: aquí ves su situación en el SNS y con qué aportación.</p>
                         `,
                     },
                     {
@@ -22534,7 +22214,7 @@ ${ftFechaDocsHtml}
                         body: `
                             <p><span class="guide-key">Principio activo</span> busca la sustancia. <span class="guide-key">Su grupo</span> la sustituye por los principios activos comercializados en España de su ATC de nivel 4, unidos con OR. Si el medicamento pertenece a una <span class="guide-highlight">clase clínica</span> definida en MedCheck —hoy, los ACOD—, aparece una tercera opción que une varios ATC. La nota de debajo lista qué principios han entrado; un alcance que no se puede construir queda desactivado.</p>
                             <p><span class="guide-key">Acotar a vía</span> añade con AND la vía del producto. Se activa sola cuando, dentro del alcance elegido, también se comercializa por otra vía —nunca para la oral— y debajo dice por qué. Si la tocas, manda tu elección.</p>
-                            <p class="guide-case"><strong>Caso</strong>Una crema vaginal de estrógenos: en su grupo, sin acotar, la búsqueda se llena de terapia hormonal sistémica; con la vía vaginal quedan los estudios de la vía que vas a prescribir.</p>
+                            <p class="guide-case"><strong>Caso</strong>Una crema vaginal de estrógenos: en su grupo, sin acotar, la búsqueda se llena de terapia hormonal sistémica; con la vía vaginal quedan los estudios de esa vía.</p>
                             <p>Ampliar el alcance cambia qué se busca, no afirma que los fármacos del grupo o de la clase sean intercambiables.</p>
                         `,
                     },
@@ -22690,7 +22370,7 @@ ${ftFechaDocsHtml}
                         body: `
                             <p>Busca por medicamento o biomarcador, filtra por gen/clase y agrupa por biomarcador, ATC o especialidad.</p>
                             <p>Los grupos empiezan cerrados para que se vea primero la estructura completa.</p>
-                            <p class="guide-case"><strong>Caso</strong>Agrupando por gen ves de una vez todo lo que un metabolizador lento de <em>CYP2C19</em> conocido lleva en su tratamiento, en vez de comprobarlo fármaco a fármaco.</p>
+                            <p class="guide-case"><strong>Caso</strong>Agrupando por gen ves de una vez qué medicamentos de tu colección citan <em>CYP2C19</em>, en vez de comprobarlo fármaco a fármaco.</p>
                         `,
                     },
                     {
@@ -22700,7 +22380,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'modal', tab: 'pgx', source: 'pgx' },
                         body: `
                             <p>Cada tarjeta abre la ficha directamente en la pestaña PGx, donde puedes verificar la fuente AEMPS y ampliar con la guía CPIC correspondiente o con un prompt que exige citas.</p>
-                            <p class="guide-case"><strong>Caso</strong>Vas a pautar alopurinol: aquí está el biomarcador <em>HLA-B*58:01</em> y el enlace a la guía que dice qué hacer con él.</p>
+                            <p class="guide-case"><strong>Caso</strong>Duda sobre alopurinol: aquí está el biomarcador <em>HLA-B*58:01</em> que cita la AEMPS y el enlace a la guía que lo trata.</p>
                         `,
                     },
                 ],
@@ -22786,7 +22466,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-sliders',
                         body: `
                             <p>Filtra por paciente, profesional o vídeos. Después puedes agrupar por ATC o especialidad para una lectura más clínica.</p>
-                            <p class="guide-case"><strong>Caso</strong>Consulta de enfermería sobre técnica de inyección: filtras por vídeos y le pones el oficial de ese dispositivo, no uno cualquiera de internet.</p>
+                            <p class="guide-case"><strong>Caso</strong>Duda sobre la técnica de inyección de un dispositivo: filtras por vídeos y tienes el oficial, no uno cualquiera de internet.</p>
                         `,
                     },
                     {
@@ -22868,7 +22548,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-layer-group',
                         body: `
                             <p>Reúnes dos o más medicamentos (o síntomas) y MedCheck prepara la consulta de <span class="guide-highlight">interacciones fármaco-fármaco</span> y la evidencia asociada.</p>
-                            <p class="guide-case"><strong>Caso</strong>Revisión de un polimedicado con ocho fármacos: en vez de ocho búsquedas sueltas, una sola pregunta bien construida sobre el conjunto.</p>
+                            <p class="guide-case"><strong>Caso</strong>Dudas sobre ocho medicamentos a la vez: en vez de ocho búsquedas sueltas, una sola pregunta bien construida sobre el conjunto.</p>
                         `,
                         position: 'bottom',
                     },
@@ -22886,8 +22566,8 @@ ${ftFechaDocsHtml}
                         icon: 'fa-clock-rotate-left',
                         body: `
                             <p><span class="guide-highlight">«Últimos medicamentos»</span> trae las fichas que has abierto en esta sesión, por orden de uso. Marcas las que quieras y las añades de golpe.</p>
-                            <p>Solo entran las que marques: es un espejo de por dónde has pasado, no una lista sugerida. Y vive en la sesión del navegador —al cerrarlo desaparece—, para no dejar rastro de lo consultado con cada paciente.</p>
-                            <p class="guide-case"><strong>Caso</strong>Has ido abriendo una a una las fichas del tratamiento. Al llegar aquí ya están todas: las marcas y montas la consulta sin reescribir ocho nombres.</p>
+                            <p>Solo entran las que marques: es un espejo de por dónde has pasado, no una lista sugerida. Y vive en la sesión del navegador —al cerrarlo desaparece—, para no dejar rastro de lo consultado.</p>
+                            <p class="guide-case"><strong>Caso</strong>Has ido abriendo una a una ocho fichas. Al llegar aquí ya están todas: las marcas y montas la consulta sin reescribir ocho nombres.</p>
                         `,
                     },
                     {
@@ -22915,7 +22595,7 @@ ${ftFechaDocsHtml}
                         body: `
                             <p>Parte de un medicamento y lista los que comparten <span class="guide-highlight">principio activo, dosis y forma</span> según CIMA. Sirve para ver qué hay disponible ante un desabastecimiento o al buscar un genérico.</p>
                             <p>Compartir principio activo, dosis y forma no demuestra por sí solo que dos medicamentos sean intercambiables: pueden diferir en vía, dispositivo, excipientes o condiciones de sustitución. La decisión es clínica.</p>
-                            <p class="guide-case"><strong>Caso</strong>El paciente vuelve porque en la farmacia «no había». Aquí ves qué otros registros existen con la misma dosis y forma antes de rehacer la receta a ciegas.</p>
+                            <p class="guide-case"><strong>Caso</strong>Una presentación que no llega a las farmacias: aquí ves qué otros registros existen con la misma dosis y forma.</p>
                         `,
                         position: 'bottom',
                     },
@@ -22939,7 +22619,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-boxes',
                         body: `
                             <p>Lista los problemas de suministro <span class="guide-highlight">activos</span> publicados por la AEMPS, con su estado y fechas, sin tener que entrar medicamento por medicamento.</p>
-                            <p class="guide-case"><strong>Caso</strong>Una pasada antes de la agenda de crónicos te ahorra las llamadas de la tarde: sabes qué vas a tener que sustituir antes de que te lo digan.</p>
+                            <p class="guide-case"><strong>Caso</strong>Una pasada por la lista te dice qué presentaciones tienen hoy un problema de suministro activo, antes de que te lo pregunten.</p>
                         `,
                         position: 'bottom',
                     },
@@ -26568,6 +26248,18 @@ MedCheckApp._EV_REVISTAS_GENERALES = ['jnl_top_publications', 'jnl_health_medica
 // Tope de categorías a la vez: cada lista ocupa ~500 caracteres en el enlace, y la web de PubMed
 // abre hasta ~16.000 (medido el 20/10/2026: 16.040 → 200, 24.040 → 414).
 MedCheckApp._EV_REVISTAS_MAX = 8;
+
+// Atajos de la pestaña Seguridad: [clave de `contextMapping`, icono, etiqueta, apartados que lee].
+// Los apartados son los de `seccionesDe` en cima-api.js; si cambian allí, se cambian aquí.
+MedCheckApp._ATAJOS_SEGURIDAD = Object.freeze([
+    ['pregnancy', 'baby', 'Embarazo', '4.6'],
+    ['lactation', 'person-breastfeeding', 'Lactancia', '4.6'],
+    ['elderly', 'user-clock', 'Edad avanzada', '4.2 y 4.4'],
+    ['driving', 'car', 'Conducción', '4.7'],
+    ['renal', 'droplet', 'Insuficiencia renal', '4.2 y 4.4'],
+    ['hepatic', 'disease', 'Insuficiencia hepática', '4.2 y 4.4'],
+    ['dysphagia', 'glass-water', 'Disfagia o sonda', '3, 4.2 y 6.6'],
+].map(a => Object.freeze(a)));
 
 MedCheckApp._CONTEXT_ANALYTICS_MAP = {
     pregnancy: 'embarazo',

@@ -237,5 +237,43 @@ const respuestaJson = (cuerpo) => ({
         secciones.join(',') === '4.4,4.7', secciones.join(','));
 }
 
+// ---------------------------------------------------------------------------
+// 7. El atajo de Seguridad pide SOLO su contexto y dice cuál es (15/11/2026)
+//
+// Desde que no hay contexto global, el atajo es la única petición que sabe a qué contexto
+// pertenece. Pedir otra vez las tres secciones clave las contaría dos veces en la analítica,
+// porque las peticiones registradas no usan caché.
+// ---------------------------------------------------------------------------
+{
+    const pedidas = [];
+    const registra = (url, opts) => {
+        const sec = (String(url).match(/seccion=([\d.]+)/) || [])[1];
+        if (sec) pedidas.push({ sec, ctx: opts?.headers?.['X-MC-Context'] || null });
+        return Promise.resolve(respuestaJson([{ seccion: sec, titulo: 'T', contenido: 'x'.repeat(400), orden: 1 }]));
+    };
+    for (const conDomParser of [true, false]) {
+        pedidas.length = 0;
+        const { api } = cargarAPI(registra, { conDomParser });
+        const informe = await api.analyzeSafety('82921', { pregnancy: true }, {
+            soloContextos: true, peticion: { headers: { 'X-MC-Context': 'embarazo' } },
+        });
+        const rama = conDomParser ? 'navegador' : 'sin DOMParser';
+        check(`${rama}: sin las tres secciones clave`, !(informe.checks || []).some(c => c.isCore),
+            JSON.stringify((informe.checks || []).map(c => c.section)));
+        check(`${rama}: solo se pide la 4.6`, pedidas.map(p => p.sec).join(',') === '4.6',
+            pedidas.map(p => p.sec).join(','));
+        check(`${rama}: la petición lleva su X-MC-Context`, pedidas.every(p => p.ctx === 'embarazo'),
+            JSON.stringify(pedidas));
+        check(`${rama}: devuelve el check del contexto`, (informe.checks || []).some(c => c.context === 'pregnancy'));
+    }
+    // Y sin opciones, como abre la ficha: las tres clave y ningún contexto.
+    pedidas.length = 0;
+    const { api } = cargarAPI(registra, { conDomParser: true });
+    const informe = await api.analyzeSafety('82921', {});
+    check('al abrir la ficha: las tres clave y ningún contexto',
+        (informe.checks || []).map(c => c.section).join(',') === '4.4,4.6,4.7' && !(informe.checks || []).some(c => c.context),
+        (informe.checks || []).map(c => c.section).join(','));
+}
+
 console.log(`\n${failures === 0 ? 'OK' : `${failures} fallo(s)`}`);
 process.exit(failures === 0 ? 0 : 1);

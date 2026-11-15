@@ -6347,6 +6347,90 @@ div.section-text th .ft-tras-hueco {
     color: var(--text-secondary);
 }
 
+/* Atajos de contexto de la pestaña Seguridad (15/11/2026, sustituyen al conmutador de la
+   cabecera). Pulsado en el color de navegación, no en el de aviso: abrir un atajo no avisa de
+   nada, solo lleva a lo que dice la ficha. */
+.safety-atajos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.safety-atajos-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.safety-atajos-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.safety-atajo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 32px;
+    padding: 0.3rem 0.6rem;
+    background: transparent;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.safety-atajo small {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+}
+
+.safety-atajo:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-surface-hover);
+}
+
+.safety-atajo[aria-pressed="true"] {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.safety-atajo-resultado:empty {
+    display: none;
+}
+
+.safety-atajo-resultado {
+    margin-bottom: 0.75rem;
+}
+
+.safety-atajo-cargando {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.safety-atajo-cargando .loading-spinner {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border-width: 2px;
+}
+
+@media (max-width: 768px) {
+    .safety-atajo {
+        min-height: 40px;
+    }
+}
+
 /* H13: el principio activo de Equivalencias es un salto visible al buscador */
 .equiv-pa-link {
     background: none;

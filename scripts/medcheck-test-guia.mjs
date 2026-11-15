@@ -364,7 +364,7 @@ await test('Evidencia: la guía enseña el alcance, la vía y el aviso de interp
     assert.ok(fuente.includes('<div class="evidence-acotar">'));
     assert.ok(fuente.includes('<summary>Cómo ha interpretado PubMed la búsqueda</summary>'));
     // El recorrido inicial nombra Evidencia y su aviso, sin añadir un paso.
-    const ficha = app._guideTours().core.steps.find(s => s.title === '5. Abrir la ficha');
+    const ficha = app._guideTours().core.steps.find(s => s.title === '4. Abrir la ficha');
     assert.ok(/Evidencia/.test(ficha.body) && /lo avisa/.test(ficha.body));
 });
 await test('5.1: abre el acordeón real y espera su carga antes de señalar las medidas', async () => {

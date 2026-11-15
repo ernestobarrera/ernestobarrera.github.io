@@ -154,7 +154,6 @@ console.log('\n— Contrato del RENDER, no de la condición replicada —');
     render._medRenderCache = new Map();
     render.filterState = { galenics: new Set() };
     render.favorites = [];
-    render.patientContext = {};
     const pinta = (nombre, dosis, ff) => {
         const html = render.renderIndicationMedCard(
             { nregistro: 'test', nombre, dosis, comerc: true, atcs: [],
@@ -601,10 +600,12 @@ console.log('\n— La señalética de los checks de contexto —');
 
     // La puerta a la fuente íntegra, al lado del visor interno.
     const app2 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
-    ok((app2.match(/_ftUrlSeccion\(med, check\.section, check\.match\)/g) || []).length === 2,
+    ok((app2.match(/_ftUrlSeccion\(med, check\.section, check\.match\)/g) || []).length === 1,
         'los checks ofrecen además la sección en CIMA, y le pasan la frase que casó');
-    ok((app2.match(/\$\{viewSectionBtn\}\$\{verEnCimaBtn\}/g) || []).length === 2,
-        'en los DOS sitios donde se pintan los checks, no solo en el modal');
+    // Un solo sitio desde el 15/11/2026: `_renderSafetyCheckItem`, para las secciones clave y
+    // para los atajos. El Safety Checker suelto se retiró con el contexto global.
+    ok((app2.match(/\$\{viewSectionBtn\}\$\{verEnCimaBtn\}/g) || []).length === 1,
+        'en el único sitio donde se pintan los checks (secciones clave y atajos)');
     ok(/id="4\.8"|encodeURIComponent\(seccion\)/.test(app2),
         'el ancla se compone con el identificador de la fuente');
 
@@ -612,83 +613,109 @@ console.log('\n— La señalética de los checks de contexto —');
     ok(/openSectionViewer\(/.test(app2), 'el visor interno NO se retira');
 }
 
-console.log('\n— Los seis accesos contextuales llevan SU contexto al modal —');
+console.log('\n— Sin contexto de paciente: atajos sin estado en la pestaña Seguridad (15/11/2026) —');
 {
-    // Hasta el 22/09/2026 los seis botones llamaban a `openMedDetails(nreg, 'safety')` a
-    // secas: el botón sabía qué contexto habías pulsado y lo olvidaba por el camino. La
-    // pestaña de Seguridad puede tener nueve tarjetas (3 secciones clave + 1 por contexto
-    // activo), así que pulsar «Revisar Renal» aterrizaba arriba del todo y había que buscar.
-    // Aquí se fija que cada acceso viaja con su clave y que esa clave es la que entiende
-    // `_focusSafetyContext`.
+    // Hasta el 15/11/2026 un conmutador de la cabecera se quedaba puesto entre fichas, ponía
+    // avisos en las tarjetas y se «limpiaba para un nuevo paciente». Era un estado de paciente
+    // (dossier de cualificación, parte B1). Aquí se fija que no vuelve por ninguna puerta y que
+    // los atajos que lo sustituyen leen lo mismo que leía.
+    const appSrc = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const html = readFileSync(join(ROOT, 'medcheck.html'), 'utf8');
+    ok(!/patientContext/.test(appSrc), 'la app no guarda ningún contexto de paciente');
+    ok(!/context-toggle|clear-context|nuevo paciente/.test(html),
+        'la cabecera no tiene conmutadores de contexto ni «Limpiar para nuevo paciente»');
+    ok(/id="open-bookmarklet-modal"/.test(html), 'el atajo seguro sigue en la cabecera');
+
+    // La tarjeta no pinta nada por contexto, ni siquiera con el dato `conduc` de CIMA.
     const tarjeta = Object.create(sandbox.window.__MedCheckAppClass.prototype);
     tarjeta._medRenderCache = new Map();
     tarjeta.filterState = { galenics: new Set() };
     tarjeta.favorites = [];
+    const card = tarjeta.renderIndicationMedCard({
+        nregistro: '12345', nombre: 'METFORMINA CINFA 850 MG COMPRIMIDOS', dosis: '850 mg', conduc: true,
+        comerc: true, atcs: [], formaFarmaceutica: { nombre: 'COMPRIMIDO RECUBIERTO CON PELICULA' },
+        formaFarmaceuticaSimplificada: { nombre: 'COMPRIMIDO' },
+    }, '');
+    ok(!/context-alert-inline|focusContext/.test(card), 'la tarjeta no lleva avisos ni accesos de contexto');
 
-    const pintaCon = (contexto, extra = {}) => {
-        tarjeta.patientContext = contexto;
-        return tarjeta.renderIndicationMedCard({
-            nregistro: '12345', nombre: 'METFORMINA CINFA 850 MG COMPRIMIDOS', dosis: '850 mg',
-            comerc: true, atcs: [], formaFarmaceutica: { nombre: 'COMPRIMIDO RECUBIERTO CON PELICULA' },
-            formaFarmaceuticaSimplificada: { nombre: 'COMPRIMIDO' }, ...extra,
-        }, '');
-    };
-
-    // Las siete claves son EXACTAMENTE las de `contextMapping` en cima-api.js. Si una de las
-    // dos listas se renombra sin la otra, el botón abre el modal y no enfoca nada, en
-    // silencio. Por eso se leen de la fuente en vez de repetirlas a mano aquí.
+    // Las siete claves de los atajos son EXACTAMENTE las de `contextMapping` en cima-api.js. Si
+    // una se renombra sin la otra, el atajo devuelve «no se pudo leer» en silencio.
     const apiSrc = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8');
     const bloqueMapping = apiSrc.slice(apiSrc.indexOf('const contextMapping = {'));
     const clavesApi = ['pregnancy', 'lactation', 'elderly', 'hepatic', 'renal', 'driving', 'dysphagia']
         .filter(k => new RegExp(`^\\s{12}${k}: \\{`, 'm').test(bloqueMapping));
-    ok(clavesApi.length === 7, 'las siete claves de contexto siguen declaradas en `contextMapping`',
-        `encontradas: ${clavesApi.join(', ')}`);
+    const atajos = sandbox.window.__MedCheckAppClass._ATAJOS_SEGURIDAD || [];
+    ok(clavesApi.length === 7 && atajos.length === 7
+        && atajos.every(([clave]) => clavesApi.includes(clave)),
+        'los siete atajos son las siete claves de `contextMapping`',
+        `api: ${clavesApi.join(', ')} · atajos: ${atajos.map(a => a[0]).join(', ')}`);
+    ok(atajos.find(a => a[0] === 'dysphagia')?.[3] === '3, 4.2 y 6.6'
+        && atajos.filter(a => ['elderly', 'renal', 'hepatic'].includes(a[0])).every(a => a[3] === '4.2 y 4.4'),
+        'cada atajo nombra los apartados que lee (los de `seccionesDe`)');
 
-    for (const clave of clavesApi) {
-        // `driving` es el único que además exige el dato estructurado `conduc` de CIMA.
-        const html = pintaCon({ [clave]: true }, clave === 'driving' ? { conduc: true } : {});
-        const accesos = html.match(/context-alert-inline[^>]*>/g) || [];
-        ok(accesos.length === 1, `${clave}: pinta exactamente un acceso contextual`,
-            `pintó ${accesos.length}`);
-        ok(html.includes(`app.openMedDetails('12345', 'safety', { focusContext: '${clave}' })`),
-            `${clave}: el acceso viaja con su propia clave de contexto`);
-    }
+    const fila = tarjeta._atajosSeguridadHtml();
+    ok((fila.match(/class="safety-atajo"/g) || []).length === 7, 'la pestaña pinta los siete atajos');
+    ok(atajos.every(([clave]) => fila.includes(`onclick="app.verAtajoSeguridad('${clave}')"`)),
+        'cada atajo llama con su propia clave');
+    ok(!/aria-pressed="true"/.test(fila), 'ninguno empieza pulsado: otra ficha empieza sin atajo abierto');
+    ok(/\$\{avisoSA\}\$\{atajos\}/.test(appSrc), 'la fila va en la pestaña Seguridad, tras el aviso de seguimiento adicional');
 
-    // CONDUCCIÓN NO ES COMO LOS OTROS CINCO. Los cinco se pintan porque el contexto está
-    // activo, sin mirar el fármaco; conducción exige `med.conduc`, que es un dato
-    // estructurado de CIMA sobre ESTE medicamento. Perder esa asimetría convertiría un dato
-    // de la fuente en una etiqueta nuestra.
-    const sinConduc = pintaCon({ driving: true });
-    ok(!/context-alert-inline/.test(sinConduc),
-        'conducción NO se pinta si el medicamento no declara `conduc`');
+    // Comportamiento: lo que hace el atajo al pulsarlo.
+    const montar = (analyzeSafety) => {
+        const cont = { dataset: {}, isConnected: true, innerHTML: '', querySelector: () => null };
+        const botones = clavesApi.map(clave => ({ dataset: { context: clave }, pressed: null,
+            setAttribute(_, v) { this.pressed = v; } }));
+        const a = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+        a.currentMed = { nregistro: '82921', nombre: 'X' };
+        a.modalBody = { querySelector: () => cont, querySelectorAll: () => botones };
+        a.api = { analyzeSafety };
+        a._ftUrlSeccion = () => null;
+        a._destinoCima = () => '';
+        return { a, cont, botones };
+    };
+    const checkEmb = { context: 'pregnancy', label: 'Embarazo', section: '4.6', status: 'review',
+        message: 'Coincidencias textuales — revisar la fuente', excerpt: null };
 
-    // EMBARAZO Y LACTANCIA, SEPARADOS. Eran un único «Revisar Emb/Lact» de cuando ambos
-    // enseñaban el mismo extracto —el principio de la 4.6, que casi siempre es embarazo—.
-    // Desde 2fcfea4 cada uno trae el suyo, así que un botón conjunto no puede decir a cuál
-    // de los dos lleva.
-    const ambos = pintaCon({ pregnancy: true, lactation: true });
-    ok((ambos.match(/context-alert-inline/g) || []).length === 2,
-        'embarazo y lactancia activos a la vez pintan DOS accesos, no uno');
-    ok(ambos.includes("focusContext: 'pregnancy'") && ambos.includes("focusContext: 'lactation'"),
-        'y cada uno lleva su propia clave');
-    ok(!/Emb\/Lact/.test(ambos), 'el acceso conjunto «Revisar Emb/Lact» ya no existe');
+    let llamada = null;
+    const { a, cont, botones } = montar(async (...args) => { llamada = args; return { checks: [checkEmb] }; });
+    await a.verAtajoSeguridad('pregnancy');
+    ok(llamada?.[0] === '82921' && JSON.stringify(llamada[1]) === '{"pregnancy":true}',
+        'pide solo el contexto pulsado', JSON.stringify(llamada));
+    ok(llamada?.[2]?.soloContextos === true && llamada?.[2]?.peticion?.headers?.['X-MC-Context'] === 'embarazo',
+        'sin las secciones clave, y con su X-MC-Context para la analítica', JSON.stringify(llamada?.[2]));
+    ok(/safety-check-item review is-focused" data-context="pregnancy"/.test(cont.innerHTML),
+        'pinta el check del contexto, marcado para el foco');
+    ok(botones.find(b => b.dataset.context === 'pregnancy').pressed === 'true'
+        && botones.filter(b => b.dataset.context !== 'pregnancy').every(b => b.pressed === 'false'),
+        'uno pulsado cada vez');
+    await a.verAtajoSeguridad('pregnancy');
+    ok(cont.innerHTML === '' && !cont.dataset.context && botones.every(b => b.pressed === 'false'),
+        'pulsarlo otra vez lo cierra');
 
-    // Ningún acceso contextual puede volver a abrir Seguridad "a pelo".
-    const todos = pintaCon({ pregnancy: true, lactation: true, renal: true, hepatic: true,
-        elderly: true, driving: true, dysphagia: true }, { conduc: true });
-    const aPelo = (todos.match(/context-alert-inline[\s\S]*?<\/div>/g) || [])
-        .filter(a => !a.includes('focusContext'));
-    ok(aPelo.length === 0, 'ningún acceso contextual abre el modal sin decir qué contexto pidió',
-        aPelo.join('\n'));
-    ok((todos.match(/context-alert-inline/g) || []).length === 7,
-        'con los siete contextos activos se pintan los siete accesos');
-    ok(/title="Disfagia o sonda — ver secciones 3, 4\.2 y 6\.6"/.test(todos),
-        'el acceso de disfagia nombra sus tres apartados de la ficha');
+    // Un fallo de lectura no es «la ficha no dice nada».
+    const fallo = montar(async () => { throw new Error('CIMA 500'); });
+    await fallo.a.verAtajoSeguridad('renal');
+    ok(/No se pudo leer/.test(fallo.cont.innerHTML) && /reintento: true/.test(fallo.cont.innerHTML),
+        'si CIMA falla, dice que no se pudo leer y ofrece Reintentar');
+    const vacio = montar(async () => ({ checks: [{ ...checkEmb, context: 'renal', status: 'unknown' }] }));
+    await vacio.a.verAtajoSeguridad('renal');
+    ok(/No se pudo leer/.test(vacio.cont.innerHTML) && !/safety-check-item/.test(vacio.cont.innerHTML),
+        'y lo mismo si no hay apartado que leer');
 
-    // La sección de la ficha va en el `title` de los que la tienen fija: es el dato que el
-    // médico contrasta contra la fuente oficial, y antes solo lo decía embarazo.
-    ok(/title="Insuficiencia renal — ver sección 4\.4"/.test(todos),
-        'el acceso renal nombra su apartado de la ficha');
+    // Otra ficha mientras llegaba la respuesta: no se pinta en la nueva.
+    let soltar;
+    const lento = montar(() => new Promise(r => { soltar = () => r({ checks: [checkEmb] }); }));
+    const pendiente = lento.a.verAtajoSeguridad('pregnancy');
+    lento.a.currentMed = { nregistro: '99999', nombre: 'Y' };
+    soltar();
+    await pendiente;
+    ok(!/safety-check-item/.test(lento.cont.innerHTML), 'una respuesta de otra ficha no se pinta');
+
+    // Las etiquetas dicen qué se enseña, no cómo de grave es.
+    const rotulos = ['danger', 'warning', 'review', 'safe', 'unknown', 'neutral', 'info']
+        .map(s => a.getSafetyStatusMeta(s).label);
+    ok(!rotulos.some(r => /Estado:|alerta|critica|revisar|hallazgo/i.test(r)),
+        'ningún rótulo de Seguridad lleva palabras de juez ni «Estado: informacion»', rotulos.join(' · '));
 }
 
 console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
@@ -751,16 +778,18 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
     ok(focus._pendingFocusContext === null,
         'y la intención se consume: no se hereda en la siguiente ficha que se abra');
 
-    let enfocado = null, traido = false;
+    // Desde el 15/11/2026 abrir con `focusContext` es pulsar su atajo: el check no existe hasta
+    // que el atajo lo pide, y es el atajo quien lo trae al viewport.
+    let pulsado = null;
     const focus2 = Object.create(sandbox.window.__MedCheckAppClass.prototype);
     focus2._pendingFocusContext = 'lactation';
-    focus2.modalBody = {
-        querySelector: (sel) => sel.includes('"lactation"')
-            ? { scrollIntoView: () => { traido = true; }, focus: () => { enfocado = 'lactation'; } }
-            : null,
-    };
+    focus2.verAtajoSeguridad = (ctx) => { pulsado = ctx; };
     focus2._focusSafetyContext();
-    ok(traido && enfocado === 'lactation', 'con check presente, lo trae al viewport y le da el foco');
+    ok(pulsado === 'lactation', 'con `focusContext`, la ficha abre ese atajo');
+
+    let enfocado = false, traido = false;
+    focus2._enfocarCheckSeguridad({ scrollIntoView: () => { traido = true; }, focus: () => { enfocado = true; } });
+    ok(traido && enfocado, 'y el check del atajo se trae al viewport y recibe el foco');
 }
 
 console.log('\n— «Abiertos en esta sesión» bajo la caja de Buscar —');

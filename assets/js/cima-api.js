@@ -2778,8 +2778,17 @@ class CimaAPI {
      *
      * MODIFICADO: Ahora siempre muestra las secciones clave (4.4, 4.6, 4.7)
      * independientemente del contexto activo
+     *
+     * @param {Object} [opciones]
+     * @param {boolean} [opciones.soloContextos] - no pide las tres secciones clave. Lo usan los
+     *   atajos de la pestaña Seguridad (15/11/2026): la ficha ya las tiene pintadas, y pedirlas
+     *   otra vez las contaría dos veces en la analítica (las peticiones registradas no usan caché).
+     * @param {Object} [opciones.peticion] - opciones de `_request` para los apartados del
+     *   contexto. El atajo manda aquí su `X-MC-Context`: desde que no hay contexto global, es la
+     *   única petición que sabe a qué contexto pertenece.
      */
-    async analyzeSafety(nregistro, patientContext) {
+    async analyzeSafety(nregistro, patientContext, opciones = {}) {
+        const peticion = opciones.peticion || {};
         const results = {
             nregistro,
             checks: []
@@ -2836,7 +2845,7 @@ class CimaAPI {
             },
             elderly: {
                 section: '4.4',
-                label: 'Paciente mayor',
+                label: 'Edad avanzada',
                 keywords: ['anciano', 'edad avanzada', 'pacientes de edad', 'mayores de 65',
                     'poblacion de edad avanzada', 'población de edad avanzada',
                     'pacientes geriátricos', 'pacientes geriatricos', 'tercera edad',
@@ -2917,11 +2926,12 @@ class CimaAPI {
         // `allSettled` y no `all`: una sección que CIMA no sirve no puede tumbar a las otras dos,
         // que es justo lo que hacía el `try` por iteración. El orden de los checks lo fija el
         // recorrido de `coreSections`, no el de llegada: la ficha se lee igual que antes.
-        const coreContents = await Promise.allSettled(
+        const coreContents = opciones.soloContextos ? [] : await Promise.allSettled(
             coreSections.map(cs => this.getDocSeccion(nregistro, cs.section))
         );
         coreSections.forEach((coreSection, i) => {
             const respuesta = coreContents[i];
+            if (!respuesta) return; // `soloContextos`: no se pidió
             if (respuesta.status === 'rejected') {
                 // Si falla, no añadir (sección no disponible)
                 console.warn(`Sección ${coreSection.section} no disponible:`, respuesta.reason);
@@ -2979,7 +2989,7 @@ class CimaAPI {
         const rawSections = new Map();
         const getRawSection = section => {
             if (!rawSections.has(section)) {
-                rawSections.set(section, this._request(`/docSegmentado/contenido/1?nregistro=${nregistro}&seccion=${section}`));
+                rawSections.set(section, this._request(`/docSegmentado/contenido/1?nregistro=${nregistro}&seccion=${section}`, peticion));
             }
             return rawSections.get(section);
         };
@@ -3047,7 +3057,7 @@ class CimaAPI {
             }
 
             try {
-                const sectionContent = await this.getDocSeccion(nregistro, mapping.section);
+                const sectionContent = await this.getDocSeccion(nregistro, mapping.section, 1, peticion);
 
                 if (!sectionContent || sectionContent.length < 50) {
                     results.checks.push({
