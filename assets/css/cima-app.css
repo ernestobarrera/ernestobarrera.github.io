@@ -3147,6 +3147,38 @@ a.badge-seguimiento:focus-visible {
 .combo-evidence-panel.combo-collapse .combo-collapse-title i { color: #6ee7b7; }
 .combo-ficha-panel.combo-collapse { border-style: solid; }
 .combo-ficha-panel.combo-collapse .combo-collapse-title i { color: var(--text-secondary); }
+/* Una fila por medicamento: nombre a la izquierda, sus dos secciones a la derecha. En estrecho,
+   los botones bajan bajo el nombre. */
+.combo-ficha-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--space-sm);
+}
+.combo-ficha-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem var(--space-md);
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--border-default);
+}
+.combo-ficha-row:first-child { border-top: none; }
+.combo-ficha-name {
+    flex: 1 1 14rem;
+    min-width: 0;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.combo-ficha-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
 
 /* --- Zona 3: Evidencia en PubMed (conteo informacional, sin ranking) --- */
 .combo-evidence-panel {
