@@ -11428,15 +11428,16 @@ class MedCheckApp {
     _posicionEnListaHtml(nregistro, { fuera = false } = {}) {
         const lista = this._tarjetasDeLista();
         const i = lista.findIndex(c => c.dataset.nregistro === String(nregistro));
-        if (i === -1 && fuera && lista.length) return this._posicionFueraDeListaHtml(lista.length);
-        if (i === -1 || lista.length < 2) return '';
+        const cuenta = this._cuentaDeLista(lista, nregistro);
+        if (i === -1 && fuera && lista.length) return this._posicionFueraDeListaHtml(cuenta.total);
+        if (i === -1 || cuenta.total < 2) return '';
         const ultima = i === lista.length - 1 && !this._verMasTrasTarjeta(lista[i]);
         const boton = (paso, icono, ayuda, inerte) =>
             `<button type="button" class="modal-pos-btn" onclick="app._irATarjetaVecina(${paso})" title="${ayuda}" aria-label="${ayuda}"${inerte ? ' disabled' : ''}><i class="fas fa-chevron-${icono}"></i></button>`;
         return `<div class="modal-pos-lista">
             <span class="modal-pos-label">Resultados</span>
             ${boton(-1, 'left', 'Producto anterior de la lista (← o K)', i === 0)}
-            <span class="modal-pos-num" title="Posición entre las tarjetas visibles de la lista: lo que queda tras «Ver más» o en un grupo plegado no cuenta hasta que se despliega">${i + 1} / ${lista.length}</span>
+            <span class="modal-pos-num" title="Posición en la lista entera, con lo que queda tras «Ver más» y en los grupos plegados: la misma cifra que el contador de resultados">${cuenta.pos} / ${cuenta.total}</span>
             ${boton(1, 'right', 'Producto siguiente de la lista (→ o J)', ultima)}
             <span class="modal-pos-kbd" title="También J (siguiente) y K (anterior)"><kbd>←</kbd><kbd>→</kbd></span>
         </div>`;
@@ -11469,6 +11470,32 @@ class MedCheckApp {
         // Si la ficha ya tenía fila (venía de una lista), no se quita al quedar fuera: pasa a «– / N».
         const html = this._posicionEnListaHtml(this._nregEnPanel, { fuera: !!hueco.querySelector('.modal-pos-lista') });
         if (hueco.dataset.pos !== html) { hueco.innerHTML = html; hueco.dataset.pos = html; }
+    }
+
+    /**
+     * Posición y total de la ficha abierta en la lista ENTERA (A3 de la revisión del 14/11/2026).
+     * Antes contaba solo las tarjetas visibles: con enalapril, «81 resultados» arriba y «1 / 47» en
+     * la ficha, porque cada grupo enseña 15 y deja el resto tras «Ver N más» (15+15+15+2). Ahora
+     * cuenta en orden de pantalla todas las tarjetas de la lista (también las de un grupo plegado,
+     * que siguen en el DOM) y suma, tras la última de cada grupo, los `data-restantes` de su
+     * «Ver más». J/K siguen recorriendo solo lo visible; la cifra dice dónde se está del total.
+     * Sin raíz conocida (lista fuera de Buscar, Indicaciones o Mi vademécum), se queda en lo visible.
+     */
+    _cuentaDeLista(visibles, nregistro) {
+        const i = visibles.findIndex(c => c.dataset.nregistro === String(nregistro));
+        const raiz = visibles[0]?.closest('#search-results, #indication-results, #profile-section-content');
+        if (!raiz) return { pos: i + 1, total: visibles.length };
+        const vistos = new Set();
+        let total = 0, pos = 0;
+        for (const c of raiz.querySelectorAll('.result-card[data-nregistro], .fav-card[data-nregistro]')) {
+            if (!vistos.has(c.dataset.nregistro)) {
+                vistos.add(c.dataset.nregistro);
+                total += 1;
+                if (c.dataset.nregistro === String(nregistro)) pos = total;
+            }
+            total += Number(this._verMasTrasTarjeta(c)?.dataset.restantes) || 0;
+        }
+        return { pos, total: Math.max(total, visibles.length) };
     }
 
     /** «– / N»: la ficha venía de la lista, pero el filtro aplicado después la ha dejado fuera. */
@@ -16799,7 +16826,7 @@ ${ftFechaDocsHtml}
                     ${medsToShow.map(med => this.renderIndicationMedCard(med, searchQuery)).join('')}
                 </div>
                 ${!isExpanded && remainingCount > 0 ? `
-                    <button type="button" class="view-more-btn" data-group-id="${flatId}">
+                    <button type="button" class="view-more-btn" data-group-id="${flatId}" data-restantes="${remainingCount}">
                         <i class="fas fa-chevron-down"></i> Ver ${remainingCount} más
                     </button>
                 ` : ''}
@@ -16822,7 +16849,7 @@ ${ftFechaDocsHtml}
             ).join('');
 
             const viewMoreBtn = hasMore ? `
-                <button type="button" class="view-more-btn" data-group-id="${groupId}">
+                <button type="button" class="view-more-btn" data-group-id="${groupId}" data-restantes="${remainingCount}">
                     <i class="fas fa-chevron-down"></i> Ver ${remainingCount} más
                 </button>
             ` : '';

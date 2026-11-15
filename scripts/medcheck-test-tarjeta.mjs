@@ -889,5 +889,44 @@ console.log('\n— «Abiertos en esta sesión» bajo la caja de Buscar —');
         'se repinta al abrir una ficha y al olvidar');
 }
 
+console.log('\n— La ficha cuenta sobre la lista entera (A3, 15/11/2026) —');
+{
+    // enalapril: «81 resultados» y la ficha decía «1 / 47», porque contaba solo lo visible
+    // (cada grupo enseña 15 y deja el resto tras «Ver N más»).
+    const raiz = { querySelectorAll: () => todas };
+    const tarjeta = (n, grupo, visible = true) => ({
+        dataset: { nregistro: n }, grupo, offsetParent: visible ? {} : null,
+        closest: sel => (/#search-results/.test(sel) ? raiz : null),
+    });
+    const g1 = ['1', '2', '3'].map(n => tarjeta(n, 'g1'));
+    const g2 = ['4', '5'].map(n => tarjeta(n, 'g2', false)); // grupo plegado: en el DOM, sin pintar
+    const g3 = ['6', '7'].map(n => tarjeta(n, 'g3'));
+    const todas = [...g1, ...g2, ...g3, tarjeta('6', 'g3')]; // el 6 repetido no cuenta dos veces
+    const restantes = new Map([[g1[2], 27], [g3[1], 4]]);
+    const c = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    c._verMasTrasTarjeta = t => (restantes.has(t) ? { dataset: { restantes: String(restantes.get(t)) } } : null);
+    const visibles = [...g1, ...g3];
+
+    const total = 3 + 27 + 2 + 2 + 4;
+    ok(c._cuentaDeLista(visibles, '1').total === total,
+        'el total suma lo visible, lo que queda tras «Ver más» y los grupos plegados, sin repetir producto',
+        JSON.stringify(c._cuentaDeLista(visibles, '1')));
+    ok(c._cuentaDeLista(visibles, '6').pos === 3 + 27 + 2 + 1,
+        'la posición es la de la lista entera, no la de la tarjeta visible');
+    ok(c._cuentaDeLista(visibles, '7').pos === 3 + 27 + 2 + 2, 'y la última visible no es la última de la lista');
+
+    const sinRaiz = visibles.map(t => ({ ...t, closest: () => null }));
+    ok(JSON.stringify(c._cuentaDeLista(sinRaiz, '6')) === JSON.stringify({ pos: 4, total: 5 }),
+        'fuera de Buscar, Indicaciones y Mi vademécum se queda en lo visible');
+
+    const app5 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    ok((app5.match(/class="view-more-btn" data-group-id="\$\{(flatId|groupId)\}" data-restantes="\$\{remainingCount\}"/g) || []).length === 2,
+        'los dos «Ver N más» de la lista llevan cuántos esconden');
+    ok(/const cuenta = this\._cuentaDeLista\(lista, nregistro\);[\s\S]{0,200}_posicionFueraDeListaHtml\(cuenta\.total\)/.test(app5)
+        && /\$\{cuenta\.pos\} \/ \$\{cuenta\.total\}/.test(app5)
+        && !/\$\{i \+ 1\} \/ \$\{lista\.length\}/.test(app5),
+        'la cabecera de la ficha y el «– / N» usan esa cuenta, no las tarjetas visibles');
+}
+
 console.log(fallos === 0 ? '\nOK — todas las aserciones pasan\n' : `\n${fallos} FALLO(S)\n`);
 process.exit(fallos === 0 ? 0 : 1);
