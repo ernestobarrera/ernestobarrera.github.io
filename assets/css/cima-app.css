@@ -4030,6 +4030,10 @@ body.med-panel-resizing {
    lo pegado se queda a 32 px del borde y el texto asoma por encima. */
 #med-modal .modal-content {
     padding-top: 0;
+    /* Sin anclaje de desplazamiento: Evidencia, Financiación y Utilización pintan su contenido
+       después de abrirse, y Chrome recolocaba la vista 24-32 px al llegar, deshaciendo la posición
+       que fija `_pestanaALaVista` (medido el 15/11/2026; ningún código mueve el panel después). */
+    overflow-anchor: none;
 }
 
 #med-modal #modal-body {
@@ -4049,9 +4053,13 @@ body.med-panel-resizing {
    0,25 rem = 1,5 rem), así que el texto de debajo no salta al aparecer. */
 /* Alto mínimo de la pestaña activa: al cambiar de pestaña con las pestañas pegadas, la nueva se
    coloca justo bajo ellas (`_pestanaALaVista`). Una pestaña corta no daba recorrido para llegar y
-   el navegador la dejaba a medio camino. Cuesta un hueco al pie de las pestañas cortas. */
+   el navegador la dejaba a medio camino. Cuesta un hueco al pie de las pestañas cortas.
+   El alto del panel entero, sin restar nada: la primera versión (sesión 110) restaba las pestañas
+   y dos márgenes, se quedaba 24 px corta y en las pestañas cortas (Indicaciones, Documentación,
+   Seguridad de dabigatrán) el panel solo dejaba bajar 186 px de los 210 que hacen falta. Con todo
+   el alto sobra recorrido tenga las filas de pestañas que tenga. */
 #med-modal .tab-content.active {
-    min-height: calc(100dvh - var(--ficha-pestanas-alto, 0px) - var(--space-xl) - var(--space-lg));
+    min-height: 100dvh;
 }
 
 #med-modal .modal-tabs.is-stuck {

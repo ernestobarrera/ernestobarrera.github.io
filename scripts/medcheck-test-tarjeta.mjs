@@ -816,7 +816,7 @@ console.log('\n— Pestañas de la ficha pegadas arriba en escritorio (15/11/202
     const movil = css4.slice(css4.indexOf('@media (max-width: 768px), (pointer: coarse) and (max-width: 1100px) and (orientation: portrait) {'));
     ok(/#med-modal \.modal-tabs \{[^}]*position: static;/.test(movil), 'en móvil no se pegan');
     // El relleno superior no puede estar en el panel que desplaza: lo pegado quedaría a 32 px.
-    ok(/#med-modal \.modal-content \{\s*padding-top: 0;\s*\}/.test(css4) && /#med-modal #modal-body \{\s*padding-top: var\(--space-xl\);/.test(css4),
+    ok(/#med-modal \.modal-content \{\s*padding-top: 0;/.test(css4) && /#med-modal #modal-body \{\s*padding-top: var\(--space-xl\);/.test(css4),
         'el relleno superior va en el contenido, no en el panel que desplaza');
     // Lo que se lleva a la vista y los rótulos fijos quedan DEBAJO de las pestañas.
     ok(/\.safety-passages-section-head \{ position: sticky; top: calc\(var\(--ficha-pestanas-alto, 0px\) - 1px\);/.test(css4),
@@ -846,7 +846,9 @@ console.log('\n— Pestañas de la ficha pegadas arriba en escritorio (15/11/202
     // Final de la cabecera MÁS su margen: ahí las pestañas quedan pegadas de verdad. Sin el margen
     // (156) quedaban a medio camino, sin cabecera y sin pegar.
     ok(panel.scrollTop === 180, 'pegadas, la pestaña nueva se abre con las pestañas pegadas y el contenido debajo', `scrollTop ${panel.scrollTop}`);
-    ok(/#med-modal \.tab-content\.active \{\s*min-height: calc\(100dvh/.test(css4),
+    ok(/#med-modal \.modal-content \{\s*padding-top: 0;[\s\S]{0,400}overflow-anchor: none;/.test(css4),
+        'sin anclaje de desplazamiento: lo que carga después no recoloca la pestaña');
+    ok(/#med-modal \.tab-content\.active \{\s*min-height: 100dvh;/.test(css4),
         'la pestaña activa tiene alto mínimo para que esa posición siempre se alcance');
 }
 
