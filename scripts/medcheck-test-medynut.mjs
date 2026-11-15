@@ -21,6 +21,7 @@
  * Uso: node scripts/medcheck-test-medynut.mjs
  * Salida: exit 0 si pasa todo; exit 1 con el detalle.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -124,7 +125,7 @@ check('11 · hay rutas con vía y se publican (la interfaz las etiqueta)',
 //
 // Esto es un detector de RETIRADA, no de comportamiento: si alguien quita la puerta, el
 // enlace equivocado vuelve en silencio y no hay otra prueba que lo cace.
-const appSrc = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const appSrc = fuenteApp(ROOT);
 check('12 · la interfaz conserva la puerta de vía (viasAdministracion vs slug)',
     /viasProducto/.test(appSrc) && /via\.cima\.some/.test(appSrc),
     'falta la comparación de vía en _hydrateMedynut: un producto IV volvería a enlazar al colirio');

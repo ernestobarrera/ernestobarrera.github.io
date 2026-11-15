@@ -5,6 +5,7 @@
  * la aplicación, con DOM mínimo y sin red ni acceso a datos del usuario.
  * Uso: node scripts/medcheck-test-guia.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -12,7 +13,7 @@ import { runInNewContext } from 'node:vm';
 import assert from 'node:assert/strict';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const src = readFileSync(join(root, 'assets/js/cima-app.js'), 'utf8');
+const src = fuenteApp(root);
 const timers = [];
 const elements = new Map();
 const queries = new Map();

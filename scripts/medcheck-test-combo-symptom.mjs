@@ -22,12 +22,13 @@
  *
  * Uso: node scripts/medcheck-test-combo-symptom.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const appSrc = readFileSync(join(ROOT, 'assets', 'js', 'cima-app.js'), 'utf8');
+const appSrc = fuenteApp(ROOT);
 
 let fallos = 0;
 const ok = (nombre, cond, detalle) => {

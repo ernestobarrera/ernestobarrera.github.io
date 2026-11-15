@@ -32,6 +32,7 @@
  *   node scripts/medcheck-audit-dose.mjs --catalog=ruta.json  audita un volcado concreto
  *   node scripts/medcheck-audit-dose.mjs --json               salida legible por máquina
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
@@ -67,7 +68,7 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(
-    `${readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8')}\n;window.__MedCheckAppClass = MedCheckApp;`,
+    `${fuenteApp(ROOT)}\n;window.__MedCheckAppClass = MedCheckApp;`,
     sandbox
 );
 const MedCheckApp = sandbox.window.__MedCheckAppClass;

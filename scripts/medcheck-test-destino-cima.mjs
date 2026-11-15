@@ -22,12 +22,13 @@
  *
  * Uso: node scripts/medcheck-test-destino-cima.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const src = readFileSync(join(root, 'assets/js/cima-app.js'), 'utf8').replace(/\r\n/g, '\n');
+const src = fuenteApp(root).replace(/\r\n/g, '\n');
 
 let fallos = 0;
 const check = (nombre, ok, detalle = '') => {

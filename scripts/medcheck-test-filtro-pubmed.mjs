@@ -30,6 +30,7 @@
  * Uso: node scripts/medcheck-test-filtro-pubmed.mjs [--canonico]
  * Salida: exit 0 si pasa todo; exit 1 con el detalle de cada fallo; exit 2 si no se pudo comparar.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -86,7 +87,7 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(readFileSync(join(ROOT, 'assets/js/inn-dict.js'), 'utf8'), sandbox, { filename: 'inn-dict.js' });
-const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const src = fuenteApp(ROOT);
 vm.runInContext(`${src}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox, { filename: 'cima-app.js' });
 const MedCheckApp = sandbox.window.__MedCheckAppClass;
 if (typeof MedCheckApp !== 'function') {

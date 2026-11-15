@@ -20,6 +20,7 @@
  *
  * Uso: node scripts/medcheck-test-ipt.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -177,7 +178,7 @@ console.log('\n4) el índice commiteado cumple su contrato');
 
 console.log('\n5) la pestaña Documentación pinta los IPT sin afirmar lo que el dato no dice');
 {
-    const APP = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+    const APP = fuenteApp(RAIZ);
     const sandbox = {
         window: {},
         document: { addEventListener() {}, getElementById: () => null, querySelectorAll: () => [], querySelector: () => null },

@@ -23,6 +23,7 @@
  *
  * Uso: node scripts/medcheck-test-utilizacion.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync, mkdtempSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -301,7 +302,7 @@ console.log('\n6) las validaciones bloquean lo que debe bloquear y solo avisan d
 // ── 7, 8 y 9: contrato con la interfaz ──────────────────────────────────────
 console.log('\n7-9) contrato de la interfaz');
 {
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const api = readFileSync(join(RAIZ, 'assets', 'js', 'cima-api.js'), 'utf8');
 
   ok('la DHD redondeada a cero se pinta como «<0,01», nunca como «0,00»',
@@ -381,7 +382,7 @@ console.log('\n7-9) contrato de la interfaz');
 // ── 10. canal hospitalario: el hueco tiene dos causas y no se confunden ─────
 console.log('\n10) medicamentos de uso hospitalario: la fuente es ciega, no incompleta');
 {
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const bloque = app.slice(app.indexOf('_utilCanal('), app.indexOf('_emlBadgeHtml(atcCode'));
   const emitido = bloque.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
 
@@ -435,7 +436,7 @@ console.log('\n10) medicamentos de uso hospitalario: la fuente es ciega, no inco
 console.log('\n10 bis 0) código ausente: motivo elegido con datos y grupo a la vista');
 {
   const api = readFileSync(join(RAIZ, 'assets', 'js', 'cima-api.js'), 'utf8');
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const metodo = (src, firma) => {
     const i = src.indexOf(`\n    ${firma}`);
     return src.slice(i, src.indexOf('\n    }\n', i) + 6);
@@ -519,7 +520,7 @@ console.log('\n10 bis 0) código ausente: motivo elegido con datos y grupo a la 
 // ── 10 bis. lo que corrigió la revisión de Codex ────────────────────────────
 console.log('\n10 bis) correcciones de la revisión cruzada');
 {
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const bloque = app.slice(app.indexOf('_utilCanal('), app.indexOf('_emlBadgeHtml(atcCode'));
   const emitido = bloque.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
 
@@ -629,7 +630,7 @@ console.log('\n11) el ETL declara dónde sí está el consumo hospitalario');
 console.log('\n12) «Utilización» es una vista principal, al nivel de Buscar');
 {
   const html = readFileSync(join(RAIZ, 'medcheck.html'), 'utf8');
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const wk = leerWorker();
 
   ok('hay pestaña de navegación en el HTML', /data-view="utilization"/.test(html));
@@ -710,7 +711,7 @@ console.log('\n13) el ETL se ejecuta cuando se le llama, en cualquier sistema op
 // cuando falta. Simplemente cae al valor por defecto, en silencio.
 console.log('\n14) la capa se puede enlazar, compartir y recorrer');
 {
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
 
   const listaVistas = app.slice(app.indexOf('const validViews = ['), app.indexOf('const targetView'));
   ok('`?view=utilization` está en la lista blanca de vistas', /'utilization'/.test(listaVistas));
@@ -821,7 +822,7 @@ console.log('\n15) la ontología, leída al revés, pone nombre clínico a cada 
 
   // Y el rótulo, que es donde está el riesgo de afirmar de más: la ontología dice qué búsquedas
   // incluyen este código, NO que el grupo tenga esa indicación autorizada.
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const bloque = app.slice(app.indexOf('_utilIndicacionesHtml(atc) {'), app.indexOf('async irAIndicacion(termino)'));
   const emitido = bloque.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
   ok('el rótulo dice «se llega aquí buscando»', /Se llega aquí buscando/.test(emitido));
@@ -859,7 +860,7 @@ console.log('\n15) la ontología, leída al revés, pone nombre clínico a cada 
 // no aparece obliga a un cálculo que nadie hace, y entonces se lee como si fuera de pacientes.
 console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
 {
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const reparto = app.slice(app.indexOf('renderUtilizacionRepartoHtml(d, g, {'),
     app.indexOf('renderUtilizacionHtml(atc5, d, cpresc) {'));
 
@@ -1073,7 +1074,7 @@ console.log('\n18) medida de lectura: la vista no se estira con la ventana');
 // pantalla es tres cuartas partes advertencia.
 console.log('\n19) las cautelas no vuelven a duplicarse');
 {
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
 
   ok('el emisor de cautelas es UNO y tiene dos niveles',
     (app.match(/util-limits-lead/g) || []).length === 1
@@ -1117,7 +1118,7 @@ console.log('\n19) las cautelas no vuelven a duplicarse');
 //     dos piezas del mismo asunto a cuatro párrafos de distancia.
 console.log('\n20) la marca se nombra y el denominador va junto');
 {
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const reparto = app.slice(app.indexOf('renderUtilizacionRepartoHtml(d, g, {'),
     app.indexOf('renderUtilizacionHtml(atc5, d, cpresc) {'));
 
@@ -1195,7 +1196,7 @@ console.log('\n21) una escala, no 22 tamaños sueltos');
     !/max-width:\s*[0-9]+ch/.test(capa));
 
   // La negrita marca la CANTIDAD. Era el único sitio donde caía sobre un verbo.
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const lectura = app.slice(app.indexOf('_utilLecturaDhd(dhd'), app.indexOf('_utilFraseReparto'));
   ok('la negrita de la lectura envuelve la cantidad, no el verbo',
     /<strong>\$\{cantidad\}<\/strong> \$\{verbo\}/.test(lectura));
@@ -1307,7 +1308,7 @@ console.log('\n22) reparto por envases, y sus cinco puertas');
 // color — un tono distinto se leería como escala de mérito, y esta capa no juzga.
 console.log('\n23) la magnitud, declarada en pantalla y en el dato');
 {
-  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const app = fuenteApp(RAIZ);
   const api = readFileSync(join(RAIZ, 'assets', 'js', 'cima-api.js'), 'utf8');
   const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
   const reparto = app.slice(app.indexOf('renderUtilizacionRepartoHtml(d, g, {'),

@@ -19,6 +19,7 @@
  *
  * Uso: node scripts/medcheck-test-tarjeta.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -40,7 +41,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8')}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
+vm.runInContext(`${fuenteApp(ROOT)}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
 const app = Object.create(sandbox.window.__MedCheckAppClass.prototype);
 
 let fallos = 0;
@@ -338,7 +339,7 @@ console.log('\n— Artículos intercalados en la forma —');
 
 console.log('\n— Filtro por familia galénica —');
 {
-    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const src = fuenteApp(ROOT);
     ok(MedCheckAppDims().includes('galenic'), 'la familia galénica es una dimensión del contrato');
 
     const app2 = Object.create(sandbox.window.__MedCheckAppClass.prototype);
@@ -369,7 +370,7 @@ console.log('\n— Filtro por familia galénica —');
 
 console.log('\n— Accesos de la tarjeta —');
 {
-    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const src = fuenteApp(ROOT);
     // Con ficha seccionada: es el caso en que los seis accesos deben estar operativos.
     const conFicha = { nregistro: '12345', docs: [{ tipo: 1, secc: true }] };
     const html = app._renderCardActions('12345', conFicha);
@@ -423,7 +424,7 @@ console.log('\n— Accesos que dependen de la ficha técnica —');
     ok(/no disponible/.test(html), 'el tooltip explica por qué está apagado');
 
     // La cuenta debe hacerse con el dato que YA viene en la lista, sin pedir el detalle.
-    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const src = fuenteApp(ROOT);
     ok(/_hasFichaTecnicaSeccionada\(med\)/.test(src), 'la tarjeta lo decide con el `med` de la lista');
     ok(src.includes('badge-sin-ft'), 'la tarjeta avisa antes de pulsar');
 }
@@ -469,7 +470,7 @@ console.log('\n— Orden: el registro con ficha va delante de sus hermanos —')
     ok(uno.every((m, i) => m.nregistro === otro[i].nregistro), 'el orden es determinista, venga como venga la entrada');
 
     // Y no se ha reintroducido el plegado, que se retiró por crear un agregado inexistente.
-    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const src = fuenteApp(ROOT);
     ok(!src.includes('_clusterDuplicates'), 'no vuelve el plegado de duplicados');
     ok(!src.includes('dedupe-toggle'), 'ni su casilla');
 }
@@ -544,7 +545,7 @@ console.log('\n— Registros duplicados sin ficha: fuera por defecto —');
     app2._resetResultFilters();
     ok(app2.filterState.paralelas === true, 'una búsqueda nueva respeta la elección del usuario');
 
-    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const src = fuenteApp(ROOT);
     ok(!src.includes('_isParallelImport'),
         'no queda la detección por sufijo IP, que solo cubría 718 de 931');
     ok(src.includes('Incluir duplicados'), 'la etiqueta dice lo que hace la casilla');
@@ -562,7 +563,7 @@ console.log('\n— Registros duplicados sin ficha: fuera por defecto —');
 
 console.log('\n— Filtro de forma del modal de alternativas —');
 {
-    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const src = fuenteApp(ROOT);
     ok(!src.includes('cardForm.includes(selectedForm)'),
         'el filtro no usa `includes` sobre un vocabulario cerrado');
     ok(src.includes('cardForm === selectedForm'), 'el filtro compara por igualdad');
@@ -599,7 +600,7 @@ console.log('\n— La señalética de los checks de contexto —');
         'con contexto activo nunca se dice «sin hallazgo»: «Siempre Revisar, Nunca Asumir»');
 
     // La puerta a la fuente íntegra, al lado del visor interno.
-    const app2 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const app2 = fuenteApp(ROOT);
     ok((app2.match(/_ftUrlSeccion\(med, check\.section, check\.match\)/g) || []).length === 1,
         'los checks ofrecen además la sección en CIMA, y le pasan la frase que casó');
     // Un solo sitio desde el 15/11/2026: `_renderSafetyCheckItem`, para las secciones clave y
@@ -619,7 +620,7 @@ console.log('\n— Sin contexto de paciente: atajos sin estado en la pestaña Se
     // avisos en las tarjetas y se «limpiaba para un nuevo paciente». Era un estado de paciente
     // (dossier de cualificación, parte B1). Aquí se fija que no vuelve por ninguna puerta y que
     // los atajos que lo sustituyen leen lo mismo que leía.
-    const appSrc = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const appSrc = fuenteApp(ROOT);
     const html = readFileSync(join(ROOT, 'medcheck.html'), 'utf8');
     ok(!/patientContext/.test(appSrc), 'la app no guarda ningún contexto de paciente');
     ok(!/context-toggle|clear-context|nuevo paciente/.test(html),
@@ -720,7 +721,7 @@ console.log('\n— Sin contexto de paciente: atajos sin estado en la pestaña Se
 
 console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
 {
-    const app3 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const app3 = fuenteApp(ROOT);
     const css3 = readFileSync(join(ROOT, 'assets/css/cima-app.css'), 'utf8');
 
     ok(/async openMedDetails\(nregistro, initialTab, options = \{\}\)/.test(app3),
@@ -808,7 +809,7 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
 
 console.log('\n— Pestañas de la ficha pegadas arriba en escritorio (15/11/2026) —');
 {
-    const app4 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const app4 = fuenteApp(ROOT);
     const css4 = readFileSync(join(ROOT, 'assets/css/cima-app.css'), 'utf8');
     // Pegadas fuera de móvil; en el bloque de pantalla estrecha, sueltas (allí está la barra fina).
     ok(/#med-modal \.modal-tabs \{\s*position: sticky;\s*top: 0;/.test(css4),
@@ -883,7 +884,7 @@ console.log('\n— «Abiertos en esta sesión» bajo la caja de Buscar —');
     ok(!/<img/.test(caja.innerHTML) && /&lt;img/.test(caja.innerHTML), 'el nombre se escapa (texto de CIMA)');
     sandbox.document.getElementById = getById;
 
-    const app4 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const app4 = fuenteApp(ROOT);
     ok(/this\.rememberRecentMed\(med\);\s*this\._pintarRecientesBusqueda\(\);/.test(app4)
         && /clearRecentMeds\(\) \{[\s\S]{0,400}this\._pintarRecientesBusqueda\(\);/.test(app4),
         'se repinta al abrir una ficha y al olvidar');
@@ -919,7 +920,7 @@ console.log('\n— La ficha cuenta sobre la lista entera (A3, 15/11/2026) —');
     ok(JSON.stringify(c._cuentaDeLista(sinRaiz, '6')) === JSON.stringify({ pos: 4, total: 5 }),
         'fuera de Buscar, Indicaciones y Mi vademécum se queda en lo visible');
 
-    const app5 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const app5 = fuenteApp(ROOT);
     ok((app5.match(/class="view-more-btn" data-group-id="\$\{(flatId|groupId)\}" data-restantes="\$\{remainingCount\}"/g) || []).length === 2,
         'los dos «Ver N más» de la lista llevan cuántos esconden');
     ok(/const cuenta = this\._cuentaDeLista\(lista, nregistro\);[\s\S]{0,200}_posicionFueraDeListaHtml\(cuenta\.total\)/.test(app5)

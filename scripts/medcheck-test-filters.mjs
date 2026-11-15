@@ -26,6 +26,7 @@
  * Uso: node scripts/medcheck-test-filters.mjs
  * Salida: exit 0 si pasa todo; exit 1 con el detalle de cada fallo.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -57,7 +58,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const src = fuenteApp(ROOT);
 vm.runInContext(`${src}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox, { filename: 'cima-app.js' });
 
 const MedCheckApp = sandbox.window.__MedCheckAppClass;
@@ -348,7 +349,7 @@ check('"Limpiar" sí limpia también tipo de producto y receta',
 console.log('\n— Regresiones de honestidad —');
 // Estas dos condiciones eran inalcanzables (los campos no existen en CIMA) y una de ellas
 // estaba explicada en la guía interactiva. El test impide que vuelvan.
-const fuente = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const fuente = fuenteApp(ROOT);
 const sinComentarios = fuente.split('\n').filter(l => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n');
 check('no vuelve la insignia "€ Económico"', /€\s*Económico/.test(sinComentarios), false);
 check('no vuelve el uso de med.precioMenor', /med\.precioMenor/.test(sinComentarios), false);

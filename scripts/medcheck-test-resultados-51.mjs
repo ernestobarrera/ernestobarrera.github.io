@@ -29,6 +29,7 @@
  * Uso: node scripts/medcheck-test-resultados-51.mjs
  * Salida: exit 0 si pasa todo; exit 1 con el detalle de cada fallo.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -47,7 +48,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-const appSrc = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const appSrc = fuenteApp(ROOT);
 vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8')}\n;window.__CimaAPI = CimaAPI;`, sandbox, { filename: 'cima-api.js' });
 vm.runInContext(`${appSrc}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox, { filename: 'cima-app.js' });
 const App = sandbox.window.__MedCheckAppClass;

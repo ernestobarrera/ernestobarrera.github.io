@@ -23,6 +23,7 @@
  * Uso: node scripts/medcheck-test-resaltado-posologia.mjs
  * Salida: exit 0 si pasa todo; exit 1 con el detalle de cada fallo.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -41,7 +42,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8')}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
+vm.runInContext(`${fuenteApp(ROOT)}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
 const App = sandbox.window.__MedCheckAppClass;
 const app = Object.create(App.prototype);
 const categorias = App.RESALTADOS_POSOLOGIA;

@@ -22,6 +22,7 @@
  * Uso: node scripts/medcheck-test-evidencia-grupo.mjs
  * Salida: exit 0 si pasa todo; exit 1 con el detalle de cada fallo.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -45,7 +46,7 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(readFileSync(join(ROOT, 'assets/js/inn-dict.js'), 'utf8'), sandbox, { filename: 'inn-dict.js' });
-const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const src = fuenteApp(ROOT);
 vm.runInContext(`${src}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox, { filename: 'cima-app.js' });
 
 const MedCheckApp = sandbox.window.__MedCheckAppClass;

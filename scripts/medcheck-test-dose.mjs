@@ -22,6 +22,7 @@
  *
  * Uso: node scripts/medcheck-test-dose.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -40,7 +41,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8')}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
+vm.runInContext(`${fuenteApp(ROOT)}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
 const app = Object.create(sandbox.window.__MedCheckAppClass.prototype);
 
 let failures = 0;

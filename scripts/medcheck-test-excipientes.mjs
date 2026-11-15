@@ -31,13 +31,14 @@
  *
  * Uso: node scripts/medcheck-test-excipientes.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const FUENTE = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const FUENTE = fuenteApp(ROOT);
 
 const sandbox = {
     window: {},

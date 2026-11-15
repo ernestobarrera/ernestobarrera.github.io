@@ -35,6 +35,7 @@
  * Uso: node scripts/medcheck-test-ancla-texto.mjs
  * Salida: exit 0 si pasa todo; exit 1 con el detalle de cada fallo.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -83,7 +84,7 @@ function ok(nombre, condicion, detalle = '') {
 // Si la firma nueva no está, NO se aborta: se cae a la que hubiera y el banco sigue contando.
 // Un banco que muere en el arranque dice «algo va mal»; uno que suspende dice CUÁNTO cambia, y
 // esa es la cifra que hay que poder comparar contra el código anterior antes de publicar.
-const appSrc = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const appSrc = fuenteApp(ROOT);
 const trozo = appSrc.match(/_ftUrlSeccion\(med, seccion, match = null\) \{[\s\S]*?\n {4}\}/)
     || appSrc.match(/_ftUrlSeccion\(med, seccion\) \{[\s\S]*?\n {4}\}/);
 if (!trozo) {

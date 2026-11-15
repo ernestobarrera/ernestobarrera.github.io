@@ -15,13 +15,14 @@
  *
  * Uso: node scripts/medcheck-test-enlaces-docs.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
-const APP = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+const APP = fuenteApp(RAIZ);
 
 // Para poder EJECUTAR la agrupación, no solo leerla. Mismo sandbox que medcheck-test-excipientes.
 const sandbox = {

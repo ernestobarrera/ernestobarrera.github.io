@@ -30,6 +30,7 @@
  *   node scripts/medcheck-audit-resaltado-posologia.mjs --por-familia=12 --salida=informe.md
  *   node scripts/medcheck-audit-resaltado-posologia.mjs --familia=inyectable --por-familia=30
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -64,7 +65,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8')}\n;window.__App = MedCheckApp;`, sandbox);
+vm.runInContext(`${fuenteApp(ROOT)}\n;window.__App = MedCheckApp;`, sandbox);
 const App = sandbox.window.__App;
 const app = Object.create(App.prototype);
 

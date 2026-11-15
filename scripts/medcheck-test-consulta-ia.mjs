@@ -24,6 +24,7 @@
  *
  * Uso: node scripts/medcheck-test-consulta-ia.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -46,7 +47,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-const src = readFileSync(join(ROOT, 'assets', 'js', 'cima-app.js'), 'utf8');
+const src = fuenteApp(ROOT);
 vm.runInContext(`${src}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox, { filename: 'cima-app.js' });
 const MedCheckApp = sandbox.window.__MedCheckAppClass;
 if (typeof MedCheckApp !== 'function') { console.error('No se pudo cargar la clase MedCheckApp'); process.exit(1); }

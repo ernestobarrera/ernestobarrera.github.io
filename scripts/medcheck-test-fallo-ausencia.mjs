@@ -22,6 +22,7 @@
  *
  * Uso: node scripts/medcheck-test-fallo-ausencia.mjs     Salida: exit 0 si todo pasa.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -62,7 +63,7 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 const apiSrc = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8');
-const appSrc = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const appSrc = fuenteApp(ROOT);
 vm.runInContext(`${apiSrc}\n;window.__CimaAPIClass = CimaAPI;`, sandbox, { filename: 'cima-api.js' });
 vm.runInContext(`${appSrc}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox, { filename: 'cima-app.js' });
 const CimaAPI = sandbox.window.__CimaAPIClass;

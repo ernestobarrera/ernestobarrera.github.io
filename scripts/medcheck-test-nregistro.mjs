@@ -20,6 +20,7 @@
  *
  * Uso: node scripts/medcheck-test-nregistro.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -27,7 +28,7 @@ import vm from 'node:vm';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const apiSrc = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8');
-const appSrc = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const appSrc = fuenteApp(ROOT);
 
 let fallos = 0;
 const ok = (nombre, cond, detalle) => {

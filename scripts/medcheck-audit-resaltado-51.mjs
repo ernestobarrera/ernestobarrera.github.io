@@ -29,6 +29,7 @@
  *   node scripts/medcheck-audit-resaltado-51.mjs --principios=apixaban,semaglutida
  *   node scripts/medcheck-audit-resaltado-51.mjs --nregistros=65981,77073
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -69,7 +70,7 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8')}\n;window.__CimaAPI = CimaAPI;`, sandbox);
-vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8')}\n;window.__App = MedCheckApp;`, sandbox);
+vm.runInContext(`${fuenteApp(ROOT)}\n;window.__App = MedCheckApp;`, sandbox);
 const App = sandbox.window.__App;
 const CimaAPI = sandbox.window.__CimaAPI;
 const app = Object.create(App.prototype);

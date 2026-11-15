@@ -22,6 +22,7 @@
  *
  * Uso: node scripts/medcheck-test-entidades.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -125,7 +126,7 @@ if (!py) {
 console.log('\nFicha PGx (render real de la app):');
 {
     const { runInNewContext } = await import('node:vm');
-    const fuente = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const fuente = fuenteApp(ROOT);
     const App = runInNewContext(`${fuente}\nMedCheckApp;`, {
         document: { addEventListener() {}, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [] },
         window: { innerWidth: 1280, innerHeight: 800 }, setTimeout() {}, requestAnimationFrame() {},

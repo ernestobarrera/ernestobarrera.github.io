@@ -20,6 +20,7 @@
  *
  * Uso: node scripts/medcheck-test-hospitalarios.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -47,7 +48,7 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(
-    `${readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8')}\n;window.__App = MedCheckApp;`,
+    `${fuenteApp(ROOT)}\n;window.__App = MedCheckApp;`,
     sandbox, { filename: 'cima-app.js' }
 );
 const MedCheckApp = sandbox.window.__App;
@@ -85,7 +86,7 @@ check('con acento o sin él', app._utilCanal('Diagnostico Hospitalario'), 'DH');
 check('un medicamento ordinario no es ninguno', app._utilCanal(NORMAL), null);
 check('sin cpresc tampoco', app._utilCanal(null), null);
 // Si esto se rompe, la tarjeta enseñaría una insignia H que el filtro no reconoce.
-const fuente = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const fuente = fuenteApp(ROOT);
 check('la insignia deriva de _utilCanal y no reimplementa la detección',
     /const canalHosp = this\._utilCanal\(med\.cpresc\)/.test(fuente), true);
 

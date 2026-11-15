@@ -16,13 +16,14 @@
  *
  * Uso: node scripts/medcheck-test-escape-consulta.mjs     Salida: exit 0 si todo pasa.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = readFileSync(join(ROOT, 'assets', 'js', 'cima-app.js'), 'utf8');
+const SRC = fuenteApp(ROOT);
 
 let fallos = 0;
 const ok = (nombre, cond, detalle = '') => {

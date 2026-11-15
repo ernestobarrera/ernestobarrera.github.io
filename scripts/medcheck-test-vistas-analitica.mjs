@@ -21,12 +21,13 @@
  *      MEDCHECK_WORKER_DIR=<ruta> node scripts/medcheck-test-vistas-analitica.mjs   # otro árbol del Worker
  *      (por defecto, el repo hermano: con un cambio de Worker y cliente a la vez, apúntalo a su rama)
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
-const APP = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+const APP = fuenteApp(RAIZ);
 const HTML = readFileSync(join(RAIZ, 'medcheck.html'), 'utf8');
 const ANALYTICS = readFileSync(join(RAIZ, 'analytics.html'), 'utf8');
 const DIR_WORKER = process.env.MEDCHECK_WORKER_DIR || join(RAIZ, '..', 'medcheck-worker');

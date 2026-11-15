@@ -25,12 +25,13 @@
  *
  * Uso: node scripts/medcheck-test-catalogo.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const appSrc = readFileSync(join(ROOT, 'assets', 'js', 'cima-app.js'), 'utf8');
+const appSrc = fuenteApp(ROOT);
 const auditSrc = readFileSync(join(ROOT, 'scripts', 'medcheck-audit-ontology.mjs'), 'utf8');
 const ontology = JSON.parse(readFileSync(join(ROOT, 'assets', 'data', 'clinical-ontology.json'), 'utf8'));
 

@@ -21,6 +21,7 @@
  * Uso: node scripts/medcheck-test-financiacion.mjs
  * Salida: exit 0 si pasa todo; exit 1 con el detalle de cada fallo.
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -41,7 +42,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const src = fuenteApp(ROOT);
 vm.runInContext(`${src}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox, { filename: 'cima-app.js' });
 
 const MedCheckApp = sandbox.window.__MedCheckAppClass;
@@ -164,7 +165,7 @@ check('el clasificador viejo degradaba el estado 666 a "sindato"',
 // medicamento sin datos en el Nomenclátor habría caído ahí y MedCheck habría afirmado que su
 // financiación se gestiona por farmacia de hospital. Es falso y clínicamente peor que callar.
 console.log('\n— Nota del modal sin Nomenclátor (detector estructural) —');
-const fuente = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const fuente = fuenteApp(ROOT);
 
 const iEstudio = fuente.indexOf("st.includes('estudio')");
 const iHosp = fuente.indexOf('su financiación SNS se gestiona a través de farmacia hospitalaria');

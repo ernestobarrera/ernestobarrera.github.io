@@ -27,6 +27,7 @@
  *
  * Uso: node scripts/medcheck-test-pa-subgrupo.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -45,7 +46,7 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 const apiSrc = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8');
-const appSrc = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+const appSrc = fuenteApp(ROOT);
 vm.runInContext(apiSrc, sandbox, { filename: 'cima-api.js' });
 vm.runInContext(`${appSrc}\n;window.__C = MedCheckApp;`, sandbox, { filename: 'cima-app.js' });
 const C = sandbox.window.__C;

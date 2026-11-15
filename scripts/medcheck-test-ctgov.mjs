@@ -20,6 +20,7 @@
  *
  * Uso: node scripts/medcheck-test-ctgov.mjs
  */
+import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -49,7 +50,7 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(
-    `${readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8')}\n;window.__App = MedCheckApp;`,
+    `${fuenteApp(ROOT)}\n;window.__App = MedCheckApp;`,
     sandbox, { filename: 'cima-app.js' }
 );
 const MedCheckApp = sandbox.window.__App;
