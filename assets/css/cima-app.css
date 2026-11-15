@@ -2475,8 +2475,9 @@ a.badge-seguimiento:focus-visible {
     padding: var(--space-md);
     border-radius: var(--radius-md);
     margin-bottom: var(--space-sm);
-    /* Aire al llegar desde un acceso contextual (`_focusSafetyContext`, `block: 'start'`). */
-    scroll-margin-top: var(--space-md);
+    /* Aire al llegar desde un acceso contextual (`_focusSafetyContext`, `block: 'start'`),
+       por debajo de las pestañas pegadas de la ficha (`--ficha-pestanas-alto`). */
+    scroll-margin-top: calc(var(--ficha-pestanas-alto, 0px) + var(--space-md));
 }
 
 .safety-check-item:last-child {
@@ -2558,6 +2559,7 @@ a.badge-seguimiento:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
     scroll-margin-block: var(--space-lg);
+    scroll-margin-top: calc(var(--ficha-pestanas-alto, 0px) + var(--space-lg));
 }
 
 .safety-check-content {
@@ -4021,6 +4023,49 @@ body.med-panel-resizing {
     padding-bottom: var(--space-xs);
 }
 
+/* Pestañas de la ficha pegadas arriba del panel (15/11/2026, ver `_vigilarCabeceraFicha`).
+   Antes se iban con el texto y había que subir para cambiar de apartado. En móvil no: ver el
+   bloque de pantalla estrecha.
+   El relleno superior pasa del panel (que es el que desplaza) a su contenido: con él en el panel,
+   lo pegado se queda a 32 px del borde y el texto asoma por encima. */
+#med-modal .modal-content {
+    padding-top: 0;
+}
+
+#med-modal #modal-body {
+    padding-top: var(--space-xl);
+}
+
+#med-modal .modal-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--bg-surface);
+    padding-top: var(--space-xs);
+}
+
+/* Con la cabecera de la ficha fuera de la vista, el nombre del medicamento encima de las
+   pestañas. La línea mide lo mismo que el margen que se quita (1,25 rem + el hueco de fila de
+   0,25 rem = 1,5 rem), así que el texto de debajo no salta al aparecer. */
+#med-modal .modal-tabs.is-stuck {
+    margin-bottom: 0;
+    box-shadow: 0 6px 8px -6px rgba(0, 0, 0, 0.45);
+}
+
+#med-modal .modal-tabs.is-stuck::before {
+    content: attr(data-nombre);
+    flex: 0 0 100%;
+    min-width: 0;
+    height: 1.25rem;
+    line-height: 1.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 .modal-tab {
     padding: var(--space-xs) var(--space-sm);
     background: transparent;
@@ -4559,11 +4604,11 @@ body.med-panel-resizing {
 /* PEGAJOSA a propósito: con doce pasajes es lo único que sigue diciendo si lo que lees es 4.2
    o 4.4. Antes eso lo repetía una línea de procedencia bajo cada pasaje, que es la forma cara
    y ruidosa de resolverlo. El fondo debe ser opaco, de ahí el de `.safety-passages`. */
-.safety-passages-section-head { position: sticky; top: -1px; z-index: 2; background: var(--bg-surface); display: flex; gap: var(--space-sm); justify-content: space-between; align-items: baseline; flex-wrap: wrap; border-bottom: 1px solid var(--border-hover); padding: 0.3rem 0; }
+.safety-passages-section-head { position: sticky; top: calc(var(--ficha-pestanas-alto, 0px) - 1px); z-index: 2; background: var(--bg-surface); display: flex; gap: var(--space-sm); justify-content: space-between; align-items: baseline; flex-wrap: wrap; border-bottom: 1px solid var(--border-hover); padding: 0.3rem 0; }
 .safety-passages-section-head strong em { font-style: normal; font-weight: 400; color: var(--text-muted); font-size: 0.78rem; }
 .safety-passages-section-head a { color: var(--primary); white-space: nowrap; }
 .safety-passages-section-head a { font-size: 0.8rem; }
-.safety-passage { margin: 0.35rem 0; padding: 0.35rem var(--space-sm); border-left: 2px solid var(--border-default); scroll-margin-top: 3rem; overflow-wrap: anywhere; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.safety-passage { margin: 0.35rem 0; padding: 0.35rem var(--space-sm); border-left: 2px solid var(--border-default); scroll-margin-top: calc(var(--ficha-pestanas-alto, 0px) + 3rem); overflow-wrap: anywhere; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 .safety-passage:target, .safety-passage.is-flash { background: var(--primary-light); border-left-color: var(--primary); transition: background 0.45s ease; }
 .safety-passage-original { max-width: 100%; }
 /* Enlace permanente, en la misma línea del rótulo que CIMA escribió: coste vertical cero. */
@@ -6383,6 +6428,8 @@ div.section-text th .ft-tras-hueco {
    cabecera). Pulsado en el color de navegación, no en el de aviso: abrir un atajo no avisa de
    nada, solo lleva a lo que dice la ficha. */
 .safety-atajos {
+    /* El atajo la lleva arriba al pulsarlo: queda bajo las pestañas, no detrás. */
+    scroll-margin-top: calc(var(--ficha-pestanas-alto, 0px) + var(--space-sm));
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -14825,6 +14872,10 @@ a.ipt-item:hover {
         pointer-events: auto;
     }
 
+    #med-modal #modal-body {
+        padding-top: 0;
+    }
+
     #med-modal .modal-content {
         width: 100%;
         padding: 0 var(--space-md) var(--space-xl);
@@ -14912,11 +14963,19 @@ a.ipt-item:hover {
        revisión eran cinco filas de texto suelto; la fila única deslizante se descartó (21/10)
        porque escondía la mitad de los apartados. */
     #med-modal .modal-tabs {
+        /* En móvil no se pegan: cuatro filas fijas taparían media pantalla. Allí está la
+           barra fina del apartado (`setupMovil`). */
+        position: static;
+        box-shadow: none;
         flex-wrap: wrap;
         justify-content: flex-start;
         gap: 3px;
         margin: 0 0 var(--space-md);
         padding: 0 0 var(--space-sm);
+    }
+
+    #med-modal .modal-tabs.is-stuck::before {
+        content: none;
     }
 
     #med-modal .modal-tab {

@@ -11879,8 +11879,12 @@ ${ftFechaDocsHtml}
         if (ctx) this.verAtajoSeguridad(ctx);
     }
 
-    /** Lleva el check a la vista y le da el foco de teclado. */
-    _enfocarCheckSeguridad(item) {
+    /**
+     * Lleva a la vista `ancla` (por defecto el propio check) y da el foco de teclado al check.
+     * El atajo pasa como ancla su fila de atajos: así queda arriba, con el resultado debajo, y se
+     * puede pulsar otro sin volver a subir (hasta el 15/11/2026 la fila se iba por encima).
+     */
+    _enfocarCheckSeguridad(item, ancla = item) {
         if (!item) return;
         // `matchMedia` puede no existir en el entorno de tests; sin él, sin animación.
         const sinMovimiento = !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
@@ -11889,7 +11893,7 @@ ${ftFechaDocsHtml}
         // y centrar un elemento más alto que el visor pone en medio SU MITAD: el título, el
         // índice y el principio de 4.2 —lo primero que hay que leer— quedaban por encima y
         // había que subir a buscarlos. El margen lo pone `scroll-margin-top` en el CSS.
-        item.scrollIntoView({ block: 'start', behavior: sinMovimiento ? 'auto' : 'smooth' });
+        (ancla || item).scrollIntoView({ block: 'start', behavior: sinMovimiento ? 'auto' : 'smooth' });
         item.focus({ preventScroll: true });
     }
 
@@ -11961,7 +11965,8 @@ ${ftFechaDocsHtml}
             return;
         }
         cont.innerHTML = this._renderSafetyCheckItem(med, check, true);
-        this._enfocarCheckSeguridad(cont.querySelector('.safety-check-item'));
+        this._enfocarCheckSeguridad(cont.querySelector('.safety-check-item'),
+            this.modalBody.querySelector('.safety-atajos'));
     }
 
     _renderSafetyCheckItem(med, check, esFoco = false) {
@@ -17161,22 +17166,72 @@ ${ftFechaDocsHtml}
     }
 
     /**
-     * Pestaña de la ficha en móvil. Al cambiarla con el texto ya bajado se sube a las pestañas,
-     * con el principio de la nueva debajo (si no, se abría por la mitad). Pone al día la barra fina
-     * del apartado y, al pintar un producto, vuelve a vigilar sus pestañas, que son nuevas.
+     * Pestaña de la ficha. Al cambiarla con el texto ya bajado se sube a las pestañas, con el
+     * principio de la nueva debajo (si no, se abría por la mitad). Al pintar un producto, vuelve a
+     * vigilar sus pestañas, que son nuevas.
+     *
+     * Hasta el 15/11/2026 solo en móvil: en escritorio la pestaña nueva se abría a la altura a la
+     * que se hubiera bajado en la anterior. En móvil pone además al día la barra fina del apartado;
+     * en escritorio las pestañas van pegadas arriba del panel (`_vigilarCabeceraFicha`).
      */
     _pestanaALaVista(tab, { inicial = false } = {}) {
-        if (!tab || !this._esMovil()) return;
-        this._pintarBarraApartado(tab);
+        if (!tab) return;
+        const movil = this._esMovil();
+        if (movil) this._pintarBarraApartado(tab);
         if (inicial) {
-            this._vigilarPestanasFicha();
+            if (movil) this._vigilarPestanasFicha();
+            else this._vigilarCabeceraFicha();
             return;
         }
         const panel = this.modal.querySelector('.modal-content');
         const pestanas = tab.closest('.modal-tabs');
         if (!panel || !pestanas) return;
-        const tope = Math.max(0, pestanas.offsetTop - 8);
+        // Pegadas (sticky), su `offsetTop` es el de donde están pegadas, no el natural. El tope es
+        // entonces el final de la cabecera de la ficha: justo antes de que empiecen a pegarse.
+        const cabecera = this.modalBody.querySelector('.modal-header');
+        const pegadas = typeof getComputedStyle === 'function' && getComputedStyle(pestanas).position === 'sticky';
+        const tope = pegadas && cabecera
+            ? cabecera.offsetTop + cabecera.offsetHeight
+            : Math.max(0, pestanas.offsetTop - 8);
         if (panel.scrollTop > tope) panel.scrollTop = tope;
+    }
+
+    /**
+     * ESCRITORIO: PESTAÑAS DE LA FICHA SIEMPRE A MANO (15/11/2026, petición de Ernesto).
+     *
+     * Las pestañas van pegadas arriba del panel (CSS `#med-modal .modal-tabs`, fuera de móvil).
+     * Antes se iban con el texto: título, «Resultados n/N» y pestañas suman 185-245 px, y para
+     * pasar de Seguridad a Posología había que subir cada vez. Aquí se hacen dos cosas:
+     *  - con la cabecera de la ficha fuera de la vista, las pestañas llevan el nombre del
+     *    medicamento encima (`.is-stuck`, que lo pinta con `data-nombre`);
+     *  - el panel sabe cuánto tapan (`--ficha-pestanas-alto`), para que lo que se lleva a la vista
+     *    (un pasaje, el resultado de un atajo) y los rótulos de sección fijos queden debajo.
+     */
+    _vigilarCabeceraFicha() {
+        this._obsCabeceraFicha?.disconnect();
+        this._obsAltoPestanas?.disconnect();
+        const panel = this.modal.querySelector('.modal-content');
+        const cabecera = this.modalBody.querySelector('.modal-header');
+        const pestanas = this.modalBody.querySelector('.modal-tabs');
+        if (!panel || !pestanas || typeof getComputedStyle !== 'function') return;
+        pestanas.dataset.nombre = this.currentMed?.nombre || '';
+        const pegadas = () => getComputedStyle(pestanas).position === 'sticky';
+        // La línea del nombre (24 px) se suma aunque aún no se vea: al llevar algo a la vista, las
+        // pestañas acaban pegadas y con ella.
+        const medir = () => panel.style.setProperty('--ficha-pestanas-alto',
+            pegadas() ? `${pestanas.offsetHeight + (pestanas.classList.contains('is-stuck') ? 0 : 24)}px` : '0px');
+        medir();
+        if (typeof ResizeObserver !== 'undefined') {
+            this._obsAltoPestanas = new ResizeObserver(medir);
+            this._obsAltoPestanas.observe(pestanas);
+        }
+        if (cabecera && typeof IntersectionObserver !== 'undefined') {
+            this._obsCabeceraFicha = new IntersectionObserver(([e]) => {
+                const porEncima = e.boundingClientRect.bottom <= (e.rootBounds?.top ?? 0) + 1;
+                pestanas.classList.toggle('is-stuck', !e.isIntersecting && porEncima && pegadas());
+            }, { root: panel });
+            this._obsCabeceraFicha.observe(cabecera);
+        }
     }
 
     /** Fármaco y apartado que se leen, en la barra fina de la ficha (ver `setupMovil`). */

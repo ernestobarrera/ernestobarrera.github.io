@@ -790,6 +790,56 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
     let enfocado = false, traido = false;
     focus2._enfocarCheckSeguridad({ scrollIntoView: () => { traido = true; }, focus: () => { enfocado = true; } });
     ok(traido && enfocado, 'y el check del atajo se trae al viewport y recibe el foco');
+
+    // El atajo lleva arriba SU FILA, no el check: hasta el 15/11/2026 la fila se iba por encima
+    // y para pulsar otro había que volver a subir.
+    let llevado = null, foco = null;
+    focus2._enfocarCheckSeguridad(
+        { scrollIntoView: () => { llevado = 'check'; }, focus: () => { foco = 'check'; } },
+        { scrollIntoView: () => { llevado = 'fila'; } });
+    ok(llevado === 'fila' && foco === 'check', 'con ancla, se lleva la fila de atajos y el foco va al check');
+    ok(/this\._enfocarCheckSeguridad\(cont\.querySelector\('\.safety-check-item'\),\s*this\.modalBody\.querySelector\('\.safety-atajos'\)\)/.test(app3),
+        'y el atajo pasa su fila como ancla');
+}
+
+console.log('\n— Pestañas de la ficha pegadas arriba en escritorio (15/11/2026) —');
+{
+    const app4 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const css4 = readFileSync(join(ROOT, 'assets/css/cima-app.css'), 'utf8');
+    // Pegadas fuera de móvil; en el bloque de pantalla estrecha, sueltas (allí está la barra fina).
+    ok(/#med-modal \.modal-tabs \{\s*position: sticky;\s*top: 0;/.test(css4),
+        'las pestañas de la ficha se pegan arriba del panel');
+    const movil = css4.slice(css4.indexOf('@media (max-width: 768px), (pointer: coarse) and (max-width: 1100px) and (orientation: portrait) {'));
+    ok(/#med-modal \.modal-tabs \{[^}]*position: static;/.test(movil), 'en móvil no se pegan');
+    // El relleno superior no puede estar en el panel que desplaza: lo pegado quedaría a 32 px.
+    ok(/#med-modal \.modal-content \{\s*padding-top: 0;\s*\}/.test(css4) && /#med-modal #modal-body \{\s*padding-top: var\(--space-xl\);/.test(css4),
+        'el relleno superior va en el contenido, no en el panel que desplaza');
+    // Lo que se lleva a la vista y los rótulos fijos quedan DEBAJO de las pestañas.
+    ok(/\.safety-passages-section-head \{ position: sticky; top: calc\(var\(--ficha-pestanas-alto, 0px\) - 1px\);/.test(css4),
+        'los rótulos de sección fijos se pegan bajo las pestañas');
+    ok(/\.safety-passage \{[^}]*scroll-margin-top: calc\(var\(--ficha-pestanas-alto, 0px\) \+ 3rem\)/.test(css4)
+        && /\.safety-atajos \{[^}]*scroll-margin-top: calc\(var\(--ficha-pestanas-alto, 0px\)/.test(css4),
+        'el salto a un pasaje y el atajo cuentan con lo que tapan las pestañas');
+    // La línea del nombre mide lo que se quita de margen: el texto no salta al aparecer.
+    ok(/#med-modal \.modal-tabs\.is-stuck \{\s*margin-bottom: 0;/.test(css4)
+        && /#med-modal \.modal-tabs\.is-stuck::before \{[^}]*content: attr\(data-nombre\);[^}]*height: 1\.25rem;/.test(css4),
+        'con la cabecera fuera, el nombre encima de las pestañas, sin mover el texto');
+    // Cambiar de pestaña con el texto bajado sube también en escritorio.
+    ok(!/_pestanaALaVista\(tab, \{ inicial = false \} = \{\}\) \{\s*if \(!tab \|\| !this\._esMovil\(\)\) return;/.test(app4),
+        'cambiar de pestaña con el texto bajado sube también en escritorio');
+
+    // Comportamiento del tope: pegadas, el tope es el final de la cabecera.
+    const p = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    const panel = { scrollTop: 900 };
+    const pestanas = { offsetTop: 870 };
+    p._esMovil = () => false;
+    p.modal = { querySelector: () => panel };
+    p.modalBody = { querySelector: () => ({ offsetTop: 32, offsetHeight: 124 }) };
+    const antes = sandbox.getComputedStyle;
+    sandbox.getComputedStyle = () => ({ position: 'sticky' });
+    p._pestanaALaVista({ closest: () => pestanas });
+    sandbox.getComputedStyle = antes;
+    ok(panel.scrollTop === 156, 'pegadas, la pestaña nueva se abre justo al final de la cabecera', `scrollTop ${panel.scrollTop}`);
 }
 
 console.log('\n— «Abiertos en esta sesión» bajo la caja de Buscar —');
