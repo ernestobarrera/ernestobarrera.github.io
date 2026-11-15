@@ -449,5 +449,123 @@ check('borrar REEMPLAZA la URL (Atrás no devuelve lo descartado)', /this\.updat
 check('el texto buscado se pinta escapado en la caja', /value="\$\{this\._escapeHtml\(this\.lastSearchQuery\)\}"/.test(buscar)
     && !/value="\$\{this\.lastSearchQuery\}"/.test(src), true);
 
+console.log('\n— A12: cada vista con sus filtros (revisión de diseño del 14/11/2026) —');
+// Caso comprobado por Fable: «Financiado» marcado en Buscar sobre enalapril llegaba ya puesto a
+// Indicaciones → Hipertensión, y faltaban los no financiados sin que nada a la vista lo dijera.
+const vistas = appWith({ generic: true });
+vistas.filterState.financiacion = new Set(['fin']);
+vistas._syncTopFilterCheckboxes = function () {};
+vistas._filtrosParaVista('indications');
+const enInd = vistas._filterSnapshot();
+check('Buscar → Indicaciones: ni Financiado ni Genérico viajan',
+    [enInd.financiacion.size, enInd.generic], [0, false]);
+vistas.filterState.form = 'COMPRIMIDO';
+vistas.groupingState.routeFilters.add('Oral');
+vistas._filtrosParaVista('search');
+const deVuelta = vistas._filterSnapshot();
+check('…y al volver a Buscar recupera los suyos, sin los de Indicaciones',
+    [[...deVuelta.financiacion], deVuelta.generic, deVuelta.form, deVuelta.routes.size], [['fin'], true, null, 0]);
+vistas._filtrosParaVista('indications');
+const otraVez = vistas._filterSnapshot();
+check('…e Indicaciones recupera los suyos',
+    [otraVez.form, [...otraVez.routes], otraVez.financiacion.size], ['COMPRIMIDO', ['Oral'], 0]);
+check('la misma vista no toca nada', (() => {
+    const antes = vistas.filterState; vistas._filtrosParaVista('indications'); return vistas.filterState === antes;
+})(), true);
+check('una vista sin lista (Perfil) no cambia de dueño', (() => {
+    vistas._filtrosParaVista('profile'); return vistas._vistaFiltros;
+})(), 'indications');
+// Quien siembra filtros para Buscar desde otra vista (Esenciales) toma antes los de Buscar: si
+// no, `loadView` los guardaría como de Indicaciones y Buscar abriría con los de antes.
+const esencial = appWith({});
+esencial._syncTopFilterCheckboxes = function () {};
+esencial._filtrosParaVista('indications');
+esencial.filterState.financiacion = new Set(['nofin']);
+esencial._essentialPrefs = () => ({ generic: true });
+esencial.searchByPA = function () { this._filtrosParaVista('search'); };
+esencial._searchEssential('enalapril');
+check('Esenciales desde Indicaciones: Buscar lleva la preferencia y no el filtro de Indicaciones',
+    [esencial._filterSnapshot().generic, esencial._filterSnapshot().financiacion.size, esencial._vistaFiltros], [true, 0, 'search']);
+check('…y el de Indicaciones sigue guardado para ella',
+    [...(esencial._filtrosGuardados?.indications?.filterState?.financiacion || [])], ['nofin']);
+// El logo limpia la búsqueda desde cualquier vista: limpia los filtros de Buscar, no los de la
+// vista en la que se está.
+const logo = appWith({});
+logo._syncTopFilterCheckboxes = function () {};
+logo._filtrosParaVista('indications');
+logo.filterState.form = 'COMPRIMIDO';
+logo._limpiarBusqueda();
+check('el logo desde Indicaciones no borra las facetas de Indicaciones',
+    logo._filtrosGuardados?.indications?.filterState?.form, 'COMPRIMIDO');
+check('loadView reparte los filtros antes de pintar y de escribir la URL', (() => {
+    const lv = cuerpoDe('    async loadView(viewName, updateURL = true) {');
+    const i = lv.indexOf('this._filtrosParaVista(viewName)');
+    return i > -1 && i < lv.indexOf('this.updateURL(') && i < lv.indexOf('this.renderSearch()');
+})(), true);
+
+console.log('\n— A13: Atrás deja la pantalla que dice la URL —');
+// `?view=indications` a secas era la entrada que apilaba la pestaña; Atrás desde una indicación
+// llegaba ahí y la vista repintaba la indicación anterior.
+const lvApp = appWith({});
+lvApp._syncTopFilterCheckboxes = function () {};
+lvApp.content = { innerHTML: '' };
+lvApp.renderIndications = function () {};
+lvApp.renderSearch = function () {};
+let urlEscrita = null;
+lvApp.updateURL = (p) => { urlEscrita = p; };
+lvApp.lastIndicationQuery = 'Hipertensión';
+sandbox.document.querySelectorAll = () => [];
+await lvApp.loadView('indications');
+check('la pestaña Indicaciones con resultados apila su indicación, no `view` a secas',
+    [urlEscrita.view, urlEscrita.indication], ['indications', 'Hipertensión']);
+lvApp.lastSearchQuery = 'enalapril';
+await lvApp.loadView('search');
+check('…y la de Buscar, su consulta', [urlEscrita.view, urlEscrita.q], ['search', 'enalapril']);
+await lvApp.loadView('alerts').catch(() => {});
+check('las demás vistas siguen escribiendo solo `view`', urlEscrita, { view: 'alerts' });
+
+async function routerCon(search, preparar) {
+    const app = appWith({});
+    app._syncTopFilterCheckboxes = function () {};
+    app._resetSearchScopeToMeds = function () {};
+    app.modal = { classList: { contains: () => true, add() {} } };
+    sandbox.document.querySelector = () => null;
+    sandbox.window.location = { search };
+    const vistas = [];
+    app.loadView = async (v, u) => { vistas.push([v, u]); };
+    preparar(app);
+    await app.processURLParams();
+    return { app, vistas };
+}
+const atrasInd = await routerCon('?view=indications', (a) => {
+    a._filtrosParaVista('indications');
+    a.lastIndicationQuery = 'Hipertensión';
+    a.lastIndicationResults = { resultados: [{}] };
+    a.lastATCCode = 'C02';
+    a.filterState.form = 'COMPRIMIDO';
+});
+check('Atrás a `?view=indications`: la vista queda vacía, como dice la URL',
+    [atrasInd.app.lastIndicationQuery, atrasInd.app.lastIndicationResults, atrasInd.app.lastATCCode, atrasInd.app.filterState.form],
+    ['', null, null, null]);
+check('…y se pinta Indicaciones sin tocar el historial', atrasInd.vistas, [['indications', false]]);
+const atrasBus = await routerCon('?view=search', (a) => {
+    a.lastSearchQuery = 'enalapril';
+    a.lastSearchResults = { resultados: [{}] };
+});
+check('Atrás a `?view=search` sin `q`: la búsqueda se vacía', [atrasBus.app.lastSearchQuery, atrasBus.app.lastSearchResults], ['', null]);
+const atrasInicio = await routerCon('', (a) => { a.lastSearchQuery = 'enalapril'; a.lastSearchResults = { resultados: [{}] }; });
+check('Atrás a la entrada inicial (sin parámetros): igual', [atrasInicio.app.lastSearchQuery, atrasInicio.app.lastSearchResults], ['', null]);
+// Lo que se midió en Chrome (15/11): la búsqueda restaurada desde la URL apilaba su entrada al
+// terminar (la marca de Atrás caduca a los 100 ms) y borraba el historial hacia delante, así que
+// Atrás quedaba atrapado en la misma indicación. Restaurar REEMPLAZA, en las tres ramas.
+const router = cuerpoDe('    async processURLParams() {');
+check('el router restaura indicación y búsqueda con `fromURL`',
+    [/performIndicationSearch\(\{ preserveFilters: true, fromURL: true \}\)/.test(router),
+     (router.match(/performSearch\(\{ preserveFilters: true, fromURL: true \}\)/g) || []).length,
+     /performSearch\(\{ preserveFilters: true \}\)/.test(router)], [true, 2, false]);
+check('…y con `fromURL` las dos reemplazan en vez de apilar',
+    [/_commitIndicationURL\(\{ replace: !!options\.fromURL \}\)/.test(cuerpoDe('    async performIndicationSearch(options = {}) {')),
+     /updateURL\(this\._searchURLParams\(\), \{ replace: !!options\.fromURL \}\)/.test(cuerpoDe('    async performSearch(options = {}) {'))], [true, true]);
+
 console.log(`\n${failures === 0 ? 'TODO OK' : `${failures} FALLO(S)`}`);
 process.exit(failures === 0 ? 0 : 1);

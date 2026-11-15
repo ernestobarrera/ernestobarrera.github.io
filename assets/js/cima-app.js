@@ -676,6 +676,8 @@ class MedCheckApp {
      * La usan el logo y la × de la caja de búsqueda.
      */
     _limpiarBusqueda() {
+        // Los filtros que se limpian son los de Buscar, aunque se llame desde otra vista (el logo).
+        this._filtrosParaVista('search');
         this.lastSearchQuery = '';
         this.lastSearchResults = null;
         this._lastSearchData = null;
@@ -735,6 +737,7 @@ class MedCheckApp {
         // Seguridad de la ficha); enlaces y shortcuts antiguos aterrizan en el buscador.
         if (viewName === 'safety') viewName = 'search';
         this.currentView = viewName;
+        this._filtrosParaVista(viewName);
         window._mcCurrentView = MedCheckApp._VIEW_ANALYTICS_MAP[viewName] || viewName;
         // Sincroniza aquí la pestaña activa de navegación: antes cada caller lo hacía a
         // mano y rutas como navigateToATCFromModal dejaban marcada la pestaña anterior.
@@ -744,8 +747,14 @@ class MedCheckApp {
         this.content.innerHTML = '<div class="loading-spinner"></div>';
 
         // Update URL unless this is a popstate navigation or explicitly disabled
+        // Buscar e Indicaciones repintan lo último que tenían, así que la URL lleva ese estado y no
+        // solo `view`. Con `{ view }` a secas, volver con Atrás a esa entrada (`?view=indications`)
+        // ya no podía distinguir «sin indicación» de «la indicación de antes» (A13).
         if (updateURL && !this.isPopstateNavigation) {
-            this.updateURL({ view: viewName });
+            const params = viewName === 'search' ? this._searchURLParams()
+                : viewName === 'indications' ? this._indicationURLParams()
+                : { view: viewName };
+            this.updateURL(params);
         }
 
         try {
@@ -1653,6 +1662,87 @@ class MedCheckApp {
         this._hospPrefApply();
     }
 
+    /** Las dos vistas que pintan una lista con facetas. Cada una tiene SUS filtros. */
+    static _VISTAS_CON_FILTROS = Object.freeze(['search', 'indications']);
+
+    /**
+     * Pone en `filterState` los filtros de `vista` (A12, revisión de diseño del 14/11/2026).
+     *
+     * Buscar e Indicaciones compartían `filterState`, así que «Financiado» marcado en Buscar
+     * llegaba ya puesto a una indicación: la lista salía sin los no financiados y solo lo
+     * delataba «Limpiar 1». En Indicaciones las casillas de tipo de producto no están junto a la
+     * caja, así que nada a la vista decía que se estaba filtrando. Es una omisión silenciosa.
+     *
+     * Ahora, al pasar de una vista a la otra, se guardan los filtros de la que se deja y se
+     * recuperan los de la que se abre; la que no tenía ninguno empieza limpia. Volver a Buscar
+     * sigue siendo volver a lo que estabas mirando, con sus filtros. DENTRO de cada vista no
+     * cambia nada: el ámbito persiste entre búsquedas como fija `_resetResultFilters`.
+     * Agrupar y ordenar son presentación, no quitan filas, y siguen compartidos. Las exclusiones
+     * hospitalarias son memoria del usuario: se releen siempre y se anuncian mientras escondan algo.
+     *
+     * Quien siembre filtros para una vista ANTES de abrirla (`_searchEssential`) llama a esto
+     * primero; si no, `loadView` los guardaría como de la otra vista.
+     */
+    _filtrosParaVista(vista) {
+        if (!MedCheckApp._VISTAS_CON_FILTROS.includes(vista)) return;
+        const duena = this._vistaFiltros || 'search';
+        if (duena === vista) return;
+        if (!this._filtrosGuardados) this._filtrosGuardados = {};
+        this._filtrosGuardados[duena] = {
+            filterState: this._copiaFilterState(this.filterState),
+            routes: [...(this.groupingState?.routeFilters || [])],
+            pas: [...(this.groupingState?.activeIngredientFilters || [])],
+        };
+        const guardado = this._filtrosGuardados[vista] || null;
+        this._ponerFiltros(guardado);
+        this._vistaFiltros = vista;
+    }
+
+    /** Copia profunda de `filterState` (sus `Set` incluidos) sobre el vacío canónico. */
+    _copiaFilterState(fs) {
+        const out = { ...this._emptyFilterState(), ...(fs || {}) };
+        for (const k of Object.keys(out)) {
+            if (out[k] instanceof Set) out[k] = new Set(out[k]);
+        }
+        return out;
+    }
+
+    /**
+     * Instala unos filtros guardados, o los vacíos si no hay. Las vías y los principios activos
+     * se vacían y rellenan en el mismo `Set` (no se sustituye el objeto). La preferencia
+     * hospitalaria se relee de la memoria.
+     */
+    _ponerFiltros(guardado) {
+        this.filterState = guardado ? this._copiaFilterState(guardado.filterState) : this._emptyFilterState();
+        const gs = this.groupingState;
+        if (gs?.routeFilters?.clear) {
+            gs.routeFilters.clear();
+            (guardado?.routes || []).forEach(r => gs.routeFilters.add(r));
+        }
+        if (gs?.activeIngredientFilters?.clear) {
+            gs.activeIngredientFilters.clear();
+            (guardado?.pas || []).forEach(p => gs.activeIngredientFilters.add(p));
+        }
+        this._hospPrefApply();
+        this._syncTopFilterCheckboxes();
+    }
+
+    /**
+     * Vacía la vista Indicaciones: universo, resultados y sus filtros. La usa el router cuando la
+     * URL dice `?view=indications` sin indicación ni ATC (A13): antes la pantalla seguía con los
+     * resultados de la indicación anterior y la dirección decía otra cosa.
+     */
+    _limpiarIndicaciones() {
+        this.lastIndicationQuery = '';
+        this.lastIndicationResults = null;
+        this.lastATCCode = null;
+        this.lastATCLabel = '';
+        this.lastATCBreadcrumb = [];
+        this._indAiAlCambiarUniverso?.(this._indAiUniverso({ atcCode: null, query: '' }));
+        if (this._vistaFiltros === 'indications') this._ponerFiltros(null);
+        else if (this._filtrosGuardados) delete this._filtrosGuardados.indications;
+    }
+
     _normalizeDrugSearchText(value) {
         return (value || '').toString().toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -1883,9 +1973,12 @@ class MedCheckApp {
                 );
             }
 
-            // Update URL with search parameters (serializador único, §_searchURLParams)
+            // Update URL with search parameters (serializador único, §_searchURLParams).
+            // Restaurada desde la URL (`fromURL`), REEMPLAZA: la marca de Atrás caduca a los 100 ms
+            // y la búsqueda tarda más, así que apilaba un duplicado y borraba el historial hacia
+            // delante; Atrás quedaba atrapado en la misma búsqueda (A13).
             if (!this.isPopstateNavigation) {
-                this.updateURL(this._searchURLParams());
+                this.updateURL(this._searchURLParams(), { replace: !!options.fromURL });
             }
 
         } catch (error) {
@@ -4088,7 +4181,8 @@ class MedCheckApp {
 
             // La búsqueda por indicación pasa a tener URL propia: hasta ahora esta vista no
             // serializaba nada, así que ni se podía compartir ni sobrevivía a una recarga.
-            this._commitIndicationURL();
+            // Restaurada desde la URL, reemplaza, como `searchByATCCode` (ver `performSearch`, A13).
+            this._commitIndicationURL({ replace: !!options.fromURL });
 
         } catch (error) {
             console.error('Indication search error:', error);
@@ -17540,6 +17634,9 @@ ${ftFechaDocsHtml}
         // If no params, load default view
         if (Object.keys(params).length === 0) {
             this._resetSearchScopeToMeds();
+            // Sin `q`, la pantalla tampoco lleva búsqueda (A13): Atrás hasta la entrada inicial
+            // dejaba los resultados de la búsqueda siguiente bajo una URL vacía.
+            this._limpiarBusqueda();
             this.loadView('search', false);
             return;
         }
@@ -17682,7 +17779,7 @@ ${ftFechaDocsHtml}
                 const term = (params.q || '').trim();
                 const motivo = MedCheckApp.motivoRevisionAtajo(term);
                 if (!motivo) {
-                    this.performSearch({ preserveFilters: true });
+                    this.performSearch({ preserveFilters: true, fromURL: true });
                 } else {
                     if (searchInput) {
                         searchInput.focus();
@@ -17711,7 +17808,7 @@ ${ftFechaDocsHtml}
             // Enlace de busqueda compartido (?q= sin atajo): auto-ejecucion directa.
             // preserveFilters: las facetas acaban de restaurarse desde la URL y no deben
             // borrarse por ser esta una consulta "nueva" para la sesion.
-            this.performSearch({ preserveFilters: true });
+            this.performSearch({ preserveFilters: true, fromURL: true });
             return;
         }
 
@@ -17748,9 +17845,15 @@ ${ftFechaDocsHtml}
             this.lastIndicationQuery = params.indication;
             this._restoreFiltersFromURL(params);
             // preserveFilters: las facetas acaban de restaurarse desde el enlace.
-            this.performIndicationSearch({ preserveFilters: true });
+            this.performIndicationSearch({ preserveFilters: true, fromURL: true });
             return;
         }
+
+        // Buscar sin `q` e Indicaciones sin indicación ni ATC: la URL dice «vista vacía», y la
+        // pantalla tiene que decir lo mismo (A13). Antes repintaban lo último que tenían, así que
+        // Atrás desde una indicación cambiaba la dirección y dejaba la lista de antes.
+        if (targetView === 'search') this._limpiarBusqueda();
+        if (targetView === 'indications') this._limpiarIndicaciones();
 
         // Default: just load the view
         this.loadView(targetView, false);
@@ -20847,6 +20950,8 @@ ${ftFechaDocsHtml}
         // toma después el núcleo de filtrado. Sembrarlas en `lastSearchFilters` dejó de
         // funcionar al unificar el contrato: allí ya no las lee nadie.
         this.lastSearchFilters = { comerc: true, searchType: 'smart' };
+        // Estos filtros son de Buscar: se toma su estado antes de sembrar (ver `_filtrosParaVista`).
+        this._filtrosParaVista('search');
         this.filterState = this._emptyFilterState();
         this.filterState.efgOnly = !!prefs.generic;
         this.filterState.biosimilarOnly = !!prefs.biosimilar;
