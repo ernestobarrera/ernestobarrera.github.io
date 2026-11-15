@@ -4047,6 +4047,13 @@ body.med-panel-resizing {
 /* Con la cabecera de la ficha fuera de la vista, el nombre del medicamento encima de las
    pestañas. La línea mide lo mismo que el margen que se quita (1,25 rem + el hueco de fila de
    0,25 rem = 1,5 rem), así que el texto de debajo no salta al aparecer. */
+/* Alto mínimo de la pestaña activa: al cambiar de pestaña con las pestañas pegadas, la nueva se
+   coloca justo bajo ellas (`_pestanaALaVista`). Una pestaña corta no daba recorrido para llegar y
+   el navegador la dejaba a medio camino. Cuesta un hueco al pie de las pestañas cortas. */
+#med-modal .tab-content.active {
+    min-height: calc(100dvh - var(--ficha-pestanas-alto, 0px) - var(--space-xl) - var(--space-lg));
+}
+
 #med-modal .modal-tabs.is-stuck {
     margin-bottom: 0;
     box-shadow: 0 6px 8px -6px rgba(0, 0, 0, 0.45);
@@ -14976,6 +14983,10 @@ a.ipt-item:hover {
 
     #med-modal .modal-tabs.is-stuck::before {
         content: none;
+    }
+
+    #med-modal .tab-content.active {
+        min-height: 0;
     }
 
     #med-modal .modal-tab {

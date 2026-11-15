@@ -798,8 +798,12 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
         { scrollIntoView: () => { llevado = 'check'; }, focus: () => { foco = 'check'; } },
         { scrollIntoView: () => { llevado = 'fila'; } });
     ok(llevado === 'fila' && foco === 'check', 'con ancla, se lleva la fila de atajos y el foco va al check');
-    ok(/this\._enfocarCheckSeguridad\(cont\.querySelector\('\.safety-check-item'\),\s*this\.modalBody\.querySelector\('\.safety-atajos'\)\)/.test(app3),
+    ok(/else this\._enfocarCheckSeguridad\(item, this\.modalBody\.querySelector\('\.safety-atajos'\)\)/.test(app3),
         'y el atajo pasa su fila como ancla');
+    // Pero solo si hace falta: con el principio del resultado a la vista no se mueve nada (si no,
+    // la cabecera se condensaba sin motivo; Ernesto, 15/11/2026).
+    ok(/< panel\.clientHeight \* 0\.6;\s*if \(visible\) item\.focus\(\{ preventScroll: true \}\);/.test(app3),
+        'con el resultado a la vista, el atajo no desplaza el panel');
 }
 
 console.log('\n— Pestañas de la ficha pegadas arriba en escritorio (15/11/2026) —');
@@ -836,10 +840,14 @@ console.log('\n— Pestañas de la ficha pegadas arriba en escritorio (15/11/202
     p.modal = { querySelector: () => panel };
     p.modalBody = { querySelector: () => ({ offsetTop: 32, offsetHeight: 124 }) };
     const antes = sandbox.getComputedStyle;
-    sandbox.getComputedStyle = () => ({ position: 'sticky' });
+    sandbox.getComputedStyle = () => ({ position: 'sticky', marginBottom: '24px' });
     p._pestanaALaVista({ closest: () => pestanas });
     sandbox.getComputedStyle = antes;
-    ok(panel.scrollTop === 156, 'pegadas, la pestaña nueva se abre justo al final de la cabecera', `scrollTop ${panel.scrollTop}`);
+    // Final de la cabecera MÁS su margen: ahí las pestañas quedan pegadas de verdad. Sin el margen
+    // (156) quedaban a medio camino, sin cabecera y sin pegar.
+    ok(panel.scrollTop === 180, 'pegadas, la pestaña nueva se abre con las pestañas pegadas y el contenido debajo', `scrollTop ${panel.scrollTop}`);
+    ok(/#med-modal \.tab-content\.active \{\s*min-height: calc\(100dvh/.test(css4),
+        'la pestaña activa tiene alto mínimo para que esa posición siempre se alcance');
 }
 
 console.log('\n— «Abiertos en esta sesión» bajo la caja de Buscar —');

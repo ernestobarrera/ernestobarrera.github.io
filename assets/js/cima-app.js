@@ -11965,8 +11965,15 @@ ${ftFechaDocsHtml}
             return;
         }
         cont.innerHTML = this._renderSafetyCheckItem(med, check, true);
-        this._enfocarCheckSeguridad(cont.querySelector('.safety-check-item'),
-            this.modalBody.querySelector('.safety-atajos'));
+        const item = cont.querySelector('.safety-check-item');
+        // Solo se desplaza si hace falta. Si el principio del resultado ya se ve (lo normal al abrir
+        // Seguridad: la fila está arriba y el resultado debajo), mover el panel solo condensaba la
+        // cabecera sin motivo (Ernesto, 15/11/2026). Si no se ve, la fila de atajos sube arriba.
+        const panel = this.modal?.querySelector?.('.modal-content');
+        const visible = panel && item && typeof item.getBoundingClientRect === 'function'
+            && item.getBoundingClientRect().top - panel.getBoundingClientRect().top < panel.clientHeight * 0.6;
+        if (visible) item.focus({ preventScroll: true });
+        else this._enfocarCheckSeguridad(item, this.modalBody.querySelector('.safety-atajos'));
     }
 
     _renderSafetyCheckItem(med, check, esFoco = false) {
@@ -17187,11 +17194,14 @@ ${ftFechaDocsHtml}
         const pestanas = tab.closest('.modal-tabs');
         if (!panel || !pestanas) return;
         // Pegadas (sticky), su `offsetTop` es el de donde están pegadas, no el natural. El tope es
-        // entonces el final de la cabecera de la ficha: justo antes de que empiecen a pegarse.
+        // entonces donde empiezan a pegarse: final de la cabecera más su margen. Ahí quedan pegadas
+        // de verdad y con el nombre encima. Hasta el 15/11/2026 (tarde) el tope era el final de la
+        // cabecera sin el margen: la pestaña nueva quedaba a medio camino, sin cabecera y sin pegar,
+        // con un hueco encima. El alto mínimo de la pestaña activa (CSS) garantiza que se llega.
         const cabecera = this.modalBody.querySelector('.modal-header');
         const pegadas = typeof getComputedStyle === 'function' && getComputedStyle(pestanas).position === 'sticky';
         const tope = pegadas && cabecera
-            ? cabecera.offsetTop + cabecera.offsetHeight
+            ? cabecera.offsetTop + cabecera.offsetHeight + (parseFloat(getComputedStyle(cabecera).marginBottom) || 0)
             : Math.max(0, pestanas.offsetTop - 8);
         if (panel.scrollTop > tope) panel.scrollTop = tope;
     }
