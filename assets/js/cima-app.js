@@ -2714,7 +2714,7 @@ class MedCheckApp {
         this._syncTopFilterCheckboxes();
 
         // Group results
-        const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
+        const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy, this.lastSearchQuery);
 
         const inc = data.incompleta;
         const franjaIncompleta = inc ? `
@@ -15466,8 +15466,10 @@ ${ftFechaDocsHtml}
 
     /**
      * Groups results by field
+     * @param {string} [query] - lo escrito en el buscador; solo cuenta al agrupar por
+     *   principio activo, para poner primero el grupo que coincide con ello.
      */
-    groupResultsByField(results, field) {
+    groupResultsByField(results, field, query = '') {
         const groups = new Map();
 
         results.forEach(med => {
@@ -15576,8 +15578,17 @@ ${ftFechaDocsHtml}
             groups.get(key).meds.push(med);
         });
 
-        // Convert to array and sort by count descending
-        return Array.from(groups.values()).sort((a, b) => b.meds.length - a.meds.length);
+        // Por tamaño, de mayor a menor, salvo una excepción: agrupando por principio activo, el
+        // grupo que ES lo escrito va primero. Solo por tamaño, «metformina» abría con
+        // vildagliptina + metformina (49) y dejaba la metformina sola (23) en la tarjeta 31;
+        // «omeprazol» abría con esomeprazol. El autocompletado ya ponía primero la sustancia
+        // sola (puntuación 100 de `_extractSubstanceSuggestions`); la lista no seguía la misma
+        // regla. Se sube solo la coincidencia EXACTA: las asociaciones y los parecidos siguen
+        // debajo, todos, en el orden de siempre. Revisión de claridad del 15/11/2026, mejora 1.
+        const q = field === 'activeIngredient' ? this._normalizeDrugSearchText(query) : '';
+        const esLoEscrito = (g) => !!q && this._normalizeDrugSearchText(g.name) === q;
+        return Array.from(groups.values()).sort((a, b) =>
+            esLoEscrito(b) - esLoEscrito(a) || b.meds.length - a.meds.length);
     }
 
     /**

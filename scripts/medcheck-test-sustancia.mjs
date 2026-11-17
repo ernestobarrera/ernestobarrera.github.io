@@ -297,6 +297,50 @@ check('dos sales del mismo fármaco son UN grupo, no dos',
     ], 'activeIngredient')),
     [['BISOPROLOL', 2]]);
 
+console.log('\n=== Orden de los grupos: lo escrito primero ===\n');
+
+// Revisión de claridad del 15/11/2026, mejora 1. Por tamaño a secas, «metformina» abría con
+// vildagliptina + metformina (49) y la metformina sola (23) quedaba en la tarjeta 31. Topología
+// medida ese día en producción; aquí se conservan las proporciones, no el número.
+const METFOR = [
+    ...lista('vildagliptina + metformina', 49, 'DALTEX'),
+    ...lista('sitagliptina + metformina', 39, 'JANUMET'),
+    ...lista('metformina', 23, 'METFORMINA CINFA'),
+];
+const orden = (grupos) => grupos.map(g => g.name);
+
+check('«metformina»: la metformina sola abre la lista aunque su grupo sea el menor',
+    orden(app.groupResultsByField(METFOR, 'activeIngredient', 'metformina')),
+    ['METFORMINA', 'VILDAGLIPTINA + METFORMINA', 'SITAGLIPTINA + METFORMINA']);
+
+check('«omeprazol»: omeprazol delante de esomeprazol, que tiene más medicamentos',
+    orden(app.groupResultsByField(OMEPRA, 'activeIngredient', 'omeprazol')),
+    ['OMEPRAZOL', 'ESOMEPRAZOL', 'ESOMEPRAZOL + NAPROXENO']);
+
+check('«amoxicilina»: la sola delante de la asociación con clavulánico',
+    orden(app.groupResultsByField(AMOXI, 'activeIngredient', 'amoxicilina')),
+    ['AMOXICILINA', 'AMOXICILINA + ÁCIDO CLAVULÁNICO']);
+
+check('mayúsculas y tildes no impiden la coincidencia («Metformina »)',
+    orden(app.groupResultsByField(METFOR, 'activeIngredient', ' Metformína '))[0],
+    'METFORMINA');
+
+check('sin coincidencia exacta («omepra», una marca) el orden sigue siendo por tamaño',
+    [orden(app.groupResultsByField(OMEPRA, 'activeIngredient', 'omepra')),
+     orden(app.groupResultsByField(METFOR, 'activeIngredient', 'Daltex'))],
+    [['ESOMEPRAZOL', 'OMEPRAZOL', 'ESOMEPRAZOL + NAPROXENO'],
+     ['VILDAGLIPTINA + METFORMINA', 'SITAGLIPTINA + METFORMINA', 'METFORMINA']]);
+
+check('sin consulta (Indicaciones), por tamaño',
+    orden(app.groupResultsByField(METFOR, 'activeIngredient')),
+    ['VILDAGLIPTINA + METFORMINA', 'SITAGLIPTINA + METFORMINA', 'METFORMINA']);
+
+check('la consulta solo cuenta al agrupar por principio activo',
+    orden(app.groupResultsByField(
+        [{ nregistro: 'a', labtitular: 'Normon' }, { nregistro: 'b', labtitular: 'Cinfa' }, { nregistro: 'c', labtitular: 'Cinfa' }],
+        'lab', 'normon')),
+    ['Cinfa', 'Normon']);
+
 console.log('\n=== Expansiones de principio activo ===\n');
 
 // El diccionario existe para un problema de VOCABULARIO, no de prefijo: CIMA nombra la sal por
