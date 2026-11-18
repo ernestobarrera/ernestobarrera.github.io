@@ -1204,19 +1204,28 @@ class MedCheckApp {
             || nombre(a).localeCompare(nombre(b))
             || nreg(a).localeCompare(nreg(b));
 
+        // Y ANTES que el criterio elegido, también: primero todos los registros con ficha y
+        // después los que no la tienen, cada bloque en el orden que pida el selector. Con el
+        // desempate solo a igualdad de nombre, en «metformina» 6 de las 12 primeras tarjetas
+        // eran «Sin ficha técnica», con los accesos apagados, porque `EUCREAS…IP` va antes que
+        // `JANUMET` por orden alfabético (revisión de claridad, mejora 2, 15/11/2026). Los
+        // grupos heredan este orden, así que vale dentro de cada grupo. No oculta nada: las
+        // tarjetas sin ficha siguen todas, al final de su grupo.
+        const conFicha = (cmp) => (a, b) => util(a) - util(b) || cmp(a, b);
+
         switch (this.groupingState?.sortBy) {
             case 'nameDesc':
-                list.sort((a, b) => -alfa(a, b) || util(a) - util(b) || nombre(b).localeCompare(nombre(a)) || nreg(a).localeCompare(nreg(b)));
+                list.sort(conFicha((a, b) => -alfa(a, b) || nombre(b).localeCompare(nombre(a)) || nreg(a).localeCompare(nreg(b))));
                 break;
             case 'doseAsc':
-                list.sort((a, b) => this._compareByDose(a.dosis, b.dosis, 'asc') || tie(a, b));
+                list.sort(conFicha((a, b) => this._compareByDose(a.dosis, b.dosis, 'asc') || tie(a, b)));
                 break;
             case 'doseDesc':
-                list.sort((a, b) => this._compareByDose(a.dosis, b.dosis, 'desc') || tie(a, b));
+                list.sort(conFicha((a, b) => this._compareByDose(a.dosis, b.dosis, 'desc') || tie(a, b)));
                 break;
             case 'nameAsc':
             default:
-                list.sort(tie);
+                list.sort(conFicha(tie));
                 break;
         }
         return list;
@@ -5114,19 +5123,45 @@ class MedCheckApp {
      * pluma. Ante la duda, no se oculta.
      */
     _duplicateProfile(med) {
+        return this._duplicateProfiles(med)[0];
+    }
+
+    /**
+     * Las claves de perfil de un registro: la de la dosis tal como la escribe CIMA y, si
+     * difiere, la de la dosis canónica que ya pinta la tarjeta (`_displayDose`).
+     *
+     * Hacen falta las dos porque CIMA escribe la MISMA dosis de formas distintas en cada
+     * registro del mismo producto: EUCREAS nacional trae `50/1000 mg` y sus importaciones
+     * paralelas `50 mg/1000 mg`. Con la dosis cruda solamente, 20 de los 40 registros sin
+     * ficha de «metformina» se quedaban a la vista aunque su original con ficha estuviera en
+     * la lista (revisión de claridad, 15/11/2026). La canónica reparte la unidad y quita
+     * espacios, pero nunca inventa una unidad ni cambia una cifra.
+     *
+     * Dos registros son hermanos si comparten CUALQUIERA de sus claves. Es monotónico: todo
+     * lo que antes se emparejaba se sigue emparejando, y las dos garantías de arriba siguen
+     * en pie porque no dependen de la clave sino de que exista un hermano con ficha.
+     */
+    _duplicateProfiles(med) {
         const s = this._splitOfficialName(med);
         const norm = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
             .toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
-        return [norm(s.marca), this._doseFingerprint(med?.dosis), norm(med?.formaFarmaceutica?.nombre)].join('|');
+        const marca = norm(s.marca);
+        const forma = norm(med?.formaFarmaceutica?.nombre);
+        const cruda = this._doseFingerprint(med?.dosis);
+        const canonica = this._doseFingerprint(this._displayDose(med?.dosis).text);
+        const claves = [[marca, cruda, forma].join('|')];
+        if (canonica && canonica !== cruda) claves.push([marca, canonica, forma].join('|'));
+        return claves;
     }
 
     /** Índice perfil → registros, para poder preguntar por los hermanos en O(1). */
     _buildDuplicateIndex(universe) {
         const idx = new Map();
         for (const m of (universe || [])) {
-            const k = this._duplicateProfile(m);
-            if (!idx.has(k)) idx.set(k, []);
-            idx.get(k).push(m);
+            for (const k of this._duplicateProfiles(m)) {
+                if (!idx.has(k)) idx.set(k, []);
+                idx.get(k).push(m);
+            }
         }
         return idx;
     }
@@ -5134,8 +5169,8 @@ class MedCheckApp {
     /** ¿Sobra este registro porque otro con el mismo perfil sí trae la ficha? */
     _isRedundantRecord(med, indice) {
         if (this._hasFichaTecnicaSeccionada(med)) return false;
-        const hermanos = indice.get(this._duplicateProfile(med));
-        return !!hermanos && hermanos.some(o => o !== med && this._hasFichaTecnicaSeccionada(o));
+        return this._duplicateProfiles(med).some(k => (indice.get(k) || [])
+            .some(o => o !== med && this._hasFichaTecnicaSeccionada(o)));
     }
 
     /**

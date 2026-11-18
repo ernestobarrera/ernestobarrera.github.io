@@ -469,6 +469,25 @@ console.log('\n— Orden: el registro con ficha va delante de sus hermanos —')
     const otro = base.slice().reverse(); app2._applySortState(otro);
     ok(uno.every((m, i) => m.nregistro === otro[i].nregistro), 'el orden es determinista, venga como venga la entrada');
 
+    // Revisión de claridad, mejora 2 (18/11/2026): con ficha delante SIEMPRE, no solo a
+    // igualdad de nombre. En «metformina», EUCREAS…IP (sin ficha) iba antes que JANUMET por
+    // orden alfabético y 6 de las 12 primeras tarjetas tenían los accesos apagados.
+    const mezcla = () => [
+        { ...r('07425009IP3', 'EUCREAS 50 MG/1000 MG COMPRIMIDOS', false), dosis: '50 mg/1000 mg' },
+        { ...r('08455010', 'JANUMET 50 MG/1000 MG COMPRIMIDOS', true), dosis: '50/1000 mg' },
+        { ...r('07425009', 'EUCREAS 50 mg/1000 mg COMPRIMIDOS', true), dosis: '50/1000 mg' },
+        { ...r('12780006IP1', 'JENTADUETO 2,5 MG/850 MG COMPRIMIDOS', false), dosis: '2,5 MG /850 MG' },
+    ];
+    const conFichaDelante = (l) => l.findIndex(m => !m.docs.length) === l.filter(m => m.docs.length).length;
+    for (const sortBy of ['nameAsc', 'nameDesc', 'doseAsc', 'doseDesc']) {
+        app2.groupingState = { sortBy };
+        const l = app2._applySortState(mezcla());
+        ok(conFichaDelante(l) && l.length === 4, `${sortBy}: primero los registros con ficha, y no se pierde ninguno`);
+    }
+    app2.groupingState = { sortBy: 'nameAsc' };
+    ok(app2._applySortState(mezcla()).map(m => m.nregistro).join(' ') === '07425009 08455010 07425009IP3 12780006IP1',
+        'cada bloque conserva el orden elegido: EUCREAS, JANUMET; después EUCREAS IP, JENTADUETO IP');
+
     // Y no se ha reintroducido el plegado, que se retiró por crear un agregado inexistente.
     const src = fuenteApp(ROOT);
     ok(!src.includes('_clusterDuplicates'), 'no vuelve el plegado de duplicados');
@@ -527,6 +546,21 @@ console.log('\n— Registros duplicados sin ficha: fuera por defecto —');
         'jeringa y pluma tienen perfiles distintos: no se ocultan entre sí');
     ok(!app2._isRedundantRecord(pluma, app2._buildDuplicateIndex([jeringa, pluma])),
         'y por tanto la pluma sobrevive aunque la jeringa tenga ficha');
+
+    // La misma dosis escrita de dos formas (revisión de claridad, 18/11/2026): EUCREAS
+    // nacional trae `50/1000 mg` y sus importaciones paralelas `50 mg/1000 mg`. Con la dosis
+    // cruda no eran hermanos y 20 de los 40 registros sin ficha de «metformina» seguían a la
+    // vista. La clave canónica los empareja; medido sobre los 16.127 comercializados del
+    // 18/11, oculta 139 registros más y no deja de ocultar ninguno de los 966 de antes.
+    const ff = 'COMPRIMIDO RECUBIERTO CON PELÍCULA';
+    const eucreas = reg('07425009', 'EUCREAS 50 mg/1000 mg COMPRIMIDOS RECUBIERTOS CON PELICULA', true, ff, '50/1000 mg');
+    const eucreasIP = reg('07425009IP3', 'EUCREAS 50 MG/1000 MG COMPRIMIDOS RECUBIERTOS CON PELICULA', false, ff, '50 mg/1000 mg');
+    const eucreas850IP = reg('07425003IP1', 'EUCREAS 50 MG/850 MG COMPRIMIDOS RECUBIERTOS CON PELICULA', false, ff, '50 mg/ 850 mg');
+    const idxE = app2._buildDuplicateIndex([eucreas, eucreasIP, eucreas850IP]);
+    ok(app2._isRedundantRecord(eucreasIP, idxE), '«50/1000 mg» y «50 mg/1000 mg» son la misma dosis: se oculta la paralela');
+    ok(!app2._isRedundantRecord(eucreas850IP, idxE), 'pero la de 850 mg no tiene hermano con ficha en la lista: se queda');
+    ok(app2._duplicateProfile(eucreasIP) === app2._duplicateProfiles(eucreasIP)[0],
+        'la primera clave es la de siempre: lo que antes se emparejaba se sigue emparejando');
 
     // Comportamiento del filtro: fuera por defecto, la casilla los devuelve.
     const visible = app2._applyResultFilters(universo, app2._filterSnapshot());
