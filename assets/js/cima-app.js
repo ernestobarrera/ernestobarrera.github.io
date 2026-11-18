@@ -2702,7 +2702,7 @@ class MedCheckApp {
         // Chips facetados: cada grupo excluye su propia dimensión y aplica todas las demás
         // (incluidas tipo de producto y receta, que antes no entraban en el cálculo).
         const routes = this.extractUniqueRoutes(this._applyResultFilters(universe, snap, { exclude: 'route' }));
-        const paList = this.extractUniquePrincipiosActivos(this._applyResultFilters(universe, snap, { exclude: 'pa' }));
+        const paList = this.extractUniquePrincipiosActivos(this._applyResultFilters(universe, snap, { exclude: 'pa' }), this.lastSearchQuery);
 
         // Resultados realmente mostrados
         const filteredResults = this._applyResultFilters(universe, snap);
@@ -15585,10 +15585,19 @@ ${ftFechaDocsHtml}
         // sola (puntuación 100 de `_extractSubstanceSuggestions`); la lista no seguía la misma
         // regla. Se sube solo la coincidencia EXACTA: las asociaciones y los parecidos siguen
         // debajo, todos, en el orden de siempre. Revisión de claridad del 15/11/2026, mejora 1.
-        const q = field === 'activeIngredient' ? this._normalizeDrugSearchText(query) : '';
-        const esLoEscrito = (g) => !!q && this._normalizeDrugSearchText(g.name) === q;
+        const q = field === 'activeIngredient' ? query : '';
         return Array.from(groups.values()).sort((a, b) =>
-            esLoEscrito(b) - esLoEscrito(a) || b.meds.length - a.meds.length);
+            this._esLoEscrito(b.name, q) - this._esLoEscrito(a.name, q) || b.meds.length - a.meds.length);
+    }
+
+    /**
+     * ¿Es este nombre de sustancia exactamente lo escrito en el buscador? Sin mayúsculas, tildes
+     * ni espacios de más. Una sola regla para la lista agrupada y para la banda de principios
+     * activos: si cada una tuviera la suya, «valsartán» podría abrir la lista y no la banda.
+     */
+    _esLoEscrito(nombre, query) {
+        const q = this._normalizeDrugSearchText(query);
+        return !!q && this._normalizeDrugSearchText(nombre) === q;
     }
 
     /**
@@ -15626,8 +15635,10 @@ ${ftFechaDocsHtml}
 
     /**
      * Extracts unique principios activos from results for filter chips
+     * @param {string} [query] - lo escrito en el buscador: su chip, si existe, va primero (misma
+     *   regla que los grupos de `groupResultsByField`); el resto, por recuento.
      */
-    extractUniquePrincipiosActivos(results) {
+    extractUniquePrincipiosActivos(results, query = '') {
         const paCounts = new Map();
 
         results.forEach(med => {
@@ -15636,7 +15647,7 @@ ${ftFechaDocsHtml}
 
         return Array.from(paCounts.entries())
             .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count);
+            .sort((a, b) => this._esLoEscrito(b.name, query) - this._esLoEscrito(a.name, query) || b.count - a.count);
     }
 
     /**

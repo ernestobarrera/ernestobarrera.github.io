@@ -341,6 +341,24 @@ check('la consulta solo cuenta al agrupar por principio activo',
         'lab', 'normon')),
     ['Cinfa', 'Normon']);
 
+// La banda de principios activos sigue la misma regla (lo vio Ernesto el 17/11 en local con
+// «valsartán»: la lista ya abría con valsartán, pero la banda seguía con valsartán +
+// hidroclorotiazida delante por tener más medicamentos).
+const VALSAR = [
+    ...lista('valsartán + hidroclorotiazida', 80, 'CO-DIOVAN'),
+    ...lista('valsartán', 73, 'DIOVAN'),
+    ...lista('valsartán + amlodipino', 26, 'EXFORGE'),
+];
+const chips = (pas) => pas.map(p => p.name);
+
+check('banda: «valsartan» (sin tilde) pone primero el chip de valsartán solo',
+    chips(app.extractUniquePrincipiosActivos(VALSAR, 'valsartan')),
+    ['valsartán', 'valsartán + hidroclorotiazida', 'valsartán + amlodipino']);
+
+check('banda: sin consulta, por recuento como siempre',
+    chips(app.extractUniquePrincipiosActivos(VALSAR)),
+    ['valsartán + hidroclorotiazida', 'valsartán', 'valsartán + amlodipino']);
+
 console.log('\n=== Expansiones de principio activo ===\n');
 
 // El diccionario existe para un problema de VOCABULARIO, no de prefijo: CIMA nombra la sal por
