@@ -76,6 +76,44 @@ console.log('\n— Principio activo con su unidad —');
     ok('sin cantidad, sin unidad suelta', pinta({ principiosActivos: [{ nombre: 'X', unidad: 'mg' }] }).trim() === 'X');
 }
 
+console.log('\n— Tres bloques, en el orden de lo que se pregunta (mejora 5, 15/11/2026) —');
+{
+    // Antes la pestaña empezaba por «Nº Registro» y «Código Nacional» y la financiación iba en
+    // la séptima fila. Ahora las MISMAS filas van en tres bloques; aquí se comprueba que ninguna
+    // se pierde y que cada una está en el suyo.
+    const med = {
+        nregistro: '58117', nombre: "ENALAPRIL D'PRUEBA 20 MG", dosis: '20 mg', comerc: true, receta: true,
+        cpresc: 'Medicamento sujeto a prescripción médica', labtitular: 'Lab titular', labcomercializador: 'Lab comercial',
+        principiosActivos: [{ nombre: 'ENALAPRIL MALEATO', cantidad: '20', unidad: 'mg' }],
+        formaFarmaceutica: { nombre: 'COMPRIMIDO' }, viasAdministracion: [{ nombre: 'VÍA ORAL' }],
+        atcs: [{ codigo: 'C09AA02', nombre: 'enalapril' }],
+        presentaciones: [{ cn: '694038', comerc: true, nombre: 'ENALAPRIL 20 mg 28 comprimidos' }],
+        docs: [{ tipo: 1, fecha: Date.UTC(2025, 0, 15) }],
+    };
+    let html = '';
+    try { html = app.renderInfoTab(med); } catch (e) { html = ''; ok('renderInfoTab no lanza', false, String(e)); }
+    const bloques = [...html.matchAll(/<section class="detail-block" data-bloque="([^"]+)">([\s\S]*?)<\/section>/g)]
+        .map(m => ({ id: m[1], titulo: texto(m[2].match(/<h4[^>]*>([\s\S]*?)<\/h4>/)?.[1] || ''), etiquetas: [...m[2].matchAll(/<span class="detail-label">([^<]+)<\/span>/g)].map(x => x[1].trim()) }));
+    ok('tres bloques, en este orden: Cómo se prescribe · Qué es · Identificadores',
+        bloques.map(b => b.titulo).join(' · ') === 'Cómo se prescribe · Qué es · Identificadores', bloques.map(b => b.titulo));
+    const en = id => bloques.find(b => b.id === id)?.etiquetas || [];
+    ok('Qué es: principios activos, dosis, forma, vía y ATC',
+        en('que-es').join('|') === 'Principios Activos|Dosis|Forma farmacéutica|Vía administración|ATC', en('que-es'));
+    ok('la pestaña empieza por la financiación', bloques[0]?.etiquetas[0] === 'Financiación SNS', bloques[0]?.etiquetas);
+    ok('Cómo se prescribe: empieza por la financiación y lleva receta, prescripción, estado, presentaciones y equivalentes',
+        en('prescripcion').join('|') === 'Financiación SNS|Receta|Prescripción|Estado|Presentaciones|Equivalentes', en('prescripcion'));
+    ok('Identificadores: registro, CN, laboratorio, comercializador y fecha de la FT',
+        en('identificadores').join('|') === 'Nº Registro|Código Nacional|Laboratorio|Comercializador|FT actualizada', en('identificadores'));
+    const antes = ['Nº Registro', 'Código Nacional', 'Principios Activos', 'Dosis', 'Forma farmacéutica', 'Vía administración',
+        'Prescripción', 'Estado', 'Financiación SNS', 'Receta', 'Laboratorio', 'Comercializador', 'Presentaciones', 'ATC', 'FT actualizada'];
+    const todas = bloques.flatMap(b => b.etiquetas);
+    ok('no se pierde ninguna de las filas de antes', antes.every(e => todas.includes(e)), antes.filter(e => !todas.includes(e)));
+    ok('Equivalencias: una sola puerta, ya no en el pie', (html.match(/app\.searchEquivalences\(/g) || []).length === 1 && !/btn-primary[^>]*searchEquivalences/.test(html));
+    ok('el nombre con apóstrofo no rompe el onclick', html.includes("searchEquivalences('ENALAPRIL D\\'PRUEBA 20 MG')"));
+    ok('el hueco de la financiación conserva su id (lo hidrata después)', html.includes('id="financing-summary-value"'));
+    ok('«Ver seguridad» sigue en el pie', /openModalTab\('safety'\)/.test(html));
+}
+
 console.log('\n— Seguimiento adicional (▼) —');
 {
     const sa = App.SEGUIMIENTO_ADICIONAL;

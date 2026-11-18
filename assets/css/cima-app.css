@@ -4156,6 +4156,36 @@ body.med-panel-resizing {
     border-radius: var(--radius-md);
 }
 
+/* Pestaña de datos en tres bloques (mejora 5 de la revisión de claridad, 15/11/2026). */
+.detail-block + .detail-block {
+    margin-top: var(--space-md);
+}
+
+.detail-block-title {
+    margin: 0 0 var(--space-xs);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.detail-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--primary);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.detail-link:hover {
+    color: #7dd3fc;
+}
+
 .detail-label {
     color: var(--text-secondary);
     font-size: 0.85rem;

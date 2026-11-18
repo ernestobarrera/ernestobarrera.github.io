@@ -11329,65 +11329,91 @@ class MedCheckApp {
                 ${this._cuerpoPopoverExcipientes(excEDO)}`
             : '';
 
+        // Mejora 5 de la revisión de claridad (15/11/2026): las MISMAS filas, en tres bloques con
+        // título y en el orden de lo que se pregunta. Antes la pestaña empezaba por «Nº Registro» y
+        // «Código Nacional», y financiación, receta y prescripción iban de la séptima fila en
+        // adelante; es la pestaña que más se abre desde el atajo. No se quita ninguna fila: solo se
+        // reordenan, y el enlace a Equivalencias sube del pie al bloque donde se busca.
+        // «Cómo se prescribe» va PRIMERO, no segundo como en el boceto: medido el 18/11 en Chrome,
+        // con «Qué es» delante la financiación solo subía 40 px (la fila ATC ocupa tres líneas) y
+        // «Qué es» repite lo que ya dice el título de la ficha (nombre, dosis y forma).
         return `
             ${alertsHtml}
-            <div class="detail-list">
-                <div class="detail-item">
-                    <span class="detail-label">Nº Registro</span>
-                    <span class="detail-value">${med.nregistro}</span>
+            <section class="detail-block" data-bloque="prescripcion">
+                <h4 class="detail-block-title">Cómo se prescribe</h4>
+                <div class="detail-list">
+                    ${financingSummaryHtml}
+                    <div class="detail-item">
+                        <span class="detail-label">Receta</span>
+                        <span class="detail-value">${med.receta ? 'Sí' : 'No'}</span>
+                    </div>
+                    ${cprescHtml}
+                    <div class="detail-item">
+                        <span class="detail-label">Estado</span>
+                        <span class="detail-value">
+                            ${med.comerc ? '<span class="text-success">Comercializado</span>' : '<span class="text-muted">No comercializado</span>'}
+                        </span>
+                    </div>
+                    ${shortageRowHtml}
+                    ${presentationsHtml}
+                    <div class="detail-item">
+                        <span class="detail-label">Equivalentes</span>
+                        <button type="button" class="detail-value detail-link" onclick="app.searchEquivalences('${med.nombre.replace(/'/g, "\\'")}')" title="Medicamentos con el mismo principio activo, dosis y forma, según CIMA">
+                            <i class="fas fa-exchange-alt"></i> Ver equivalencias
+                        </button>
+                    </div>
                 </div>
-                <div class="detail-item">
-                    <span class="detail-label">Código Nacional</span>
-                    <span class="detail-value">${this._cnPrincipalHtml(med)}</span>
+            </section>
+
+            <section class="detail-block" data-bloque="que-es">
+                <h4 class="detail-block-title">Qué es</h4>
+                <div class="detail-list">
+                    <div class="detail-item">
+                        <span class="detail-label">Principios Activos</span>
+                        <span class="detail-value">${pActivos}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Dosis</span>
+                        <span class="detail-value">${med.dosis || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Forma farmacéutica</span>
+                        <span class="detail-value">${formaFarm}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Vía administración</span>
+                        <span class="detail-value">${viaAdmin}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">ATC</span>
+                        <span class="detail-value" style="text-align: right; font-size: 0.8rem;">${atcs}</span>
+                    </div>
                 </div>
-                <div class="detail-item">
-                    <span class="detail-label">Principios Activos</span>
-                    <span class="detail-value">${pActivos}</span>
+            </section>
+
+            <section class="detail-block" data-bloque="identificadores">
+                <h4 class="detail-block-title">Identificadores</h4>
+                <div class="detail-list">
+                    <div class="detail-item">
+                        <span class="detail-label">Nº Registro</span>
+                        <span class="detail-value">${med.nregistro}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Código Nacional</span>
+                        <span class="detail-value">${this._cnPrincipalHtml(med)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Laboratorio</span>
+                        <span class="detail-value">${med.labtitular || '-'}</span>
+                    </div>
+                    ${labComercHtml}
+                    ${ftFechaHtml}
                 </div>
-                <div class="detail-item">
-                    <span class="detail-label">Dosis</span>
-                    <span class="detail-value">${med.dosis || '-'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Forma farmacéutica</span>
-                    <span class="detail-value">${formaFarm}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Vía administración</span>
-                    <span class="detail-value">${viaAdmin}</span>
-                </div>
-                ${cprescHtml}
-                <div class="detail-item">
-                    <span class="detail-label">Estado</span>
-                    <span class="detail-value">
-                        ${med.comerc ? '<span class="text-success">Comercializado</span>' : '<span class="text-muted">No comercializado</span>'}
-                    </span>
-                </div>
-                ${financingSummaryHtml}
-                ${shortageRowHtml}
-                <div class="detail-item">
-                    <span class="detail-label">Receta</span>
-                    <span class="detail-value">${med.receta ? 'Sí' : 'No'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Laboratorio</span>
-                    <span class="detail-value">${med.labtitular || '-'}</span>
-                </div>
-                ${labComercHtml}
-                ${presentationsHtml}
-                <div class="detail-item">
-                    <span class="detail-label">ATC</span>
-                    <span class="detail-value" style="text-align: right; font-size: 0.8rem;">${atcs}</span>
-                </div>
-                ${ftFechaHtml}
-            </div>
+            </section>
 
             ${excipientesHtml}
-            
+
             <div class="mt-lg" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="app.searchEquivalences('${med.nombre.replace(/'/g, "\\'")}')">
-                    <i class="fas fa-exchange-alt"></i> Equivalencias
-                </button>
                 <button class="btn btn-secondary" onclick="app.openModalTab('safety')">
                     <i class="fas fa-shield-alt"></i> Ver seguridad
                 </button>
