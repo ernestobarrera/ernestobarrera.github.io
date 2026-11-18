@@ -4167,7 +4167,10 @@ body.med-panel-resizing {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--text-muted);
+    /* `--text-secondary` y no `--text-muted`: este da 3,75:1 sobre el fondo (ver la nota de
+       `.util-view`), por debajo de AA, y el título es lo que ordena la pestaña. Se distingue de
+       las etiquetas de fila por la mayúscula y el peso, no por un tono que cueste leer. */
+    color: var(--text-secondary);
 }
 
 .detail-link {
