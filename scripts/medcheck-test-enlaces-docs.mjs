@@ -153,7 +153,8 @@ console.log('\n7) la pestaña se llama como lo que hay dentro');
 {
     // «Documentos» describía el continente. En consulta lo que se busca es la ficha.
     ok('la pestaña ya no se llama «Documentos»', !/>Documentos\$\{hasMateriales/.test(APP));
-    ok('se llama «Ficha y prospecto»', /data-tab="docs">Ficha y prospecto\$\{ftRecentDot\}/.test(APP));
+    // 19/11/2026 (mejora 8): «Ficha y prospecto» → «Índice de la ficha», que es lo que hay dentro.
+    ok('se llama «Índice de la ficha»', /data-tab="docs">Índice de la ficha\$\{ftRecentDot\}/.test(APP));
     // El `data-tab` NO cambia: lo usan la URL del modal, la analítica y la guía.
     ok('el identificador interno sigue siendo `docs`', /data-tab="docs"/.test(APP));
 }
@@ -163,9 +164,10 @@ console.log('\n7b) ficha y prospecto por un lado, documentación complementaria 
     // Petición suya del 30/09/2026: en una ventana estrecha, el IPE suelto encima del índice y los
     // materiales al fondo no se veían. La ficha y el prospecto se quedan solos en su pestaña; el
     // resto —IPT, materiales, IPE, plan de riesgos— pasa a «Documentación».
-    ok('existe la pestaña «Documentación»', /data-tab="documentacion"[^>]*>Documentación/.test(APP));
-    ok('los materiales se anuncian en Documentación, no en Ficha y prospecto',
-        /data-tab="documentacion"[^>]*>Documentación\$\{hasMateriales/.test(APP) && !/data-tab="docs"[^\n]*hasMateriales/.test(APP));
+    // 19/11/2026 (mejora 8): «Documentación» → «Otros documentos».
+    ok('existe la pestaña «Otros documentos»', /data-tab="documentacion"[^>]*>Otros documentos/.test(APP));
+    ok('los materiales se anuncian en Otros documentos, no en el índice de la ficha',
+        /data-tab="documentacion"[^>]*>Otros documentos\$\{hasMateriales/.test(APP) && !/data-tab="docs"[^\n]*hasMateriales/.test(APP));
 
     const app = Object.create(Clase.prototype);
     app._escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -195,6 +197,58 @@ console.log('\n7b) ficha y prospecto por un lado, documentación complementaria 
     ok('el badge «Mat. Inf.» abre Documentación',
         /openMedDetails\('\$\{med\.nregistro\}', 'documentacion'\)"><i class="fas fa-file-medical-alt"><\/i> Mat\. Inf\./.test(APP));
     ok('y la pestaña es válida en la URL', /validModalTabs = \[[^\]]*'documentacion'/.test(APP));
+    // Y la misma insignia DENTRO de la ficha. Hasta el 19/11/2026 decía «ver pestaña Ficha y
+    // prospecto», apuntaba a esa pestaña (los materiales no están ahí desde el 30/09) y además no
+    // funcionaba: las comillas `\"` del selector cerraban el atributo `onclick` y pulsarla daba
+    // un error de sintaxis. Se ejecuta el manejador de verdad, no solo se lee.
+    const linea = APP.split('\n').find(l => l.includes('badge-material badge-clickable" title="Hay materiales informativos de seguridad')) || '';
+    let html = '';
+    try { html = vm.runInNewContext(linea.slice(linea.indexOf("'"), linea.lastIndexOf("'") + 1)); } catch { html = ''; }
+    const onclick = (html.match(/onclick="([^"]*)"/) || [])[1] || '';
+    let pedida = null;
+    try {
+        new Function('document', onclick)({ querySelector: sel => { pedida = sel; return { click() {} }; } });
+    } catch (e) { pedida = `error: ${e.message}`; }
+    ok('la insignia «Mat. Inf.» de la ficha abre Otros documentos', pedida === '.modal-tab[data-tab=documentacion]', String(pedida));
+    ok('y lo dice', /ver pestaña Otros documentos"/.test(html), html.slice(0, 160));
+}
+
+console.log('\n7d) una palabra, un significado (mejora 8 de la revisión de claridad, 19/11/2026)');
+{
+    // La misma palabra nombraba cosas distintas («Alertas»: cambios de registro en el menú, notas
+    // de seguridad en la ficha) y la misma cosa tenía varios nombres («PGx»/«Farmacogenómica»,
+    // «Mi Perfil»/«Mi vademécum»). Solo cambian rótulos: los identificadores no se tocan.
+    const HTML = readFileSync(join(RAIZ, 'medcheck.html'), 'utf8');
+    // El rótulo como se lee en pantalla ancha: los saltos `.nav-br` y el guion `.nav-guion` solo
+    // actúan por debajo de 1500 px (CSS de la mejora 8), así que se quitan para comparar.
+    const rotulo = (vista) => {
+        const m = HTML.match(new RegExp(`data-view="${vista}"[^>]*>\\s*<i [^>]*></i>\\s*<span>([\\s\\S]*?)</span>\\s*(?:<span class="nav-tab-badge|</button>)`));
+        return m && m[1].replace(/<span class="nav-guion">-<\/span>/g, '').replace(/<br[^>]*>/g, '').replace(/<[^>]+>/g, '').trim();
+    };
+    ok('menú: «Cambios en CIMA», no «Alertas»', rotulo('alerts') === 'Cambios en CIMA', rotulo('alerts'));
+    ok('menú: «Farmacogenómica», no «PGx»', rotulo('pharmacogenomics') === 'Farmacogenómica', rotulo('pharmacogenomics'));
+    ok('menú: «Varias fichas», no «Fármacos»', rotulo('combo') === 'Varias fichas', rotulo('combo'));
+    ok('menú: «Materiales de seguridad»', rotulo('materials') === 'Materiales de seguridad', rotulo('materials'));
+    ok('menú: «Mi vademécum», no «Mi Perfil»', rotulo('profile') === 'Mi vademécum', rotulo('profile'));
+    ok('ningún «Mi Perfil» visible queda en la página ni en la app', !/Mi Perfil/.test(HTML) && !/^(?!\s*(\/\/|\*|\/\*)).*Mi Perfil/m.test(APP));
+
+    const pestana = (id) => (APP.match(new RegExp(`data-tab="${id}"[^>]*>(?:<i [^>]*></i> )?([^<$]+)`)) || [])[1]?.trim();
+    ok('ficha: «Datos del medicamento»', pestana('info') === 'Datos del medicamento', pestana('info'));
+    ok('ficha: «Indicaciones (4.1)»', pestana('indications') === 'Indicaciones (4.1)', pestana('indications'));
+    ok('ficha: «Farmacogenómica»', pestana('pgx') === 'Farmacogenómica', pestana('pgx'));
+    ok('ficha: «Utilización de este fármaco»', pestana('utilizacion') === 'Utilización de este fármaco', pestana('utilizacion'));
+    ok('«Alertas» queda para las notas de seguridad de la ficha', pestana('alerts') === 'Alertas AEMPS', pestana('alerts'));
+
+    // Los enlaces `?view=` y `&tab=`, la analítica y la guía usan estos identificadores.
+    ok('los identificadores de vista no cambian',
+        ['alerts', 'pharmacogenomics', 'combo', 'materials', 'profile'].every(v => HTML.includes(`data-view="${v}"`)));
+    ok('los identificadores de pestaña no cambian',
+        ['info', 'indications', 'docs', 'documentacion', 'pgx', 'utilizacion'].every(t => APP.includes(`data-tab="${t}"`)));
+
+    ok('el pie ya no dice «tiempo real»', !/tiempo real/.test(HTML) && /índices con su fecha/.test(HTML));
+    ok('la guía no nombra rótulos que ya no existen',
+        !/guide-key">(Ficha y prospecto|Documentación)</.test(APP) && !/title: '(Ficha y prospecto|Documentación|Favoritos = formulario personal)'/.test(APP)
+        && !/label: '(Alertas|Materiales|Fármacos \(combinación\))'/.test(APP));
 }
 
 console.log('\n7c) compartir un segmento de la ficha, sin quitar «Copiar»');

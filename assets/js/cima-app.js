@@ -3035,7 +3035,7 @@ class MedCheckApp {
         if (med.huerfano) badges.push('<span class="badge badge-info" title="Medicamento huérfano — indicación rara"><i class="fas fa-star"></i> Huérfano</span>');
         // Farmacogenómica AEMPS: la ficha técnica menciona un biomarcador relevante
         if (this._pgxSet && med.nregistro && this._pgxSet.has(String(med.nregistro))) {
-            badges.push(`<span class="badge badge-pgx badge-clickable" title="Ver pestaña PGx — biomarcador farmacogenómico (AEMPS)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'pgx')"><i class="fas fa-dna"></i> PGx</span>`);
+            badges.push(`<span class="badge badge-pgx badge-clickable" title="Ver pestaña Farmacogenómica — biomarcador farmacogenómico (AEMPS)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'pgx')"><i class="fas fa-dna"></i> PGx</span>`);
         }
         return badges;
     }
@@ -4847,7 +4847,7 @@ class MedCheckApp {
                             <span class="result-card-title" title="${this._escapeHtml(med.nombre)}">${cardTitle}</span>
                             <button class="fav-star-btn ${isFav ? 'active' : ''}"
                                 onclick="event.stopPropagation(); app.toggleFavoriteById('${med.nregistro}', this); app.updateFavoritesBadge();"
-                                title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
+                                title="${isFav ? 'Quitar de Mi vademécum' : 'Guardar en Mi vademécum'}">
                                 <i class="fas fa-star"></i>
                             </button>
                         </div>
@@ -5215,9 +5215,9 @@ class MedCheckApp {
      */
     /** Nombre visible de cada pestana del modal, para poder decir cual falta. */
     static GUIDE_TAB_LABELS = {
-        pgx: 'La pestaña PGx',
+        pgx: 'La pestaña Farmacogenómica',
         financing: 'La pestaña Financiación',
-        utilizacion: 'La pestaña Utilización',
+        utilizacion: 'La pestaña Utilización de este fármaco',
         alerts: 'La pestaña Alertas AEMPS',
         qt: 'La pestaña QT',
     };
@@ -9501,7 +9501,7 @@ class MedCheckApp {
         const headerHTML = `
             <div class="search-box" style="margin-bottom:0.5rem">
                 <div class="materiales-header">
-                    <h3><i class="fas fa-file-medical-alt"></i> Materiales Informativos</h3>
+                    <h3><i class="fas fa-file-medical-alt"></i> Materiales de seguridad</h3>
                     <div class="mat-filtro-chips">${filtroChips}${atcBtn}${specBtn}</div>
                     <span class="materiales-count">${totalStr}</span>
                 </div>
@@ -9700,8 +9700,8 @@ class MedCheckApp {
             if (alerts.length === 0) {
                 this.content.innerHTML = `
                     <div class="empty-state">
-                        <i class="fas fa-bell-slash"></i>
-                        <h3>Sin alertas recientes</h3>
+                        <i class="fas fa-clock-rotate-left"></i>
+                        <h3>Sin cambios recientes</h3>
                         <p>No hay cambios registrados en los últimos 7 días</p>
                     </div>
                 `;
@@ -9712,7 +9712,7 @@ class MedCheckApp {
                 <div class="view-container">
                     <div class="supply-header">
                         <h3 class="supply-title">
-                            <i class="fas fa-bell text-warning"></i>
+                            <i class="fas fa-clock-rotate-left text-warning"></i>
                             Cambios recientes en CIMA
                             <span class="badge badge-warning">${cobertura.total.toLocaleString('es-ES')}</span>
                         </h3>
@@ -10661,7 +10661,7 @@ class MedCheckApp {
                         <div class="med-header-info">
                             <h2 class="modal-title">${med.nombre}${med.nosustituible && med.nosustituible.id === 2 ? ' <span class="badge badge-nti" title="Categoría «principios activos de estrecho margen terapéutico» de la lista de no sustituibles de la AEMPS"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}${med.atcs && med.atcs[0] ? ' ' + this._emlBadgeHtml(med.atcs[0].codigo) : ''}</h2>
                             <p class="modal-subtitle">${med.labtitular}</p>
-                            <button class="modal-fav-btn ${isModalFav ? 'active' : ''}" onclick="app.toggleFavoriteFromModal('${med.nregistro}', this)" title="${isModalFav ? 'Quitar de Mi vademécum (favoritos)' : 'Guardar en Mi vademécum (favoritos)'}">
+                            <button class="modal-fav-btn ${isModalFav ? 'active' : ''}" onclick="app.toggleFavoriteFromModal('${med.nregistro}', this)" title="${isModalFav ? 'Quitar de Mi vademécum' : 'Guardar en Mi vademécum'}">
                                 <i class="fas fa-star"></i> <span>${isModalFav ? 'En Mi vademécum' : 'Guardar en Mi vademécum'}</span>
                             </button>
                             <div class="modal-pos-slot">${this._posicionEnListaHtml(med.nregistro)}</div>
@@ -10670,20 +10670,20 @@ class MedCheckApp {
                 </div>
 
                 <div class="modal-tabs">
-                    <button class="modal-tab ${isInfoActive ? 'active' : ''}" data-tab="info">Información</button>
-                    <button class="modal-tab ${isIndicationsActive ? 'active' : ''}" data-tab="indications">Indicaciones</button>
+                    <button class="modal-tab ${isInfoActive ? 'active' : ''}" data-tab="info">Datos del medicamento</button>
+                    <button class="modal-tab ${isIndicationsActive ? 'active' : ''}" data-tab="indications">Indicaciones (4.1)</button>
                     <button class="modal-tab ${isPosologyActive ? 'active' : ''}" data-tab="posology">Posología</button>
                     <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions">Interacciones</button>
                     <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse">Reacciones</button>
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
-                    <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Ficha y prospecto${ftRecentDot}</button>
-                    <button class="modal-tab ${isDocumentacionActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="documentacion" title="IPT, materiales informativos de la AEMPS, informe de evaluación y plan de riesgos">Documentación${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}</button>
+                    <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Índice de la ficha${ftRecentDot}</button>
+                    <button class="modal-tab ${isDocumentacionActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="documentacion" title="IPT, materiales informativos de la AEMPS, informe de evaluación y plan de riesgos">Otros documentos${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}</button>
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
-                    ${hasPgx ? `<button class="modal-tab modal-tab-pgx ${isPgxActive ? 'active' : ''}" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> PGx</button>` : ''}
+                    ${hasPgx ? `<button class="modal-tab modal-tab-pgx ${isPgxActive ? 'active' : ''}" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> Farmacogenómica</button>` : ''}
                     <button class="modal-tab modal-tab-evidence ${isEvidenceActive ? 'active' : ''}" data-tab="evidence" title="Evidencia científica: PubMed y registros de ensayos clínicos"><i class="fas fa-book-medical"></i> Evidencia</button>
                     <button class="modal-tab modal-tab-consult ${isConsultActive ? 'active' : ''}" data-tab="consult" title="Preparar una consulta a una IA externa (fuera de ficha técnica)"><i class="fas fa-robot"></i> Consultar IA</button>
                     ${hasCns ? `<button class="modal-tab modal-tab-financing ${isFinancingActive ? 'active' : ''}" data-tab="financing" title="Financiación SNS: aportación, estado, precio"><i class="fas fa-receipt"></i> Financiación</button>` : ''}
-                    ${hasUtil ? `<button class="modal-tab modal-tab-util ${isUtilActive ? 'active' : ''}" data-tab="utilizacion" title="Utilización observada en recetas del SNS dispensadas en oficina de farmacia"><i class="fas fa-chart-column"></i> Utilización</button>` : ''}
+                    ${hasUtil ? `<button class="modal-tab modal-tab-util ${isUtilActive ? 'active' : ''}" data-tab="utilizacion" title="Utilización observada en recetas del SNS dispensadas en oficina de farmacia"><i class="fas fa-chart-column"></i> Utilización de este fármaco</button>` : ''}
                 </div>
 
                 <div id="tab-info" class="tab-content ${isInfoActive ? 'active' : ''}">
@@ -11262,7 +11262,7 @@ class MedCheckApp {
             }
         }
         if (med.conduc) alerts.push('<span class="badge badge-warning"><i class="fas fa-car"></i> Afecta conducción</span>');
-        if (med.materialesInf) alerts.push('<span class="badge badge-material badge-clickable" title="Hay materiales informativos de seguridad — ver pestaña Ficha y prospecto" onclick="document.querySelector(\'.modal-tab[data-tab=\\\"docs\\\"]\')?.click()"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
+        if (med.materialesInf) alerts.push('<span class="badge badge-material badge-clickable" title="Hay materiales informativos de seguridad — ver pestaña Otros documentos" onclick="document.querySelector(\'.modal-tab[data-tab=documentacion]\')?.click()"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
 
         const alertsHtml = alerts.length > 0
             ? `<div class="mb-md" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"> ${alerts.join('')}</div> `
@@ -12142,7 +12142,7 @@ ${ftFechaDocsHtml}
                 <i class="fas fa-question-circle"></i>
                 <span>No se pudo leer en CIMA lo que la ficha dice sobre ${this._escapeHtml(etiqueta.toLowerCase())} (${secciones}).
                 <button type="button" class="btn-text" onclick="app.verAtajoSeguridad('${ctx}', { reintento: true })">Reintentar</button>
-                o revisar la ficha técnica completa desde «Ficha y prospecto».</span>
+                o revisar la ficha técnica completa desde «Índice de la ficha».</span>
             </div>`;
             return;
         }
@@ -12231,7 +12231,7 @@ ${ftFechaDocsHtml}
         const unknownNote = unknownChecks.length ? `
     <div class="safety-unknown-note">
         <i class="fas fa-question-circle"></i>
-        Sin sección recuperable en CIMA para: ${unknownChecks.map(c => `${c.label}${c.section ? ` (${c.section})` : ''}`).join(' · ')} — verificar la ficha técnica completa desde «Ficha y prospecto».
+        Sin sección recuperable en CIMA para: ${unknownChecks.map(c => `${c.label}${c.section ? ` (${c.section})` : ''}`).join(' · ')} — verificar la ficha técnica completa desde «Índice de la ficha».
     </div>` : '';
 
         if (allChecks.length === 0) {
@@ -12240,7 +12240,7 @@ ${ftFechaDocsHtml}
             return `${avisoSA}${atajos}
     <div class="safety-unknown-note">
         <i class="fas fa-question-circle"></i>
-        No hay texto de las secciones 4.4, 4.6 y 4.7 que mostrar para este medicamento. Eso no significa que la ficha no tenga advertencias: revisar la ficha técnica completa desde «Ficha y prospecto».
+        No hay texto de las secciones 4.4, 4.6 y 4.7 que mostrar para este medicamento. Eso no significa que la ficha no tenga advertencias: revisar la ficha técnica completa desde «Índice de la ficha».
     </div>`;
         }
 
@@ -16338,7 +16338,7 @@ ${ftFechaDocsHtml}
                     <div class="control-section">
                         <select id="group-by-select" class="control-select">
                             <option value="atc" ${this.groupingState.groupBy === 'atc' ? 'selected' : ''}>Agrupar ATC</option>
-                            <option value="activeIngredient" ${this.groupingState.groupBy === 'activeIngredient' ? 'selected' : ''}>Agrupar PA</option>
+                            <option value="activeIngredient" ${this.groupingState.groupBy === 'activeIngredient' ? 'selected' : ''}>Agrupar por principio activo</option>
                             <option value="none" ${this.groupingState.groupBy === 'none' ? 'selected' : ''}>Sin agrupar</option>
                         </select>
                         <select id="sort-by-select" class="control-select">
@@ -16453,7 +16453,7 @@ ${ftFechaDocsHtml}
                         </label>` : ''}
                         ${(nDH > 0 || !snap.mostrarDH) ? `<label class="search-option" title="Diagnóstico hospitalario: la prescripción se inicia en el hospital, pero SÍ puede dispensarse en oficina de farmacia. Es distinto del uso hospitalario.">
                             <input type="checkbox" id="mostrar-dh-filter" ${snap.mostrarDH ? 'checked' : ''}>
-                            <span>Mostrar DH <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nDH}</span></span>
+                            <span>Mostrar diagnóstico hospitalario (DH) <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nDH}</span></span>
                         </label>` : ''}
                     </div>
                     ${hayOcultosHosp ? `
@@ -18432,7 +18432,7 @@ ${ftFechaDocsHtml}
         }
         pop.innerHTML = `
             <div class="exc-popover__head">
-                <span><i class="fas fa-vial"></i> Excipientes (EDO)</span>
+                <span><i class="fas fa-vial"></i> Excipientes de declaración obligatoria (EDO)</span>
                 <button type="button" class="exc-popover__close" aria-label="Cerrar">&times;</button>
             </div>
             ${this._cuerpoPopoverExcipientes(datos)}
@@ -18831,7 +18831,7 @@ ${ftFechaDocsHtml}
             btnEl.classList.toggle('active', active);
             const lbl = btnEl.querySelector('span');
             if (lbl) lbl.textContent = active ? 'En Mi vademécum' : 'Guardar en Mi vademécum';
-            btnEl.title = active ? 'Quitar de Mi vademécum (favoritos)' : 'Guardar en Mi vademécum (favoritos)';
+            btnEl.title = active ? 'Quitar de Mi vademécum' : 'Guardar en Mi vademécum';
         }
     }
 
@@ -19117,7 +19117,7 @@ ${ftFechaDocsHtml}
         this.content.innerHTML = `
             <div class="profile-view">
                 <div class="profile-subnav">
-                    ${navBtn('favorites', 'star', 'Favoritos', `<span class="subnav-count">${favs.length}</span>`)}
+                    ${navBtn('favorites', 'star', 'Medicamentos', `<span class="subnav-count">${favs.length}</span>`)}
                     ${navBtn('essentials', 'clipboard-list', 'Esenciales')}
                     ${navBtn('analytics', 'chart-bar', 'Analítica')}
                     ${navBtn('prescription', 'dna', 'Farmacogenómica')}
@@ -19195,7 +19195,7 @@ ${ftFechaDocsHtml}
             return `
                 <div class="profile-empty">
                     <i class="fas fa-star"></i>
-                    <h3>Sin favoritos aún</h3>
+                    <h3>Mi vademécum está vacío</h3>
                     <p>Guarda medicamentos con <i class="fas fa-star"></i> desde los resultados de búsqueda para acceder rápidamente a ellos aquí.</p>
                     <button class="btn btn-primary" onclick="app.loadView('search')">
                         <i class="fas fa-search"></i> Buscar medicamentos
@@ -19493,8 +19493,8 @@ ${ftFechaDocsHtml}
         if (uncovered.length > 0) {
             html += `
                 <div class="coverage-gaps">
-                    <div class="coverage-gaps-header"><i class="fas fa-circle-xmark"></i> Sin cobertura en favoritos (${uncovered.length})</div>
-                    <p class="coverage-gaps-hint">Indicaciones del catálogo que ningún favorito cubre. Pulsa para buscar fármacos.</p>
+                    <div class="coverage-gaps-header"><i class="fas fa-circle-xmark"></i> Sin cobertura en Mi vademécum (${uncovered.length})</div>
+                    <p class="coverage-gaps-hint">Indicaciones del catálogo que nada de Mi vademécum cubre. Pulsa para buscar fármacos.</p>
                     <div class="coverage-gaps-grid">
                         ${uncovered.map(u => `
                             <button class="coverage-gap-item" onclick="app._searchIndicationFromCoverage('${u.key.replace(/'/g, "\\'")}')" title="Buscar fármacos para: ${u.label}">
@@ -21206,7 +21206,7 @@ ${ftFechaDocsHtml}
     _renderPrescriptionSection() {
         const favs = this.getFavorites();
         if (favs.length === 0) {
-            return `<div class="profile-empty"><i class="fas fa-notes-medical"></i><h3>Sin favoritos</h3><p>Guarda medicamentos para ver aquí cuáles tienen biomarcador farmacogenético.</p></div>`;
+            return `<div class="profile-empty"><i class="fas fa-notes-medical"></i><h3>Mi vademécum está vacío</h3><p>Guarda medicamentos para ver aquí cuáles tienen biomarcador farmacogenético.</p></div>`;
         }
 
         // Farmacogenómica (índice local)
@@ -21264,7 +21264,7 @@ ${ftFechaDocsHtml}
     _renderMaterialsSection() {
         const favs = this.getFavorites();
         if (favs.length === 0) {
-            return `<div class="profile-empty"><i class="fas fa-file-medical-alt"></i><h3>Sin favoritos</h3><p>Guarda medicamentos para reunir aquí sus materiales informativos.</p></div>`;
+            return `<div class="profile-empty"><i class="fas fa-file-medical-alt"></i><h3>Mi vademécum está vacío</h3><p>Guarda medicamentos para reunir aquí sus materiales informativos.</p></div>`;
         }
         // Pista por la bandera materialesInf (puede faltar en favoritos antiguos).
         const flagged = favs.filter(f => f.materialesInf);
@@ -21525,7 +21525,7 @@ ${ftFechaDocsHtml}
                 <div class="profile-empty">
                     <i class="fas fa-chart-bar"></i>
                     <h3>Sin datos para analizar</h3>
-                    <p>Guarda medicamentos en favoritos para ver tu perfil de prescripción.</p>
+                    <p>Guarda medicamentos en Mi vademécum para ver tu perfil de prescripción.</p>
                 </div>
             `;
         }
@@ -21680,7 +21680,7 @@ ${ftFechaDocsHtml}
                         ` : ''}
                         ${coverage.uncovered.length > 0 ? `
                             <div class="coverage-section mt-sm">
-                                <div class="coverage-subtitle uncovered-subtitle"><i class="fas fa-times"></i> Sin cobertura en favoritos (${coverage.uncovered.length})</div>
+                                <div class="coverage-subtitle uncovered-subtitle"><i class="fas fa-times"></i> Sin cobertura en Mi vademécum (${coverage.uncovered.length})</div>
                                 <div class="coverage-grid">${uncoveredHtml}</div>
                             </div>
                         ` : ''}
@@ -21849,7 +21849,7 @@ ${ftFechaDocsHtml}
                     Tus favoritos se guardan en este navegador (almacenamiento local), no en la nube. Para llevarlos a otro equipo, expórtalos aquí e impórtalos allí: al importar se <strong>fusionan</strong> etiquetas y contadores de uso, no se duplican.
                 </div>
                 <div class="export-card">
-                    <h4><i class="fas fa-file-download"></i> Exportar favoritos</h4>
+                    <h4><i class="fas fa-file-download"></i> Exportar Mi vademécum</h4>
                     <p class="text-muted">Descarga tu lista como archivo JSON (incluye etiquetas, grupo ATC y contador de consultas) para copia de seguridad o migración entre dispositivos.</p>
                     <button class="btn btn-primary" onclick="app._exportFavorites()" ${favs.length === 0 ? 'disabled' : ''}>
                         <i class="fas fa-download"></i> Descargar JSON (${favs.length} medicamentos)
@@ -21866,7 +21866,7 @@ ${ftFechaDocsHtml}
                 </div>
 
                 <div class="export-card">
-                    <h4><i class="fas fa-file-upload"></i> Importar favoritos</h4>
+                    <h4><i class="fas fa-file-upload"></i> Importar Mi vademécum</h4>
                     <p class="text-muted">Restaura desde un JSON exportado. Los favoritos repetidos se fusionan (unión de etiquetas, se conserva el mayor contador de consultas); no se pierde nada de lo que ya tienes.</p>
                     <label class="btn btn-secondary" style="cursor:pointer">
                         <i class="fas fa-folder-open"></i> Seleccionar archivo JSON
@@ -21877,7 +21877,7 @@ ${ftFechaDocsHtml}
 
                 ${favs.length > 0 ? `
                 <div class="export-card export-card-danger">
-                    <h4><i class="fas fa-trash-alt"></i> Eliminar todos los favoritos</h4>
+                    <h4><i class="fas fa-trash-alt"></i> Vaciar Mi vademécum</h4>
                     <p class="text-muted">Esta acción no se puede deshacer. Exporta primero si quieres conservar la lista.</p>
                     <button class="btn btn-danger" onclick="app._clearAllFavorites()">
                         <i class="fas fa-trash-alt"></i> Eliminar todos (${favs.length})
@@ -21903,7 +21903,7 @@ ${ftFechaDocsHtml}
         a.download = `medcheck-favoritos-${date}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        this.showToast('Favoritos exportados', 'success');
+        this.showToast('Mi vademécum exportado', 'success');
     }
 
     _copyFavoritesAsList() {
@@ -21982,11 +21982,11 @@ ${ftFechaDocsHtml}
     }
 
     _clearAllFavorites() {
-        if (!confirm('¿Eliminar todos los favoritos? Esta acción no se puede deshacer.')) return;
+        if (!confirm('¿Vaciar Mi vademécum? Esta acción no se puede deshacer.')) return;
         this._saveFavorites([]);
         this.updateFavoritesBadge();
         this.renderProfileView();
-        this.showToast('Todos los favoritos eliminados', 'info');
+        this.showToast('Mi vademécum vaciado', 'info');
     }
 
     // =========================================================
@@ -22061,13 +22061,13 @@ ${ftFechaDocsHtml}
                             <p>La navegación no es un menú de funciones: cada pestaña es una <span class="guide-highlight">pregunta clínica</span> distinta. Entra por la que traes.</p>
                             <ul class="guide-features">
                                 <li><i class="fas fa-stethoscope"></i> indicaciones · ¿qué hay para esto?</li>
-                                <li><i class="fas fa-layer-group"></i> fármacos · ¿se pueden juntar?</li>
+                                <li><i class="fas fa-layer-group"></i> varias fichas · el mismo apartado de varios medicamentos</li>
                                 <li><i class="fas fa-exchange-alt"></i> equivalencias · ¿por qué puedo cambiarlo?</li>
-                                <li><i class="fas fa-dna"></i> PGx · ¿el genotipo cambia algo?</li>
+                                <li><i class="fas fa-dna"></i> farmacogenómica · ¿el genotipo cambia algo?</li>
                                 <li><i class="fas fa-chart-column"></i> utilización · ¿cuánto se usa de verdad?</li>
                                 <li><i class="fas fa-boxes"></i> suministro · ¿está disponible?</li>
-                                <li><i class="fas fa-bell"></i> alertas · ¿ha salido algo nuevo?</li>
-                                <li><i class="fas fa-file-medical-alt"></i> materiales · ¿qué material oficial hay?</li>
+                                <li><i class="fas fa-clock-rotate-left"></i> cambios en CIMA · ¿qué se ha dado de alta o de baja?</li>
+                                <li><i class="fas fa-file-medical-alt"></i> materiales de seguridad · ¿qué material oficial hay?</li>
                                 <li><i class="fas fa-star"></i> perfil · ¿qué manejo yo?</li>
                             </ul>
                             <p>Lo que dice la ficha sobre <span class="guide-highlight">embarazo, edad avanzada, insuficiencia renal o conducción</span> no es una vista aparte: está en la pestaña Seguridad de cada medicamento.</p>
@@ -22080,8 +22080,8 @@ ${ftFechaDocsHtml}
                         icon: 'fa-window-maximize',
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
-                            <p>La ficha concentra la lectura profunda: información, indicaciones, posología, interacciones, reacciones, seguridad, ficha y prospecto, documentación —los <span class="guide-highlight">IPT</span> de la AEMPS y los materiales—, evidencia y utilización.</p>
-                            <p>Algunas pestañas <span class="guide-highlight">solo aparecen si hay algo que enseñar</span>: Alertas AEMPS, PGx, Financiación, Utilización y QT. Que no estén significa que ese medicamento no tiene ese contenido; no hay que buscarlas.</p>
+                            <p>La ficha concentra la lectura profunda: datos del medicamento, indicaciones, posología, interacciones, reacciones, seguridad, índice de la ficha, otros documentos —los <span class="guide-highlight">IPT</span> de la AEMPS y los materiales—, evidencia y utilización.</p>
+                            <p>Algunas pestañas <span class="guide-highlight">solo aparecen si hay algo que enseñar</span>: Alertas AEMPS, Farmacogenómica, Financiación, Utilización y QT. Que no estén significa que ese medicamento no tiene ese contenido; no hay que buscarlas.</p>
                             <p>En <span class="guide-key">Evidencia</span>, si PubMed no reconoce un término —pasa al escribirlo en español—, <span class="guide-highlight">lo avisa</span>: un recuento bajo puede ser de idioma, no de evidencia.</p>
                             <p>La guía abre un medicamento de ejemplo para recorrer la ficha con datos reales.</p>
                         `,
@@ -22123,7 +22123,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-table-columns',
                         action: { type: 'profileSection', section: 'favorites' },
                         body: `
-                            <p>Mi Perfil convierte favoritos en un <span class="guide-highlight">formulario personal</span>: favoritos, esenciales, analítica 80/20, prescripción, materiales e importación/exportación.</p>
+                            <p>Mi vademécum convierte lo que guardas en un <span class="guide-highlight">formulario personal</span>: medicamentos, esenciales, analítica 80/20, farmacogenómica, materiales e importación/exportación.</p>
                             <p class="guide-case"><strong>Caso</strong>Preparas una sesión del centro sobre lo que realmente prescribes: Analítica te da la concentración terapéutica de tu propia colección en un gráfico, sin vaciar recetas a mano.</p>
                         `,
                     },
@@ -22143,9 +22143,9 @@ ${ftFechaDocsHtml}
                         title: 'Subguías por área',
                         icon: 'fa-circle-question',
                         body: `
-                            <p>El botón <span class="guide-key"><i class="fas fa-question" style="font-size:0.7rem"></i></span> abre una subguía breve por área: ficha/modal, Mi vademécum y cada eje clínico de la navegación (indicaciones, fármacos, equivalencias, PGx, utilización, suministro, alertas, materiales).</p>
+                            <p>El botón <span class="guide-key"><i class="fas fa-question" style="font-size:0.7rem"></i></span> abre una subguía breve por área: ficha/modal, Mi vademécum y cada eje clínico de la navegación (indicaciones, varias fichas, equivalencias, farmacogenómica, utilización, suministro, cambios en CIMA, materiales de seguridad).</p>
                             <p>Están pensadas para consultarse sueltas y en el momento, no para hacerlas del tirón.</p>
-                            <p>MedCheck consulta fuentes oficiales cuando puede y guarda favoritos y preferencias solo en este navegador.</p>
+                            <p>MedCheck consulta fuentes oficiales cuando puede y guarda Mi vademécum y las preferencias solo en este navegador.</p>
                         `,
                         position: 'bottom',
                     },
@@ -22162,8 +22162,8 @@ ${ftFechaDocsHtml}
                         icon: 'fa-window-maximize',
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
-                            <p>Al abrir un medicamento, el modal reúne la información accionable: ficha, indicaciones, posología, interacciones, reacciones, seguridad, ficha y prospecto, documentación, evidencia, utilización y consulta a IA.</p>
-                            <p>Cinco pestañas son <span class="guide-highlight">condicionales</span>: Alertas AEMPS, PGx, Financiación, Utilización y QT. Su ausencia indica que esa ficha no dispone de ese contenido; no demuestra ausencia de riesgo ni de evidencia.</p>
+                            <p>Al abrir un medicamento, el modal reúne la información accionable: datos del medicamento, indicaciones, posología, interacciones, reacciones, seguridad, índice de la ficha, otros documentos, evidencia, utilización y consulta a IA.</p>
+                            <p>Cinco pestañas son <span class="guide-highlight">condicionales</span>: Alertas AEMPS, Farmacogenómica, Financiación, Utilización y QT. Su ausencia indica que esa ficha no dispone de ese contenido; no demuestra ausencia de riesgo ni de evidencia.</p>
                             <p>Si no había una ficha abierta, la guía carga un ejemplo real para poder recorrerla.</p>
                         `,
                     },
@@ -22257,21 +22257,21 @@ ${ftFechaDocsHtml}
                     },
                     {
                         target: '.modal-tab[data-tab="docs"]',
-                        title: 'Ficha y prospecto',
+                        title: 'Índice de la ficha',
                         icon: 'fa-file-medical-alt',
                         action: { type: 'modalTab', tab: 'docs' },
                         body: `
-                            <p><span class="guide-key">Ficha y prospecto</span> enlaza los dos documentos oficiales y <span class="guide-highlight">cada una de sus secciones</span>, con la numeración y los títulos de CIMA, para saltar directamente a la 4.8 o a la 6.1 sin buscar dentro del documento.</p>
+                            <p><span class="guide-key">Índice de la ficha</span> enlaza la ficha técnica y el prospecto y <span class="guide-highlight">cada una de sus secciones</span>, con la numeración y los títulos de CIMA, para saltar directamente a la 4.8 o a la 6.1 sin buscar dentro del documento.</p>
                             <p class="guide-case"><strong>Caso</strong>Dudas si un comprimido se puede partir. Saltas a la 4.2 de la ficha, o al apartado 3 del prospecto si quieres el texto que leerá el paciente.</p>
                         `,
                     },
                     {
                         target: '.modal-tab[data-tab="documentacion"]',
-                        title: 'Documentación',
+                        title: 'Otros documentos',
                         icon: 'fa-balance-scale',
                         action: { type: 'modalTab', tab: 'documentacion' },
                         body: `
-                            <p><span class="guide-key">Documentación</span> reúne lo oficial que acompaña a la ficha: los <span class="guide-highlight">informes de posicionamiento terapéutico (IPT)</span> de la AEMPS —que CIMA no publica—, los <span class="guide-highlight">materiales informativos</span> (tarjetas de paciente, guías de dosificación, vídeos) y el informe de evaluación y el plan de riesgos.</p>
+                            <p><span class="guide-key">Otros documentos</span> reúne lo oficial que acompaña a la ficha: los <span class="guide-highlight">informes de posicionamiento terapéutico (IPT)</span> de la AEMPS —que CIMA no publica—, los <span class="guide-highlight">materiales informativos</span> (tarjetas de paciente, guías de dosificación, vídeos) y el informe de evaluación y el plan de riesgos.</p>
                             <p>Si el medicamento tiene IPT propio, la pestaña lo avisa con la marca <span class="guide-highlight">IPT</span> sin necesidad de abrirla. En un genérico verás el IPT de la marca evaluada, rotulado como tal.</p>
                             <p class="guide-case"><strong>Caso</strong>Duda sobre los criterios de uso de un anticoagulante oral: aquí están el informe de la AEMPS sobre los ACOD y la tarjeta de paciente oficial.</p>
                         `,
@@ -22564,16 +22564,16 @@ ${ftFechaDocsHtml}
             },
             profile: {
                 label: 'Mi vademécum',
-                desc: 'Favoritos como formulario personal y asistente de prescripción.',
+                desc: 'Lo que guardas, como formulario personal y asistente de prescripción.',
                 icon: 'fa-star',
                 view: 'profile',
                 steps: [
                     {
                         target: '#nav-profile',
-                        title: 'Favoritos = formulario personal',
+                        title: 'Tu formulario personal',
                         icon: 'fa-star',
                         body: `
-                            <p>Mi Perfil organiza los favoritos como una colección revisable: el vademécum que de verdad manejas, no el catálogo entero.</p>
+                            <p>Mi vademécum organiza lo que guardas como una colección revisable: el vademécum que de verdad manejas, no el catálogo entero.</p>
                             <p>Todo vive en localStorage: queda en este navegador salvo que exportes/importes.</p>
                         `,
                         position: 'bottom',
@@ -22585,10 +22585,10 @@ ${ftFechaDocsHtml}
                         action: { type: 'profileSection', section: 'favorites' },
                         body: `
                             <ul class="guide-features">
-                                <li><i class="fas fa-star"></i> favoritos</li>
+                                <li><i class="fas fa-star"></i> medicamentos</li>
                                 <li><i class="fas fa-clipboard-list"></i> esenciales</li>
                                 <li><i class="fas fa-chart-bar"></i> analítica</li>
-                                <li><i class="fas fa-notes-medical"></i> prescripción</li>
+                                <li><i class="fas fa-dna"></i> farmacogenómica</li>
                                 <li><i class="fas fa-file-medical-alt"></i> materiales</li>
                                 <li><i class="fas fa-right-left"></i> exportar</li>
                             </ul>
@@ -22638,7 +22638,7 @@ ${ftFechaDocsHtml}
                         title: 'Biomarcadores en el Nomenclátor',
                         icon: 'fa-dna',
                         body: `
-                            <p>PGx muestra medicamentos cuyo Nomenclátor de Prescripción AEMPS menciona biomarcadores farmacogenómicos.</p>
+                            <p>Farmacogenómica muestra medicamentos cuyo Nomenclátor de Prescripción AEMPS menciona biomarcadores farmacogenómicos.</p>
                             <p>Es una capa selectiva: aparece como vista global y como pestaña dentro del modal cuando aplica.</p>
                         `,
                         position: 'bottom',
@@ -22659,7 +22659,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-arrow-up-right-from-square',
                         action: { type: 'modal', tab: 'pgx', source: 'pgx' },
                         body: `
-                            <p>Cada tarjeta abre la ficha directamente en la pestaña PGx, donde puedes verificar la fuente AEMPS y ampliar con la guía CPIC correspondiente o con un prompt que exige citas.</p>
+                            <p>Cada tarjeta abre la ficha directamente en la pestaña Farmacogenómica, donde puedes verificar la fuente AEMPS y ampliar con la guía CPIC correspondiente o con un prompt que exige citas.</p>
                             <p class="guide-case"><strong>Caso</strong>Duda sobre alopurinol: aquí está el biomarcador <em>HLA-B*58:01</em> que cita la AEMPS y el enlace a la guía que lo trata.</p>
                         `,
                     },
@@ -22725,14 +22725,14 @@ ${ftFechaDocsHtml}
                 ],
             },
             materials: {
-                label: 'Materiales',
+                label: 'Materiales de seguridad',
                 desc: 'Guías, vídeos y tarjetas AEMPS cuando aportan valor.',
                 icon: 'fa-file-medical-alt',
                 view: 'materials',
                 steps: [
                     {
                         target: '.nav-tab[data-view="materials"]',
-                        title: 'Materiales informativos',
+                        title: 'Materiales de seguridad',
                         icon: 'fa-file-medical-alt',
                         body: `
                             <p>Esta vista reúne materiales AEMPS publicados para medicamentos concretos: guías, tarjetas de paciente, documentos profesionales y vídeos.</p>
@@ -22756,7 +22756,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'modal', tab: 'documentacion', source: 'materials' },
                         body: `
                             <p>La tarjeta lleva al documento original y, si tiene registro CIMA, a la ficha del medicamento.</p>
-                            <p>Dentro de Mi Perfil hay otra vista de Materiales limitada solo a tu colección.</p>
+                            <p>Dentro de Mi vademécum hay otra vista de materiales limitada solo a tu colección.</p>
                         `,
                     },
                 ],
@@ -22817,18 +22817,18 @@ ${ftFechaDocsHtml}
                 ],
             },
             combo: {
-                label: 'Fármacos (combinación)',
-                desc: 'Cruzar varios medicamentos: interacciones y evidencia, sin veredicto.',
+                label: 'Varias fichas',
+                desc: 'El mismo apartado de la ficha de varios medicamentos, uno tras otro, sin cruzarlos.',
                 icon: 'fa-layer-group',
                 view: 'combo',
                 steps: [
                     {
                         target: '.nav-tab[data-view="combo"]',
-                        title: 'Consultar una combinación',
+                        title: 'Varias fichas a la vez',
                         icon: 'fa-layer-group',
                         body: `
-                            <p>Reúnes dos o más medicamentos (o síntomas) y MedCheck prepara la consulta de <span class="guide-highlight">interacciones fármaco-fármaco</span> y la evidencia asociada.</p>
-                            <p class="guide-case"><strong>Caso</strong>Dudas sobre ocho medicamentos a la vez: en vez de ocho búsquedas sueltas, una sola pregunta bien construida sobre el conjunto.</p>
+                            <p>Reúnes dos o más medicamentos y abres el <span class="guide-highlight">mismo apartado de la ficha técnica</span> de cada uno —interacciones (4.5) o reacciones (4.8)—, con su texto literal. MedCheck no cruza las fichas entre sí. Debajo, plegadas, quedan la consulta a IA externa y PubMed.</p>
+                            <p class="guide-case"><strong>Caso</strong>Dudas sobre ocho medicamentos a la vez: en vez de ocho búsquedas sueltas, la lista te deja abrir la 4.5 de cada uno sin volver a buscarlos.</p>
                         `,
                         position: 'bottom',
                     },
@@ -22917,9 +22917,9 @@ ${ftFechaDocsHtml}
                 ],
             },
             alerts: {
-                label: 'Alertas',
+                label: 'Cambios en CIMA',
                 desc: 'Cambios recientes del registro de CIMA, y dónde están las notas de seguridad.',
-                icon: 'fa-bell',
+                icon: 'fa-clock-rotate-left',
                 view: 'alerts',
                 steps: [
                     {
@@ -22928,7 +22928,7 @@ ${ftFechaDocsHtml}
                         // prometía la nota oficial de la AEMPS sobre una pantalla que no la tiene.
                         target: '.nav-tab[data-view="alerts"]',
                         title: 'Qué recoge esta vista',
-                        icon: 'fa-bell',
+                        icon: 'fa-clock-rotate-left',
                         body: `
                             <p>Lista las <span class="guide-highlight">altas, bajas y modificaciones</span> que el registro de cambios de CIMA ha comunicado en los últimos 7 días. Es movimiento del registro: un cambio puede ser de ficha, de comercialización o administrativo, y no supone por sí mismo un problema de seguridad.</p>
                             <p>Las <strong>notas informativas de farmacovigilancia</strong> de la AEMPS no están en esta lista: aparecen en la pestaña <span class="guide-key">Alertas AEMPS</span> de cada ficha, y solo en los medicamentos que tienen alguna.</p>
@@ -23134,7 +23134,7 @@ ${ftFechaDocsHtml}
         if (tab && tab !== 'info') {
             const selected = await this._selectGuideModalTab(tab);
             if (!selected && tab === 'pgx') {
-                this.showToast?.('Este medicamento no tiene pestaña PGx; se muestra la ficha general', 'info');
+                this.showToast?.('Este medicamento no tiene pestaña Farmacogenómica; se muestra la ficha general', 'info');
             }
         } else {
             await this._selectGuideModalTab('info');

@@ -322,12 +322,12 @@ console.log('\n— Alertas (h7) —');
     const app3 = nuevaApp();
     await app3.renderAlerts();
     const h3 = app3.content.innerHTML;
-    ok('vacía con 12.779 declarados: NO dice «Sin alertas», ofrece Reintentar', !h3.includes('Sin alertas recientes') && h3.includes('No se pudo leer el registro de cambios') && h3.includes('app.renderAlerts()'), h3.slice(0, 300));
+    ok('vacía con 12.779 declarados: NO dice «Sin cambios», ofrece Reintentar', !h3.includes('Sin cambios recientes') && h3.includes('No se pudo leer el registro de cambios') && h3.includes('app.renderAlerts()'), h3.slice(0, 300));
 
     red = () => ({ status: 200, body: { totalFilas: 0, resultados: [] } });
     const app4 = nuevaApp();
     await app4.renderAlerts();
-    ok('cero REAL: «Sin alertas recientes»', app4.content.innerHTML.includes('Sin alertas recientes'));
+    ok('cero REAL: «Sin cambios recientes» (mejora 8: «Alertas» queda para las notas de seguridad)', app4.content.innerHTML.includes('Sin cambios recientes'));
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTODO OK');

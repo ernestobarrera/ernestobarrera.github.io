@@ -15272,3 +15272,63 @@ a.ipt-item:hover {
 @media (max-width: 600px) {
     .bifimed-campo { grid-template-columns: 1fr; }
 }
+
+/* Mejora 8 de la revisión de claridad (19/11/2026): los rótulos nuevos de la barra son más largos
+   que los que sustituyen. En una línea empujaban «Mi vademécum» fuera de la barra a 1280 y 1440 px
+   y en el móvil añadían una tercera fila. Por debajo de 1500 px los de varias palabras se parten en
+   dos líneas por un salto fijo (`.nav-br`): con un ancho máximo, el botón conservaba ese ancho
+   aunque el texto ocupara menos y no se ahorraba nada. `.nav-br-movil` solo parte en el móvil.
+   Medido con `medir-palabras.mjs`, en la carpeta de la revisión de claridad. */
+@media (min-width: 1500px) {
+    .nav-tab .nav-br,
+    .nav-tab .nav-guion {
+        display: none;
+    }
+}
+
+@media (min-width: 769px) {
+    .nav-tab {
+        flex-shrink: 0;
+    }
+
+    .nav-tab .nav-br-movil {
+        display: none;
+    }
+
+    .nav-tab > span:not(.nav-tab-badge) {
+        text-align: left;
+        line-height: 1.1;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1499px) {
+    .nav-tab {
+        padding-left: 0.6rem;
+        padding-right: 0.6rem;
+    }
+}
+
+/* Con la ficha abierta la barra ya se reparte en filas (ver arriba, `body:has(#med-modal…)`):
+   partir los rótulos solo la haría más alta. */
+@media (min-width: 1024px) {
+    body:has(#med-modal:not(.hidden)) .nav-tab .nav-br,
+    body:has(#med-modal:not(.hidden)) .nav-tab .nav-guion {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-tab {
+        padding-left: 3px;
+        padding-right: 3px;
+    }
+
+    .nav-tab > span:not(.nav-tab-badge) {
+        line-height: 1.1;
+    }
+
+    /* La regla de 480 px oculta todo span de la pestaña; el guion va anidado. */
+    .nav-tab .nav-guion {
+        display: inline;
+    }
+}
