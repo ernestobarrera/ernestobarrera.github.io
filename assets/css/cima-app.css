@@ -3147,8 +3147,21 @@ a.badge-seguimiento:focus-visible {
 .combo-collapse[open] > summary::after { transform: rotate(180deg); }
 .combo-collapse-body { padding-top: var(--space-md); }
 .combo-evidence-panel.combo-collapse .combo-collapse-title i { color: #6ee7b7; }
-.combo-ficha-panel.combo-collapse { border-style: solid; }
-.combo-ficha-panel.combo-collapse .combo-collapse-title i { color: var(--text-secondary); }
+/* Mejora 6 (19/11/2026), primero lo oficial: la ficha técnica va bajo la lista, abierta y con su
+   mismo borde sólido; la IA externa se pliega y se viste como los demás opcionales (discontinuo,
+   sin el degradado ni la sombra de acción principal que conserva en Consulta e Indicaciones). */
+.combo-ficha-panel {
+    margin-top: var(--space-md);
+    border-color: rgba(59, 130, 246, 0.28);
+}
+.combo-ficha-panel .interaction-header h3 i { color: var(--text-secondary); }
+.combo-ai-hero.combo-ai-panel {
+    padding: var(--space-sm) var(--space-md);
+    border: 1px dashed rgba(99, 102, 241, 0.35);
+    background: rgba(99, 102, 241, 0.055);
+    box-shadow: none;
+}
+.combo-ai-panel.combo-collapse .combo-collapse-title i { color: #a5b4fc; }
 /* Una fila por medicamento: nombre a la izquierda, sus dos secciones a la derecha. En estrecho,
    los botones bajan bajo el nombre. */
 .combo-ficha-list {

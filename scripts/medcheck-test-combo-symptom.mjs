@@ -26,6 +26,7 @@ import { fuenteApp } from './lib/cargar-app.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import vm from 'node:vm';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const appSrc = fuenteApp(ROOT);
@@ -157,6 +158,58 @@ for (const [firma, nombre] of [
         /getElementById\('symptom-search'\)\?\.value/.test(cuerpo)
         && /addComboSymptom\(\s*pending\s*\)|_comboSymptoms\.push/.test(cuerpo),
         'no aparece la recogida del input dentro de esta función');
+}
+
+// --- Orden de la vista: primero lo oficial (mejora 6 de la revisión de claridad, 19/11/2026) ---
+// Antes, bajo la lista iba la IA externa, abierta y con aspecto de acción principal; la ficha
+// técnica era el último bloque y además plegado (1.121 px en escritorio con dos fármacos). Ahora:
+// lista → ficha técnica (abierta) → IA externa (plegada) → PubMed (plegado). Se pinta la vista
+// con el `renderCombination` real; una copia del HTML aquí se quedaría atrás en silencio.
+{
+    const elementoFalso = () => new Proxy({ value: '', open: false, disabled: false, dataset: {}, classList: { add() {}, remove() {}, contains: () => false } }, {
+        get: (t, k) => (k in t ? t[k] : (k === 'querySelectorAll' ? () => [] : () => null)),
+    });
+    const sandbox = {
+        window: {}, console: { log() {}, warn() {}, error() {} },
+        document: { addEventListener() {}, getElementById: () => elementoFalso(), querySelector: () => null, querySelectorAll: () => [] },
+        localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+        sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+        fetch: () => Promise.reject(new Error('sin red en tests')),
+        setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
+        Date, Math, JSON, Promise, Map, Set, RegExp, URL, URLSearchParams,
+        navigator: { onLine: true }, location: { search: '', href: '' },
+    };
+    sandbox.globalThis = sandbox;
+    vm.createContext(sandbox);
+    vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8')}\n;window.__CimaAPI = CimaAPI;`, sandbox);
+    vm.runInContext(`${appSrc}\n;window.__App = MedCheckApp;`, sandbox);
+    const pintar = (estado = {}) => {
+        const app = Object.create(sandbox.window.__App.prototype);
+        Object.assign(app, {
+            content: { innerHTML: '' }, currentView: 'combo', _comboSymptoms: [],
+            comboDrugList: [{ nombre: 'ENALAPRIL CINFA 10 mg COMPRIMIDOS', nregistro: '62385' }, { nombre: 'METFORMINA UXA 850 MG', nregistro: '71000' }],
+        }, estado);
+        app.renderCombination();
+        return app.content.innerHTML;
+    };
+    const html = pintar();
+    const pos = marca => html.indexOf(marca);
+    const [lista, ficha, ia, pubmed] = ['combo-list-box', 'id="combo-ficha"', 'id="combo-ai-details"', 'id="combo-ev-details"'].map(pos);
+    ok('Fármacos se pinta con los cuatro bloques', [lista, ficha, ia, pubmed].every(p => p > -1), JSON.stringify({ lista, ficha, ia, pubmed }));
+    ok('la ficha técnica va justo después de la lista y antes de la IA y de PubMed', lista < ficha && ficha < ia && ia < pubmed, JSON.stringify({ lista, ficha, ia, pubmed }));
+    const etiquetaFicha = /<(\w+)[^>]*id="combo-ficha"/.exec(html)?.[1];
+    ok('la ficha técnica no es un plegable: está siempre a la vista', etiquetaFicha === 'section', etiquetaFicha);
+    ok('con dos fármacos, la ficha trae sus 4.5 y 4.8 de cada uno', (html.match(/openMedDetails\('(62385|71000)','(interactions|adverse)'\)/g) || []).length === 4);
+    const aperturaIa = s => /<details[^>]*id="combo-ai-details"[^>]*>/.exec(s)?.[0] || '';
+    ok('la IA externa es un plegable, cerrado por defecto', !!aperturaIa(html) && !/\sopen[\s>]/.test(aperturaIa(html)), aperturaIa(html));
+    ok('y abierta si se abrió antes (no se pierde al repintar, p. ej. al añadir un síntoma)', /\sopen[\s>]/.test(aperturaIa(pintar({ _comboAIOpen: true }))));
+    ok('la IA conserva sus cuatro consultas', ['interactions', 'mapa', 'cascada', 'symptom'].every(k => html.includes(`app.openComboEngine('${k}','perplexity')`)));
+    ok('la IA y PubMed se rotulan como opcionales', /combo-ai-details[\s\S]*?·\s*opcional/.test(html) && /combo-ev-details[\s\S]*?·\s*opcional/.test(html));
+    ok('el plegable de la IA recuerda su estado', /aiDetails\.addEventListener\('toggle',\s*\(\)\s*=>\s*\{\s*this\._comboAIOpen = aiDetails\.open;/.test(bloqueDesde(appSrc, 'renderCombination() {')));
+    // La guía señala los botones de la IA: con la IA plegada, su paso tiene que abrirla antes.
+    const pasoGuia = /\{\s*target: '#app-content \.combo-ai-primary \.combo-ai-buttons',\s*action: \{ type: 'comboAi' \}/.test(appSrc);
+    const accion = bloqueDesde(appSrc, 'async _runGuideStepAction(step) {');
+    ok('el paso de la guía que señala la IA la despliega antes', pasoGuia && /type === 'comboAi'[\s\S]{0,300}getElementById\('combo-ai-details'\)[\s\S]{0,120}\.open = true/.test(accion));
 }
 
 console.log(fallos ? `\n${fallos} fallo(s)` : '\nTodo en verde');

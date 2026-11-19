@@ -5762,6 +5762,9 @@ class MedCheckApp {
         const refineCount = (this._comboFocus?.size || 0) + (this._comboTopics?.size || 0) + ((this._comboAIContext || '').trim() ? 1 : 0);
         const refineOpen = this._comboRefineOpen || refineCount > 0;
 
+        // Orden de la vista (mejora 6 de la revisión de claridad, 19/11/2026): primero lo oficial.
+        // Lista → ficha técnica (siempre a la vista) → IA externa y PubMed, los dos plegados y
+        // marcados como opcionales. No se quita nada: cada plegable recuerda si lo abriste.
         this.content.innerHTML = `
             <div class="combo-view">
             <div class="search-box search-box-compact combo-list-box">
@@ -5785,15 +5788,35 @@ class MedCheckApp {
                 ${recentHtml}
             </div>
 
-            <div class="search-box combo-ai-hero">
-                <div class="combo-ai-hero-head">
-                    <i class="fas fa-robot combo-ai-hero-icon"></i>
-                    <div>
-                        <h3>Consultar esta combinación con IA <sup class="combo-ai-fn-call">*</sup></h3>
-                        <p>Prepara una consulta referenciada para una IA externa con citas a fuentes (incluidas interacciones descritas por clase farmacológica). MedCheck no interpreta, no guarda ni muestra la respuesta — verifica siempre con ficha técnica/AEMPS y criterio profesional.</p>
-                    </div>
-                    <span class="combo-research-badge">opcional</span>
+            <section class="search-box combo-ficha-panel" id="combo-ficha" aria-labelledby="combo-ficha-titulo">
+                <div class="interaction-header">
+                    <h3 id="combo-ficha-titulo"><i class="fas fa-file-medical"></i> Leer en la ficha técnica oficial (AEMPS)</h3>
+                    <span class="text-muted text-sm">secciones 4.5 y 4.8 · una ficha cada vez</span>
                 </div>
+                <p class="combo-research-copy">Abre la sección de cada medicamento de la lista, con su texto literal. MedCheck <strong>no cruza</strong> las fichas entre sí ni busca en ellas por ti.</p>
+                ${n === 0 ? '<p class="text-muted text-sm">Añade medicamentos a la lista para abrir sus fichas.</p>' : `
+                <div class="combo-ficha-list">
+                    ${this.comboDrugList.map(med => {
+                        const nreg = this._escapeHtml(String(med.nregistro)).replace(/'/g, "\\'");
+                        return `
+                    <div class="combo-ficha-row">
+                        <span class="combo-ficha-name" title="${this._escapeHtml(med.nombre)}">${this._escapeHtml(med.nombre)}</span>
+                        <span class="combo-ficha-links">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${nreg}','interactions')" title="Abrir la sección 4.5 de su ficha técnica"><i class="fas fa-random"></i> 4.5 Interacciones</button>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${nreg}','adverse')" title="Abrir la sección 4.8 de su ficha técnica"><i class="fas fa-notes-medical"></i> 4.8 Reacciones</button>
+                        </span>
+                    </div>`;
+                    }).join('')}
+                </div>`}
+            </section>
+
+            <details class="search-box combo-ai-hero combo-ai-panel combo-collapse" id="combo-ai-details" ${this._comboAIOpen ? 'open' : ''}>
+                <summary class="combo-collapse-summary">
+                    <span class="combo-collapse-title"><i class="fas fa-robot"></i> Consultar esta lista con una IA externa <sup class="combo-ai-fn-call">*</sup></span>
+                    <span class="combo-collapse-meta">interacciones, mapa, cascadas, fármaco–síntoma · opcional</span>
+                </summary>
+                <div class="combo-collapse-body">
+                <p class="combo-research-copy">Prepara una consulta referenciada para una IA externa con citas a fuentes (incluidas interacciones descritas por clase farmacológica). MedCheck no interpreta, no guarda ni muestra la respuesta — verifica siempre con ficha técnica/AEMPS y criterio profesional.</p>
 
                 <div class="combo-ai-primary">
                     <div class="combo-ai-action-head">
@@ -5875,7 +5898,8 @@ class MedCheckApp {
                         </div>
                     </div>
                 </details>
-            </div>
+                </div>
+            </details>
 
             <details class="search-box combo-evidence-panel combo-collapse" id="combo-ev-details" ${this._comboEvOpen ? 'open' : ''}>
                 <summary class="combo-collapse-summary">
@@ -5920,30 +5944,6 @@ class MedCheckApp {
                     </a>`).join('')}
                 </div>
                 <p class="combo-ev-gpt-note">Filtros <strong>bibliográficos</strong> (tipo de estudio, ámbito), <strong>no</strong> priorización ni descarte clínico. El conteo es volumen de literatura, no juicio de interacción ni de seguridad; cero no descarta nada. Cada fila abre PubMed. El GPT es externo: copia el prompt y abre para pegar (Ctrl+V).</p>` : `<p class="text-muted text-sm">Añade al menos 2 fármacos para construir la consulta combinada.</p>`}
-                </div>
-            </details>
-
-            <details class="search-box combo-ficha-panel combo-collapse" id="combo-ficha-details" ${this._comboFichaOpen ? 'open' : ''}>
-                <summary class="combo-collapse-summary">
-                    <span class="combo-collapse-title"><i class="fas fa-file-medical"></i> Leer en la ficha técnica oficial (AEMPS)</span>
-                    <span class="combo-collapse-meta">secciones 4.5 y 4.8 · una ficha cada vez</span>
-                </summary>
-                <div class="combo-collapse-body">
-                    <p class="combo-research-copy">Abre la sección de cada medicamento de la lista, con su texto literal. MedCheck <strong>no cruza</strong> las fichas entre sí ni busca en ellas por ti.</p>
-                    ${n === 0 ? '<p class="text-muted text-sm">Añade medicamentos a la lista para abrir sus fichas.</p>' : `
-                    <div class="combo-ficha-list">
-                        ${this.comboDrugList.map(med => {
-                            const nreg = this._escapeHtml(String(med.nregistro)).replace(/'/g, "\\'");
-                            return `
-                        <div class="combo-ficha-row">
-                            <span class="combo-ficha-name" title="${this._escapeHtml(med.nombre)}">${this._escapeHtml(med.nombre)}</span>
-                            <span class="combo-ficha-links">
-                                <button type="button" class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${nreg}','interactions')" title="Abrir la sección 4.5 de su ficha técnica"><i class="fas fa-random"></i> 4.5 Interacciones</button>
-                                <button type="button" class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${nreg}','adverse')" title="Abrir la sección 4.8 de su ficha técnica"><i class="fas fa-notes-medical"></i> 4.8 Reacciones</button>
-                            </span>
-                        </div>`;
-                        }).join('')}
-                    </div>`}
                 </div>
             </details>
             </div>
@@ -6075,8 +6075,8 @@ class MedCheckApp {
             this._comboEvOpen = evDetails.open;
             if (evDetails.open) this.loadComboEvidenceCounts();
         });
-        const fichaDetails = document.getElementById('combo-ficha-details');
-        if (fichaDetails) fichaDetails.addEventListener('toggle', () => { this._comboFichaOpen = fichaDetails.open; });
+        const aiDetails = document.getElementById('combo-ai-details');
+        if (aiDetails) aiDetails.addEventListener('toggle', () => { this._comboAIOpen = aiDetails.open; });
         const refineDetails = document.getElementById('combo-ai-refine');
         if (refineDetails) refineDetails.addEventListener('toggle', () => { this._comboRefineOpen = refineDetails.open; });
 
@@ -22852,6 +22852,7 @@ ${ftFechaDocsHtml}
                     },
                     {
                         target: '#app-content .combo-ai-primary .combo-ai-buttons',
+                        action: { type: 'comboAi' },
                         title: 'Consulta sin veredicto automático',
                         icon: 'fa-magnifying-glass-chart',
                         body: `
@@ -23157,6 +23158,15 @@ ${ftFechaDocsHtml}
             }
             details.open = true;
             if (details.dataset.estado !== 'listo') await this._cargarFT51(this.currentMed, details);
+            return;
+        }
+
+        // La IA de Fármacos va plegada (mejora 6): el paso que la señala la abre antes.
+        if (action.type === 'comboAi') {
+            await this._runGuideStepAction({ action: { type: 'view', view: 'combo' } });
+            const details = document.getElementById('combo-ai-details');
+            if (details && !details.open) { details.open = true; this._comboAIOpen = true; }
+            await this._guideWait(80);
             return;
         }
 

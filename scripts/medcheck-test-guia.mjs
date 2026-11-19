@@ -67,7 +67,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 
 await test('todos los pasos tienen acciones reconocidas y contenido', () => {
     const { app } = setup();
-    const types = new Set(['view', 'modal', 'modalTab', 'profileSection', 'searchResults', 'modalList', 'indicationAi', 'evidence51']);
+    const types = new Set(['view', 'modal', 'modalTab', 'profileSection', 'searchResults', 'modalList', 'indicationAi', 'evidence51', 'comboAi']);
     for (const tour of Object.values(app._guideTours())) {
         assert.ok(tour.steps.length && tour.label && tour.desc);
         for (const step of tour.steps) {
