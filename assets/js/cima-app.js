@@ -10607,6 +10607,9 @@ class MedCheckApp {
             // ({R03A,3},{R03AK,4},{R03AK07,5}), así que `atcs[0]` es el nivel 3 y no sirve aquí:
             // el dataset del Ministerio está indexado por principio activo o asociación.
             const atc5Util = med.atcs?.find(a => a.nivel === 5)?.codigo || '';
+            // El nombre viaja con el código para que un hueco se diga con palabras: «A10BX16 no
+            // figura» no le dice a nadie que se trata de la tirzepatida que tiene delante.
+            const atc5UtilNombre = med.atcs?.find(a => a.nivel === 5)?.nombre || '';
             const hasUtil = !!atc5Util;
             const isUtilActive = initialTab === 'utilizacion' && hasUtil;
 
@@ -10760,7 +10763,7 @@ class MedCheckApp {
 
                 ${hasUtil ? `
                 <div id="tab-utilizacion" class="tab-content ${isUtilActive ? 'active' : ''}">
-                    <div id="utilizacion-content" data-atc5="${atc5Util}">
+                    <div id="utilizacion-content" data-atc5="${atc5Util}" data-sustancia="${this._escapeHtml(atc5UtilNombre)}">
                         <div class="loading-spinner"></div>
                     </div>
                 </div>` : ''}
@@ -19981,6 +19984,7 @@ ${ftFechaDocsHtml}
         if (!slot || slot.dataset.loaded) return;
         slot.dataset.loaded = '1';
         const data = await this.api.getUtilizacionNodo(atc5);
+        if (data?.found === false) data.sustancia_ausente = slot.dataset.sustancia || null;
         // La financiación solo se pide si el código falta: es el dato que ayuda a leer el hueco
         // cuando no es hospitalario. Sale del índice que la ficha ya ha cargado para su resumen.
         if (data?.found === false) data.financiacion = await this._utilFinanciacionActual(nregistro);
@@ -20644,15 +20648,30 @@ ${ftFechaDocsHtml}
                     de ${esc(d.periodo || '')}. <strong>No debe leerse como ausencia de uso.</strong>`,
             } : {
                 icono: 'fa-circle-info', estado: 'Sin dato en esta fuente',
-                titulo: `${esc(atc5)} no figura en las tablas de ${esc(d.periodo || '')}`,
+                titulo: `${d.sustancia_ausente ? `${esc(d.sustancia_ausente)} (${esc(atc5)})` : esc(atc5)} no figura en las tablas de ${esc(d.periodo || '')}`,
                 texto: `${perimetro}${finActual} Que no figure no permite saber cuánto se usa.
                     <strong>No debe leerse como ausencia de uso.</strong>`,
             };
 
             // Debajo, lo que la fuente SÍ ve: su grupo, con el mismo reparto que el resto de la
             // capa, y la salida a la vista completa.
+            //
+            // Con una frase delante que diga qué es ese reparto y qué NO es. Caso real
+            // (2026-11-20): Mounjaro (tirzepatida, A10BX16) no está en las tablas de 2025, su
+            // grupo A10BX solo tiene repaglinida con DDD, y la pestaña de Mounjaro enseñaba
+            // «Repaglinida · 100 %» sin decir que tirzepatida no estaba dentro. Se leía como un
+            // cruce de datos. Y cuando el grupo es un «Otros…» de la ATC se dice con el nombre
+            // de la propia fuente: ahí los hermanos comparten casilla, no necesariamente parecido.
+            const quien = d.sustancia_ausente ? esc(d.sustancia_ausente) : esc(atc5);
+            const esOtros = /^otr[oa]s\s/i.test(String(d.grupo?.nombre || ''));
+            const avisoGrupo = d.grupo?.miembros?.length ? `
+                <p class="util-ausente-grupo">Debajo, lo que la fuente sí recoge en su grupo,
+                ${esc(d.grupo.atc)}. <strong>${quien} no forma parte de este reparto.</strong>${esOtros
+        ? ` En la clasificación ATC es un grupo «otros»: reúne principios activos que no
+                encajan en los subgrupos vecinos.`
+        : ''}</p>` : '';
             const grupoAusente = d.grupo?.miembros?.length
-                ? `<section class="util-group ${d.grupo.denominador === 'parcial' ? 'is-partial' : ''}">${this.renderUtilizacionRepartoHtml(d, d.grupo)}</section>`
+                ? `<section class="util-group ${d.grupo.denominador === 'parcial' ? 'is-partial' : ''}">${avisoGrupo}${this.renderUtilizacionRepartoHtml(d, d.grupo)}</section>`
                 : '';
             const salidaAusente = d.padre ? `
                 <div class="util-tab-actions">

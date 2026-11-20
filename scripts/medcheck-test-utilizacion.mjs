@@ -508,6 +508,32 @@ console.log('\n10 bis 0) código ausente: motivo elegido con datos y grupo a la 
   const hosp = pinta(noFinRes, 'Uso Hospitalario');
   ok('MUTANTE: el canal hospitalario manda sobre la financiación',
     /Medicamento de uso hospitalario/.test(hosp) && !/Financiación actual/.test(hosp));
+  // Caso real (2026-11-20): la pestaña de Mounjaro enseñaba «Repaglinida · 100 %» sin decir que
+  // tirzepatida no estaba dentro. El reparto del grupo se queda; lo que cambia es que se dice qué es.
+  const arbolX = {
+    meta: arbol.meta,
+    nodos: {
+      A10BX: { n: 'Otros farmacos hipoglucemiantes excluyendo insulinas', niv: 4, dhd: 2.54, env: 1658.15, p: 'A10B', den: 'parcial', sin_ddd: ['A10BX01'], h: ['A10BX02'] },
+      A10BX02: { n: 'Repaglinida', niv: 5, dhd: 2.54, env: 1639.07, p: 'A10BX' },
+      A10BX01: { n: 'Goma guar', niv: 5, dhd: null, env: 19.08, p: 'A10BX' },
+    },
+  };
+  nodoApi.getUtilizacionArbol = async () => arbolX;
+  const ausX = await nodoApi.getUtilizacionNodo('A10BX16');
+  nodoApi.getUtilizacionArbol = async () => arbol;
+  const mj = vista.renderUtilizacionHtml('A10BX16', { ...arbolX.meta, ...ausX, sustancia_ausente: 'Tirzepatida' }, 'Medicamento Sujeto A Prescripción Médica');
+  ok('el hueco se dice con el nombre, no solo con el código', /Tirzepatida \(A10BX16\) no figura/.test(mj));
+  ok('antes del reparto se dice que el fármaco no está en él',
+    /Tirzepatida no forma parte de este reparto/.test(mj) && mj.indexOf('no forma parte') < mj.indexOf('<REPARTO/>'));
+  ok('un grupo «Otros…» (por el nombre que le da la fuente) se dice como tal',
+    /es un grupo «otros»: reúne/.test(mj));
+  ok('MUTANTE: un grupo que no es «otros» no lleva esa frase, pero sí el aviso',
+    !/grupo «otros»/.test(noFin) && /J01CA08 no forma parte de este reparto/.test(noFin));
+  ok('sin nombre de sustancia, el título sigue siendo el código', /J01CA08 no figura en las tablas/.test(noFin));
+  ok('el nombre llega desde el contenedor de la ficha',
+    /data-sustancia="\$\{this\._escapeHtml\(atc5UtilNombre\)\}"/.test(app)
+    && /data\.sustancia_ausente = slot\.dataset\.sustancia/.test(app));
+
   ok('sin grupo no pinta reparto ni botón',
     !/<REPARTO\/>|data-util-vista/.test(vista.renderUtilizacionHtml('Z99ZZ99', { ...arbol.meta, ...ausSinNada }, '')));
 

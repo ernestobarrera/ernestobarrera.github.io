@@ -14504,6 +14504,15 @@ a.ipt-item:hover {
     max-width: var(--util-medida);
 }
 .util-cobertura strong { color: var(--text-primary); font-weight: 600; }
+/* Código ausente: qué es el reparto de debajo y que el fármaco de la ficha no está en él. */
+.util-ausente-grupo {
+    margin: 0 0 0.6rem;
+    font-size: var(--util-fs-cuerpo);
+    line-height: 1.5;
+    color: var(--text-secondary);
+    max-width: var(--util-medida);
+}
+.util-ausente-grupo strong { color: var(--text-primary); font-weight: 600; }
 .util-frase {
     margin: 0.5rem 0 0.7rem;
     font-size: var(--util-fs-cuerpo);
