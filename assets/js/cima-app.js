@@ -12177,17 +12177,22 @@ ${ftFechaDocsHtml}
             ? `<div class="safety-evidence">"${check.excerpt}"</div>`
             : '';
 
-        const viewSectionBtn = check.section && !check.sections
-            ? `<button class="btn-text" onclick="app.openSectionViewer('${med.nregistro}', '${check.section}', '${med.nombre}')">
-                         <i class="fas fa-book-open"></i> Ver Sección ${check.section}
-                       </button>`
+        // UN CAMINO POR APARTADO (mejora 10 de la revisión de claridad, 20/11/2026). Hasta aquí
+        // cada apartado ofrecía «Ver Sección 4.4», «4.4 en CIMA» y un «Ver información completa»
+        // que no era enlace, sin distinguir cuál se lee aquí y cuál sale de MedCheck. Y el
+        // primero abría `openSectionViewer`, que SUSTITUYE la ficha entera sin camino de vuelta.
+        // Ahora: una acción principal que despliega el apartado en esta misma tarjeta
+        // (`leerSeccionSeguridad`) y una secundaria que sale a CIMA, siempre debajo del extracto.
+        const leerAquiBtn = check.section && !check.sections
+            ? `<button type="button" class="btn btn-sm btn-secondary safety-leer-aqui" aria-expanded="false"
+                   onclick="app.leerSeccionSeguridad(this, '${med.nregistro}', '${check.section}')">Leer la ${check.section} aquí</button>`
             : '';
 
-        // LA FUENTE ÍNTEGRA, AL LADO DEL VISOR. Añadido el 19/09/2026: `getDocSeccion`
-        // limpia el HTML y con él se van las TABLAS, así que la 4.8 —una tabla de reacciones
-        // por órgano y frecuencia— llegaba aplanada a párrafo corrido. El HTML de CIMA la
-        // conserva y además deja saltar a las secciones vecinas. No sustituye al visor: son
-        // dos cosas distintas y las dos valen.
+        // LA FUENTE ÍNTEGRA, AL LADO. Añadido el 19/09/2026: `getDocSeccion` limpia el HTML y
+        // con él se van las TABLAS, así que la 4.8 —una tabla de reacciones por órgano y
+        // frecuencia— llegaba aplanada a párrafo corrido. El HTML de CIMA la conserva y además
+        // deja saltar a las secciones vecinas. No sustituye a la lectura aquí: son dos cosas
+        // distintas y las dos valen. El rótulo es el mismo que en las demás pestañas.
         const urlSeccion = this._ftUrlSeccion(med, check.section, check.match);
         // El title dice a qué palabra lleva cuando lleva a una: el médico sabe antes de
         // pulsar si va a aterrizar sobre la mención o en la cabecera del apartado.
@@ -12195,9 +12200,11 @@ ${ftFechaDocsHtml}
             ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
             : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
         const verEnCimaBtn = urlSeccion && !check.sections
-            ? `<a class="btn-text" href="${urlSeccion}" ${this._destinoCima(urlSeccion)}
-                   title="${tituloCima}">
-                   <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
+            ? `<a class="section-cima-link" href="${urlSeccion}" ${this._destinoCima(urlSeccion)}
+                   title="${tituloCima}">Ver sección en CIMA ↗</a>`
+            : '';
+        const acciones = leerAquiBtn || verEnCimaBtn
+            ? `<div class="safety-check-acciones">${leerAquiBtn}${verEnCimaBtn}</div>`
             : '';
 
         // El check del atajo pulsado se marca y `_enfocarCheckSeguridad` lo trae al viewport.
@@ -12214,12 +12221,59 @@ ${ftFechaDocsHtml}
                         <div class="safety-check-header">
                             <span class="safety-check-title">${check.label}</span>
                             <span class="badge ${statusMeta.badge} safety-status-badge">${statusMeta.label}</span>
-                            ${viewSectionBtn}${verEnCimaBtn}
                         </div>
-                        <div class="safety-check-detail ${colorClass}">${check.message}</div>
+                        ${check.message ? `<div class="safety-check-detail ${colorClass}">${check.message}</div>` : ''}
                         ${evidenceHtml}
+                        ${acciones}
                     </div>
                 </div>`;
+    }
+
+    /**
+     * «Leer la 4.x aquí»: despliega el apartado entero DENTRO de su tarjeta de Seguridad, en vez
+     * de cambiar la ficha por un visor sin vuelta atrás (`openSectionViewer`). Mientras está
+     * abierto, el extracto se oculta (el texto completo lo contiene); al cerrarlo vuelve.
+     * Se pide una vez por tarjeta. Si CIMA no da el texto, se dice y se manda a CIMA: un fallo
+     * de red nunca se presenta como apartado vacío.
+     */
+    async leerSeccionSeguridad(btn, nregistro, seccion) {
+        const item = btn?.closest?.('.safety-check-item');
+        if (!item) return;
+        const extracto = item.querySelector('.safety-evidence');
+        let caja = item.querySelector('.safety-seccion-completa');
+        const abrir = btn.getAttribute('aria-expanded') !== 'true';
+        const pintar = abierto => {
+            btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+            btn.textContent = abierto ? `Ocultar la ${seccion}` : `Leer la ${seccion} aquí`;
+            if (caja) caja.hidden = !abierto;
+            if (extracto) extracto.hidden = abierto && !!caja?.dataset.cargada;
+        };
+        if (caja) {
+            pintar(abrir);
+            // Al cerrar un apartado largo, el botón puede haber quedado muy arriba: se trae a la vista.
+            if (!abrir) btn.scrollIntoView?.({ block: 'nearest' });
+            return;
+        }
+        caja = document.createElement('div');
+        caja.className = 'safety-seccion-completa';
+        caja.innerHTML = `<p class="text-muted text-sm"><span class="loading-spinner-sm"></span> Cargando la sección ${seccion} de la ficha…</p>`;
+        item.querySelector('.safety-check-acciones')?.before(caja);
+        btn.disabled = true;
+        pintar(true);
+        let content = null;
+        try { content = await this.api.getDocSeccion(nregistro, seccion); } catch (_) { content = null; }
+        btn.disabled = false;
+        // La ficha pudo cambiar de medicamento mientras tanto: la tarjeta ya no está en el DOM.
+        if (!item.isConnected) return;
+        if (!content || content.length < 50) {
+            caja.innerHTML = `<p class="text-muted text-sm">No se pudo leer aquí la sección ${seccion}. Eso no significa que esté vacía: ábrela en CIMA.</p>`;
+            pintar(true);
+            return;
+        }
+        caja.innerHTML = `<div class="section-text">${String(content).normalize('NFC')}</div>`;
+        caja.dataset.cargada = '1';
+        this._compactarTextoFT(caja.firstElementChild);
+        pintar(true);
     }
 
     renderModalSafetyTab(med, safetyReport) {

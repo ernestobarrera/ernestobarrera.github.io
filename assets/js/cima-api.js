@@ -2964,7 +2964,9 @@ class CimaAPI {
                 label: coreSection.label,
                 section: coreSection.section,
                 status: 'info', // Estado base informativo
-                message: 'Ver información completa',
+                // Hasta el 20/11/2026 decía «Ver información completa»: parecía un enlace y no lo
+                // era. Leer el apartado entero es el botón de la tarjeta (mejora 10 de claridad).
+                message: '',
                 excerpt: preview,
                 isCore: true
             });

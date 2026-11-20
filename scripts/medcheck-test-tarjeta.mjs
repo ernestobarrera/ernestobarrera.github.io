@@ -639,13 +639,47 @@ console.log('\n— La señalética de los checks de contexto —');
         'los checks ofrecen además la sección en CIMA, y le pasan la frase que casó');
     // Un solo sitio desde el 15/11/2026: `_renderSafetyCheckItem`, para las secciones clave y
     // para los atajos. El Safety Checker suelto se retiró con el contexto global.
-    ok((app2.match(/\$\{viewSectionBtn\}\$\{verEnCimaBtn\}/g) || []).length === 1,
+    ok((app2.match(/\$\{leerAquiBtn\}\$\{verEnCimaBtn\}/g) || []).length === 1,
         'en el único sitio donde se pintan los checks (secciones clave y atajos)');
     ok(/id="4\.8"|encodeURIComponent\(seccion\)/.test(app2),
         'el ancla se compone con el identificador de la fuente');
 
-    // Y el visor interno se queda: son dos cosas distintas.
-    ok(/openSectionViewer\(/.test(app2), 'el visor interno NO se retira');
+    // Y la lectura dentro de MedCheck se queda: son dos cosas distintas. Desde el 20/11/2026
+    // (mejora 10) se lee en la propia tarjeta, no en un visor que sustituía la ficha.
+    ok(/leerSeccionSeguridad\(btn, nregistro, seccion\)[\s\S]{0,2000}this\.api\.getDocSeccion\(nregistro, seccion\)/.test(app2),
+        'la lectura interna NO se retira');
+}
+
+console.log('\n— Seguridad: un camino por apartado (mejora 10, 20/11/2026) —');
+{
+    // Antes: «Ver Sección 4.4» (visor que sustituía la ficha, sin vuelta), «4.4 en CIMA» y un
+    // «Ver información completa» que no era enlace. Ahora una acción principal y una secundaria,
+    // las dos debajo del extracto, y el mismo rótulo de CIMA que el resto de la ficha.
+    const med = { nregistro: '12345', nombre: 'X 20 mg', docs: [{ tipo: 1, secc: true, urlHtml: 'https://cima.aemps.es/cima/dochtml/ft/12345/FT_12345.html' }] };
+    const core = { context: null, label: 'Advertencias y precauciones especiales', section: '4.4', status: 'info', message: '', excerpt: 'Hipotensión sintomática…', isCore: true };
+    const h = app._renderSafetyCheckItem(med, core);
+    ok(/<button type="button" class="btn btn-sm btn-secondary safety-leer-aqui" aria-expanded="false"/.test(h) && h.includes('>Leer la 4.4 aquí</button>'),
+        'acción principal: «Leer la 4.4 aquí», un botón');
+    ok(h.includes("app.leerSeccionSeguridad(this, '12345', '4.4')") && !h.includes('openSectionViewer'),
+        'que lee en la propia tarjeta, no en el visor que sustituía la ficha');
+    ok(/<a class="section-cima-link" href="https:\/\/cima[^"]+#4\.4"[^>]*>Ver sección en CIMA ↗<\/a>/.test(h),
+        'secundaria: «Ver sección en CIMA ↗», el mismo rótulo que en las demás pestañas');
+    ok((h.match(/<a |<button /g) || []).length === 2, 'dos acciones y solo dos');
+    const iExtracto = h.indexOf('safety-evidence'), iAcc = h.indexOf('safety-check-acciones'), iCab = h.indexOf('safety-check-header');
+    ok(iExtracto > iCab && iAcc > iExtracto, 'siempre en el mismo sitio: debajo del extracto, no en la cabecera');
+    ok(!h.includes('Ver información completa') && !h.includes('safety-check-detail'), 'sin mensaje vacío ni «Ver información completa»');
+    ok(!h.includes('Ver Sección') && !h.includes('4.4 en CIMA'), 'no queda ninguno de los dos rótulos antiguos');
+    const api = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8').replace(/^\s*\/\/.*$/gm, ' ');
+    ok(!/'Ver información completa'/.test(api), 'la API ya no emite «Ver información completa»');
+    // Con mensaje (contextos sin DOMParser), se sigue pintando.
+    const ctx = app._renderSafetyCheckItem(med, { ...core, context: 'renal', status: 'review', message: 'Mencionado en la ficha — revisar la sección oficial' });
+    ok(ctx.includes('safety-check-detail') && ctx.includes('Mencionado en la ficha'), 'un mensaje con texto se sigue mostrando');
+    // Sin ficha seccionada no hay enlace a CIMA, pero sí lectura aquí.
+    const sinFt = app._renderSafetyCheckItem({ nregistro: '9', nombre: 'Y', docs: [] }, core);
+    ok(sinFt.includes('Leer la 4.4 aquí') && !sinFt.includes('section-cima-link'), 'sin ficha seccionada: solo «Leer aquí», nunca un enlace a ninguna parte');
+    // Las menciones por pasaje (`sections`) tienen su propio enlace por apartado: no se duplican.
+    const conPasajes = app._renderSafetyCheckItem(med, { ...core, sections: [] , status: 'review'});
+    ok(!conPasajes.includes('safety-check-acciones'), 'con pasajes, sin fila de acciones duplicada');
 }
 
 console.log('\n— Sin contexto de paciente: atajos sin estado en la pestaña Seguridad (15/11/2026) —');
