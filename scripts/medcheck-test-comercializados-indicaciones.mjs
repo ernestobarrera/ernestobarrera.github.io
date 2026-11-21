@@ -175,5 +175,111 @@ ok('con el filtro puesto, se ofrece quitarlo',
 ok('sin el filtro, no se dice «comercializados»',
     /ni comercializado ni retirado/.test(appSrc));
 
+// --- 6. El selector se pliega cuando hay lista (mejora 4 de la revisión de claridad, 21/11) -------
+// Vive en este banco porque es la misma vista y el mismo relanzador: la casilla «Comercializado»
+// repinta la lista y NO debe cerrar un selector que el usuario acaba de abrir.
+console.log('\n— El selector se pliega cuando hay lista —');
+function domSelector({ coarse = false } = {}) {
+    const clases = (ini = []) => {
+        const s = new Set(ini);
+        return { has: (c) => s.has(c), toggle: (c, on) => { if (on) s.add(c); else s.delete(c); return on; } };
+    };
+    const etiqueta = { textContent: '' };
+    const input = { enfocado: false, seleccionado: false, focus() { this.enfocado = true; }, select() { this.seleccionado = true; } };
+    const layout = { classList: clases() };
+    const resumen = { classList: clases(['hidden']), querySelector: (s) => (s === '.indication-selector-label' ? etiqueta : null) };
+    sandbox.document.querySelector = (s) => (s === '.indications-two-col-layout' ? layout : null);
+    sandbox.document.getElementById = (id) => ({ 'indication-selector-summary': resumen, 'indication-input': input }[id] || null);
+    sandbox.window.matchMedia = (q) => ({ matches: coarse && /coarse/.test(q) });
+    return { layout, resumen, etiqueta, input };
+}
+const plegado = (d) => d.layout.classList.has('is-folded') && !d.resumen.classList.has('hidden');
+const abierto = (d) => !d.layout.classList.has('is-folded') && d.resumen.classList.has('hidden');
+{
+    const d = domSelector();
+    const a = Object.create(MedCheckApp.prototype);
+    Object.assign(a, { lastATCCode: null, lastIndicationQuery: 'Hipertensión <b>' });
+    a._plegarSelectorIndicacion(true);
+    ok('plegar oculta el selector y enseña la línea', plegado(d));
+    ok('la línea dice lo elegido, como texto y no como HTML', d.etiqueta.textContent === 'Hipertensión <b>', d.etiqueta.textContent);
+    a._plegarSelectorIndicacion(false);
+    ok('desplegar hace lo contrario', abierto(d));
+    Object.assign(a, { lastATCCode: 'C09A', lastATCLabel: 'IECA, monofármacos' });
+    ok('por el árbol ATC, la línea dice código y nombre', a._etiquetaSelectorIndicacion() === 'C09A · IECA, monofármacos');
+    a.lastATCLabel = '';
+    ok('y sin nombre, solo el código', a._etiquetaSelectorIndicacion() === 'C09A');
+}
+{
+    const d = domSelector();
+    const a = Object.create(MedCheckApp.prototype);
+    a._plegarSelectorIndicacion(true);
+    a._abrirSelectorIndicacion();
+    ok('«Cambiar indicación» abre el selector y lo recuerda', abierto(d) && a._selectorIndAbierto === true);
+    ok('en escritorio, foco en la caja con el texto seleccionado', d.input.enfocado && d.input.seleccionado);
+    const t = domSelector({ coarse: true });
+    a._abrirSelectorIndicacion();
+    ok('en pantalla táctil, sin foco (el teclado taparía atajos y categorías)', !t.input.enfocado);
+    const g = domSelector();
+    a._abrirSelectorIndicacion({ foco: false });
+    ok('la guía lo abre sin foco', abierto(g) && !g.input.enfocado);
+}
+{
+    // Se EJECUTA el render de la lista hasta justo después del pliegue: `initGroupingState` corta.
+    const PARA = new Error('alto');
+    const render = (resultados, abiertoAntes) => {
+        const d = domSelector();
+        const a = Object.create(MedCheckApp.prototype);
+        const cont = { innerHTML: '' };
+        const getEl = sandbox.document.getElementById;
+        sandbox.document.getElementById = (id) => (id === 'indication-results' ? cont : getEl(id));
+        Object.assign(a, {
+            lastATCCode: null, lastIndicationQuery: 'Diabetes', _selectorIndAbierto: abiertoAntes, groupingState: null,
+            _indicacionFallidos: () => [], initGroupingState: () => { throw PARA; },
+        });
+        if (!abiertoAntes) a._plegarSelectorIndicacion(false);
+        else a._abrirSelectorIndicacion({ foco: false });
+        try { a.displayGroupedIndicationResults({ resultados }, 'Diabetes'); } catch (e) { if (e !== PARA) throw e; }
+        return d;
+    };
+    ok('con lista, se pliega', plegado(render([{ nregistro: '1' }], false)));
+    ok('si el usuario lo abrió, repintar la lista (una faceta) no se lo cierra', abierto(render([{ nregistro: '1' }], true)));
+    const vacio = render([], false);
+    ok('sin resultados se queda abierto: lo siguiente es elegir otra cosa', abierto(vacio));
+}
+{
+    // Elegir otra cosa borra la marca; relanzar la misma (la casilla «Comercializado») no.
+    const a = Object.create(MedCheckApp.prototype);
+    Object.assign(a, { _indAiAlCambiarUniverso() {}, _indAiUniverso() {}, _resetResultFilters() {} });
+    a._selectorIndAbierto = true;
+    a._enterIndicationUniverse({ atcCode: null, query: 'asma' });
+    ok('un universo nuevo vuelve a plegar con la lista nueva', a._selectorIndAbierto === false);
+    a._selectorIndAbierto = true;
+    a._enterIndicationUniverse({ atcCode: null, query: 'asma', preserveFilters: true });
+    ok('relanzar la misma búsqueda conserva el selector abierto', a._selectorIndAbierto === true);
+}
+{
+    // Bajar por el árbol ATC despliega (no hay lista y la línea rotularía el grupo que se dejó).
+    const d = domSelector();
+    const a = Object.create(MedCheckApp.prototype);
+    const PARA = new Error('alto');
+    Object.assign(a, { _resetResultFilters() {}, findStaticATCCategory: () => { throw PARA; } });
+    a._plegarSelectorIndicacion(true);
+    try { await a.showATCSubcategories('C09'); } catch (e) { if (e !== PARA) throw e; }
+    ok('al bajar por el árbol ATC el selector vuelve a verse', abierto(d));
+}
+{
+    const miga = Object.create(MedCheckApp.prototype).renderResultsBreadcrumb([], '');
+    ok('la casa de la miga de pan abre el selector', /onclick="app\._abrirSelectorIndicacion\(\)"/.test(miga), miga.slice(0, 160));
+    ok('la casa del árbol ATC pinta con el selector abierto',
+        /onclick="app\.renderIndications\(\{ abierto: true \}\)"/.test(appSrc)
+        && /renderIndications\(\{ abierto = false \} = \{\}\) \{\s*if \(abierto\) this\._selectorIndAbierto = true;/.test(appSrc));
+    const pasos = ['#indication-input', '.indications-categories-panel', '#open-indication-catalog']
+        .filter((t) => new RegExp(`target: '${t.replace(/[.#]/g, '\\$&')}',\\s*action: \\{ type: 'indicationSelector' \\}`).test(appSrc));
+    ok('los tres pasos de la guía que señalan el selector lo abren antes', pasos.length === 3, pasos.join(', '));
+    const accion = bloqueDesde(appSrc, 'async _runGuideStepAction(step) {');
+    ok('y la acción lo abre sin foco',
+        /type === 'indicationSelector'[\s\S]{0,300}_abrirSelectorIndicacion\(\{ foco: false \}\)/.test(accion));
+}
+
 console.log(fallos ? `\n${fallos} fallo(s)` : '\nTodo en verde');
 process.exit(fallos ? 1 : 0);

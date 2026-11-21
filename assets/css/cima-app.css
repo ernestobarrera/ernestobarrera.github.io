@@ -5942,6 +5942,57 @@ div.section-text th .ft-tras-hueco {
     margin-bottom: var(--space-md);
 }
 
+/* Mejora 4: con lista en pantalla, el selector se recoge en una línea («Hipertensión · Cambiar»). */
+.indications-two-col-layout.is-folded {
+    display: none;
+}
+
+.indication-selector-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+    padding: 0.45rem 0.6rem 0.45rem var(--space-md);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    color: var(--primary);
+}
+
+.indication-selector-summary.hidden {
+    display: none;
+}
+
+.indication-selector-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.indication-selector-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    background: none;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.indication-selector-change:hover,
+.indication-selector-change:focus-visible {
+    border-color: var(--primary);
+    color: var(--text-primary);
+}
+
 .indications-search-panel {
     flex: 1;
     min-width: 280px;

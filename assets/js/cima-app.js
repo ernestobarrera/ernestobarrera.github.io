@@ -3261,7 +3261,13 @@ class MedCheckApp {
     // INDICATION SEARCH VIEW
     // ============================================
 
-    renderIndications() {
+    /**
+     * @param {Object} [o]
+     * @param {boolean} [o.abierto] - pintar con el selector abierto aunque se restaure una lista
+     *   (la casa del árbol ATC: quien la pulsa viene a elegir, no a ver la lista anterior).
+     */
+    renderIndications({ abierto = false } = {}) {
+        if (abierto) this._selectorIndAbierto = true;
         // Preload ATC cache in background for autocomplete
         // This ensures searchATCByName works when user starts typing
         this.api.getATCCodes().catch(e => console.warn('ATC cache preload failed:', e));
@@ -3292,7 +3298,17 @@ class MedCheckApp {
             `<button class="indication-chip" data-indication="${term}">${term}</button>`
         ).join('');
 
+        // Mejora 4 de la revisión de claridad: con lista en pantalla, el selector (caja, 22 atajos,
+        // catálogo y 14 categorías) se pliega en esta línea, para que la lista empiece arriba.
+        // Ver `_plegarSelectorIndicacion`.
         this.content.innerHTML = `
+            <div id="indication-selector-summary" class="indication-selector-summary hidden">
+                <i class="fas fa-stethoscope" aria-hidden="true"></i>
+                <span class="indication-selector-label"></span>
+                <button type="button" id="indication-selector-change" class="indication-selector-change">
+                    <i class="fas fa-pen" aria-hidden="true"></i> Cambiar indicación
+                </button>
+            </div>
             <div class="indications-two-col-layout">
                 <div class="indications-search-panel">
                     <h3 class="panel-title">
@@ -3354,6 +3370,9 @@ class MedCheckApp {
         document.getElementById('open-indication-catalog')
             ?.addEventListener('click', () => this.openIndicationCatalog());
 
+        document.getElementById('indication-selector-change')
+            ?.addEventListener('click', () => this._abrirSelectorIndicacion());
+
         // Category card click handlers - clear search state when using ATC navigation
         document.querySelectorAll('.atc-category-card').forEach(card => {
             card.addEventListener('click', () => {
@@ -3373,6 +3392,55 @@ class MedCheckApp {
         if (this.lastIndicationResults && this.lastIndicationResults.resultados) {
             this.displayIndicationResults(this.lastIndicationResults, this.lastIndicationQuery);
         }
+    }
+
+    /**
+     * Pliega o despliega el selector de Indicaciones (mejora 4 de la revisión de claridad).
+     *
+     * Medido el 21/11 con «Hipertensión»: con el selector abierto, la primera tarjeta empezaba en
+     * el píxel 1.103 en PC y en el 2.747 en móvil, donde las dos columnas se apilan. Una vez
+     * elegida la indicación, el selector ya se ha usado: se recoge en una línea que dice qué se
+     * eligió y deja cambiarlo.
+     *
+     * Lo pliega `displayGroupedIndicationResults` cada vez que pinta una lista, SALVO que el
+     * usuario lo haya abierto (`_selectorIndAbierto`): las facetas vuelven a pintar la lista y no
+     * deben cerrarle lo que acaba de abrir. La marca se borra al entrar en un universo nuevo
+     * (`_enterIndicationUniverse` sin `preserveFilters`), que es elegir otra cosa.
+     */
+    _plegarSelectorIndicacion(plegado) {
+        const layout = document.querySelector('.indications-two-col-layout');
+        const resumen = document.getElementById('indication-selector-summary');
+        if (!layout || !resumen) return;
+        layout.classList.toggle('is-folded', !!plegado);
+        resumen.classList.toggle('hidden', !plegado);
+        if (plegado) {
+            const etiqueta = resumen.querySelector('.indication-selector-label');
+            // textContent, no innerHTML: la etiqueta puede venir de lo que se tecleó.
+            if (etiqueta) etiqueta.textContent = this._etiquetaSelectorIndicacion();
+        }
+    }
+
+    /** Lo elegido, como se rotula en la línea plegada: el término o «código · nombre» del ATC. */
+    _etiquetaSelectorIndicacion() {
+        if (this.lastATCCode) {
+            return this.lastATCLabel ? `${this.lastATCCode} · ${this.lastATCLabel}` : this.lastATCCode;
+        }
+        return this.lastIndicationQuery || '';
+    }
+
+    /**
+     * «Cambiar indicación» y la casa de la miga de pan. En escritorio pone el foco en la caja con
+     * el texto seleccionado; en pantallas táctiles no, porque el teclado taparía los atajos y las
+     * categorías, que es a menudo lo que se viene a usar.
+     */
+    _abrirSelectorIndicacion({ foco = true } = {}) {
+        this._selectorIndAbierto = true;
+        this._plegarSelectorIndicacion(false);
+        if (!foco) return;
+        const input = document.getElementById('indication-input');
+        const tactil = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+        if (input && !tactil) { input.focus(); input.select?.(); }
+        else input?.scrollIntoView?.({ block: 'nearest' });
     }
 
     /**
@@ -3729,6 +3797,9 @@ class MedCheckApp {
     async showATCSubcategories(atcCode, breadcrumb = []) {
         const resultsContainer = document.getElementById('indication-results');
         this._resetResultFilters(); // nueva navegación ATC = filtros facetados limpios
+        // Bajar por el árbol todavía es elegir: sin lista, el selector se ve como antes, y la línea
+        // plegada no se queda rotulando el grupo de la lista que se acaba de dejar (mejora 4).
+        this._plegarSelectorIndicacion(false);
 
         // Check if we have static subcategories for this code (search recursively)
         const staticMatch = this.findStaticATCCategory(atcCode);
@@ -3937,7 +4008,7 @@ class MedCheckApp {
         }).join('<i class="fas fa-chevron-right breadcrumb-sep"></i>');
 
         return `
-            <button class="btn-back" onclick="app.renderIndications()">
+            <button class="btn-back" onclick="app.renderIndications({ abierto: true })" title="Volver al inicio de Indicaciones">
                 <i class="fas fa-home"></i>
             </button>
             <div class="atc-breadcrumb">
@@ -3951,8 +4022,9 @@ class MedCheckApp {
      * Shows: Home > B > B03 > B03A (all clickable except current)
      */
     renderResultsBreadcrumb(breadcrumb, matchInfoHtml) {
-        // Start with home button
-        let items = `<button class="breadcrumb-link" onclick="app.renderIndications()">
+        // La casa abre el selector. Antes llamaba a `renderIndications()`, que repinta todo y
+        // restaura la misma lista: con el selector plegado no se habría visto ningún cambio.
+        let items = `<button class="breadcrumb-link" onclick="app._abrirSelectorIndicacion()" title="Cambiar indicación" aria-label="Cambiar indicación">
             <i class="fas fa-home"></i>
         </button>`;
 
@@ -4012,7 +4084,11 @@ class MedCheckApp {
         // clave, así que serializar el label daba `noMatch` al abrir el enlace.
         this.lastIndicationQuery = query || label || '';
         this._indAiAlCambiarUniverso(this._indAiUniverso({ atcCode, query: this.lastIndicationQuery }));
-        if (!preserveFilters) this._resetResultFilters();
+        if (!preserveFilters) {
+            this._resetResultFilters();
+            // Elegir otra cosa vuelve a plegar el selector con la lista nueva (mejora 4).
+            this._selectorIndAbierto = false;
+        }
         this.groupingState?.collapsedGroups?.clear?.();
         this.groupingState?.expandedGroups?.clear?.();
     }
@@ -17293,8 +17369,13 @@ ${ftFechaDocsHtml}
                     <h3>Sin resultados</h3>
                 </div>
             `;
+            // Sin lista no hay nada que despejar, y lo siguiente es elegir otra cosa.
+            this._plegarSelectorIndicacion(false);
             return;
         }
+
+        // Con lista, el selector ya se usó: se recoge en una línea (mejora 4).
+        if (!this._selectorIndAbierto) this._plegarSelectorIndicacion(true);
 
         // Initialize grouping state if needed
         if (!this.groupingState) {
@@ -23076,6 +23157,7 @@ ${ftFechaDocsHtml}
                     },
                     {
                         target: '#indication-input',
+                        action: { type: 'indicationSelector' },
                         title: 'Escribir la indicación',
                         icon: 'fa-keyboard',
                         body: `
@@ -23085,6 +23167,7 @@ ${ftFechaDocsHtml}
                     },
                     {
                         target: '.indications-categories-panel',
+                        action: { type: 'indicationSelector' },
                         title: 'O explorar por categoría',
                         icon: 'fa-sitemap',
                         body: `
@@ -23093,6 +23176,7 @@ ${ftFechaDocsHtml}
                     },
                     {
                         target: '#open-indication-catalog',
+                        action: { type: 'indicationSelector' },
                         title: 'Ver catálogo completo',
                         icon: 'fa-book-open',
                         body: `
@@ -23455,6 +23539,15 @@ ${ftFechaDocsHtml}
             }
             details.open = true;
             if (details.dataset.estado !== 'listo') await this._cargarFT51(this.currentMed, details);
+            return;
+        }
+
+        // El selector de Indicaciones se pliega cuando hay lista (mejora 4): los pasos que señalan
+        // la caja, las categorías o el catálogo lo abren antes, sin foco (no salta el teclado).
+        if (action.type === 'indicationSelector') {
+            await this._runGuideStepAction({ action: { type: 'view', view: 'indications' } });
+            this._abrirSelectorIndicacion({ foco: false });
+            await this._guideWait(80);
             return;
         }
 

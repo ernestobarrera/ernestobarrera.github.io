@@ -57,7 +57,7 @@ function bloqueDesde(src, firma) {
 function sandboxBase(extra = {}) {
     const sandbox = {
         window: {},
-        document: { addEventListener() {}, getElementById: () => null, querySelectorAll: () => [] },
+        document: { addEventListener() {}, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [] },
         console: { log() {}, warn() {}, error() {} },
         localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
         fetch: () => Promise.reject(new Error('sin red en tests')),
