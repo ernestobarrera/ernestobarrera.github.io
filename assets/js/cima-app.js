@@ -10724,10 +10724,16 @@ class MedCheckApp {
 
                 <div class="modal-tabs">
                     <button class="modal-tab ${isInfoActive ? 'active' : ''}" data-tab="info">Datos del medicamento</button>
-                    <button class="modal-tab ${isIndicationsActive ? 'active' : ''}" data-tab="indications">Indicaciones (4.1)</button>
-                    <button class="modal-tab ${isPosologyActive ? 'active' : ''}" data-tab="posology">Posología</button>
-                    <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions">Interacciones</button>
-                    <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse">Reacciones</button>
+                    ${/*
+                        El número de sección va en el TÍTULO, no en el rótulo (Ernesto, 21/11/2026):
+                        «Indicaciones (4.1)» junto a «Posología» sin número rompía la serie y
+                        confundía. El «(4.1)» se puso el 19/11 para no confundirla con la pestaña
+                        «Indicaciones» del menú; dentro de la ficha el contexto ya las distingue.
+                    */''}
+                    <button class="modal-tab ${isIndicationsActive ? 'active' : ''}" data-tab="indications" title="Ficha técnica, sección 4.1: indicaciones terapéuticas autorizadas">Indicaciones</button>
+                    <button class="modal-tab ${isPosologyActive ? 'active' : ''}" data-tab="posology" title="Ficha técnica, sección 4.2: posología y forma de administración">Posología</button>
+                    <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions" title="Ficha técnica, sección 4.5: interacción con otros medicamentos">Interacciones</button>
+                    <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse" title="Ficha técnica, sección 4.8: reacciones adversas">Reacciones</button>
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
                     <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Índice de la ficha${ftRecentDot}</button>
                     <button class="modal-tab ${isDocumentacionActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="documentacion" title="IPT, materiales informativos de la AEMPS, informe de evaluación y plan de riesgos">Otros documentos${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}</button>

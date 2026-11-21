@@ -234,7 +234,11 @@ console.log('\n7d) una palabra, un significado (mejora 8 de la revisión de clar
 
     const pestana = (id) => (APP.match(new RegExp(`data-tab="${id}"[^>]*>(?:<i [^>]*></i> )?([^<$]+)`)) || [])[1]?.trim();
     ok('ficha: «Datos del medicamento»', pestana('info') === 'Datos del medicamento', pestana('info'));
-    ok('ficha: «Indicaciones (4.1)»', pestana('indications') === 'Indicaciones (4.1)', pestana('indications'));
+    // 21/11: el número de sección pasó al título, como en Posología, Interacciones y Reacciones.
+    ok('ficha: «Indicaciones», sin número en el rótulo', pestana('indications') === 'Indicaciones', pestana('indications'));
+    ok('ficha: las cuatro pestañas de apartado entero dicen su sección en el título',
+        [['indications', '4.1'], ['posology', '4.2'], ['interactions', '4.5'], ['adverse', '4.8']]
+            .every(([id, s]) => new RegExp(`data-tab="${id}" title="Ficha técnica, sección ${s.replace('.', '\\.')}:`).test(APP)));
     ok('ficha: «Farmacogenómica»', pestana('pgx') === 'Farmacogenómica', pestana('pgx'));
     ok('ficha: «Utilización de este fármaco»', pestana('utilizacion') === 'Utilización de este fármaco', pestana('utilizacion'));
     ok('«Alertas» queda para las notas de seguridad de la ficha', pestana('alerts') === 'Alertas AEMPS', pestana('alerts'));
