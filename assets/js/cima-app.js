@@ -2878,6 +2878,10 @@ class MedCheckApp {
             this.filterState.recetaOnly = e.target.checked;
             applyFacet();
         });
+        document.getElementById('sin-receta-filter')?.addEventListener('change', (e) => {
+            this.filterState.sinRecetaOnly = e.target.checked;
+            applyFacet();
+        });
         document.getElementById('biosimilar-filter')?.addEventListener('change', (e) => {
             this.filterState.biosimilarOnly = e.target.checked;
             applyFacet();
@@ -15890,7 +15894,9 @@ ${ftFechaDocsHtml}
     //                Marcarlos a la vez con AND daría siempre cero (ningún medicamento es
     //                a la vez EFG y biosimilar). Esto describe cómo se combinan los
     //                valores; NO afirma nada sobre coste, equivalencia ni sustituibilidad.
-    //   receta       dimensión propia, AND con el resto.
+    //   receta       con | sin → UNA dimensión, dos valores, OR entre ellos (como la
+    //                financiación). «Sin receta» exige `receta === false`: lo que no trae el
+    //                dato no se cuenta en ningún lado. AND con el resto.
     //   form/lab     selección única.
     //   dose/route/pa  multiselección, OR interno.
     //
@@ -15949,6 +15955,7 @@ ${ftFechaDocsHtml}
             generic: !!fs.efgOnly,
             biosimilar: !!fs.biosimilarOnly,
             receta: !!fs.recetaOnly,
+            sinReceta: !!fs.sinRecetaOnly,
             form: fs.form || null,
             lab: fs.lab || null,
             doses: new Set(fs.doses || []),
@@ -16046,7 +16053,9 @@ ${ftFechaDocsHtml}
                     || (snap.biosimilar && med.biosimilar === true);
             }
             case 'receta':
-                return snap.receta ? (med) => med.receta === true : null;
+                if (!snap.receta && !snap.sinReceta) return null;
+                return (med) => (snap.receta && med.receta === true)
+                    || (snap.sinReceta && med.receta === false);
             case 'form':
                 return snap.form ? (med) => (med.formaFarmaceutica?.nombre || 'Sin forma') === snap.form : null;
             case 'lab':
@@ -16163,6 +16172,7 @@ ${ftFechaDocsHtml}
         return (snap.generic ? 1 : 0)
             + (snap.biosimilar ? 1 : 0)
             + (snap.receta ? 1 : 0)
+            + (snap.sinReceta ? 1 : 0)
             + (snap.form ? 1 : 0)
             + (snap.lab ? 1 : 0)
             + snap.doses.size
@@ -16222,7 +16232,7 @@ ${ftFechaDocsHtml}
     _emptyFilterState() {
         // `mostrarH`/`mostrarDH` en `true`: el estado limpio MUESTRA todo. Si el vacío escondiera
         // algo, "Limpiar filtros" dejaría una exclusión puesta sin que nadie la hubiera pedido.
-        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false, financiacion: new Set(), mostrarH: true, mostrarDH: true };
+        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, sinRecetaOnly: false, biosimilarOnly: false, paralelas: false, financiacion: new Set(), mostrarH: true, mostrarDH: true };
     }
 
     /**
@@ -16347,6 +16357,7 @@ ${ftFechaDocsHtml}
         const efgCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'productType', m => m.generico === true) : 0;
         const biosimilarCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'productType', m => m.biosimilar === true) : 0;
         const recetaCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'receta', m => m.receta === true) : 0;
+        const sinRecetaCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'receta', m => m.receta === false) : 0;
         // La casilla solo se pinta si el índice es utilizable, así que este conteo nunca se
         // muestra sobre un índice ausente (que daría 0 y parecería "no hay financiados").
         const financiadoCount = this._financingIndexUsable
@@ -16441,7 +16452,7 @@ ${ftFechaDocsHtml}
         // y por eso el botón dice cuántos hay puestos dentro. Los principios activos quedan fuera
         // del panel (desambiguan la consulta) y no cuentan en ese número.
         const filtrosEnPanel = activeFilters - snap.pas.size;
-        const panelAbierto = !!this._filtrosAbiertos;
+        const panelAbierto = this._panelFiltrosAbierto();
 
         return `
             <div class="results-control-bar">
@@ -16526,7 +16537,17 @@ ${ftFechaDocsHtml}
                         </label>` : ''}
                         ${showEFG && (recetaCount > 0 || snap.receta) ? `<label class="search-option" title="Solo con receta">
                             <input type="checkbox" id="receta-filter" ${snap.receta ? 'checked' : ''}>
-                            <span>Receta <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${recetaCount}</span></span>
+                            <span>Con receta <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${recetaCount}</span></span>
+                        </label>` : ''}
+                        ${/*
+                            El contrario de «Con receta», en la misma dimensión y con OR (petición de
+                            Ernesto, 21/11/2026: «a veces me interesa buscar por sin receta»). Es el
+                            patrón de la financiación: dos valores con su recuento, no una casilla de
+                            tres estados, que no se lee a simple vista.
+                        */''}
+                        ${showEFG && (sinRecetaCount > 0 || snap.sinReceta) ? `<label class="search-option" title="Solo sin receta (de venta libre en farmacia)">
+                            <input type="checkbox" id="sin-receta-filter" ${snap.sinReceta ? 'checked' : ''}>
+                            <span>Sin receta <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${sinRecetaCount}</span></span>
                         </label>` : ''}
                         ${showEFG && (biosimilarCount > 0 || snap.biosimilar) ? `<label class="search-option" title="Solo biosimilares">
                             <input type="checkbox" id="biosimilar-filter" ${snap.biosimilar ? 'checked' : ''}>
@@ -16610,8 +16631,29 @@ ${ftFechaDocsHtml}
      * marcar una casilla dentro del panel, este se cerraría solo. Dura lo que la pestaña; al
      * volver a entrar se empieza plegado, que es lo que pide quien busca un medicamento.
      */
-    _toggleFiltrosPanel(abrir = !this._filtrosAbiertos) {
+    /**
+     * ¿Se pinta abierto el panel «Filtros»? (petición de Ernesto, 21/11/2026)
+     *
+     * Primero manda lo que el usuario dejó la última vez en ESTE dispositivo: quien lo abre
+     * porque filtra a menudo no tiene que volver a abrirlo en cada búsqueda. Sin elección
+     * guardada, se abre solo en pantallas holgadas (ancho ≥ 1280 y alto ≥ 800 útiles), donde
+     * cabe sin empujar la lista fuera de la vista; en portátiles pequeños y móviles empieza
+     * plegado, que es lo que justificó la mejora 3. Es una comodidad, no un filtro: abierto o
+     * cerrado, la lista es la misma.
+     */
+    _panelFiltrosAbierto() {
+        if (typeof this._filtrosAbiertos === 'boolean') return this._filtrosAbiertos;
+        try {
+            const guardado = localStorage.getItem('medcheck:filtros-abiertos');
+            if (guardado === '1' || guardado === '0') return (this._filtrosAbiertos = guardado === '1');
+        } catch { /* sin almacenamiento: se decide por la pantalla */ }
+        const holgada = typeof window !== 'undefined' && window.innerWidth >= 1280 && window.innerHeight >= 800;
+        return (this._filtrosAbiertos = !!holgada && !this._esMovil());
+    }
+
+    _toggleFiltrosPanel(abrir = !this._panelFiltrosAbierto()) {
         this._filtrosAbiertos = !!abrir;
+        try { localStorage.setItem('medcheck:filtros-abiertos', this._filtrosAbiertos ? '1' : '0'); } catch { /* se pierde la memoria, nada más */ }
         const panel = document.getElementById('filtros-panel');
         if (panel) panel.hidden = !this._filtrosAbiertos;
         document.getElementById('filtros-toggle')?.setAttribute('aria-expanded', String(this._filtrosAbiertos));
@@ -17375,6 +17417,10 @@ ${ftFechaDocsHtml}
             this.filterState.recetaOnly = e.target.checked;
             this._applyIndicationFacet(data, searchQuery);
         });
+        document.getElementById('sin-receta-filter')?.addEventListener('change', (e) => {
+            this.filterState.sinRecetaOnly = e.target.checked;
+            this._applyIndicationFacet(data, searchQuery);
+        });
         document.getElementById('biosimilar-filter')?.addEventListener('change', (e) => {
             this.filterState.biosimilarOnly = e.target.checked;
             this._applyIndicationFacet(data, searchQuery);
@@ -17819,7 +17865,9 @@ ${ftFechaDocsHtml}
         const snap = this._filterSnapshot();
         const params = {};
         if (snap.generic) params.generic = '1';
-        if (snap.receta) params.receta = '1';
+        // `receta=1` (con), `receta=0` (sin) o `receta=1|0`. Los enlaces antiguos con `receta=1`
+        // siguen significando lo mismo.
+        if (snap.receta || snap.sinReceta) params.receta = [snap.receta && '1', snap.sinReceta && '0'].filter(Boolean).join('|');
         if (snap.biosimilar) params.biosimilar = '1';
         if (snap.form) params.form = snap.form;
         if (snap.lab) params.lab = snap.lab;
@@ -17838,7 +17886,9 @@ ${ftFechaDocsHtml}
     _restoreFiltersFromURL(params) {
         if (!this.filterState) this.filterState = this._emptyFilterState();
         this.filterState.efgOnly = params.generic === '1';
-        this.filterState.recetaOnly = params.receta === '1';
+        const receta = (params.receta || '').split('|');
+        this.filterState.recetaOnly = receta.includes('1');
+        this.filterState.sinRecetaOnly = receta.includes('0');
         this.filterState.biosimilarOnly = params.biosimilar === '1';
         this.filterState.form = params.form || null;
         this.filterState.lab = params.lab || null;

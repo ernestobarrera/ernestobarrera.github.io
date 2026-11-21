@@ -630,6 +630,53 @@ console.log('\n— Mejora 3: un solo panel «Filtros» —');
         /tarjetaPulsada[\s\S]{0,400}this\.modal\.classList\.remove\('hidden'\);[\s\S]{0,300}window\.scrollBy\(\{ top: salto/.test(abrir), true);
     check('la guía, con resultados, señala el botón «Filtros»',
         /target: '\.search-options, #search-results \.filtros-toggle'/.test(src), true);
+
+    // Memoria del panel (21/11): manda lo último que eligió el usuario en este dispositivo;
+    // sin elección, abierto solo en pantalla holgada. Se cambia el almacenamiento del sandbox.
+    const guardado = {};
+    const lsAntes = sandbox.localStorage, winAntes = { ...sandbox.window };
+    sandbox.localStorage = { getItem: (k) => guardado[k] ?? null, setItem: (k, v) => { guardado[k] = String(v); }, removeItem() {} };
+    try {
+        Object.assign(sandbox.window, { innerWidth: 1920, innerHeight: 950 });
+        check('sin elección guardada y pantalla holgada: abierto', appWith()._panelFiltrosAbierto(), true);
+        Object.assign(sandbox.window, { innerWidth: 1366, innerHeight: 650 });
+        check('sin elección guardada y portátil pequeño: plegado', appWith()._panelFiltrosAbierto(), false);
+        const quien = appWith();
+        quien._toggleFiltrosPanel(true);
+        check('abrirlo se recuerda', guardado['medcheck:filtros-abiertos'], '1');
+        check('…y la próxima visita lo pinta abierto aunque la pantalla sea pequeña', appWith()._panelFiltrosAbierto(), true);
+        quien._toggleFiltrosPanel(false);
+        Object.assign(sandbox.window, { innerWidth: 1920, innerHeight: 950 });
+        check('cerrarlo también se recuerda, aun en pantalla grande', appWith()._panelFiltrosAbierto(), false);
+    } finally {
+        sandbox.localStorage = lsAntes;
+        for (const k of ['innerWidth', 'innerHeight']) { if (k in winAntes) sandbox.window[k] = winAntes[k]; else delete sandbox.window[k]; }
+    }
+}
+
+// ── «Sin receta» (21/11/2026): el contrario de «Con receta», en la misma dimensión ──
+console.log('\n— Con receta | Sin receta —');
+{
+    const conSin = (receta, sin) => { const a = appWith({ receta }); a.filterState.sinRecetaOnly = sin; return a; };
+    check('sin receta: solo los que tienen `receta === false`', names(conSin(false, true)), ['ARANESP-3']);
+    check('con receta: todos los demás', count(conSin(true, false)), UNIVERSO.length - 1);
+    check('las dos a la vez: OR dentro de la dimensión, vuelve el universo', count(conSin(true, true)), UNIVERSO.length);
+    check('un registro sin el dato no entra en «sin receta»',
+        conSin(false, true)._applyResultFilters([...UNIVERSO, med({ nr: 'SIN-DATO', pa: 'x', receta: undefined })], conSin(false, true)._filterSnapshot()).map(m => m.nregistro), ['ARANESP-3']);
+    check('cuenta en «Limpiar N»', conSin(false, true)._activeFilterCount(), 1);
+    const sinB = conSin(false, true);
+    check('el recuento de «Con receta» no se anula al marcar «Sin receta» (faceting disyuntivo)',
+        sinB._disjunctiveCount(UNIVERSO, sinB._filterSnapshot(), 'receta', m => m.receta === true), UNIVERSO.length - 1);
+    check('la URL lo lleva: receta=0, y con las dos receta=1|0',
+        [conSin(false, true)._facetURLParams().receta, conSin(true, true)._facetURLParams().receta, conSin(true, false)._facetURLParams().receta], ['0', '1|0', '1']);
+    const vuelta = appWith();
+    vuelta._restoreFiltersFromURL({ receta: '0' });
+    check('y se restaura desde la URL (un enlace viejo con receta=1 sigue igual)',
+        [vuelta.filterState.sinRecetaOnly, vuelta.filterState.recetaOnly, (vuelta._restoreFiltersFromURL({ receta: '1' }), vuelta.filterState.recetaOnly && !vuelta.filterState.sinRecetaOnly)], [true, false, true]);
+    Object.assign(sinB, { _financingIndex: {}, _financingIndexUsable: false, _medRenderCache: new Map() });
+    const barra = sinB.renderResultsControlBar(UNIVERSO.length, { resultados: UNIVERSO }, { resultados: UNIVERSO }, { showEFG: true });
+    check('la barra pinta las dos casillas, dentro del panel, y «Sin receta» marcada',
+        [/id="receta-filter"/.test(barra), /id="sin-receta-filter" checked/.test(barra), barra.indexOf('sin-receta-filter') > barra.indexOf('id="filtros-panel"')], [true, true, true]);
 }
 
 console.log(`\n${failures === 0 ? 'TODO OK' : `${failures} FALLO(S)`}`);
