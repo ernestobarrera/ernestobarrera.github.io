@@ -679,5 +679,67 @@ console.log('\n— Con receta | Sin receta —');
         [/id="receta-filter"/.test(barra), /id="sin-receta-filter" checked/.test(barra), barra.indexOf('sin-receta-filter') > barra.indexOf('id="filtros-panel"')], [true, true, true]);
 }
 
+console.log('\n— Filtros puestos como etiquetas con × (P1) —');
+{
+    // Un estado con TODAS las dimensiones del botón «Filtros» puestas a la vez.
+    const lleno = () => {
+        const a = appWith({ generic: true, receta: true, form: 'SOLUCION INYECTABLE', lab: 'Lab "B" <x>',
+            doses: ['1000 UI', '2000 UI'], routes: ['Parenteral'], pas: ['epoetina alfa'] });
+        Object.assign(a.filterState, { sinRecetaOnly: true, biosimilarOnly: true, paralelas: true,
+            financiacion: new Set(['fin', 'nofin']), mostrarH: false, mostrarDH: false, galenics: new Set(['inyectable']) });
+        return a;
+    };
+    const a = lleno();
+    const snapA = a._filterSnapshot();
+    const etiquetas = a._filtrosPuestos(snapA);
+    check('N etiquetas = número del botón «Filtros» (todo menos principios activos)',
+        etiquetas.length, a._activeFilterCount(snapA) - snapA.pas.size);
+    check('las exclusiones se rotulan «Ocultos H» y «Ocultos DH»',
+        etiquetas.filter(f => f.tipo.startsWith('mostrar')).map(f => f.texto), ['Ocultos H', 'Ocultos DH']);
+    check('sin filtros puestos, ni fila ni etiquetas', [appWith()._filtrosPuestosHtml(), appWith()._filtrosPuestos().length], ['', 0]);
+
+    // Cada × quita SOLO el suyo: el recuento baja en uno y la dimensión queda como su casilla desmarcada.
+    const campo = { form: s => s.form, lab: s => s.lab, generic: s => s.generic, receta: s => s.receta,
+        sinReceta: s => s.sinReceta, biosimilar: s => s.biosimilar, paralelas: s => s.paralelas,
+        mostrarH: s => s.mostrarH, mostrarDH: s => s.mostrarDH };
+    const fallos = [];
+    for (const f of etiquetas) {
+        const b = lleno();
+        const antes = b._activeFilterCount();
+        const ok = b._quitarFiltroPuesto(f.tipo, f.valor);
+        const s = b._filterSnapshot();
+        const quitado = f.tipo === 'financiacion' ? !s.financiacion.has(f.valor)
+            : f.tipo === 'route' ? !s.routes.has(f.valor)
+            : f.tipo === 'galenic' ? !s.galenics.has(f.valor)
+            : f.tipo === 'dose' ? !s.doses.has(f.valor)
+            : f.tipo.startsWith('mostrar') ? campo[f.tipo](s) === true
+            : !campo[f.tipo](s);
+        if (!ok || !quitado || b._activeFilterCount() !== antes - 1) fallos.push(f.texto);
+    }
+    check('cada × quita su filtro y solo ese', fallos, []);
+    check('un tipo desconocido no toca nada', [lleno()._quitarFiltroPuesto('inventado', ''), (() => { const c = lleno(); c._quitarFiltroPuesto('inventado', ''); return c._activeFilterCount(); })()], [false, a._activeFilterCount()]);
+
+    // «Ocultos H ×» reescribe la memoria, como la casilla: si no, volvería en la búsqueda siguiente.
+    const escrito = [];
+    const lsAntes = sandbox.localStorage.setItem;
+    sandbox.localStorage.setItem = (k, v) => escrito.push([k, v]);
+    const h = lleno();
+    h._quitarFiltroPuesto('mostrarH', '');
+    sandbox.localStorage.setItem = lsAntes;
+    check('«Ocultos H ×» guarda la preferencia de mostrar H (y conserva DH oculto)',
+        escrito.map(([k, v]) => [k, JSON.parse(v)]), [['medcheck:hosp-pref', { mostrarH: true, mostrarDH: false }]]);
+
+    const html = a._filtrosPuestosHtml(snapA);
+    check('el HTML escapa el nombre del laboratorio', [html.includes('Lab: Lab &quot;B&quot; &lt;x&gt;'), html.includes('<x>')], [true, false]);
+    Object.assign(a, { _financingIndex: {}, _financingIndexUsable: false, _medRenderCache: new Map() });
+    const barra = a.renderResultsControlBar(UNIVERSO.length, { resultados: UNIVERSO }, { resultados: UNIVERSO }, { showEFG: true });
+    const iFila = barra.indexOf('class="filtros-puestos"');
+    check('la fila va en la barra, fuera del panel plegado y antes de él',
+        [iFila > barra.indexOf('control-row-main'), iFila < barra.indexOf('id="filtros-panel"')], [true, true]);
+    check('Buscar e Indicaciones cablean las ×',
+        [cuerpoDe('    setupSearchGroupingEventListeners(data) {').includes('_wireFiltrosPuestos('),
+         cuerpoDe('    setupGroupingEventListeners(data, searchQuery) {').includes('_wireFiltrosPuestos(')], [true, true]);
+}
+
 console.log(`\n${failures === 0 ? 'TODO OK' : `${failures} FALLO(S)`}`);
 process.exit(failures === 0 ? 0 : 1);

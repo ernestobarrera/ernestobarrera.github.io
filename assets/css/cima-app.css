@@ -7206,6 +7206,38 @@ div.section-text th .ft-tras-hueco {
 .filtros-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .filtros-toggle__flecha { font-size: 0.7rem; transition: transform 0.15s ease; }
 .filtros-toggle[aria-expanded="true"] .filtros-toggle__flecha { transform: rotate(180deg); }
+
+/* Filtros puestos como etiquetas con × (patrón P1, 21/11/2026): dicen CUÁLES hay dentro del panel,
+   no solo cuántos, y cada × quita el suyo sin abrirlo. Bajo la fila de la barra, encima de la lista. */
+.filtros-puestos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: var(--space-sm);
+}
+.filtro-puesto {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+    padding: 0.2rem 0.5rem 0.2rem 0.6rem;
+    font: inherit;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    background: var(--bg-dark);
+    border: 1px solid var(--primary);
+    border-radius: 999px;
+    cursor: pointer;
+}
+.filtro-puesto__texto {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 22ch;
+}
+.filtro-puesto .fa-times { font-size: 0.7rem; color: var(--text-secondary); }
+.filtro-puesto:hover .fa-times { color: var(--primary); }
+.filtro-puesto:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .filtros-panel {
     display: flex;
     flex-direction: column;

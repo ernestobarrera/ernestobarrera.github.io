@@ -2928,6 +2928,7 @@ class MedCheckApp {
                 applyFacet();
             });
         }
+        this._wireFiltrosPuestos(applyFacet);
 
         // Route filter chips
         document.querySelectorAll('.route-chip').forEach(chip => {
@@ -16194,6 +16195,97 @@ ${ftFechaDocsHtml}
     }
 
     /**
+     * Filtros puestos, uno por etiqueta (patrón P1 de buscador, 21/11/2026). El botón «Filtros»
+     * dice CUÁNTOS hay dentro; esto dice CUÁLES, y deja quitar uno sin abrir el panel.
+     *
+     * Son exactamente los que cuenta ese número (`_activeFilterCount` menos los principios
+     * activos): N en el botón = N etiquetas. Los principios activos quedan fuera por lo mismo
+     * que no cuentan allí: su banda está siempre a la vista y desambigua la consulta.
+     *
+     * El orden es el del panel, para que la etiqueta y su casilla se encuentren igual.
+     */
+    _filtrosPuestos(snap = this._filterSnapshot()) {
+        const out = [];
+        const add = (tipo, valor, texto, title = null) => out.push({ tipo, valor: valor ?? '', texto, title });
+        if (snap.form) add('form', '', snap.form, `Forma farmacéutica: ${snap.form}`);
+        if (snap.lab) add('lab', '', `Lab: ${snap.lab}`);
+        if (snap.generic) add('generic', '', 'Genérico');
+        if (snap.receta) add('receta', '', 'Con receta');
+        if (snap.sinReceta) add('sinReceta', '', 'Sin receta');
+        if (snap.biosimilar) add('biosimilar', '', 'Biosimilar');
+        if (snap.paralelas) add('paralelas', '', 'Con duplicados');
+        if (snap.financiacion.has('fin')) add('financiacion', 'fin', 'Financiado');
+        if (snap.financiacion.has('nofin')) add('financiacion', 'nofin', 'Sin cobertura SNS');
+        // Las exclusiones se rotulan por lo que hacen —ocultar—, no por la casilla desmarcada:
+        // «Mostrar H ×» se leería al revés.
+        if (!snap.mostrarH) add('mostrarH', '', 'Ocultos H', 'Están ocultos los de uso hospitalario. Quita la etiqueta para volver a mostrarlos.');
+        if (!snap.mostrarDH) add('mostrarDH', '', 'Ocultos DH', 'Están ocultos los de diagnóstico hospitalario. Quita la etiqueta para volver a mostrarlos.');
+        for (const r of snap.routes) add('route', r, r);
+        if (snap.galenics.size) {
+            const { families } = MedCheckApp.GALENIC_FAMILIES;
+            for (const id of snap.galenics) add('galenic', id, (families[id] || families.otros).label);
+        }
+        for (const d of snap.doses) add('dose', d, `Dosis: ${d}`);
+        return out;
+    }
+
+    /**
+     * Quita un filtro puesto. Cada rama hace lo mismo que su casilla o su chip al desmarcarse,
+     * incluida la memoria hospitalaria: si no se reescribiera, «Ocultos H» volvería sola en la
+     * búsqueda siguiente. Devuelve `false` si no reconoce el tipo, para no repintar en vano.
+     */
+    _quitarFiltroPuesto(tipo, valor) {
+        if (!this.filterState) this.filterState = this._emptyFilterState();
+        const fs = this.filterState;
+        const quitarDe = (set, v) => { if (set instanceof Set) set.delete(v); };
+        switch (tipo) {
+            case 'form': fs.form = null; break;
+            case 'lab': fs.lab = null; break;
+            case 'generic': fs.efgOnly = false; break;
+            case 'receta': fs.recetaOnly = false; break;
+            case 'sinReceta': fs.sinRecetaOnly = false; break;
+            case 'biosimilar': fs.biosimilarOnly = false; break;
+            case 'paralelas': fs.paralelas = false; break;
+            case 'financiacion': this._toggleFinanciacion(valor, false); break;
+            case 'mostrarH': fs.mostrarH = true; this._hospPrefWrite(); break;
+            case 'mostrarDH': fs.mostrarDH = true; this._hospPrefWrite(); break;
+            case 'route': quitarDe(this.groupingState?.routeFilters, valor); break;
+            case 'galenic': quitarDe(fs.galenics, valor); break;
+            case 'dose': quitarDe(fs.doses, valor); break;
+            default: return false;
+        }
+        return true;
+    }
+
+    /** La fila de etiquetas. Vacía si no hay ninguno: no ocupa sitio cuando no informa. */
+    _filtrosPuestosHtml(snap = this._filterSnapshot()) {
+        const lista = this._filtrosPuestos(snap);
+        if (!lista.length) return '';
+        const e = (v) => this._escapeHtml(v);
+        return `
+                <div class="filtros-puestos" role="group" aria-label="Filtros puestos">
+                    ${lista.map(f => `<button type="button" class="filtro-puesto" data-quitar="${e(f.tipo)}" data-valor="${e(f.valor)}" title="${e(f.title ? `${f.title}` : `Quitar el filtro «${f.texto}»`)}" aria-label="Quitar el filtro ${e(f.texto)}"><span class="filtro-puesto__texto">${e(f.texto)}</span><i class="fas fa-times" aria-hidden="true"></i></button>`).join('')}
+                </div>`;
+    }
+
+    /**
+     * Cablea la × de cada etiqueta. Tras repintar, el foco pasa a la etiqueta que ocupe ahora
+     * su sitio, o al botón «Filtros» si era la última: con teclado se pueden quitar varias
+     * seguidas sin volver a buscar dónde estaba uno.
+     */
+    _wireFiltrosPuestos(onChange) {
+        document.querySelectorAll('.filtro-puesto[data-quitar]').forEach((btn, i) => {
+            btn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                if (!this._quitarFiltroPuesto(btn.dataset.quitar, btn.dataset.valor)) return;
+                onChange();
+                const resto = document.querySelectorAll('.filtro-puesto[data-quitar]');
+                (resto[Math.min(i, resto.length - 1)] || document.getElementById('filtros-toggle'))?.focus?.();
+            });
+        });
+    }
+
+    /**
      * Preferencia de ámbito hospitalario, recordada entre búsquedas.
      *
      * Solo se escribe cuando el usuario toca una casilla: una preferencia que se guardara sola
@@ -16507,6 +16599,7 @@ ${ftFechaDocsHtml}
                         ` : ''}
                     </div>
                 </div>
+                ${this._filtrosPuestosHtml(snap)}
                 ${hayOcultosHosp ? `
                 <div class="filtro-oculto-aviso" role="status">
                     <i class="fas fa-eye-slash"></i>
@@ -17465,6 +17558,7 @@ ${ftFechaDocsHtml}
                 this._applyIndicationFacet(data, searchQuery);
             });
         }
+        this._wireFiltrosPuestos(() => this._applyIndicationFacet(data, searchQuery));
 
         // Route filter chips - Support Ctrl+click for multi-selection
         document.querySelectorAll('.route-chip').forEach(chip => {
