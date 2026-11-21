@@ -22342,7 +22342,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-filter',
                         action: { type: 'view', view: 'search' },
                         body: `
-                            <p>Las casillas recortan el listado sobre la marcha y cada una lleva su recuento: comercializado, genérico, receta y <span class="guide-highlight">biosimilar</span>. Con resultados en pantalla, viven en el botón <span class="guide-key">Filtros</span> de la barra, y su número dice cuántos hay puestos dentro.</p>
+                            <p>Las casillas recortan el listado sobre la marcha y cada una lleva su recuento: comercializado, genérico, con o sin receta y <span class="guide-highlight">biosimilar</span>. Con resultados en pantalla, viven en el botón <span class="guide-key">Filtros</span> de la barra, y su número dice cuántos hay puestos dentro. Debajo, cada filtro puesto aparece como <span class="guide-highlight">etiqueta</span>; su <span class="guide-key">×</span> lo quita sin abrir el panel.</p>
                             <p>«Incluir duplicados» merece una frase: un mismo medicamento puede tener varios registros —el nacional y sus importaciones paralelas— y solo algunos publican ficha técnica con secciones. Por defecto se muestran los que sí la publican. Nunca se oculta el único registro de un medicamento.</p>
                             <p><strong>Financiado</strong> y <strong>Sin cobertura SNS</strong> son dos casillas de la misma pregunta, y sus números <span class="guide-highlight">no suman el total</span>: de una parte del catálogo el Ministerio no publica situación, y esos no entran en ninguno de los dos lados. No saber no es lo mismo que no. Por eso marcar las dos no es lo mismo que no marcar ninguna: sin marcar sale todo; marcando las dos quedan solo aquellos sobre los que hay un pronunciamiento.</p>
                             <p class="guide-case"><strong>Caso</strong>Buscas OMNIC OCAS y aparecen ocho tarjetas casi idénticas. Con la casilla sin marcar queda la que trae la información clínica; si necesitas ver todos los registros, la marcas.</p>
@@ -22648,7 +22648,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'searchResults' },
                         body: `
                             <p>Agrupa por ATC o principio activo y ordena por nombre o dosis. Las facetas de sustancia, dosis, vía, forma y laboratorio muestran recuentos que cambian al filtrar.</p>
-                            <p><span class="guide-key">Ctrl/Cmd + clic</span> permite seleccionar varios valores en las facetas que lo indican. <strong>Filtros</strong> despliega forma, laboratorio, vía y las casillas; «Limpiar» retira la selección.</p>
+                            <p><span class="guide-key">Ctrl/Cmd + clic</span> permite seleccionar varios valores en las facetas que lo indican. <strong>Filtros</strong> despliega forma, laboratorio, vía y las casillas. Lo que tengas puesto se ve debajo como etiquetas: cada <span class="guide-key">×</span> quita un filtro y «Limpiar» los retira todos.</p>
                             <p>Si no había tarjetas, la guía busca clopidogrel como ejemplo. Los recuentos son los actuales, no cifras fijas de una demostración.</p>
                         `,
                     },
