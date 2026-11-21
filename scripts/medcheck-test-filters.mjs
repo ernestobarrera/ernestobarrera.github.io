@@ -607,16 +607,20 @@ console.log('\n— Mejora 3: un solo panel «Filtros» —');
     hospApp.filterState.mostrarH = false;
     const conH = hospApp.renderResultsControlBar(1, { resultados: [{ ...UNIVERSO[0], cpresc: 'Uso Hospitalario' }] },
         { resultados: [{ ...UNIVERSO[0], cpresc: 'Uso Hospitalario' }] }, { showEFG: true });
-    const avisoH = pos(conH, 'filtro-oculto-aviso');
-    check('el aviso de ocultos hospitalarios queda FUERA del panel', avisoH > -1 && avisoH < pos(conH, 'id="filtros-panel"'), true);
+    // Desde el 21/11 lo anuncia su etiqueta, con la cifra; el aviso amarillo que lo repetía se quitó.
+    const etiquetaH = pos(conH, 'Ocultos H: 1<');
+    check('la exclusión hospitalaria se anuncia con su cifra FUERA del panel', etiquetaH > -1 && etiquetaH < pos(conH, 'id="filtros-panel"'), true);
+    check('y ya no la repite el aviso amarillo', [conH.includes('filtro-oculto-aviso'), conH.includes('mostrar-hosp-todos')], [false, false]);
 
     const buscar = cuerpoDe('    displaySearchResults(data) {');
     const indic = cuerpoDe('    displayGroupedIndicationResults(data, searchQuery) {');
     check('Buscar enseña genérico/receta/biosimilar en la barra y retira las casillas de arriba',
         [/showEFG: true/.test(buscar), /this\._casillasBuscador\(false\)/.test(buscar), /this\._casillasBuscador\(true\)/.test(buscar)], [true, true, true]);
-    check('en Buscar e Indicaciones, la vía va al panel; principios activos, galénica y dosis, fuera',
+    // La galénica ya no tiene banda propia: su etiqueta de «filtros puestos» la enseña (21/11).
+    check('en Buscar e Indicaciones, la vía va al panel; principios activos y dosis, fuera; sin banda «Forma:»',
         [buscar, indic].map(b => /panelExtra: this\.renderRouteFilterChips\(routes\),/.test(b)
-            && /\}\)\}\s*\$\{this\.renderPAFilterChips\([^)]*\)\}\s*\$\{this\.renderGalenicFilterChips\(\)\}\s*\$\{this\.renderDoseFilterChips\(/.test(b)), [true, true]);
+            && /\}\)\}\s*\$\{this\.renderPAFilterChips\([^)]*\)\}\s*\$\{this\.renderDoseFilterChips\(/.test(b)
+            && !b.includes('renderGalenicFilterChips')), [true, true]);
     const busqueda = cuerpoDe('    async performSearch(options = {}) {');
     check('sin resultados o con error, vuelven las casillas de arriba (únicas para cambiar la consulta)',
         (busqueda.match(/this\._casillasBuscador\(true\)/g) || []).length, 2);
@@ -697,6 +701,19 @@ console.log('\n— Filtros puestos como etiquetas con × (P1) —');
     check('las exclusiones se rotulan «Ocultos H» y «Ocultos DH»',
         etiquetas.filter(f => f.tipo.startsWith('mostrar')).map(f => f.texto), ['Ocultos H', 'Ocultos DH']);
     check('sin filtros puestos, ni fila ni etiquetas', [appWith()._filtrosPuestosHtml(), appWith()._filtrosPuestos().length], ['', 0]);
+    // Lo que solo decían el aviso amarillo y la banda «Forma:» pasa a la etiqueta (21/11).
+    const conCuentas = a._filtrosPuestos(snapA, { ocultosH: 12, ocultosDH: 1 });
+    const ocH = conCuentas.find(f => f.tipo === 'mostrarH'), ocDH = conCuentas.find(f => f.tipo === 'mostrarDH');
+    check('con cifras, «Ocultos H: 12» y «Ocultos DH: 1», con singular y plural en el title',
+        [ocH.texto, ocDH.texto, /^12 medicamentos de uso hospitalario ocultos/.test(ocH.title), /^1 medicamento de diagnóstico/.test(ocDH.title)],
+        ['Ocultos H: 12', 'Ocultos DH: 1', true, true]);
+    check('cero ocultos también se dice: la exclusión sigue puesta', a._filtrosPuestos(snapA, { ocultosH: 0 }).find(f => f.tipo === 'mostrarH').texto, 'Ocultos H: 0');
+    const htmlC = a._filtrosPuestosHtml(snapA, { ocultosH: 12, ocultosDH: 1 });
+    check('las exclusiones llevan el aspecto de aviso y el ojo tachado',
+        (htmlC.match(/class="filtro-puesto filtro-puesto--oculta"[^>]*><i class="fas fa-eye-slash filtro-puesto__icono"/g) || []).length, 2);
+    const gal = conCuentas.find(f => f.tipo === 'galenic');
+    check('la galénica lleva su icono y la pista de dónde se elige',
+        [gal.icono, /icono de una tarjeta/.test(gal.title)], [MedCheckApp.GALENIC_FAMILIES.families.inyectable.icon, true]);
 
     // Cada × quita SOLO el suyo: el recuento baja en uno y la dimensión queda como su casilla desmarcada.
     const campo = { form: s => s.form, lab: s => s.lab, generic: s => s.generic, receta: s => s.receta,

@@ -5112,62 +5112,6 @@ div.section-text th .ft-tras-hueco {
     color: #fff;
 }
 
-/* Banda de la familia galénica activa. Solo aparece cuando filtra: su superficie normal es
-   el icono de la tarjeta, no la barra. */
-.galenic-filter-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xs);
-    align-items: center;
-    padding: var(--space-xs) 0 var(--space-sm);
-    border-top: 1px solid rgba(14, 165, 233, 0.18);
-}
-
-.galenic-filter-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: var(--primary);
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    white-space: nowrap;
-    opacity: 0.85;
-    padding-right: var(--space-xs);
-}
-
-.galenic-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-xs);
-    padding: 0.3rem 0.65rem;
-    background: var(--primary);
-    border: 1px solid var(--primary);
-    border-radius: var(--radius-xl);
-    color: #fff;
-    font-size: 0.78rem;
-    font-weight: 500;
-    font-family: inherit;
-    cursor: pointer;
-    transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-
-.galenic-chip:hover {
-    background: var(--danger);
-    border-color: var(--danger);
-}
-
-.galenic-chip:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-}
-
-.galenic-chip-x {
-    font-size: 0.68em;
-    opacity: 0.8;
-}
-
 .med-info-content {
     flex: 1;
     min-width: 0;
@@ -5275,39 +5219,6 @@ div.section-text th .ft-tras-hueco {
 .med-detail-tag--dose i,
 .med-detail-tag--packs i {
     flex-shrink: 0;
-}
-
-/* Aviso de exclusión hospitalaria. Es OBLIGATORIO mientras haya algo oculto, y por eso no se
-   pinta como un mensaje discreto: una preferencia elegida hace semanas, si no se anuncia, es
-   indistinguible de un catálogo que no tiene esos medicamentos. El botón devuelve todo en un clic:
-   deshacer tiene que costar menos que descubrir qué falta. */
-.filtro-oculto-aviso {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-top: var(--space-sm);
-    padding: 0.4rem 0.6rem;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    background: var(--warning-light, var(--bg-dark));
-    border-left: 3px solid var(--warning);
-    border-radius: var(--radius-sm);
-}
-
-.filtro-oculto-aviso i {
-    color: var(--warning);
-}
-
-.filtro-oculto-aviso__btn {
-    margin-left: auto;
-    border: 0;
-    background: transparent;
-    color: var(--primary);
-    font: inherit;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: underline;
 }
 
 /* Financiación SNS. Va en TODAS las tarjetas con dato, no solo en las excepciones: está medido
@@ -7289,6 +7200,14 @@ div.section-text th .ft-tras-hueco {
 .filtro-puesto .fa-times { font-size: 0.7rem; color: var(--text-secondary); }
 .filtro-puesto:hover .fa-times { color: var(--primary); }
 .filtro-puesto:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.filtro-puesto__icono { font-size: 0.75rem; color: var(--primary); }
+/* Exclusión hospitalaria («Ocultos H: 12»). Hereda el aspecto del aviso amarillo al que sustituye
+   (21/11/2026): esconde resultados, así que no puede pasar por una etiqueta más. */
+.filtro-puesto--oculta {
+    background: var(--warning-light, var(--bg-dark));
+    border-color: var(--warning);
+}
+.filtro-puesto--oculta .filtro-puesto__icono { color: var(--warning); }
 .filtros-panel {
     display: flex;
     flex-direction: column;

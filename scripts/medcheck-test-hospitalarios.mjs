@@ -162,12 +162,14 @@ check('y con cualquiera de ellas se sigue mostrando todo',
 console.log('\n— La dimensión está en el contrato de filtros —');
 check('hospital es una dimensión declarada',
     MedCheckApp.FILTER_DIMENSIONS.includes('hospital'), true);
-check('el aviso de lo oculto se pinta en la barra',
-    /filtro-oculto-aviso/.test(fuente), true);
-check('el aviso desglosa H y DH por separado',
-    /de uso hospitalario.*de diagn|de diagn[\s\S]{0,80}hospitalario/.test(fuente), true);
-check('y ofrece deshacerlo en un clic',
-    /mostrar-hosp-todos/.test(fuente), true);
+// Desde el 21/11 lo oculto lo anuncia la etiqueta de «filtros puestos» («Ocultos H: 12 ×»): el aviso
+// amarillo que lo repetía se quitó. La etiqueta hereda sus tres obligaciones.
+check('lo oculto se anuncia en la barra, con su cifra',
+    /_filtrosPuestosHtml\(snap, \{ ocultosH, ocultosDH \}\)/.test(fuente), true);
+check('H y DH se desglosan por separado',
+    /oculta\('mostrarH', 'H', 'uso hospitalario'[\s\S]{0,160}oculta\('mostrarDH', 'DH', 'diagnóstico hospitalario'/.test(fuente), true);
+check('y cada una se deshace en un clic, con su ×',
+    /case 'mostrarH': fs\.mostrarH = true; this\._hospPrefWrite\(\)/.test(fuente), true);
 
 // --- Los filtros no cambian según la pantalla --------------------------------
 // Ernesto encontró el 2026-09-09 un filtro de financiación que existía en la búsqueda por

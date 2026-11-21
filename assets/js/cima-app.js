@@ -2747,13 +2747,12 @@ class MedCheckApp {
             ${franjaIncompleta}
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, {
                 showEFG: true,
-                // Vía, dentro. Fuera se quedan los principios activos (desambiguan la consulta),
-                // la familia galénica (solo aparece cuando ya filtra) y la dosis, que salió de
-                // «Más filtros» por ser discriminador clínico de primer nivel y no vuelve a entrar.
+                // Vía, dentro. Fuera se quedan los principios activos (desambiguan la consulta)
+                // y la dosis, que salió de «Más filtros» por ser discriminador clínico de primer
+                // nivel y no vuelve a entrar. La familia galénica activa se ve en su etiqueta.
                 panelExtra: this.renderRouteFilterChips(routes),
             })}
             ${this.renderPAFilterChips(paList)}
-            ${this.renderGalenicFilterChips()}
             ${this.renderDoseFilterChips(universe, snap)}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, this.lastSearchQuery)}
@@ -2866,7 +2865,6 @@ class MedCheckApp {
 
         // Banda de dosis (misma semántica que vía y PA: Ctrl+clic para varias)
         this._wireDoseChips(document, applyFacet);
-        this._wireGalenicChips(document, applyFacet);
 
         // Casillas de tipo de producto y receta cuando la barra las muestra (misma
         // dimensión y mismo estado que las casillas superiores del buscador).
@@ -2913,12 +2911,6 @@ class MedCheckApp {
         };
         document.getElementById('mostrar-h-filter')?.addEventListener('change', cambioHosp('mostrarH'));
         document.getElementById('mostrar-dh-filter')?.addEventListener('change', cambioHosp('mostrarDH'));
-        document.getElementById('mostrar-hosp-todos')?.addEventListener('click', () => {
-            this.filterState.mostrarH = true;
-            this.filterState.mostrarDH = true;
-            this._hospPrefWrite();
-            applyFacet();
-        });
 
         // Clear filters button — limpia exactamente lo que cuenta "Limpiar N".
         const clearBtn = document.getElementById('clear-filters-btn');
@@ -16279,10 +16271,21 @@ ${ftFechaDocsHtml}
      * que no cuentan allí: su banda está siempre a la vista y desambigua la consulta.
      *
      * El orden es el del panel, para que la etiqueta y su casilla se encuentren igual.
+     *
+     * Desde el 21/11 son el ÚNICO sitio donde se ven la exclusión hospitalaria y la familia
+     * galénica: el aviso amarillo y la banda «Forma:» decían lo mismo dos veces. Lo que solo
+     * tenían ellos pasa aquí: `cuentas` trae cuántos esconde cada exclusión AHORA (sin esa cifra,
+     * una elección recordada de hace semanas parecería un catálogo incompleto) y la galénica lleva
+     * su icono y la pista de dónde se elige.
      */
-    _filtrosPuestos(snap = this._filterSnapshot()) {
+    _filtrosPuestos(snap = this._filterSnapshot(), cuentas = {}) {
         const out = [];
-        const add = (tipo, valor, texto, title = null) => out.push({ tipo, valor: valor ?? '', texto, title });
+        const add = (tipo, valor, texto, title = null, extra = {}) => out.push({ tipo, valor: valor ?? '', texto, title, ...extra });
+        const oculta = (tipo, sigla, ambito, n) => add(tipo, '',
+            Number.isFinite(n) ? `Ocultos ${sigla}: ${n}` : `Ocultos ${sigla}`,
+            `${Number.isFinite(n) ? `${n} ${n === 1 ? 'medicamento' : 'medicamentos'} de ${ambito} ocultos en estos resultados` : `Están ocultos los de ${ambito}`}. `
+                + 'Quita la etiqueta para volver a mostrarlos; se recuerda en este dispositivo.',
+            { icono: 'eye-slash', variante: 'oculta' });
         if (snap.form) add('form', '', snap.form, `Forma farmacéutica: ${snap.form}`);
         if (snap.lab) add('lab', '', `Lab: ${snap.lab}`);
         if (snap.generic) add('generic', '', 'Genérico');
@@ -16294,12 +16297,15 @@ ${ftFechaDocsHtml}
         if (snap.financiacion.has('nofin')) add('financiacion', 'nofin', 'Sin cobertura SNS');
         // Las exclusiones se rotulan por lo que hacen —ocultar—, no por la casilla desmarcada:
         // «Mostrar H ×» se leería al revés.
-        if (!snap.mostrarH) add('mostrarH', '', 'Ocultos H', 'Están ocultos los de uso hospitalario. Quita la etiqueta para volver a mostrarlos.');
-        if (!snap.mostrarDH) add('mostrarDH', '', 'Ocultos DH', 'Están ocultos los de diagnóstico hospitalario. Quita la etiqueta para volver a mostrarlos.');
+        if (!snap.mostrarH) oculta('mostrarH', 'H', 'uso hospitalario', cuentas.ocultosH);
+        if (!snap.mostrarDH) oculta('mostrarDH', 'DH', 'diagnóstico hospitalario', cuentas.ocultosDH);
         for (const r of snap.routes) add('route', r, r);
         if (snap.galenics.size) {
             const { families } = MedCheckApp.GALENIC_FAMILIES;
-            for (const id of snap.galenics) add('galenic', id, (families[id] || families.otros).label);
+            for (const id of snap.galenics) {
+                const f = families[id] || families.otros;
+                add('galenic', id, f.label, `Forma galénica: ${f.label}. Se elige pulsando el icono de una tarjeta (Ctrl+clic añade otra).`, { icono: f.icon });
+            }
         }
         for (const d of snap.doses) add('dose', d, `Dosis: ${d}`);
         return out;
@@ -16334,13 +16340,13 @@ ${ftFechaDocsHtml}
     }
 
     /** La fila de etiquetas. Vacía si no hay ninguno: no ocupa sitio cuando no informa. */
-    _filtrosPuestosHtml(snap = this._filterSnapshot()) {
-        const lista = this._filtrosPuestos(snap);
+    _filtrosPuestosHtml(snap = this._filterSnapshot(), cuentas = {}) {
+        const lista = this._filtrosPuestos(snap, cuentas);
         if (!lista.length) return '';
         const e = (v) => this._escapeHtml(v);
         return `
                 <div class="filtros-puestos" role="group" aria-label="Filtros puestos">
-                    ${lista.map(f => `<button type="button" class="filtro-puesto" data-quitar="${e(f.tipo)}" data-valor="${e(f.valor)}" title="${e(f.title ? `${f.title}` : `Quitar el filtro «${f.texto}»`)}" aria-label="Quitar el filtro ${e(f.texto)}"><span class="filtro-puesto__texto">${e(f.texto)}</span><i class="fas fa-times" aria-hidden="true"></i></button>`).join('')}
+                    ${lista.map(f => `<button type="button" class="filtro-puesto${f.variante ? ` filtro-puesto--${e(f.variante)}` : ''}" data-quitar="${e(f.tipo)}" data-valor="${e(f.valor)}" title="${e(f.title ? `${f.title}` : `Quitar el filtro «${f.texto}»`)}" aria-label="Quitar el filtro ${e(f.texto)}">${f.icono ? `<i class="fas fa-${e(f.icono)} filtro-puesto__icono" aria-hidden="true"></i>` : ''}<span class="filtro-puesto__texto">${e(f.texto)}</span><i class="fas fa-times" aria-hidden="true"></i></button>`).join('')}
                 </div>`;
     }
 
@@ -16369,8 +16375,8 @@ ${ftFechaDocsHtml}
      * que no puede pasar con un filtro que oculta. Por eso tampoco hay valor por defecto guardado:
      * si no hay nada escrito, se muestra todo.
      *
-     * Y por eso el aviso del desglose es obligatorio mientras haya exclusión: sin él, una elección
-     * de hace tres semanas sería indistinguible de un catálogo incompleto.
+     * Y por eso la etiqueta «Ocultos H: N» es obligatoria mientras haya exclusión, con su cifra:
+     * sin ella, una elección de hace tres semanas sería indistinguible de un catálogo incompleto.
      */
     _hospPrefRead() {
         try {
@@ -16555,7 +16561,8 @@ ${ftFechaDocsHtml}
         // que el catálogo no tiene esos medicamentos.
         const ocultosH = snap.mostrarH ? 0 : nH;
         const ocultosDH = snap.mostrarDH ? 0 : nDH;
-        const hayOcultosHosp = ocultosH + ocultosDH > 0;
+        // Lo anuncia su etiqueta, «Ocultos H: 12» (P1). Hasta el 21/11 lo repetía además un aviso
+        // amarillo con «Mostrar todos»; se quitó por decir dos veces lo mismo.
 
         // El nombre de la casilla es el que usa un médico, pero agrupa la financiación ordinaria y
         // la condicionada a visado o indicación. El matiz no se pierde: la marca de cada tarjeta
@@ -16675,16 +16682,7 @@ ${ftFechaDocsHtml}
                         ` : ''}
                     </div>
                 </div>
-                ${this._filtrosPuestosHtml(snap)}
-                ${hayOcultosHosp ? `
-                <div class="filtro-oculto-aviso" role="status">
-                    <i class="fas fa-eye-slash"></i>
-                    <span>Ocultos en estos resultados: ${[
-                        ocultosH ? `<strong>${ocultosH}</strong> de uso hospitalario` : null,
-                        ocultosDH ? `<strong>${ocultosDH}</strong> de diagnóstico hospitalario` : null,
-                    ].filter(Boolean).join(' · ')}</span>
-                    <button type="button" class="filtro-oculto-aviso__btn" id="mostrar-hosp-todos">Mostrar todos</button>
-                </div>` : ''}
+                ${this._filtrosPuestosHtml(snap, { ocultosH, ocultosDH })}
                 <div id="filtros-panel" class="filtros-panel"${panelAbierto ? '' : ' hidden'}>
                     <div class="control-section">
                         ${forms.length > 1 ? `
@@ -17169,43 +17167,9 @@ ${ftFechaDocsHtml}
         });
     }
 
-    /**
-     * Chip de la familia galénica activa. La dimensión no ocupa sitio en la barra mientras
-     * no se usa —su superficie es el icono de la tarjeta—, pero en cuanto filtra tiene que
-     * poder verse y quitarse desde el mismo sitio que las demás: un filtro que no se ve es
-     * un filtro del que el usuario no puede salir.
-     */
-    renderGalenicFilterChips() {
-        const activas = this.filterState?.galenics;
-        if (!activas || activas.size === 0) return '';
-        const { families } = MedCheckApp.GALENIC_FAMILIES;
-        const chips = [...activas].map(id => {
-            const f = families[id] || families.otros;
-            return `
-                <button class="galenic-chip active" data-galenic-off="${id}" title="Quitar el filtro ${this._escapeHtml(f.label)}">
-                    <i class="fas fa-${f.icon}"></i> ${this._escapeHtml(f.label)}
-                    <i class="fas fa-times galenic-chip-x"></i>
-                </button>`;
-        }).join('');
-        return `
-            <div class="route-filter-chips galenic-filter-chips">
-                <span class="galenic-filter-label">Forma:</span>
-                ${chips}
-                <span class="pa-filter-hint">se elige pulsando el icono de una tarjeta</span>
-            </div>
-        `;
-    }
-
-    /** Cablea el aspa de los chips de familia galénica. */
-    _wireGalenicChips(container, onChange) {
-        (container || document).querySelectorAll('[data-galenic-off]').forEach(chip => {
-            chip.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.filterState?.galenics?.delete(chip.dataset.galenicOff);
-                onChange();
-            });
-        });
-    }
+    // La familia galénica activa se ve y se quita en su etiqueta de «filtros puestos»
+    // (`_filtrosPuestos`), con su icono y la pista de que se elige en la tarjeta. Hasta el 21/11
+    // la repetía además una banda «Forma:» propia; se quitó por decir dos veces lo mismo.
 
     _wireDoseChips(container, onChange) {
         (container || document).querySelectorAll('.dose-chip[data-dose]').forEach(chip => {
@@ -17481,7 +17445,6 @@ ${ftFechaDocsHtml}
                 panelExtra: this.renderRouteFilterChips(routes),
             })}
             ${this.renderPAFilterChips(paList, { subgrupos: paSubgrupos })}
-            ${this.renderGalenicFilterChips()}
             ${this.renderDoseFilterChips(universe, snap, { requireSinglePA: true, visibleResults: filteredResults })}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, searchQuery)}
@@ -17570,7 +17533,6 @@ ${ftFechaDocsHtml}
 
         // Banda de dosis (misma semántica que vía y PA: Ctrl+clic para varias)
         this._wireDoseChips(document, () => this._applyIndicationFacet(data, searchQuery));
-        this._wireGalenicChips(document, () => this._applyIndicationFacet(data, searchQuery));
 
         // Comercializado: es el ÚNICO de este panel que NO es una faceta de cliente. Los no
         // comercializados no están en `data` —no se pidieron a CIMA—, así que filtrarlos aquí no
@@ -17624,12 +17586,6 @@ ${ftFechaDocsHtml}
         };
         document.getElementById('mostrar-h-filter')?.addEventListener('change', cambioHospInd('mostrarH'));
         document.getElementById('mostrar-dh-filter')?.addEventListener('change', cambioHospInd('mostrarDH'));
-        document.getElementById('mostrar-hosp-todos')?.addEventListener('click', () => {
-            this.filterState.mostrarH = true;
-            this.filterState.mostrarDH = true;
-            this._hospPrefWrite();
-            this._applyIndicationFacet(data, searchQuery);
-        });
 
         // Clear filters button — limpia exactamente lo que cuenta "Limpiar N".
         const clearBtn = document.getElementById('clear-filters-btn');
@@ -22729,7 +22685,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'searchResults' },
                         body: `
                             <p>Agrupa por ATC o principio activo y ordena por nombre o dosis. Las facetas de sustancia, dosis, vía, forma y laboratorio muestran recuentos que cambian al filtrar.</p>
-                            <p><span class="guide-key">Ctrl/Cmd + clic</span> permite seleccionar varios valores en las facetas que lo indican. <strong>Filtros</strong> despliega forma, laboratorio, vía y las casillas. Lo que tengas puesto se ve debajo como etiquetas: cada <span class="guide-key">×</span> quita un filtro y «Limpiar» los retira todos.</p>
+                            <p><span class="guide-key">Ctrl/Cmd + clic</span> permite seleccionar varios valores en las facetas que lo indican. <strong>Filtros</strong> despliega forma, laboratorio, vía y las casillas. Lo que tengas puesto se ve debajo como etiquetas: cada <span class="guide-key">×</span> quita un filtro y «Limpiar» los retira todos. Las amarillas, «Ocultos H» y «Ocultos DH», dicen cuántos medicamentos hospitalarios estás escondiendo.</p>
                             <p>Si no había tarjetas, la guía busca clopidogrel como ejemplo. Los recuentos son los actuales, no cifras fijas de una demostración.</p>
                         `,
                     },

@@ -365,7 +365,9 @@ console.log('\n— Filtro por familia galénica —');
 
     ok(/data-galenic="\$\{familia\.id\}"/.test(src), 'el icono de la tarjeta lleva la familia');
     ok(src.includes('_wireGalenicIcons'), 'los iconos están cableados');
-    ok(src.includes('renderGalenicFilterChips'), 'hay chip para retirar el filtro cuando está activo');
+    // Desde el 21/11 se retira desde su etiqueta de «filtros puestos», no desde una banda propia.
+    ok(/case 'galenic': quitarDe\(fs\.galenics, valor\)/.test(src) && !src.includes('renderGalenicFilterChips'),
+        'se retira desde su etiqueta de filtros puestos, sin banda «Forma:» duplicada');
 }
 
 console.log('\n— Accesos de la tarjeta —');
