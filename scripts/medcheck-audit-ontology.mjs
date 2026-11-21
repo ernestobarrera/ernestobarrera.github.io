@@ -1225,6 +1225,9 @@ async function fetchSectionText(nregistro, section) {
     if (Array.isArray(data)) {
       return { status: 'success', text: decodeEntities(data.map(item => `${item.titulo || ''} ${item.contenido || ''}`).join(' ')) };
     }
+    // `{"error":"No existen secciones…"}` llega con 200 (importaciones paralelas, fichas sin
+    // segmentar): es ausencia, no un texto en el que buscar. Antes se buscaba dentro del JSON.
+    if (data && typeof data === 'object' && data.error && !data.contenido) return { status: 'absent', text: '' };
     return { status: 'success', text: decodeEntities(typeof data === 'string' ? data : raw) };
   } catch (error) {
     return { status: 'unknown', text: '', reason: error.message };

@@ -1429,8 +1429,19 @@ class CimaAPI {
             const batch = medications.slice(i, i + batchSize);
             const checked = await Promise.all(batch.map(async (med) => {
                 try {
-                    const html = await this.getDocSeccion(med.nregistro, section);
-                    const text = this._normalizeSectionFilterText(html);
+                    let text = this._normalizeSectionFilterText(await this.getDocSeccion(med.nregistro, section));
+                    // Importación paralela (sufijo IP, IP1…): CIMA no le segmenta la ficha y responde
+                    // con éxito `{"error":"No existen secciones…"}`, que getDocSeccion convierte en ''.
+                    // Su ficha es la del registro original, el mismo número sin el sufijo. Hasta el
+                    // 21/11/2026 ese vacío se leía como «no casa» y la presentación desaparecía de la
+                    // lista sin aviso (MIRAPEXIN 0,7 MG 97051006IP en «piernas inquietas»).
+                    const original = CimaAPI._registroOriginalDeImportacion(med.nregistro);
+                    if (!text && original) {
+                        text = this._normalizeSectionFilterText(await this.getDocSeccion(original, section));
+                    }
+                    // Sin texto no hay nada que comparar: es no poder leer la ficha, no una ficha que
+                    // no tenga la indicación. Va por la misma rama fail-open que un fallo de red.
+                    if (!text) throw new Error('SECCION_SIN_TEXTO');
                     summary.checked++;
                     return this._matchesSectionFilter(text, includeAny, includeAll, excludeAny) ? med : null;
                 } catch (error) {
@@ -1448,6 +1459,15 @@ class CimaAPI {
 
         summary.matched = resultados.length;
         return { resultados, summary };
+    }
+
+    /**
+     * Registro original de una importación paralela («97051006IP» → «97051006», «04276007IP1» →
+     * «04276007»), o null si no lo es. Mismo marcador que `MedCheckApp._esImportacionParalela`.
+     */
+    static _registroOriginalDeImportacion(nregistro) {
+        const m = /^(.+?)IP\d*\s*$/i.exec(String(nregistro || '').trim());
+        return m ? m[1] : null;
     }
 
     _normalizeSectionFilterTerms(terms) {
