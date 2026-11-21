@@ -295,6 +295,49 @@ check('resolver sin matches → none', api.resolveIndicationCandidates([]).mode 
         !real('fingolimod').some((m) => m.term === 'esclerosis múltiple'), top(real('fingolimod')));
 }
 
+// --- Ampliación del 21/11/2026: indicaciones frecuentes que no llegaban a ninguna entrada ---
+// Cada caso es una consulta que antes no casaba con nada (o casaba mal: «dependencia de opioides»
+// caía en el grupo ATC de los OPIOIDES) y el código que su lista tiene que traer. Si alguien quita
+// el sinónimo o el código, la consulta vuelve a quedarse sin respuesta en silencio.
+{
+    const resolver = (q) => api.resolveIndicationCandidates(real(q), sug(q));
+    const ejecuta = (q, termino, codigo) => {
+        const r = resolver(q);
+        const atc = r.mode === 'execute' ? [].concat(r.match.atc) : [];
+        check(`ampliación: «${q}» → ${termino}${codigo ? ` (con ${codigo})` : ''}`,
+            r.mode === 'execute' && r.match.term === termino && (!codigo || atc.includes(codigo)),
+            r.mode === 'execute' ? `${r.match.term} [${atc.join(',')}]` : r.mode);
+    };
+    const pregunta = (q, esperados) => {
+        const r = resolver(q);
+        const ofrecidos = r.mode === 'ambiguous' ? r.candidates.map((c) => c.term) : [];
+        check(`ampliación: «${q}» pregunta entre ${esperados.join(' y ')}`,
+            r.mode === 'ambiguous' && esperados.every((t) => ofrecidos.includes(t)),
+            r.mode === 'ambiguous' ? ofrecidos.join(' | ') : (r.match?.term || r.mode));
+    };
+    ejecuta('lumbalgia', 'dolor musculoesquelético', 'M01A');
+    ejecuta('angina', 'angina', 'C01EB18');
+    ejecuta('osteoporosis', 'osteoporosis', 'H05AA02');
+    ejecuta('anillo vaginal', 'anticoncepción', 'G02BB01');
+    ejecuta('sequedad vaginal', 'menopausia', 'G03XX01');
+    ejecuta('vrs', 'vacuna virus respiratorio sincitial', 'J06BD08');
+    ejecuta('bronquiolitis', 'vacuna virus respiratorio sincitial', 'J06BD10');
+    ejecuta('dependencia de opioides', 'dependencia de opioides', 'N07BC');
+    ejecuta('trastorno por uso de opioides', 'dependencia de opioides', 'N07BC');
+    ejecuta('piernas inquietas', 'piernas inquietas', 'N04BC05');
+    ejecuta('trombosis venosa profunda', 'trombosis', 'B01A');
+    ejecuta('oseltamivir', 'antivirales para la gripe', 'J05AH');
+    ejecuta('deshidratación', 'rehidratación oral', 'A07CA');
+    ejecuta('sífilis', 'infecciones de transmisión sexual', 'J01CE08');
+    pregunta('gripe', ['antivirales para la gripe', 'vacuna gripe']);
+    pregunta('covid', ['antivirales para la covid-19', 'vacuna COVID-19']);
+    pregunta('infarto', ['cardiopatía isquémica', 'ictus']);
+    pregunta('temblor', ['temblor esencial', 'parkinson']);
+    // Las ampliaciones no pueden robar la lectura de «presión» ni la de los atajos
+    check('ampliación: «presión» sigue sin ofrecer heridas (úlceras «por presión»)',
+        !sug('presión').some((m) => m.term === 'heridas'), sug('presión').map((m) => m.term).join(' | '));
+}
+
 // --- Resumen ---
 if (failures > 0) {
     console.log(`\n${failures} caso(s) en rojo.`);
