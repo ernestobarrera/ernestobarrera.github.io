@@ -568,5 +568,69 @@ check('…y con `fromURL` las dos reemplazan en vez de apilar',
     [/_commitIndicationURL\(\{ replace: !!options\.fromURL \}\)/.test(cuerpoDe('    async performIndicationSearch(options = {}) {')),
      /updateURL\(this\._searchURLParams\(\), \{ replace: !!options\.fromURL \}\)/.test(cuerpoDe('    async performSearch(options = {}) {'))], [true, true]);
 
+// ── Mejora 3 de la revisión de claridad (21/11/2026): un solo panel «Filtros», plegado ──
+// Antes había dos filas de casillas (con «Comercializado» dos veces) y forma, dosis y chips a
+// la vista: la primera tarjeta empezaba en el píxel 698 de 844 en móvil. Plegar no es quitar:
+// lo que se comprueba es QUÉ queda fuera (lo que declara un filtro puesto) y qué entra.
+console.log('\n— Mejora 3: un solo panel «Filtros» —');
+{
+    const barDe = (app, opts = {}) => {
+        Object.assign(app, { _financingIndex: {}, _financingIndexUsable: false, _medRenderCache: new Map() });
+        return app.renderResultsControlBar(UNIVERSO.length, { resultados: UNIVERSO }, { resultados: UNIVERSO }, { showEFG: true, ...opts });
+    };
+    const pos = (html, aguja) => html.indexOf(aguja);
+    const plegada = barDe(appWith(), { panelExtra: '<i id="extra-del-panel"></i>' });
+    const panel = pos(plegada, 'id="filtros-panel"');
+    check('hay panel y nace plegado', [panel > -1, /id="filtros-panel" class="filtros-panel" hidden/.test(plegada)], [true, true]);
+    check('el botón dice que está cerrado y a qué panel abre',
+        /id="filtros-toggle"[^>]*aria-expanded="false"[^>]*aria-controls="filtros-panel"/.test(plegada), true);
+    check('«Comercializado» queda FUERA del panel (declara un filtro puesto) y solo una vez',
+        [pos(plegada, 'id="comerc-filter"') > -1 && pos(plegada, 'id="comerc-filter"') < panel, (plegada.match(/Comercializado</g) || []).length], [true, 1]);
+    check('agrupar, ordenar y el recuento quedan fuera',
+        ['id="group-by-select"', 'id="sort-by-select"', 'class="results-count"'].every(a => pos(plegada, a) > -1 && pos(plegada, a) < panel), true);
+    check('genérico, forma y laboratorio van DENTRO',
+        ['id="efg-filter"', 'id="form-filter"', 'id="lab-filter"'].every(a => pos(plegada, a) > panel), true);
+    check('lo que la vista pasa en `panelExtra` va dentro', pos(plegada, 'id="extra-del-panel"') > panel, true);
+    check('ya no queda «Más filtros»', /more-filters"|Más filtros/.test(plegada), false);
+
+    const abierta = barDe(Object.assign(appWith(), { _filtrosAbiertos: true }));
+    check('abierto en la sesión, se repinta abierto (cada faceta repinta la barra)',
+        [/id="filtros-panel" class="filtros-panel">/.test(abierta), /aria-expanded="true"/.test(abierta)], [true, true]);
+
+    const conFiltros = barDe(appWith({ generic: true, pas: ['epoetina alfa'] }));
+    check('el botón cuenta solo los filtros de dentro; «Limpiar» los cuenta todos',
+        [conFiltros.match(/Filtros <span class="more-filters-badge"[^>]*>(\d+)</)?.[1], /Limpiar 2/.test(conFiltros)], ['1', true]);
+    const sinFiltros = barDe(appWith());
+    check('sin filtros puestos, el botón no lleva número', /Filtros <span class="more-filters-badge"/.test(sinFiltros), false);
+
+    const hospApp = appWith();
+    hospApp.filterState.mostrarH = false;
+    const conH = hospApp.renderResultsControlBar(1, { resultados: [{ ...UNIVERSO[0], cpresc: 'Uso Hospitalario' }] },
+        { resultados: [{ ...UNIVERSO[0], cpresc: 'Uso Hospitalario' }] }, { showEFG: true });
+    const avisoH = pos(conH, 'filtro-oculto-aviso');
+    check('el aviso de ocultos hospitalarios queda FUERA del panel', avisoH > -1 && avisoH < pos(conH, 'id="filtros-panel"'), true);
+
+    const buscar = cuerpoDe('    displaySearchResults(data) {');
+    const indic = cuerpoDe('    displayGroupedIndicationResults(data, searchQuery) {');
+    check('Buscar enseña genérico/receta/biosimilar en la barra y retira las casillas de arriba',
+        [/showEFG: true/.test(buscar), /this\._casillasBuscador\(false\)/.test(buscar), /this\._casillasBuscador\(true\)/.test(buscar)], [true, true, true]);
+    check('en Buscar e Indicaciones, la vía va al panel; principios activos, galénica y dosis, fuera',
+        [buscar, indic].map(b => /panelExtra: this\.renderRouteFilterChips\(routes\),/.test(b)
+            && /\}\)\}\s*\$\{this\.renderPAFilterChips\([^)]*\)\}\s*\$\{this\.renderGalenicFilterChips\(\)\}\s*\$\{this\.renderDoseFilterChips\(/.test(b)), [true, true]);
+    const busqueda = cuerpoDe('    async performSearch(options = {}) {');
+    check('sin resultados o con error, vuelven las casillas de arriba (únicas para cambiar la consulta)',
+        (busqueda.match(/this\._casillasBuscador\(true\)/g) || []).length, 2);
+    // Medido el 21/11 en Chrome: en producción, desmarcar «Comercializado» en la barra de Buscar
+    // no hacía nada (81 → 81 resultados), porque solo Indicaciones le ponía manejador.
+    const engancheBuscar = cuerpoDe('    setupSearchGroupingEventListeners(data) {');
+    check('«Comercializado» de la barra tiene manejador en Buscar: copia arriba y relanza conservando facetas',
+        /getElementById\('comerc-filter'\)\?\.addEventListener\('change'[\s\S]{0,300}filter-comerc[\s\S]{0,300}performSearch\(\{ preserveFilters: true \}\)/.test(engancheBuscar), true);
+    const abrir = cuerpoDe('    async openMedDetails(nregistro, initialTab, options = {}) {');
+    check('A4: al abrir el panel en escritorio se compensa el salto de la tarjeta pulsada',
+        /tarjetaPulsada[\s\S]{0,400}this\.modal\.classList\.remove\('hidden'\);[\s\S]{0,300}window\.scrollBy\(\{ top: salto/.test(abrir), true);
+    check('la guía, con resultados, señala el botón «Filtros»',
+        /target: '\.search-options, #search-results \.filtros-toggle'/.test(src), true);
+}
+
 console.log(`\n${failures === 0 ? 'TODO OK' : `${failures} FALLO(S)`}`);
 process.exit(failures === 0 ? 0 : 1);

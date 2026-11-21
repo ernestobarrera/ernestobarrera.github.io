@@ -7184,6 +7184,40 @@ div.section-text th .ft-tras-hueco {
 }
 .more-filters-body .dose-row { border-top: none; padding-top: 0; flex-basis: 100%; }
 
+/* «Filtros» (mejora 3, 21/11/2026): un botón en la fila de la barra y, debajo, el panel con forma,
+   laboratorio, casillas y vías. Mismo aspecto que tenía «Más filtros». Es un botón y no un
+   `details` porque el panel ocupa su propia fila a lo ancho, por debajo del recuento. */
+.filtros-toggle {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.7rem;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    user-select: none;
+}
+.filtros-toggle:hover,
+.filtros-toggle[aria-expanded="true"] { border-color: var(--primary); color: var(--text-primary); }
+.filtros-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.filtros-toggle__flecha { font-size: 0.7rem; transition: transform 0.15s ease; }
+.filtros-toggle[aria-expanded="true"] .filtros-toggle__flecha { transform: rotate(180deg); }
+.filtros-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border-subtle);
+}
+.filtros-panel .route-filter-chips { padding: 0; }
+/* Sin esto, el `display: flex` de las dos clases pesaría más que el `hidden` del navegador. */
+.filtros-panel[hidden],
+.search-box .search-options[hidden] { display: none; }
+
 /* Standard select style */
 .control-select {
     padding: 0.4rem 0.6rem;

@@ -1944,6 +1944,7 @@ class MedCheckApp {
 
             if (!rawData.resultados || rawData.resultados.length === 0) {
                 this.lastSearchResults = null;
+                this._casillasBuscador(true);
                 resultsContainer.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-search-minus"></i>
@@ -1992,6 +1993,7 @@ class MedCheckApp {
 
         } catch (error) {
             this._marcarEstadoApi(false);
+            this._casillasBuscador(true);
             this.handleSearchError(resultsContainer, error);
         }
     }
@@ -2682,6 +2684,7 @@ class MedCheckApp {
         const resultsContainer = document.getElementById('search-results');
 
         if (!data.resultados || data.resultados.length === 0) {
+            this._casillasBuscador(true);
             resultsContainer.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-pills"></i>
@@ -2733,10 +2736,22 @@ class MedCheckApp {
                 <button type="button" class="btn btn-sm btn-secondary" onclick="app.performSearch({ preserveFilters: true })"><i class="fas fa-rotate-right"></i> Reintentar</button>
             </div>` : '';
 
+        // Con resultados, las casillas de debajo de la caja se retiran y sus filtros pasan al
+        // panel «Filtros» de la barra (`showEFG`): una sola fila y un solo «Comercializado»
+        // (mejora 3). Se ocultan, no se borran: `performSearch` lee de ellas el ámbito de la
+        // petición, y `_syncTopFilterCheckboxes` las mantiene al día. Sin resultados vuelven,
+        // porque entonces son la única forma de cambiar la búsqueda (p. ej., incluir no
+        // comercializados).
+        this._casillasBuscador(false);
         resultsContainer.innerHTML = `
             ${franjaIncompleta}
-            ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data)}
-            ${this.renderRouteFilterChips(routes)}
+            ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, {
+                showEFG: true,
+                // Vía, dentro. Fuera se quedan los principios activos (desambiguan la consulta),
+                // la familia galénica (solo aparece cuando ya filtra) y la dosis, que salió de
+                // «Más filtros» por ser discriminador clínico de primer nivel y no vuelve a entrar.
+                panelExtra: this.renderRouteFilterChips(routes),
+            })}
             ${this.renderPAFilterChips(paList)}
             ${this.renderGalenicFilterChips()}
             ${this.renderDoseFilterChips(universe, snap)}
@@ -2771,10 +2786,29 @@ class MedCheckApp {
         });
     }
 
+    /** Muestra u oculta las casillas de debajo de la caja de Buscar (ver `displaySearchResults`). */
+    _casillasBuscador(visibles) {
+        const opciones = document.querySelector('.search-box .search-options');
+        if (opciones) opciones.hidden = !visibles;
+    }
+
     /**
      * Setup event listeners for search grouping controls
      */
     setupSearchGroupingEventListeners(data) {
+        // «Comercializado» de la barra. Hasta la mejora 3 esta casilla se pintaba también en
+        // Buscar pero no tenía manejador aquí (solo en Indicaciones): desmarcarla no hacía nada.
+        // Cambia el universo, así que repite la consulta, igual que la casilla de arriba, de la
+        // que `performSearch` lee el ámbito; por eso se copia el valor allí antes de relanzar.
+        document.getElementById('comerc-filter')?.addEventListener('change', (e) => {
+            const deArriba = document.getElementById('filter-comerc');
+            if (deArriba) deArriba.checked = e.target.checked;
+            if (!e.target.checked) {
+                this.showToast('Incluyendo también los NO comercializados: la búsqueda tarda más', 'info');
+            }
+            this.performSearch({ preserveFilters: true });
+        });
+
         // Group by selector
         const groupBySelect = document.getElementById('group-by-select');
         if (groupBySelect) {
@@ -10507,7 +10541,19 @@ class MedCheckApp {
         this._nregEnPanel = String(nregistro);
         this._marcarTarjetaEnPanel(nregistro);
         this._vigilarListaDelPanel(true);
+        // A4 (mejora 3): abrir el panel en escritorio estrecha la lista y recoloca la cabecera, y
+        // la tarjeta pulsada acababa fuera de la pantalla (medido el 21/11 en enalapril a 1440 px:
+        // del píxel 337 al 862). Se mide dónde estaba antes de abrirlo y se desplaza la página lo
+        // mismo que se movió, para que siga donde el usuario la pulsó. Solo al abrir: con el
+        // panel ya abierto la lista no se recoloca, y J/K ya la lleva a la vista.
+        const tarjetaPulsada = this.modal.classList.contains('hidden') && !this._esMovil()
+            ? document.querySelector('.result-card--en-panel') : null;
+        const altoAntes = tarjetaPulsada?.getBoundingClientRect().top;
         this.modal.classList.remove('hidden');
+        if (tarjetaPulsada) {
+            const salto = tarjetaPulsada.getBoundingClientRect().top - altoAntes;
+            if (Math.abs(salto) > 1) window.scrollBy({ top: salto, behavior: 'instant' });
+        }
         this.modalBody.innerHTML = '<div class="loading-spinner"></div>';
         this._loadEml(); // disparo anticipado: el JSON local suele cargar antes que la ficha remota
 
@@ -16269,7 +16315,7 @@ ${ftFechaDocsHtml}
      * Renders the results control bar with faceted filters
      */
     renderResultsControlBar(totalResults, filteredData = null, originalData = null, options = {}) {
-        const { showDoses = true, showEFG = false } = options;
+        const { showDoses = true, showEFG = false, panelExtra = '' } = options;
 
         // Universo de opciones: datos originales, para que las opciones no desaparezcan al filtrar
         const sourceForFilters = originalData?.resultados || filteredData?.resultados || [];
@@ -16383,11 +16429,19 @@ ${ftFechaDocsHtml}
         // siempre. Se quita en vez de dejarla sin uso, que es como se acumulan condiciones que
         // nadie se atreve a tocar porque ya no se sabe qué decidían.)
 
-        // Forma farmacéutica y dosis son discriminadores clínicos de primer nivel ("quiero
-        // sobres, efervescente…", "quiero los de 20 mg") → visibles sin desplegar nada. En
-        // "Más filtros" queda solo el laboratorio, que es criterio administrativo.
-        const secondaryActive = (this.filterState.lab ? 1 : 0);
-        const hasSecondary = labs.length > 1;
+        // UN SOLO PANEL «FILTROS», PLEGADO POR DEFECTO (mejora 3 de la revisión de claridad,
+        // 21/11/2026; A1+A2 de la revisión de Fable). Antes, forma y dosis iban a la vista por
+        // ser discriminadores clínicos de primer nivel y solo el laboratorio en «Más filtros»;
+        // sumadas a dos filas de casillas, la primera tarjeta empezaba en el píxel 698 de 844 en
+        // móvil. Plegar no es quitar: dentro siguen forma, laboratorio, todas las casillas y las
+        // bandas que la vista pase en `panelExtra` (vía, galénica, dosis).
+        //
+        // Lo que NO se pliega, a propósito: agrupar y ordenar, el recuento, «Limpiar N» y el
+        // aviso de ocultos hospitalarios. Un filtro que esconde tiene que declararse a la vista,
+        // y por eso el botón dice cuántos hay puestos dentro. Los principios activos quedan fuera
+        // del panel (desambiguan la consulta) y no cuentan en ese número.
+        const filtrosEnPanel = activeFilters - snap.pas.size;
+        const panelAbierto = !!this._filtrosAbiertos;
 
         return `
             <div class="results-control-bar">
@@ -16404,21 +16458,6 @@ ${ftFechaDocsHtml}
                             <option value="doseAsc" ${this.groupingState.sortBy === 'doseAsc' ? 'selected' : ''}>Dosis ↑</option>
                             <option value="doseDesc" ${this.groupingState.sortBy === 'doseDesc' ? 'selected' : ''}>Dosis ↓</option>
                         </select>
-                        ${forms.length > 1 ? `
-                        <select id="form-filter" class="control-select" title="Filtrar por forma farmacéutica">
-                            <option value="">📦 Forma farmacéutica</option>
-                            ${formOptions}
-                        </select>` : ''}
-                    </div>
-                    ${/*
-                        La condición era la lista de casillas que PODÍAN aparecer, y ahora hay una
-                        que aparece siempre —«Comercializado»—, así que el contenedor también. Si
-                        se dejara condicionado, en una búsqueda sin genéricos, sin receta y sin
-                        biosimilares el aviso de que se está filtrando desaparecería justo donde
-                        más falta hace: en un universo pequeño y aparentemente completo.
-                    */''}
-                    ${true ? `
-                    <div class="control-section" style="gap:var(--space-md);">
                         ${/*
                             SIEMPRE VISIBLE, a diferencia de las demás casillas, que aparecen solo
                             si su recuento es mayor que cero. Aquí el recuento no puede calcularse
@@ -16431,10 +16470,56 @@ ${ftFechaDocsHtml}
                             entero de antemano, que es justo el coste que esta casilla permite
                             asumir solo cuando se pide.
                         */''}
+                        ${/*
+                            Por lo mismo se queda FUERA del panel de filtros: plegada no declararía nada.
+                        */''}
                         <label class="search-option" title="Marcada (lo normal): solo se piden a CIMA los medicamentos comercializados hoy. Desmárcala para ver también los autorizados que no se comercializan — la búsqueda se repite y tarda más, porque trae muchos más productos.">
                             <input type="checkbox" id="comerc-filter" ${this._soloComercializados() ? 'checked' : ''}>
                             <span>Comercializado</span>
                         </label>
+                        <button type="button" class="filtros-toggle" id="filtros-toggle" aria-expanded="${panelAbierto}" aria-controls="filtros-panel" onclick="app._toggleFiltrosPanel()" title="Forma, laboratorio, genérico, receta, financiación, ámbito hospitalario, vía y dosis">
+                            <i class="fas fa-sliders"></i> Filtros${filtrosEnPanel > 0 ? ` <span class="more-filters-badge" title="${filtrosEnPanel} puesto${filtrosEnPanel > 1 ? 's' : ''} dentro">${filtrosEnPanel}</span>` : ''} <i class="fas fa-chevron-down filtros-toggle__flecha" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="control-section results-info">
+                        <span class="results-count"><strong>${totalResults}</strong> ${options.parcial ? 'resultados recuperados · <span class="results-count-parcial">lista incompleta</span>' : 'resultados'}</span>
+                        ${activeFilters > 0 ? `
+                        <button id="clear-filters-btn" class="clear-btn" title="Limpiar ${activeFilters} filtro${activeFilters > 1 ? 's' : ''}">
+                            <i class="fas fa-times"></i> Limpiar ${activeFilters}
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+                ${hayOcultosHosp ? `
+                <div class="filtro-oculto-aviso" role="status">
+                    <i class="fas fa-eye-slash"></i>
+                    <span>Ocultos en estos resultados: ${[
+                        ocultosH ? `<strong>${ocultosH}</strong> de uso hospitalario` : null,
+                        ocultosDH ? `<strong>${ocultosDH}</strong> de diagnóstico hospitalario` : null,
+                    ].filter(Boolean).join(' · ')}</span>
+                    <button type="button" class="filtro-oculto-aviso__btn" id="mostrar-hosp-todos">Mostrar todos</button>
+                </div>` : ''}
+                <div id="filtros-panel" class="filtros-panel"${panelAbierto ? '' : ' hidden'}>
+                    <div class="control-section">
+                        ${forms.length > 1 ? `
+                        <select id="form-filter" class="control-select" title="Filtrar por forma farmacéutica">
+                            <option value="">📦 Forma farmacéutica</option>
+                            ${formOptions}
+                        </select>` : ''}
+                        ${labs.length > 1 ? `
+                        <select id="lab-filter" class="control-select">
+                            <option value="">🏭 Lab</option>
+                            ${labOptions}
+                        </select>` : ''}
+                    </div>
+                    ${/*
+                        La condición era la lista de casillas que PODÍAN aparecer, y ahora hay una
+                        que aparece siempre —«Comercializado»—, así que el contenedor también. Si
+                        se dejara condicionado, en una búsqueda sin genéricos, sin receta y sin
+                        biosimilares el aviso de que se está filtrando desaparecería justo donde
+                        más falta hace: en un universo pequeño y aparentemente completo.
+                    */''}
+                    <div class="control-section" style="gap:var(--space-md);">
                         ${showEFG && (efgCount > 0 || snap.generic) ? `<label class="search-option" title="Solo genéricos">
                             <input type="checkbox" id="efg-filter" ${snap.generic ? 'checked' : ''}>
                             <span>Genérico <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${efgCount}</span></span>
@@ -16513,39 +16598,23 @@ ${ftFechaDocsHtml}
                             <span>Mostrar diagnóstico hospitalario (DH) <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nDH}</span></span>
                         </label>` : ''}
                     </div>
-                    ${hayOcultosHosp ? `
-                    <div class="filtro-oculto-aviso" role="status">
-                        <i class="fas fa-eye-slash"></i>
-                        <span>Ocultos en estos resultados: ${[
-                            ocultosH ? `<strong>${ocultosH}</strong> de uso hospitalario` : null,
-                            ocultosDH ? `<strong>${ocultosDH}</strong> de diagnóstico hospitalario` : null,
-                        ].filter(Boolean).join(' · ')}</span>
-                        <button type="button" class="filtro-oculto-aviso__btn" id="mostrar-hosp-todos">Mostrar todos</button>
-                    </div>` : ''}
-                    ` : ''}
-                    ${hasSecondary ? `
-                    <details class="more-filters" ${secondaryActive > 0 ? 'open' : ''}>
-                        <summary><i class="fas fa-sliders"></i> Más filtros${secondaryActive > 0 ? ` <span class="more-filters-badge">${secondaryActive}</span>` : ''}</summary>
-                        <div class="more-filters-body">
-                            ${labs.length > 1 ? `
-                            <select id="lab-filter" class="control-select">
-                                <option value="">🏭 Lab</option>
-                                ${labOptions}
-                            </select>` : ''}
-                        </div>
-                    </details>
-                    ` : ''}
-                    <div class="control-section results-info">
-                        <span class="results-count"><strong>${totalResults}</strong> ${options.parcial ? 'resultados recuperados · <span class="results-count-parcial">lista incompleta</span>' : 'resultados'}</span>
-                        ${activeFilters > 0 ? `
-                        <button id="clear-filters-btn" class="clear-btn" title="Limpiar ${activeFilters} filtro${activeFilters > 1 ? 's' : ''}">
-                            <i class="fas fa-times"></i> Limpiar ${activeFilters}
-                        </button>
-                        ` : ''}
-                    </div>
+                    ${panelExtra}
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Abre o cierra el panel «Filtros» de la barra de resultados sin repintar la lista. El estado
+     * vive en la app y no en el DOM porque cada faceta repinta el contenedor entero: si no, al
+     * marcar una casilla dentro del panel, este se cerraría solo. Dura lo que la pestaña; al
+     * volver a entrar se empieza plegado, que es lo que pide quien busca un medicamento.
+     */
+    _toggleFiltrosPanel(abrir = !this._filtrosAbiertos) {
+        this._filtrosAbiertos = !!abrir;
+        const panel = document.getElementById('filtros-panel');
+        if (panel) panel.hidden = !this._filtrosAbiertos;
+        document.getElementById('filtros-toggle')?.setAttribute('aria-expanded', String(this._filtrosAbiertos));
     }
 
     /**
@@ -17184,8 +17253,11 @@ ${ftFechaDocsHtml}
             </div>
             ${this._indicacionParcialHtml(data, universe.length)}
             <div id="ind-ai-slot">${indAiPanel}</div>
-            ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, { showDoses: false, showEFG: true, parcial: fallidos.length > 0 })}
-            ${this.renderRouteFilterChips(routes)}
+            ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, {
+                showDoses: false, showEFG: true, parcial: fallidos.length > 0,
+                // Mismo panel que en Buscar: los filtros no varían por pantalla sin una razón dicha.
+                panelExtra: this.renderRouteFilterChips(routes),
+            })}
             ${this.renderPAFilterChips(paList, { subgrupos: paSubgrupos })}
             ${this.renderGalenicFilterChips()}
             ${this.renderDoseFilterChips(universe, snap, { requireSinglePA: true, visibleResults: filteredResults })}
@@ -22113,12 +22185,14 @@ ${ftFechaDocsHtml}
                         position: 'bottom',
                     },
                     {
-                        target: '.search-options',
+                        // Antes de buscar, las casillas bajo la caja; con resultados se retiran
+                        // y la guía señala el botón «Filtros», que es donde están (mejora 3).
+                        target: '.search-options, #search-results .filtros-toggle',
                         title: '2. Afinar la lista',
                         icon: 'fa-filter',
                         action: { type: 'view', view: 'search' },
                         body: `
-                            <p>Las casillas recortan el listado sobre la marcha y cada una lleva su recuento: comercializado, genérico, receta y <span class="guide-highlight">biosimilar</span>.</p>
+                            <p>Las casillas recortan el listado sobre la marcha y cada una lleva su recuento: comercializado, genérico, receta y <span class="guide-highlight">biosimilar</span>. Con resultados en pantalla, viven en el botón <span class="guide-key">Filtros</span> de la barra, y su número dice cuántos hay puestos dentro.</p>
                             <p>«Incluir duplicados» merece una frase: un mismo medicamento puede tener varios registros —el nacional y sus importaciones paralelas— y solo algunos publican ficha técnica con secciones. Por defecto se muestran los que sí la publican. Nunca se oculta el único registro de un medicamento.</p>
                             <p><strong>Financiado</strong> y <strong>Sin cobertura SNS</strong> son dos casillas de la misma pregunta, y sus números <span class="guide-highlight">no suman el total</span>: de una parte del catálogo el Ministerio no publica situación, y esos no entran en ninguno de los dos lados. No saber no es lo mismo que no. Por eso marcar las dos no es lo mismo que no marcar ninguna: sin marcar sale todo; marcando las dos quedan solo aquellos sobre los que hay un pronunciamiento.</p>
                             <p class="guide-case"><strong>Caso</strong>Buscas OMNIC OCAS y aparecen ocho tarjetas casi idénticas. Con la casilla sin marcar queda la que trae la información clínica; si necesitas ver todos los registros, la marcas.</p>
@@ -22424,7 +22498,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'searchResults' },
                         body: `
                             <p>Agrupa por ATC o principio activo y ordena por nombre o dosis. Las facetas de sustancia, dosis, vía, forma y laboratorio muestran recuentos que cambian al filtrar.</p>
-                            <p><span class="guide-key">Ctrl/Cmd + clic</span> permite seleccionar varios valores en las facetas que lo indican. <strong>Más filtros</strong> despliega otras condiciones; «Limpiar» retira la selección.</p>
+                            <p><span class="guide-key">Ctrl/Cmd + clic</span> permite seleccionar varios valores en las facetas que lo indican. <strong>Filtros</strong> despliega forma, laboratorio, vía y las casillas; «Limpiar» retira la selección.</p>
                             <p>Si no había tarjetas, la guía busca clopidogrel como ejemplo. Los recuentos son los actuales, no cifras fijas de una demostración.</p>
                         `,
                     },

@@ -116,7 +116,10 @@ console.log('\n— Cambiarla repite la consulta —');
 // La ventana se corta en el cierre del PROPIO listener. La primera versión cogía 600 caracteres
 // a bulto y se comía el listener siguiente —el de «Genérico»—, que sí llama a
 // `_applyIndicationFacet`: el test fallaba señalando código que no era el que examinaba.
-const iniListener = appSrc.indexOf("getElementById('comerc-filter')");
+// Desde el 21/11/2026 Buscar tiene también su manejador de esta casilla (antes no tenía ninguno y
+// la casilla no hacía nada allí), y va antes en el fichero: se busca el de INDICACIONES, que es el
+// que examina este banco, dentro de su propio enganche.
+const iniListener = appSrc.indexOf("getElementById('comerc-filter')", appSrc.indexOf('    setupGroupingEventListeners(data, searchQuery) {'));
 const finListener = appSrc.indexOf('});', iniListener);
 const listener = appSrc.slice(iniListener, finListener + 3);
 ok('el listener llama a la búsqueda, no a la faceta de cliente',
