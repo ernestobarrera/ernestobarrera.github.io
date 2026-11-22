@@ -217,6 +217,28 @@ The mapping "indication -> ATC" is a fast proxy with three failure modes:
   milrinona/C01CE02 — 2026-07-19) and `fibrilación auricular` (missing digoxina/verapamilo for rate
   control).
 - **Specificity loss**: an ATC group is broader than the indication (oncology). Fix: `section41Filter`.
+- **Presentation-level indication inside an otherwise clean entry** (2026-11-22, R1 of Codex's
+  review): a single-substance ATC5 does NOT guarantee that every form/strength carries the
+  indication. Only 1 of the 23 marketed levonorgestrel/ethinylestradiol presentations (Microgynon,
+  G03AA07) lists endometriosis; 4 of 15 progesterone presentations list menopause; Anafranil
+  injectable and 75 mg LP do not list enuresis; Octostim (desmopressin) is for haemophilia. Adding the
+  whole ATC repeats the error; filtering the whole entry reads hundreds of SmPCs for nothing. Fix:
+  `section41Filter.atcScope: ["G03AA07"]` — the 4.1 check runs only for presentations whose ATC starts
+  with one of those prefixes; the rest of the entry passes unread (counted as `sinCribar`). Every
+  `atcScope` prefix must sit inside the entry's own `atc` (the structural audit rejects it otherwise),
+  and the reverse index (`indicacionesDeATC`) does not attribute scoped codes to the entry. Decide by
+  reading the 4.1 of ALL marketed presentations of the candidate ATC, not a 3-per-ATC sample, and pin
+  positive and negative `nregistro` examples in `scripts/medcheck-test-ontologia-seleccion.mjs`.
+  Adding a filter puts the entry into the reconcile universe: declare it in `perimetro.deudaConocida`.
+
+**One reading contract for the app and the auditor (2026-11-22, R3).** The 4.1 is read, decoded and
+matched by the static functions of `assets/js/cima-api.js` (`htmlDeSeccion`, `leerSeccionCriba`,
+`normalizarTextoCriba`, `casaFiltroSeccion`); `medcheck-audit-ontology.mjs` loads them from that file
+through `scripts/lib/lectura-41.mjs` instead of keeping its own copy. A presentation whose 4.1 cannot
+be read — HTTP error, 204, `{"error":"No existen secciones…"}`, empty array — after trying the
+original registry of a parallel import is **not verifiable**: the app shows it marked «4.1 sin
+verificar» and never counts it as confirmed; the reconcile marks the run **inconclusive**, never an
+absence. `scripts/medcheck-test-contrato-lectura-41.mjs` feeds the same CIMA answers to both sides.
 - **Contextual mention (false positive from `--reconcile`, not from ATC)**: the anchor/text engine
   finds the reconcile term in a drug's 4.1, but the drug is not actually indicated to *treat* that
   condition — the term appears as a **risk-factor criterion for a different indication** (e.g.

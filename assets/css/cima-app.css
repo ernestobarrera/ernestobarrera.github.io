@@ -6441,6 +6441,27 @@ div.section-text th .ft-tras-hueco {
     cursor: help;
 }
 
+/* R2 (22/11/2026): lo que la criba 4.1 no pudo leer se cuenta aparte de lo confirmado, en ámbar.
+   «Sin verificar» no es una advertencia sobre el medicamento: es que MedCheck no lo ha comprobado. */
+.match-filter--sin-verificar {
+    color: var(--warning);
+    border-color: var(--warning);
+}
+
+/* Tarjeta: 4.1 no leída (ámbar discontinuo, como el aviso) y 4.1 leída en el registro original de
+   una importación paralela (gris neutro, como «Sin ficha técnica»: es procedencia, no alerta). */
+.badge-41-sin-verificar {
+    background: var(--warning-light);
+    color: var(--warning);
+    border: 1px dashed var(--warning);
+}
+
+.badge-41-original {
+    background: rgba(148, 163, 184, 0.14);
+    color: var(--text-secondary);
+    border: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
 /* H17: nota compacta de secciones FT no recuperables (pestaña Seguridad del modal) */
 .safety-unknown-note {
     display: flex;

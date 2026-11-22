@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CimaAPI, crearLectorSeccion } from './lib/lectura-41.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -68,14 +69,10 @@ const CLASE_CATEGORIAS = new Set([
   'niega',        // la 4.1 niega expresamente esa indicación (adenosina: «no revierte el flutter»)
   'adyacente',    // trata algo asociado, no la condición (pinazepam: ansiedad de origen depresivo)
 ]);
-// Entidades HTML nombradas que decodeEntities traduce a mano (docSegmentado no las decodifica).
-// Ver la nota junto a decodeEntities: DEBE vivir aquí arriba por la zona muerta temporal.
-const NAMED_ENTITIES = {
-  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
-  aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú',
-  Aacute: 'Á', Eacute: 'É', Iacute: 'Í', Oacute: 'Ó', Uacute: 'Ú',
-  ntilde: 'ñ', Ntilde: 'Ñ', uuml: 'ü', Uuml: 'Ü', ordm: 'º', ordf: 'ª', deg: '°'
-};
+// Lectura de la 4.1: MISMO contrato que el cliente (R3, 22/11/2026). Ver scripts/lib/lectura-41.mjs.
+// Se crea aquí arriba por la zona muerta temporal: el bloque `await` superior la usa antes de que el
+// módulo llegue a su mitad inferior. `fetchWithRetry` es una declaración de función (elevada).
+const lectorSeccion = crearLectorSeccion({ base: CIMA_BASE, fetchWithRetry });
 // Motivos por los que esta ejecución NO puede certificar nada (red agotada, respuesta inválida,
 // truncación del universo decisorio). Si hay alguno y ningún problema determinista, exit 2:
 // "repite la pasada", que es distinto de exit 1: "el producto está mal".
@@ -178,6 +175,23 @@ for (const [term, entry] of entries) {
   if (entry.status === 'needsSection41Filter' && !(entry.section41Filter || entry.sectionFilter)) {
     problems.push(`${term}: needsSection41Filter sin filtro`);
   }
+  // `section41Filter.atcScope` (22/11/2026): la criba se aplica solo a esos prefijos. Cada uno tiene
+  // que caer DENTRO de los códigos de la entrada; uno que no, no cribaría nada (los medicamentos de
+  // ese ATC no llegan nunca a la criba) y daría por filtrado lo que no se mira.
+  {
+    const filtro = entry.section41Filter || entry.sectionFilter;
+    if (filtro && filtro.atcScope !== undefined) {
+      const scope = filtro.atcScope;
+      if (!Array.isArray(scope) || !scope.length || scope.some(p => typeof p !== 'string' || !p.trim())) {
+        problems.push(`${term}: section41Filter.atcScope tiene que ser una lista no vacía de códigos ATC`);
+      } else {
+        const propios = toAtcList(entry).map(a => String(a).toUpperCase());
+        for (const p of scope) {
+          if (!propios.some(a => p.toUpperCase().startsWith(a))) problems.push(`${term}: atcScope "${p}" no está dentro de los ATC de la entrada`);
+        }
+      }
+    }
+  }
   // `watchSubstances`: VTM de CIMA que vigila scripts/medcheck-audit-ontologia-atc.mjs. No entra en
   // el matching (solo lo lee el guardián), así que aquí solo se valida su forma.
   if (entry.watchSubstances !== undefined) {
@@ -261,6 +275,7 @@ if (live) {
     if (sectionFilter && meds.length > 0) {
       const checked = meds.slice(0, sectionLimit);
       const { matched, unknown } = await countSectionMatches(checked, sectionFilter);
+      // (Con `atcScope`, los de fuera entran sin leer y no cuentan aquí: `matched` es de lo cribado.)
       if (unknown > 0) warnings.push(`${term}: ${unknown}/${checked.length} fichas no verificables al medir el filtro 4.1 (métrica informativa parcial)`);
       sectionRows.push({ term, candidates: meds.length, checked: checked.length, matched });
     }
@@ -467,26 +482,6 @@ function normalize(value) {
     .trim();
 }
 
-// El endpoint docSegmentado devuelve la 4.1 con entidades HTML sin decodificar
-// (p. ej. "cr&#243;nica"). En el navegador, CimaAPI._normalizeSectionFilterText las
-// decodifica con un <textarea>; en Node no hay document, asi que hay que hacerlo a mano
-// o el texto "enfermedad renal cronica" NUNCA casaria y el auditor subcontaria (justo el
-// caso de los iSGLT2 en ERC). Cubre entidades numericas (dec/hex) y las nombradas comunes.
-// NAMED_ENTITIES vive arriba con las constantes de m\u00f3dulo (zona muerta temporal): aqu\u00ed abajo, el
-// callback de decodeEntities solo la tocaba al encontrar una entidad nombrada en el texto, y esas
-// fichas concretas lanzaban ReferenceError que el antiguo catch convert\u00eda en texto vac\u00edo \u2014 83
-// fichas 4.1 invisibles para el reconciliador sin que nada lo delatara (destapado 2026-07-23 por
-// el contrato ternario success/absent/unknown).
-function decodeEntities(value) {
-  return String(value || '')
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => safeFromCodePoint(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec) => safeFromCodePoint(parseInt(dec, 10)))
-    .replace(/&([a-z]+);/gi, (m, name) => (name in NAMED_ENTITIES ? NAMED_ENTITIES[name] : m));
-}
-function safeFromCodePoint(code) {
-  try { return Number.isFinite(code) ? String.fromCodePoint(code) : ''; } catch { return ''; }
-}
-
 function addDuplicateKey(value, owner, label) {
   const key = normalize(value);
   if (!key) return;
@@ -545,7 +540,7 @@ async function searchAtc(atc) {
   return items.filter(med => {
     if (!Array.isArray(med.atcs) || med.atcs.length === 0) return true;
     return med.atcs.some(item => String(item.codigo || '').toUpperCase().startsWith(upper));
-  });
+  }).map(med => ({ ...med, _atcConsulta: upper }));
 }
 
 // ---- Contrato de red -------------------------------------------------------------------------
@@ -1106,7 +1101,9 @@ async function reconcileEntry(term, entry) {
     }
     const universo = [...universoMap.values()];
     if (anchor.length > 1) perTerm.push(`universo union=${universo.length}`);
-    const normalizedTerms = terms.map(normalize);
+    // Términos y texto con la normalización del CLIENTE (R3): la de `normalize` cambiaba los guiones
+    // por espacios y el texto se leía distinto que en pantalla.
+    const normalizedTerms = terms.map(t => CimaAPI.normalizarTextoCriba(t));
     let matched = 0;
     let unknownTexts = 0;
     const unknownReasons = new Set();
@@ -1115,12 +1112,15 @@ async function reconcileEntry(term, entry) {
       const seccion = await fetchSectionText(m.nregistro, '4.1');
       if (seccion.status === 'unknown') {
         // Sin el texto no se sabe si este producto es un GAP: la fila no puede certificar "0".
+        // Incluye «sin texto segmentado» (`{"error":…}` de CIMA, array vacío, 204), también tras
+        // probar la ficha del registro original: CIMA lo reclutó porque su 4.1 contiene el ancla,
+        // así que no leerla es no saber, nunca una ausencia (R3, 22/11/2026).
         unknownTexts += 1;
         unknownReasons.add(seccion.reason || 'motivo desconocido');
         continue;
       }
-      const rawText = seccion.text.replace(/<[^>]*>/g, ' ');
-      const text = normalize(rawText);
+      const rawText = seccion.plain;
+      const text = seccion.text;
       const hitTerm = normalizedTerms.find(t => termInText(text, t));
       if (hitTerm) {
         txt.set(m.nregistro, { nombre: m.nombre, vtm: m.vtm?.nombre || m.nombre, excerpt: excerptAround(rawText, hitTerm), hash41: fingerprint(text) });
@@ -1161,41 +1161,45 @@ async function reconcileEntry(term, entry) {
 
 async function countSectionMatches(meds, filter) {
   const section = filter.section || '4.1';
-  const includeAny = toArray(filter.includeAny || filter.terms).map(normalize);
-  const includeAll = toArray(filter.includeAll).map(normalize);
-  const excludeAny = toArray(filter.excludeAny).map(normalize);
   let matched = 0;
   let unknown = 0;
+  let sinCribar = 0;
 
   // Métrica INFORMATIVA (--live): un fallo puntual no invalida la ejecución, pero se cuenta y se
   // reporta aparte — un "0 coincidencias" con la mitad de fichas ilegibles no es un cero real.
+  // Lectura y casado son los del cliente (R3): `fetchSectionText` y `CimaAPI.casaFiltroSeccion`.
+  // Con `atcScope`, solo se criba lo que cae bajo esos prefijos, como en la app.
   for (const med of meds) {
+    if (!enAlcanceCribaAuditor(med, filter.atcScope)) { sinCribar += 1; continue; }
     const seccion = await fetchSectionText(med.nregistro, section);
     if (seccion.status === 'unknown') { unknown += 1; continue; }
-    if (!seccion.text) continue;
-    const normalizedText = normalize(seccion.text.replace(/<[^>]*>/g, ' '));
-    const okAll = includeAll.length === 0 || includeAll.every(term => termInText(normalizedText, term));
-    const okAny = includeAny.length === 0 || includeAny.some(term => termInText(normalizedText, term));
-    const okExclude = excludeAny.length === 0 || !excludeAny.some(term => termInText(normalizedText, term));
-    if (okAll && okAny && okExclude) matched += 1;
+    if (CimaAPI.casaFiltroSeccion(seccion.text, filter)) matched += 1;
   }
-  return { matched, unknown };
+  return { matched, unknown, sinCribar };
 }
 
-// Mismo criterio que CimaAPI._sectionTermInText: coincidencia al inicio de palabra
-// (evita que 'recto' case en 'directo' o 'renal' en 'suprarrenal').
+// `CimaAPI.enAlcanceCriba`, más el caso de una fila de /medicamentos que llega sin `atcs`: el
+// cliente se los completa antes de cribar (índice o verificación), y aquí se toma el prefijo con
+// el que se consultó (`_atcConsulta`, ver `searchAtc`).
+function enAlcanceCribaAuditor(med, atcScope) {
+  if (CimaAPI.enAlcanceCriba(med, atcScope)) return true;
+  const scope = toArray(atcScope).map(p => String(p).toUpperCase());
+  return !(Array.isArray(med.atcs) && med.atcs.length) && scope.some(p => String(med._atcConsulta || '').startsWith(p));
+}
+
+// Mismo criterio que el cliente: coincidencia al inicio de palabra (evita que 'recto' case en
+// 'directo' o 'renal' en 'suprarrenal'). Es la MISMA función, cargada de cima-api.js.
 function termInText(text, term) {
-  if (!term) return false;
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(^|[^a-z0-9])${escaped}`).test(text);
+  return CimaAPI.terminoEnTextoCriba(text, term);
 }
 
 // Extracto legible alrededor de la primera mencion del termino, para que un GAP se pueda
 // adjudicar (indicacion real vs. mencion incidental de contraindicacion/factor de riesgo,
 // ver ontology-refresh.md "modo de fallo: mencion contextual") sin abrir la ficha a mano.
+// `rawText` es el texto como en pantalla (`textoFT`) y `term` ya viene normalizado.
 function excerptAround(rawText, term, radius = 90) {
   if (!rawText || !term) return '';
-  const idx = normalize(rawText).indexOf(normalize(term));
+  const idx = CimaAPI.normalizarTextoCriba(rawText).indexOf(term);
   if (idx < 0) return rawText.slice(0, radius * 2).replace(/\s+/g, ' ').trim();
   const start = Math.max(0, idx - radius);
   const end = Math.min(rawText.length, idx + term.length + radius);
@@ -1204,34 +1208,14 @@ function excerptAround(rawText, term, radius = 90) {
   return (prefix + rawText.slice(start, end) + suffix).replace(/\s+/g, ' ').trim();
 }
 
-// Resultado TERNARIO, nunca texto vacío ambiguo: 'success' (texto obtenido), 'absent' (la ficha
-// no tiene esa sección: 204/404, ausencia real) o 'unknown' (red agotada o respuesta inválida:
-// NO se sabe qué dice la 4.1, y tratarlo como vacío certificaba GAPS=0 estando ciego).
-async function fetchSectionText(nregistro, section) {
-  // El endpoint docSegmentado devuelve a veces JSON (array de secciones) y a veces texto/HTML.
-  // Replicamos a CimaAPI.getDocSeccion: leer texto y parsear con fallback (fetchCima haría
-  // response.json() y tragaria el texto plano como '', subcontando coincidencias).
-  try {
-    const url = new URL(`${CIMA_BASE}/docSegmentado/contenido/1`);
-    url.searchParams.set('nregistro', nregistro);
-    url.searchParams.set('seccion', section);
-    const r = await fetchWithRetry(url, { headers: { accept: 'application/json' } });
-    if (r.status === 204 || r.status === 404) return { status: 'absent', text: '' };
-    if (!r.ok) return { status: 'unknown', text: '', reason: `HTTP ${r.status}` };
-    const raw = await r.text();
-    if (!raw) return { status: 'absent', text: '' };
-    let data;
-    try { data = JSON.parse(raw); } catch { return { status: 'success', text: decodeEntities(raw) }; }
-    if (Array.isArray(data)) {
-      return { status: 'success', text: decodeEntities(data.map(item => `${item.titulo || ''} ${item.contenido || ''}`).join(' ')) };
-    }
-    // `{"error":"No existen secciones…"}` llega con 200 (importaciones paralelas, fichas sin
-    // segmentar): es ausencia, no un texto en el que buscar. Antes se buscaba dentro del JSON.
-    if (data && typeof data === 'object' && data.error && !data.contenido) return { status: 'absent', text: '' };
-    return { status: 'success', text: decodeEntities(typeof data === 'string' ? data : raw) };
-  } catch (error) {
-    return { status: 'unknown', text: '', reason: error.message };
-  }
+// Lectura de una sección (R3, 22/11/2026). Dos estados, y ninguno es «no tiene la indicación» por
+// no haber podido mirar: 'success' (texto leído, de la ficha propia o de la del registro original
+// de una importación paralela) o 'unknown' (red agotada, respuesta inválida o sin texto segmentado
+// que leer). Hasta hoy existía 'absent' para 204/404 y para el `{"error":…}` de CIMA, y la
+// reconciliación lo saltaba: una ficha no leída salía del universo de verdad y la pasada aprobaba.
+// La lectura es la del cliente: ver scripts/lib/lectura-41.mjs.
+function fetchSectionText(nregistro, section) {
+  return lectorSeccion(nregistro, section);
 }
 
 function toArray(value) {

@@ -32,7 +32,7 @@ function check(name, cond, detail) {
     else { failures += 1; console.log(`✗ ${name}${detail ? ` — ${detail}` : ''}`); }
 }
 
-function runAudit({ mode, gaps = '', baseline, extraArgs = [] }) {
+function runAudit({ mode, gaps = '', baseline, extraArgs = [], env = {} }) {
     const args = ['--import', MOCK, AUDIT, '--reconcile', `--terms=${TERM}`, `--baseline=${baseline}`, ...extraArgs];
     const r = spawnSync(process.execPath, args, {
         encoding: 'utf8',
@@ -41,7 +41,8 @@ function runAudit({ mode, gaps = '', baseline, extraArgs = [] }) {
             MC_MOCK_MODE: mode,
             MC_MOCK_TERM: TERM,
             MC_MOCK_GAPS: gaps,
-            MC_AUDIT_BACKOFF_MS: '1' // backoffs de 1-3-8 ms en tests
+            MC_AUDIT_BACKOFF_MS: '1', // backoffs de 1-3-8 ms en tests
+            ...env
         }
     });
     return { code: r.status, out: `${r.stdout}\n${r.stderr}` };
@@ -173,6 +174,22 @@ const hace10dias = new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 1
     check('baseline inexistente (ENOENT) → no bloquea (exit 0, primera vez legítima)', c.code === 0, `exit ${c.code}\n${c.out.slice(-300)}`);
     check('baseline inexistente → no se confunde con corrupto/ilegible',
         !c.out.includes('baseline corrupto') && !c.out.includes('ilegible') && !c.out.includes('esquema inválido'));
+}
+
+// 12. Ficha que CIMA recluta por su 4.1 pero que no se puede LEER (R3, 22/11/2026). Hasta hoy el
+//     `{"error":"No existen secciones…"}` se traducía en «ausente», la reconciliación lo saltaba y la
+//     pasada salía en verde con un producto del universo sin mirar. Igual un array vacío, que llegaba
+//     como lectura con éxito. Ahora: inconclusa (exit 2), nunca «GAPS NUEVOS = 0».
+{
+    const a = runAudit({ mode: 'ok', gaps: '22222', baseline: makeBaseline('b12a.json', null), env: { MC_MOCK_DOC_SIN_SECCIONES: '22222' } });
+    check('ficha sin secciones (200 con error) → exit 2, no aprueba', a.code === 2, `exit ${a.code}\n${a.out.slice(-400)}`);
+    check('ficha sin secciones → no certifica "GAPS NUEVOS = 0"', !a.out.includes('GAPS NUEVOS = 0'));
+    check('ficha sin secciones → dice que no es verificable y por qué', a.out.includes('no verificables') && a.out.includes('sin texto segmentado'), a.out.slice(-400));
+    const b = runAudit({ mode: 'ok', gaps: '22222', baseline: makeBaseline('b12b.json', null), env: { MC_MOCK_DOC_VACIO: '22222' } });
+    check('array vacío → exit 2 (no es una lectura con éxito)', b.code === 2, `exit ${b.code}`);
+    // Importación paralela sin ficha propia: se lee la del original y la pasada SÍ concluye.
+    const c = runAudit({ mode: 'ok', gaps: '22222IP', baseline: makeBaseline('b12c.json', null), env: { MC_MOCK_DOC_SIN_SECCIONES: '22222IP' } });
+    check('IP sin ficha propia → se lee la del original y concluye (GAP nuevo, exit 1)', c.code === 1 && c.out.includes('22222IP'), `exit ${c.code}\n${c.out.slice(-400)}`);
 }
 
 if (failures > 0) {

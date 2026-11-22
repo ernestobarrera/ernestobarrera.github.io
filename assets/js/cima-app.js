@@ -4308,14 +4308,95 @@ class MedCheckApp {
 
     /**
      * Avisa si el filtro de sección 4.1 no pudo verificar algún fármaco (fallo de red/CIMA).
-     * Esos fármacos se muestran igualmente (fail-open) marcados como no verificados.
+     * Esos fármacos se muestran igualmente (fail-open) marcados como no verificados. El toast
+     * solo llama la atención: el aviso que se queda es `_criba41AvisoHtml`, en el propio render.
      * @private
      */
     _warnUnverifiedSectionFilter(data) {
         const errors = data?.matchedIndication?.filterSummary?.errors || 0;
         if (errors > 0) {
-            this.showToast(`${errors} fármaco(s) no se pudieron verificar en ficha técnica (mostrados sin filtrar por 4.1)`, 'warning');
+            this.showToast(`${errors} fármaco(s) se muestran sin verificar en ficha técnica (4.1): no se pudo leer su ficha`, 'warning');
         }
+    }
+
+    /**
+     * Cuentas de la criba 4.1, también para resúmenes anteriores al 22/11/2026, cuyo `matched`
+     * sumaba los no verificables (de ahí se descuentan).
+     * @private
+     */
+    _criba41Cuentas(fs) {
+        if (!fs) return null;
+        const errors = Number(fs.errors) || 0;
+        const confirmados = Number.isInteger(fs.confirmed) ? fs.confirmed : Math.max(0, (Number(fs.matched) || 0) - errors);
+        return {
+            candidatos: Number(fs.candidates) || 0,
+            confirmados,
+            sinVerificar: errors,
+            sinTexto: Number(fs.sinTexto) || 0,
+            porFallo: Number(fs.porFallo) || 0,
+            porTiempo: Number(fs.porTiempo) || 0,
+            viaOriginal: Number(fs.viaOriginal) || 0,
+            sinCribar: Number(fs.sinCribar) || 0,
+        };
+    }
+
+    /**
+     * Nota de la criba 4.1 en la cabecera de resultados (R2 de la revisión de Codex, 22/11/2026).
+     * «Confirmados» son SOLO los que se leyeron y recogen el uso; lo no leído va en su propia
+     * etiqueta. Antes: «verificados en ficha (4.1): 1 de 1» de una ficha que no se pudo leer.
+     * @private
+     */
+    _criba41NotaHtml(fs, mi = null) {
+        const c = this._criba41Cuentas(fs);
+        if (!c) return '';
+        const alcance = Array.isArray(mi?.section41Filter?.atcScope) && mi.section41Filter.atcScope.length
+            ? ` Solo se criban los medicamentos de ${mi.section41Filter.atcScope.join(', ')}; los otros ${c.sinCribar} de esta indicación entran por su grupo ATC, sin leer su ficha.`
+            : '';
+        const original = c.viaOriginal
+            ? ` ${c.viaOriginal} de los confirmados son importaciones paralelas sin ficha propia: se comprobó la del registro original.`
+            : '';
+        const titulo = `Esta indicación lleva criba adicional por ficha técnica: de ${c.candidatos} candidatos por grupo ATC, en ${c.confirmados} se leyó la sección 4.1 (indicaciones autorizadas) y recoge este uso.${original}${alcance} Solo algunas indicaciones sensibles llevan esta criba.`;
+        let html = ` <span class="match-filter" title="${this._escapeHtml(titulo)}">confirmados en ficha (4.1): ${c.confirmados} de ${c.candidatos}</span>`;
+        if (c.sinVerificar) {
+            html += ` <span class="match-filter match-filter--sin-verificar" title="No se pudo leer su sección 4.1: se muestran sin haber comprobado que tengan esta indicación">${c.sinVerificar} sin verificar</span>`;
+        }
+        return html;
+    }
+
+    /**
+     * Aviso PERSISTENTE de lo que la criba 4.1 no pudo leer. Va dentro del render, como el de lista
+     * incompleta: un toast se pierde al primer repintado y la marca seguiría sin explicarse.
+     * @private
+     */
+    _criba41AvisoHtml(data) {
+        const c = this._criba41Cuentas(data?.matchedIndication?.filterSummary);
+        if (!c || !c.sinVerificar) return '';
+        const motivos = [];
+        if (c.sinTexto) motivos.push(`${c.sinTexto} sin ficha segmentada en CIMA, ni propia ni del registro original`);
+        if (c.porFallo) motivos.push(`${c.porFallo} porque CIMA no respondió`);
+        if (c.porTiempo) motivos.push(`${c.porTiempo} porque se agotó el tiempo de la búsqueda`);
+        const n = c.sinVerificar;
+        return `
+            <div class="ind-parcial" role="status">
+                <p><i class="fas fa-triangle-exclamation"></i> <strong>${n} ${n === 1 ? 'medicamento' : 'medicamentos'} sin verificar en ficha técnica.</strong>
+                No se pudo leer su sección 4.1${motivos.length ? ` (${motivos.join('; ')})` : ''}. Se ${n === 1 ? 'muestra' : 'muestran'} para no ocultar ${n === 1 ? 'un medicamento que puede' : 'medicamentos que pueden'} tener esta indicación, con la marca «4.1 sin verificar»: no ${n === 1 ? 'está confirmado' : 'están confirmados'} y conviene comprobarlo en su ficha.</p>
+            </div>`;
+    }
+
+    /** Insignia de la criba 4.1 en la tarjeta: sin verificar, o confirmada con la ficha del original. @private */
+    _insigniaCriba41Html(med) {
+        if (med?._sectionUnverified) {
+            const motivo = med._sectionMotivo === 'sin-texto'
+                ? 'CIMA no tiene su ficha técnica en secciones (ni la propia ni la del registro original)'
+                : med._sectionMotivo === 'tiempo'
+                ? 'se agotó el tiempo de la búsqueda antes de leer su ficha'
+                : 'CIMA no respondió al pedir su ficha';
+            return `<span class="badge badge-41-sin-verificar" title="${this._escapeHtml(`Sin verificar: ${motivo}. Se muestra porque puede tener esta indicación, pero no se ha comprobado en su sección 4.1.`)}"><i class="fas fa-circle-question"></i> 4.1 sin verificar</span>`;
+        }
+        if (med?._sectionFuente === 'original') {
+            return `<span class="badge badge-41-original" title="${this._escapeHtml(`Importación paralela sin ficha propia en secciones: la indicación se comprobó en la ficha del registro original ${med._sectionRegistro || ''}.`.replace(' .', '.'))}"><i class="fas fa-link"></i> 4.1 del original</span>`;
+        }
+        return '';
     }
 
     /** Códigos ATC de la búsqueda que no respondieron (`CimaAPI._consultarGruposATC`). */
@@ -4449,13 +4530,13 @@ class MedCheckApp {
         };
         const fs = data.matchedIndication?.filterSummary;
         if (fs && resumen) {
-            data.matchedIndication.filterSummary = {
-                ...fs,
-                candidates: fs.candidates + resumen.candidates,
-                checked: fs.checked + resumen.checked,
-                matched: fs.matched + resumen.matched,
-                errors: fs.errors + resumen.errors,
-            };
+            // Se suman TODAS las cuentas de la criba (también confirmados, no verificables por
+            // motivo y procedencia, R2): si solo se sumaran algunas, la cabecera mezclaría dos pasadas.
+            const sumado = { ...fs };
+            for (const [k, v] of Object.entries(resumen)) {
+                if (typeof v === 'number') sumado[k] = (Number(fs[k]) || 0) + v;
+            }
+            data.matchedIndication.filterSummary = sumado;
         }
         return data;
     }
@@ -4826,6 +4907,11 @@ class MedCheckApp {
         // dispensa—, no una advertencia de seguridad.
         if (!this._hasFichaTecnicaSeccionada(med)) badges.push('<span class="badge badge-sin-ft" title="CIMA no publica ficha técnica con secciones para este registro, así que no hay Indicaciones, Posología, Interacciones ni Seguridad que mostrar. Ocurre en importaciones paralelas y en medicamentos antiguos; la información clínica está en el registro principal del mismo producto."><i class="fas fa-file-circle-xmark"></i> Sin ficha técnica</span>');
         if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'documentacion')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
+        // Criba 4.1 (R2, 22/11/2026): lo que entró sin que se pudiera leer su ficha lo dice en la
+        // propia tarjeta, que es donde se mira; y lo confirmado con la ficha de OTRO registro (el
+        // original de una importación paralela) dice de cuál.
+        const insignia41 = this._insigniaCriba41Html(med);
+        if (insignia41) badges.push(insignia41);
 
         // Sin accesos contextuales desde el 15/11/2026: los pintaba un contexto de paciente
         // global que ya no existe. El atajo vive en la pestaña Seguridad (`verAtajoSeguridad`).
@@ -6672,9 +6758,17 @@ class MedCheckApp {
         const vias = [...new Set(meds.flatMap(m => (m.viasAdministracion || []).map(v => this._consultVia(v?.nombre))).filter(Boolean))];
         const sinVia = meds.filter(m => !(m.viasAdministracion || []).some(v => v?.nombre)).length;
         const formas = [...new Set(meds.map(m => this._consultForma(m)).filter(Boolean))];
+        // Criba 4.1 (R2, 22/11/2026). No es lo mismo que `sinVerificar` (ATC no comprobado: esos
+        // NO están en la lista): estos SÍ están, pero sin haber leído su ficha. Se cuentan sobre lo
+        // que queda en pantalla con los filtros, que es lo que se pregunta.
+        const criba41 = !!mi?.filterSummary;
+        const sinVerificar41 = criba41 ? meds.filter(m => m?._sectionUnverified).length : 0;
+        // Criba solo sobre parte de los ATC (`atcScope`): el resto entró por su grupo, sin leer su ficha.
+        const criba41Parcial = criba41 && (Number(mi.filterSummary.sinCribar) || 0) > 0;
         return {
             kind: 'grupo', pas, atcs, consultados, noConsultados, sinVerificar, vias, sinVia, formas, total: meds.length,
             indicacion: (!atcCode && mi?.label) ? mi.label : null, nombre: null,
+            criba41, criba41Parcial, sinVerificar41,
         };
     }
 
@@ -6692,6 +6786,7 @@ class MedCheckApp {
         if (scope.vias.length) partes.push(scope.vias.length === 1 ? `vía ${scope.vias[0]}` : `vías ${scope.vias.join(', ')}`);
         if (scope.noConsultados?.length) partes.push(`lista incompleta: sin respuesta de ${scope.noConsultados.map(c => c.codigo).join(', ')}`);
         if (scope.sinVerificar?.length) partes.push(`lista incompleta: medicamentos sin verificar en ${scope.sinVerificar.map(c => c.codigo).join(', ')}`);
+        if (scope.sinVerificar41) partes.push(`${scope.sinVerificar41} sin verificar en ficha técnica (4.1)`);
         return partes.join(' — ');
     }
 
@@ -6959,6 +7054,13 @@ class MedCheckApp {
             if (scope.sinVerificar?.length) {
                 const n = scope.sinVerificar.reduce((s, c) => s + c.n, 0);
                 lines.push(`- LISTA INCOMPLETA: en los ATC ${atcTxt(scope.sinVerificar)} no se pudo comprobar el ATC de ${n} medicamento(s), que no se incluyen. Pueden faltar principios activos de esos grupos; no concluyas que no existen.`);
+            }
+            if (scope.criba41) {
+                lines.push(scope.sinVerificar41
+                    ? `- La lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica, pero de ${scope.sinVerificar41} de los ${scope.total} medicamentos no se pudo leer: se incluyen SIN confirmar que tengan esta indicación autorizada. No afirmes que todos la tienen; distingue lo que la ficha confirma.`
+                    : scope.criba41Parcial
+                    ? '- Parte de la lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica; el resto entra por su grupo ATC.'
+                    : '- La lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica de cada medicamento.');
             }
             lines.push('Si la respuesta depende de la molécula, la forma, la concentración o la población, distingue.');
             if (duda) lines.push('', `PREGUNTA DEL CLÍNICO (responde PRIMERO qué sostienen las fuentes, bajo qué condiciones y qué no permiten concluir; sin datos identificables): ${duda}`);
@@ -17399,9 +17501,7 @@ ${ftFechaDocsHtml}
                 + (fallo ? '<span class="match-atc-fallo">sin respuesta</span>' : '');
         }).join('<span class="match-atc-sep">·</span>');
         const miFs = mi?.filterSummary;
-        const miFilterNote = miFs
-            ? ` <span class="match-filter" title="Esta indicación lleva criba adicional por ficha técnica: de ${miFs.candidates} candidatos por grupo ATC se muestran los ${miFs.matched} cuya sección 4.1 (indicaciones autorizadas) recoge este uso. Solo algunas indicaciones sensibles llevan esta criba.">verificados en ficha (4.1): ${miFs.matched} de ${miFs.candidates}</span>`
-            : '';
+        const miFilterNote = miFs ? this._criba41NotaHtml(miFs, mi) : '';
         const miAtcTitle = fallidos.length > sinVerificar.size
             ? 'Grupos ATC de esta indicación; los tachados no se pudieron consultar'
             : fallidos.length
@@ -17438,6 +17538,7 @@ ${ftFechaDocsHtml}
                 <button type="button" class="btn btn-sm btn-ai-chatgpt ind-ai-toggle" aria-expanded="${indAiOpen}" aria-controls="ind-ai-slot" onclick="app.toggleIndAiPanel()" title="Preparar una pregunta a una IA externa sobre este grupo, sin marcas ni presentaciones"><i class="fas fa-robot"></i> Preguntar a IA</button>
             </div>
             ${this._indicacionParcialHtml(data, universe.length)}
+            ${this._criba41AvisoHtml(data)}
             <div id="ind-ai-slot">${indAiPanel}</div>
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, {
                 showDoses: false, showEFG: true, parcial: fallidos.length > 0,

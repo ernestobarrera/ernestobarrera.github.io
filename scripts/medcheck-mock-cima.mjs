@@ -13,6 +13,9 @@
  *                 ok      → todo funciona a la primera
  *   MC_MOCK_TERM  término de la ontología cuya fraseología se inyecta en la 4.1 sintética
  *   MC_MOCK_GAPS  nregistros extra (coma) que la 4.1 recluta pero el universo ATC no ve → GAPs
+ *   MC_MOCK_DOC_SIN_SECCIONES  nregistros (coma) cuya 4.1 responde 200 con `{"error":"No existen
+ *                 secciones…"}`, como CIMA con las importaciones paralelas: no hay texto que leer
+ *   MC_MOCK_DOC_VACIO  nregistros (coma) cuya 4.1 responde 200 con un array vacío
  *
  * Maestra ATC y recuentos (los consumen --cobertura-atc y --vigilar-broad):
  *   MC_MOCK_ATC                 códigos que devuelve la maestra
@@ -102,6 +105,10 @@ globalThis.fetch = async (input) => {
     return json({ totalFilas: meds.length, resultados: meds });
   }
   if (url.pathname.includes('/docSegmentado/')) {
+    const nreg = url.searchParams.get('nregistro') || '';
+    const lista = (v) => (process.env[v] || '').split(',').map(x => x.trim()).filter(Boolean);
+    if (lista('MC_MOCK_DOC_SIN_SECCIONES').includes(nreg)) return json({ error: 'No existen secciones para el medicamento indicado' });
+    if (lista('MC_MOCK_DOC_VACIO').includes(nreg)) return json([]);
     return new Response(phraseSoup, { status: 200, headers: { 'content-type': 'text/plain' } });
   }
   return new Response('mock: endpoint no contemplado', { status: 404 });

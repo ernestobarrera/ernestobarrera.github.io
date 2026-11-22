@@ -19,6 +19,11 @@
  *      criba, solo deja de tirar lo que no ha mirado;
  *   5. el texto se lee como en pantalla (CimaAPI.textoFT): entidades sin DOM y palabras que CIMA
  *      parte entre <span>.
+ *   6. (R2, 22/11/2026) confirmado, descartado y no verificable se cuentan aparte: `matched` es
+ *      solo lo confirmado, cada no verificable lleva su motivo, lo confirmado su procedencia (ficha
+ *      propia u original) y una revalidación con éxito limpia la marca anterior;
+ *   7. (R1) con `atcScope`, solo se lee la ficha de lo que cae bajo esos prefijos;
+ *   8. (R4) las entidades nombradas (`&ntilde;`, griegas, guion blando) casan igual con DOM y sin él.
  *
  * Uso: node scripts/medcheck-test-criba-41.mjs
  */
@@ -40,13 +45,16 @@ const SIN_SECCIONES = { error: 'No existen secciones para el medicamento indicad
 const seccion41 = (texto) => [{ seccion: '4.1', titulo: 'Indicaciones terapéuticas', contenido: `<p>${texto}</p>` }];
 
 /** `fichas[nregistro]`: cuerpo JSON de docSegmentado, o 'fallo' para un 503. */
-function cargarAPI(fichas) {
+function cargarAPI(fichas, opciones = {}) {
     const pedidas = [];
     const fetchImpl = async (url) => {
         const u = new URL(url, 'https://cima.test');
         const nreg = u.searchParams.get('nregistro');
         if (u.pathname.includes('/docSegmentado/contenido/')) pedidas.push(nreg);
         const cuerpo = fichas[nreg];
+        if (cuerpo === 204) {
+            return { ok: true, status: 204, statusText: 'No Content', headers: { get: () => null }, text: async () => '' };
+        }
         if (cuerpo === 'fallo') {
             return { ok: false, status: 503, statusText: 'Service Unavailable', headers: { get: () => 'text/plain' }, text: async () => 'error' };
         }
@@ -60,6 +68,9 @@ function cargarAPI(fichas) {
         Date, Math, JSON, Promise, Map, Set, RegExp, URL, URLSearchParams, Error,
         AbortSignal, AbortController, navigator: { onLine: true }, location: { search: '', href: '' },
     };
+    // Con `dom`, un `document` cuyo <textarea> NO decodifica nada: si la criba dependiera del DOM
+    // (como antes del 22/11), el resultado cambiaría. Tiene que dar lo mismo con él y sin él.
+    if (opciones.dom) sandbox.document = { createElement: () => { let v = ''; return { set innerHTML(x) { v = x; }, get value() { return v; }, get textContent() { return v; } }; } };
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
     vm.runInContext(`${apiSrc}\n;window.__CimaAPI = CimaAPI;`, sandbox, { filename: 'cima-api.js' });
@@ -137,7 +148,10 @@ console.log('— 3. Sin texto que leer, entra marcada y avisa —');
     ok('sin ficha segmentada (ni propia ni del original) → entra', JSON.stringify(ids(r)) === '["333","444IP"]', JSON.stringify(ids(r)));
     ok('marcadas como no verificadas', r.resultados.every(m => m._sectionUnverified === true));
     ok('cuentan en errors (dispara el aviso) y no en checked', r.summary.errors === 2 && r.summary.checked === 0, JSON.stringify(r.summary));
-    ok('matched cuadra con lo devuelto', r.summary.matched === 2, JSON.stringify(r.summary));
+    // R2 (22/11/2026): antes `matched` sumaba lo no leído y la cabecera decía «verificados: 2 de 2».
+    ok('lo no leído NO cuenta como verificado (matched = confirmados = 0)', r.summary.matched === 0 && r.summary.confirmed === 0, JSON.stringify(r.summary));
+    ok('lo que queda en la lista se cuenta aparte (shown = 2)', r.summary.shown === 2, JSON.stringify(r.summary));
+    ok('y dice por qué: sin texto que leer', r.summary.sinTexto === 2 && r.resultados.every(m => m._sectionMotivo === 'sin-texto'), JSON.stringify(r.summary));
 }
 
 // --- 4. El texto se lee como en pantalla (22/11/2026) ----------------------------------------
@@ -156,6 +170,90 @@ console.log('— 4. Entidades y palabras partidas —');
     ok('«migra&#241;a» casa con «migraña» sin DOM', ids(r).includes('E'), JSON.stringify(ids(r)));
     ok('una palabra partida entre <span> casa', ids(r).includes('S'), JSON.stringify(ids(r)));
     ok('y lo que no la nombra sigue fuera', !ids(r).includes('X'), JSON.stringify(ids(r)));
+}
+
+// --- 5. Tres destinos, y solo uno es «verificado» (R2, revisión de Codex del 22/11/2026) --------
+// El caso de Codex: una candidata sin texto daba `{checked:0, matched:1, errors:1}` y la cabecera
+// decía «verificados en ficha (4.1): 1 de 1».
+console.log('— 5. Confirmado, descartado y no verificable se cuentan por separado —');
+{
+    const { api } = cargarAPI({
+        C: seccion41('Tratamiento sintomático del síndrome de piernas inquietas.'),
+        D: seccion41('Enfermedad de Parkinson.'),
+        N: SIN_SECCIONES,
+        F: 'fallo',
+        V: 204,
+    });
+    const r = await api._filterIndicationResultsBySection([med('C'), med('D'), med('N'), med('F'), med('V')], FILTRO);
+    const s = r.summary;
+    ok('el caso de Codex ya no se rotula verificado: confirmed 1, matched 1', s.confirmed === 1 && s.matched === 1, JSON.stringify(s));
+    ok('descartado 1 (leído y sin la indicación)', s.excluded === 1 && s.checked === 2, JSON.stringify(s));
+    ok('no verificables 3, cada uno con su motivo', s.errors === 3 && s.sinTexto === 2 && s.porFallo === 1, JSON.stringify(s));
+    ok('en la lista: el confirmado y los tres no verificables', JSON.stringify(ids(r)) === '["C","F","N","V"]' && s.shown === 4, JSON.stringify(ids(r)));
+    const porId = Object.fromEntries(r.resultados.map(m => [m.nregistro, m]));
+    ok('el confirmado no lleva marca de «sin verificar» y sí su procedencia', !porId.C._sectionUnverified && porId.C._sectionFuente === 'propia');
+    ok('un 204 es «sin texto», no un fallo de red', porId.V._sectionMotivo === 'sin-texto' && porId.F._sectionMotivo === 'red', `${porId.V._sectionMotivo} / ${porId.F._sectionMotivo}`);
+}
+{
+    // Procedencia: la importación se confirma con la ficha del ORIGINAL, y lo dice.
+    const { api } = cargarAPI({ '97051006': seccion41('Síndrome de piernas inquietas.'), '97051006IP': SIN_SECCIONES });
+    const r = await api._filterIndicationResultsBySection([med('97051006IP')], FILTRO);
+    const m = r.resultados[0];
+    ok('IP confirmada por el original: fuente «original» y qué registro', m?._sectionFuente === 'original' && m?._sectionRegistro === '97051006', JSON.stringify(m));
+    ok('y cuenta en viaOriginal', r.summary.viaOriginal === 1, JSON.stringify(r.summary));
+}
+{
+    // Revalidar con éxito LIMPIA la marca anterior: el objeto puede venir de la caché con ella.
+    const objeto = med('R');
+    const a = cargarAPI({ R: 'fallo' });
+    await a.api._filterIndicationResultsBySection([objeto], FILTRO);
+    ok('primera pasada: fallo de red → marcado sin verificar', objeto._sectionUnverified === true);
+    const b = cargarAPI({ R: seccion41('Síndrome de piernas inquietas.') });
+    const r2 = await b.api._filterIndicationResultsBySection([objeto], FILTRO);
+    ok('segunda pasada con ficha: la marca desaparece', !objeto._sectionUnverified && !objeto._sectionMotivo && r2.summary.errors === 0, JSON.stringify(objeto));
+}
+
+// --- 6. Criba solo en parte de los ATC (`atcScope`, R1) -----------------------------------------
+console.log('— 6. atcScope: solo se lee la ficha de lo que cae bajo esos prefijos —');
+{
+    const conAtc = (n, codigo) => ({ nregistro: n, nombre: `MED ${n}`, atcs: [{ codigo, nivel: 5 }] });
+    const { api, pedidas } = cargarAPI({
+        '52612': seccion41('Anticoncepción. Dismenorreas. Endometriosis. Crisis ovulatorias.'),
+        '65067': seccion41('Anticoncepción oral.'),
+    });
+    const filtro = { section: '4.1', includeAny: ['endometriosis'], atcScope: ['G03AA07'] };
+    const r = await api._filterIndicationResultsBySection(
+        [conAtc('52612', 'G03AA07'), conAtc('65067', 'G03AA07'), conAtc('DIENO', 'G03DB08')], filtro);
+    ok('dentro del alcance entra la que tiene la indicación (Microgynon)', ids(r).includes('52612'), JSON.stringify(ids(r)));
+    ok('dentro del alcance sale la que no (Loette)', !ids(r).includes('65067'), JSON.stringify(ids(r)));
+    ok('fuera del alcance entra sin leer su ficha (dienogest)', ids(r).includes('DIENO') && !pedidas.includes('DIENO'), JSON.stringify(pedidas));
+    ok('el resumen cuenta solo lo cribado y aparte lo no cribado', r.summary.candidates === 2 && r.summary.sinCribar === 1 && r.summary.confirmed === 1, JSON.stringify(r.summary));
+}
+
+// --- 7. Entidades nombradas, con DOM y sin él (R4) ----------------------------------------------
+// `textoFT` solo decodificaba seis entidades nombradas: `migra&ntilde;a` no casaba con «migraña».
+// El DOM simulado no decodifica nada: si la criba dependiera de él, la versión con DOM fallaría.
+console.log('— 7. Entidades nombradas, con DOM y sin él —');
+for (const dom of [false, true]) {
+    const etiqueta = dom ? 'con DOM' : 'sin DOM';
+    const { api } = cargarAPI({
+        N: [{ seccion: '4.1', contenido: '<p>Profilaxis de la migra&ntilde;a.</p>' }],
+        U: [{ seccion: '4.1', contenido: '<p>Ping&uuml;inos y migra&Ntilde;A en may&uacute;sculas.</p>' }],
+        G: [{ seccion: '4.1', contenido: '<p>Bloqueante &beta;-adren&eacute;rgico; dosis &le; 10&nbsp;mg.</p>' }],
+        B: [{ seccion: '4.1', contenido: '<p>Profilaxis de la migra&shy;ña.</p>' }],
+    }, { dom });
+    const r = await api._filterIndicationResultsBySection([med('N'), med('U'), med('B')], { section: '4.1', includeAny: ['migraña'] });
+    ok(`«migra&ntilde;a» casa con «migraña» (${etiqueta})`, ids(r).includes('N'), JSON.stringify(ids(r)));
+    ok(`«&Ntilde;» mayúscula también (${etiqueta})`, ids(r).includes('U'), JSON.stringify(ids(r)));
+    ok(`un guion blando no parte la palabra (${etiqueta})`, ids(r).includes('B'), JSON.stringify(ids(r)));
+    const g = await api._filterIndicationResultsBySection([med('G')], { section: '4.1', includeAny: ['β-adrenérgico'] });
+    ok(`letras griegas y tildes nombradas (${etiqueta})`, ids(g).includes('G'), JSON.stringify(g.summary));
+}
+{
+    const { CimaAPI } = cargarAPI({});
+    ok('textoFT decodifica las nombradas habituales', CimaAPI.textoFT('a&ntilde;o &ccedil; &ordm; &laquo;x&raquo; &mdash; &hellip;') === 'año ç º «x» — …', CimaAPI.textoFT('a&ntilde;o &ccedil; &ordm; &laquo;x&raquo; &mdash; &hellip;'));
+    ok('una entidad desconocida se deja tal cual, no se inventa', CimaAPI.textoFT('&noexiste; y &amp;') === '&noexiste; y &');
+    ok('las seis de siempre siguen valiendo en mayúsculas', CimaAPI.textoFT('&AMP; &NBSP;x') === '& x');
 }
 
 console.log(fallos ? `\n${fallos} fallo(s).` : '\nTODO OK — la criba 4.1 solo quita lo que ha leído.');

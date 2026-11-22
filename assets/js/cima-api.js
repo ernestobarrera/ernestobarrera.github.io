@@ -56,7 +56,7 @@ class CimaAPI {
      * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
      * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
      */
-    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20261122d') {
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20261122e') {
         if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
         if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
         this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
@@ -103,8 +103,13 @@ class CimaAPI {
             for (const [termino, datos] of Object.entries(CimaAPI.CLINICAL_DICTIONARY || {})) {
                 if (datos?.status === 'needsSection41Filter') continue;
                 const codigos = Array.isArray(datos?.atc) ? datos.atc : (datos?.atc ? [datos.atc] : []);
+                // Criba parcial (`section41Filter.atcScope`, 22/11/2026): esos códigos solo entran
+                // por su 4.1, así que tampoco se le atribuyen enteros a la entrada. El resto sí.
+                const filtro = datos?.section41Filter || datos?.sectionFilter;
+                const cribados = (Array.isArray(filtro?.atcScope) ? filtro.atcScope : []).map(a => String(a).toUpperCase());
                 for (const prefijo of codigos) {
                     const p = String(prefijo).toUpperCase();
+                    if (cribados.some(c => p.startsWith(c))) continue;
                     if (!porPrefijo.has(p)) porPrefijo.set(p, []);
                     porPrefijo.get(p).push(termino);
                 }
@@ -193,8 +198,24 @@ class CimaAPI {
      * cortar una petición que iba a llegar. `options.timeoutMs` lo ajusta quien llame.
      */
     async _request(endpoint, options = {}, useCache = true) {
-        const { timeoutMs = CimaAPI.REQUEST_TIMEOUT_MS, ...fetchOptions } = options;
+        const { timeoutMs = CimaAPI.REQUEST_TIMEOUT_MS, limitador = null, ...fetchOptions } = options;
         const cacheKey = `${fetchOptions.method || 'GET'}:${endpoint}`;
+
+        // LIMITADOR (R5, 22/11/2026): si la petición forma parte de una búsqueda con presupuesto,
+        // espera turno ANTES de salir y lo devuelve al terminar, salga bien o mal. El corte por
+        // tiempo de 15 s se arma DESPUÉS de conseguir el turno (en la llamada interior): esperar
+        // en la cola no puede gastar el tiempo de la petición. Una caché válida no espera turno.
+        if (limitador) {
+            const enCache = useCache && !!fetchOptions.headers?.['X-MC-Autocomplete'] && this._hasValidCache(cacheKey);
+            if (!enCache) {
+                await limitador.adquirir(fetchOptions.signal);
+                try {
+                    return await this._request(endpoint, { ...options, limitador: null }, useCache);
+                } finally {
+                    limitador.soltar();
+                }
+            }
+        }
 
         // Las peticiones primarias (sin X-MC-Autocomplete) siempre van a red
         // para que el Worker registre la analítica. Las secundarias usan caché.
@@ -272,6 +293,9 @@ class CimaAPI {
             return data;
 
         } catch (error) {
+            // Plazo total de la búsqueda agotado (`_presupuestoPeticiones`): ya viene con
+            // `code: 'TIMEOUT'` y su propio mensaje; no es «esta petición tardó 15 s».
+            if (error?.presupuesto) throw error;
             // `AbortSignal.timeout` lanza TimeoutError, NO AbortError: es nuestro corte, no una
             // cancelación de quien llama, y tiene que distinguirse para que la UI pueda decir
             // «CIMA no responde» en vez de un error genérico de red.
@@ -968,7 +992,7 @@ class CimaAPI {
      * grupo anatómico-terapéutico. Si CIMA no responde, el nombre se queda en `null` y se ve el
      * código: degradar a un título más pobre, nunca a uno inventado.
      */
-    async hydrateAtcNames(meds, { max = 60, batch = 10 } = {}) {
+    async hydrateAtcNames(meds, { max = 60, batch = 10, peticion = {} } = {}) {
         if (!Array.isArray(meds) || !meds.length) return;
         const cache = this._atcNameCacheRead();
 
@@ -991,7 +1015,8 @@ class CimaAPI {
                 const lote = porNregistro.slice(i, i + batch);
                 await Promise.all(lote.map(async (nregistro) => {
                     try {
-                        const full = await this.getMedicamento(nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
+                        // `peticion`: limitador y plazo de la búsqueda que lo pide (R5).
+                        const full = await this.getMedicamento(nregistro, { ...peticion, headers: { 'X-MC-Autocomplete': '1' } });
                         for (const a of (Array.isArray(full?.atcs) ? full.atcs : [])) {
                             if (a?.codigo && a?.nombre) cache[a.codigo] = a.nombre;
                         }
@@ -1059,9 +1084,14 @@ class CimaAPI {
      */
     async searchByATC(atcCode, options = {}) {
         const upperCode = atcCode.toUpperCase();
+        // Limitador y plazo de la búsqueda que nos llama (R5): llegan a TODAS las peticiones de
+        // este grupo, también a las de verificación del ATC, que antes iban por su cuenta.
+        const red = {};
+        if (options.limitador) red.limitador = options.limitador;
+        if (options.signal) red.signal = options.signal;
         const analyticsOptions = options.noTrack
-            ? { headers: { 'X-MC-Autocomplete': '1' } }
-            : {};
+            ? { ...red, headers: { 'X-MC-Autocomplete': '1' } }
+            : { ...red };
 
         console.log(`🔍 Buscando ATC ${upperCode}...`);
 
@@ -1172,7 +1202,7 @@ class CimaAPI {
                     const batch = needsVerification.slice(i, i + batchSize);
                     const batchPromises = batch.map(async (med) => {
                         try {
-                            const fullMed = await this.getMedicamento(med.nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
+                            const fullMed = await this.getMedicamento(med.nregistro, { ...red, headers: { 'X-MC-Autocomplete': '1' } });
                             if (fullMed && fullMed.atcs && Array.isArray(fullMed.atcs) && fullMed.atcs.length > 0) {
                                 const matches = fullMed.atcs.some(atc =>
                                     atc.codigo && atc.codigo.toUpperCase().startsWith(upperCode)
@@ -1185,6 +1215,8 @@ class CimaAPI {
                             return { med, valid: false };
                         } catch (e) {
                             if (e?.code === 'NO_CONTENT') return { med, valid: false };
+                            // Una cancelación de quien llama no es un medicamento sin verificar.
+                            if (e?.name === 'AbortError') throw e;
                             return { med, valid: false, fallo: true };
                         }
                     });
@@ -1214,7 +1246,7 @@ class CimaAPI {
             // Los resueltos por índice traen la jerarquía pero no la nomenclatura. Sin esto la
             // agrupación por ATC titula con el código desnudo, que es lo que Ernesto encontró en
             // producción el 2026-09-14: 1.475 grupos «Sin nombre».
-            await this.hydrateAtcNames(allResults);
+            await this.hydrateAtcNames(allResults, { peticion: red });
         }
 
         // Deduplicar por nregistro
@@ -1306,27 +1338,116 @@ class CimaAPI {
      */
     async _executeIndicationSearch(matchData, options) {
         const atcCodes = Array.isArray(matchData.atc) ? matchData.atc : [matchData.atc];
-        const { resultados: uniqueResults, consulta } = await this._consultarGruposATC(atcCodes, options);
+        // Un solo presupuesto para los grupos ATC y la criba 4.1 (R5): mismo limitador de
+        // peticiones simultáneas y mismo plazo total. Ver `_presupuestoPeticiones`.
+        const presupuesto = this._presupuestoPeticiones(options);
+        const peticion = { limitador: presupuesto.limitador, signal: presupuesto.signal };
+        try {
+            const { resultados: uniqueResults, consulta } = await this._consultarGruposATC(atcCodes, { ...options, ...peticion });
 
-        const sectionFilter = matchData.section41Filter || matchData.sectionFilter;
-        if (sectionFilter) {
-            const filtered = await this._filterIndicationResultsBySection(uniqueResults, sectionFilter);
+            const sectionFilter = matchData.section41Filter || matchData.sectionFilter;
+            if (sectionFilter) {
+                const filtered = await this._filterIndicationResultsBySection(uniqueResults, sectionFilter, peticion);
+                return {
+                    resultados: filtered.resultados,
+                    totalFilas: filtered.resultados.length,
+                    matchedIndication: {
+                        ...matchData,
+                        filterSummary: filtered.summary
+                    },
+                    consulta,
+                };
+            }
+
             return {
-                resultados: filtered.resultados,
-                totalFilas: filtered.resultados.length,
-                matchedIndication: {
-                    ...matchData,
-                    filterSummary: filtered.summary
-                },
+                resultados: uniqueResults,
+                totalFilas: uniqueResults.length,
+                matchedIndication: matchData,
                 consulta,
             };
+        } finally {
+            presupuesto.liberar();
         }
+    }
 
+    // Presupuesto común de una búsqueda por indicación (R5, 22/11/2026). Ver `_presupuestoPeticiones`.
+    static INDICACION_MAX_PETICIONES = 12;
+    static INDICACION_PRESUPUESTO_MS = 90000;
+
+    /**
+     * PRESUPUESTO COMÚN de las peticiones de una búsqueda por indicación (R5 de la revisión de
+     * Codex, 22/11/2026).
+     *
+     * Una búsqueda pide a CIMA en tres niveles: los grupos ATC (4 a la vez), dentro de cada grupo
+     * la verificación del ATC de los medicamentos que llegan sin él (lotes de 20) y la criba 4.1
+     * (lotes de 12). Cada nivel tenía su propio tope y se multiplicaban: con el índice ATC ausente
+     * o caducado —`loadAtcIndex` lo descarta a los 3 días— eran 4 × 20 = 80 peticiones a la vez. Y
+     * no había plazo total: 297 fichas con CIMA colgado son 25 tandas de 15 s.
+     *
+     * Ahora todas las peticiones de la búsqueda pasan por UN limitador (`limitador`, que aplica
+     * `_request`) y llevan UNA señal con plazo total (`signal`, combinada con la de quien llama si
+     * trae una). Agotado el plazo, lo que falte NO se convierte en cero: los grupos que no
+     * respondieron constan como `timeout` y las fichas sin leer entran como no verificadas por
+     * tiempo. `liberar()` desarma el plazo; hay que llamarlo siempre al terminar.
+     */
+    _presupuestoPeticiones(options = {}, plazoMs = CimaAPI.INDICACION_PRESUPUESTO_MS) {
+        const limitador = options.limitador || CimaAPI.crearLimitador(CimaAPI.INDICACION_MAX_PETICIONES);
+        let reloj = null;
+        let plazo = null;
+        if (typeof AbortController !== 'undefined') {
+            const ctrl = new AbortController();
+            reloj = setTimeout(() => {
+                const err = new Error(`Se agotó el tiempo total de la búsqueda (${Math.round(plazoMs / 1000)} s)`);
+                err.name = 'TimeoutError';
+                err.code = 'TIMEOUT';
+                err.presupuesto = true;
+                ctrl.abort(err);
+            }, plazoMs);
+            plazo = ctrl.signal;
+        }
+        const senales = [options.signal, plazo].filter(Boolean);
+        const signal = senales.length > 1 && typeof AbortSignal !== 'undefined' && AbortSignal.any
+            ? AbortSignal.any(senales)
+            : senales[0];
+        return { limitador, signal, liberar: () => { if (reloj) clearTimeout(reloj); } };
+    }
+
+    /**
+     * Semáforo de peticiones: como mucho `max` a la vez; el resto espera turno en orden de
+     * llegada. Un turno que espera y cuya señal se aborta sale de la cola con el motivo de la
+     * señal, sin llegar a pedir nada. Lo usa `_request` cuando recibe `options.limitador`.
+     */
+    static crearLimitador(max) {
+        let activos = 0;
+        const cola = [];
+        const motivo = (signal) => signal.reason
+            ?? Object.assign(new Error('Petición cancelada'), { name: 'AbortError' });
         return {
-            resultados: uniqueResults,
-            totalFilas: uniqueResults.length,
-            matchedIndication: matchData,
-            consulta,
+            max,
+            get activos() { return activos; },
+            get enCola() { return cola.length; },
+            adquirir(signal) {
+                if (signal?.aborted) return Promise.reject(motivo(signal));
+                if (activos < max) { activos += 1; return Promise.resolve(); }
+                return new Promise((resolve, reject) => {
+                    const turno = { resolve, signal, alAbortar: null };
+                    if (signal?.addEventListener) {
+                        turno.alAbortar = () => {
+                            const i = cola.indexOf(turno);
+                            if (i >= 0) { cola.splice(i, 1); reject(motivo(signal)); }
+                        };
+                        signal.addEventListener('abort', turno.alAbortar, { once: true });
+                    }
+                    cola.push(turno);
+                });
+            },
+            soltar() {
+                const turno = cola.shift();
+                if (!turno) { activos -= 1; return; }
+                // El hueco pasa directamente al siguiente: `activos` no cambia.
+                if (turno.alAbortar) turno.signal.removeEventListener('abort', turno.alAbortar);
+                turno.resolve();
+            },
         };
     }
 
@@ -1361,9 +1482,13 @@ class CimaAPI {
         const completos = [];
         const fallidos = [];
         let allResults = [];
+        // Las peticiones de TODOS los grupos, también las de verificación de ATC que cada uno lanza
+        // dentro, comparten un limitador (R5). Si quien llama no trae el suyo, uno propio.
+        if (!options.limitador) options = { ...options, limitador: CimaAPI.crearLimitador(CimaAPI.INDICACION_MAX_PETICIONES) };
         // Hasta 4 grupos a la vez (22/11/2026). En serie, una indicación con muchos códigos ATC5
-        // tardaba la suma de todos: «hipertensión» con 40 códigos, 19 s con la caché del Worker
-        // caliente y 76 s en frío. Las respuestas se recogen por índice y se procesan después en
+        // tardaba la suma de todos: «hipertensión» tiene 43 códigos (los 19 s con la caché caliente
+        // y 76 s en frío que se midieron con 40 no los reprodujo Codex: varían código, caché y red;
+        // no son un ensayo de rendimiento). Las respuestas se recogen por índice y se procesan después en
         // el orden de `atcCodes`, así que resultados, completos y fallidos salen igual que antes.
         const respuestas = new Array(atcCodes.length);
         let siguiente = 0;
@@ -1378,6 +1503,9 @@ class CimaAPI {
             }
         };
         await Promise.all(Array.from({ length: Math.min(4, atcCodes.length) }, trabajador));
+        // Una cancelación deliberada de quien llama no es un grupo fallido: se propaga.
+        const cancelada = respuestas.find(r => r?.error?.name === 'AbortError');
+        if (cancelada) throw cancelada.error;
         for (let i = 0; i < atcCodes.length; i++) {
             const atcCode = atcCodes[i];
             try {
@@ -1427,56 +1555,107 @@ class CimaAPI {
      * Filtra resultados por texto oficial de una sección de ficha técnica.
      * Se usa para indicaciones sensibles (p. ej. oncología), donde el ATC por sí solo
      * agrupa fármacos de muchos tumores distintos.
+     *
+     * TRES DESTINOS, y solo uno es «verificado» (R2 de la revisión de Codex, 22/11/2026):
+     *  - CONFIRMADO: se leyó la sección y recoge el uso. Entra. Lleva `_sectionFuente`
+     *    ('propia' u 'original', con `_sectionRegistro` si la ficha leída es la del registro
+     *    original de una importación paralela).
+     *  - DESCARTADO: se leyó y no lo recoge. Sale.
+     *  - NO VERIFICABLE: no hubo texto que leer (ni propio ni del original) o la lectura falló.
+     *    Entra igualmente —ocultar un fármaco que puede tener la indicación sería peor—, pero
+     *    marcado `_sectionUnverified` con `_sectionMotivo` ('sin-texto', 'red' o 'tiempo'), y
+     *    cuenta en `errors`.
+     * Hasta hoy `summary.matched` sumaba confirmados y no verificables, y la cabecera decía
+     * «verificados en ficha (4.1): 1 de 1» de una ficha que no se había podido leer. Ahora
+     * `matched` = `confirmed`, y lo que queda en la lista es `shown`.
+     *
+     * El estado de cada medicamento se LIMPIA antes de cribarlo: el objeto puede venir de la caché
+     * con la marca de una pasada anterior, y una revalidación con éxito no puede conservarla.
+     *
+     * `filter.atcScope` (opcional): la criba se aplica solo a los medicamentos con ATC bajo esos
+     * prefijos; el resto entra sin leer su ficha y se cuenta en `sinCribar`. Ver `enAlcanceCriba`.
+     *
+     * `options`: `limitador` y `signal` de la búsqueda (R5, `_presupuestoPeticiones`). Sin ellos
+     * —el reintento de grupos fallidos llama aquí directamente— se arma un presupuesto propio.
      * @private
      */
-    async _filterIndicationResultsBySection(medications, filter) {
+    async _filterIndicationResultsBySection(medications, filter, options = {}) {
         const section = filter.section || '4.1';
-        const includeAny = this._normalizeSectionFilterTerms(filter.includeAny || filter.terms || []);
-        const includeAll = this._normalizeSectionFilterTerms(filter.includeAll || []);
-        const excludeAny = this._normalizeSectionFilterTerms(filter.excludeAny || []);
         const batchSize = filter.batchSize || 12;
+        const propio = options.limitador ? null : this._presupuestoPeticiones(options);
+        const red = propio
+            ? { limitador: propio.limitador, signal: propio.signal }
+            : { limitador: options.limitador, ...(options.signal ? { signal: options.signal } : {}) };
         const resultados = [];
+        const enAlcance = medications.filter(med => CimaAPI.enAlcanceCriba(med, filter.atcScope)).length;
         const summary = {
             section,
-            candidates: medications.length,
-            checked: 0,
-            matched: 0,
-            errors: 0
+            candidates: enAlcance,          // los que pasan por la criba
+            checked: 0,                     // sección leída (confirmed + excluded)
+            confirmed: 0,                   // leída y recoge el uso: en la lista
+            excluded: 0,                    // leída y no lo recoge: fuera
+            errors: 0,                      // no verificables: en la lista, SIN verificar
+            sinTexto: 0,                    //   … porque no había texto que leer
+            porFallo: 0,                    //   … porque falló la lectura (red)
+            porTiempo: 0,                   //   … porque se agotó el tiempo
+            viaOriginal: 0,                 // confirmados con la ficha del registro original
+            sinCribar: medications.length - enAlcance, // fuera de `atcScope`: en la lista sin leer
+            shown: 0,                       // de los cribados, los que quedan (confirmed + errors)
+            matched: 0,                     // = confirmed
+        };
+        const limpiar = (med) => {
+            delete med._sectionUnverified;
+            delete med._sectionMotivo;
+            delete med._sectionFuente;
+            delete med._sectionRegistro;
         };
 
-        for (let i = 0; i < medications.length; i += batchSize) {
-            const batch = medications.slice(i, i + batchSize);
-            const checked = await Promise.all(batch.map(async (med) => {
-                try {
-                    let text = this._normalizeSectionFilterText(await this.getDocSeccion(med.nregistro, section));
+        try {
+            for (let i = 0; i < medications.length; i += batchSize) {
+                const batch = medications.slice(i, i + batchSize);
+                const checked = await Promise.all(batch.map(async (med) => {
+                    limpiar(med);
+                    if (!CimaAPI.enAlcanceCriba(med, filter.atcScope)) return med;
                     // Importación paralela (sufijo IP, IP1…): CIMA no le segmenta la ficha y responde
-                    // con éxito `{"error":"No existen secciones…"}`, que getDocSeccion convierte en ''.
-                    // Su ficha es la del registro original, el mismo número sin el sufijo. Hasta el
-                    // 21/11/2026 ese vacío se leía como «no casa» y la presentación desaparecía de la
-                    // lista sin aviso (MIRAPEXIN 0,7 MG 97051006IP en «piernas inquietas»).
-                    for (const original of CimaAPI._registrosOriginalesDeImportacion(med.nregistro)) {
-                        if (text) break;
-                        text = this._normalizeSectionFilterText(await this.getDocSeccion(original, section));
+                    // con éxito `{"error":"No existen secciones…"}`. `leerSeccionCriba` prueba entonces
+                    // la del registro original. Hasta el 21/11/2026 ese vacío se leía como «no casa» y
+                    // la presentación desaparecía sin aviso (MIRAPEXIN 0,7 MG 97051006IP en «piernas
+                    // inquietas»).
+                    const lectura = await CimaAPI.leerSeccionCriba(med.nregistro,
+                        (nregistro) => this.getDocSeccion(nregistro, section, 1, red));
+                    if (lectura.estado === 'texto') {
+                        summary.checked++;
+                        if (!CimaAPI.casaFiltroSeccion(lectura.texto, filter)) {
+                            summary.excluded++;
+                            return null;
+                        }
+                        summary.confirmed++;
+                        med._sectionFuente = lectura.fuente;
+                        if (lectura.fuente === 'original') {
+                            summary.viaOriginal++;
+                            med._sectionRegistro = lectura.registro;
+                        }
+                        return med;
                     }
-                    // Sin texto no hay nada que comparar: es no poder leer la ficha, no una ficha que
-                    // no tenga la indicación. Va por la misma rama fail-open que un fallo de red.
-                    if (!text) throw new Error('SECCION_SIN_TEXTO');
-                    summary.checked++;
-                    return this._matchesSectionFilter(text, includeAny, includeAll, excludeAny) ? med : null;
-                } catch (error) {
-                    // Fail-open: si no podemos leer la ficha técnica (fallo de red/CIMA), NO ocultamos
-                    // un fármaco potencialmente válido. Lo incluimos marcado como no verificado y lo
-                    // contamos para avisar al usuario en la UI.
+                    // Fail-open: no poder leer la ficha no es una ficha sin la indicación. Se incluye
+                    // marcado, se cuenta y la pantalla lo dice (cabecera, tarjeta y contexto de IA).
                     summary.errors++;
+                    if (lectura.estado === 'sin-texto') summary.sinTexto++;
+                    else if (lectura.motivo === 'tiempo') summary.porTiempo++;
+                    else summary.porFallo++;
                     med._sectionUnverified = true;
+                    med._sectionMotivo = lectura.motivo;
                     return med;
-                }
-            }));
+                }));
 
-            resultados.push(...checked.filter(Boolean));
+                resultados.push(...checked.filter(Boolean));
+            }
+        } finally {
+            propio?.liberar();
         }
 
-        summary.matched = resultados.length;
+        summary.matched = summary.confirmed;
+        summary.shown = summary.confirmed + summary.errors;
         return { resultados, summary };
     }
 
@@ -1493,44 +1672,29 @@ class CimaAPI {
         return sinLetra && sinLetra !== m[1] ? [m[1], sinLetra] : [m[1]];
     }
 
+    // Ayudantes de instancia de la criba: delegan en las funciones ESTÁTICAS del contrato de lectura
+    // (`normalizarTextoCriba`, `terminoEnTextoCriba`), que son las que usa también el auditor.
     _normalizeSectionFilterTerms(terms) {
         return (Array.isArray(terms) ? terms : [terms])
             .filter(Boolean)
-            .map(term => this._normalizeSectionFilterText(term));
+            .map(term => CimaAPI.normalizarTextoCriba(term));
     }
 
     _normalizeSectionFilterText(value) {
-        // Pasa por `textoFT` (22/11/2026). Antes quitaba las etiquetas con un espacio y solo
-        // decodificaba entidades si había DOM: una palabra que CIMA parte entre <span>
-        // («migra</span><span>ña») no casaba ni en el navegador, y fuera de él tampoco
-        // `migra&#241;a`. Es el mismo defecto que textoFT corrigió el 03/10 en la 4.8 y la 4.5.
-        return CimaAPI.textoFT(value)
-            .toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/\s+/g, ' ')
-            .trim();
+        return CimaAPI.normalizarTextoCriba(value);
     }
 
     _matchesSectionFilter(text, includeAny, includeAll, excludeAny) {
-        const has = (term) => this._sectionTermInText(text, term);
+        const has = (term) => CimaAPI.terminoEnTextoCriba(text, term);
         if (includeAll.length > 0 && !includeAll.every(has)) return false;
         if (includeAny.length > 0 && !includeAny.some(has)) return false;
         if (excludeAny.length > 0 && excludeAny.some(has)) return false;
         return includeAny.length > 0 || includeAll.length > 0;
     }
 
-    /**
-     * ¿Aparece `term` en `text` (ya normalizado) al INICIO de una palabra?
-     * Antes se usaba includes() puro y un token corto como "recto" casaba dentro de
-     * "directo", o "renal" dentro de "suprarrenal". Exigir frontera SOLO al inicio mata
-     * esos falsos positivos pero conserva la morfología española (renal→renales,
-     * mama→mamario) y las frases ("carcinoma de celulas renales").
-     * @private
-     */
+    /** @private Ver `CimaAPI.terminoEnTextoCriba`. */
     _sectionTermInText(text, term) {
-        if (!term) return false;
-        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        return new RegExp(`(^|[^a-z0-9])${escaped}`).test(text);
+        return CimaAPI.terminoEnTextoCriba(text, term);
     }
 
     /**
@@ -2505,17 +2669,38 @@ class CimaAPI {
             options
         );
 
-        // La API devuelve un array de objetos con {seccion, titulo, contenido, orden}
-        // IMPORTANTE: Algunas secciones tienen subsecciones (ej: 4.2 -> 4.2.1, 4.2.2)
-        // El elemento 0 (la sección padre) suele estar vacío, el contenido real está en los hijos
-        let data = response;
+        // La respuesta se interpreta en `htmlDeSeccion`, que es la MISMA función con la que lee el
+        // auditor (contrato de la criba 4.1, ver allí). Array de subsecciones concatenado, objeto
+        // con `contenido` o HTML; vacío si CIMA responde `{"error":…}` o un array sin contenido.
+        return CimaAPI.htmlDeSeccion(response);
+    }
 
-        // Si viene como string JSON, parsearlo
+    // ============================================
+    // CONTRATO DE LECTURA DE LA CRIBA 4.1 (compartido con el auditor)
+    // ============================================
+    // R3 de la revisión de Codex (22/11/2026). El cliente y `medcheck-audit-ontology.mjs` leían la
+    // 4.1 cada uno a su manera: el auditor quitaba las etiquetas con un espacio («cardia ca»), no
+    // probaba la ficha del registro original de una importación paralela, contaba un array vacío
+    // como texto leído y convertía el `{"error":…}` de CIMA en «ausente», que la reconciliación se
+    // saltaba. Resultado: el auditor podía certificar sin haber leído. Estas funciones son puras
+    // (no tocan la red: reciben quién lee) y el auditor las carga de ESTE archivo
+    // (`scripts/lib/lectura-41.mjs`), así que la lectura no puede volver a divergir sin que los
+    // dos lados cambien a la vez. `medcheck-test-contrato-lectura-41.mjs` lo comprueba.
+
+    /**
+     * HTML de una sección a partir de la respuesta de `docSegmentado/contenido`: array de
+     * `{seccion, titulo, contenido}` (se concatenan TODOS: las subsecciones llevan el contenido
+     * real), objeto con `contenido`, o texto. `''` si no hay nada que leer: array vacío, objeto
+     * `{"error":"No existen secciones…"}` (importaciones paralelas, fichas sin segmentar) o
+     * subsecciones sin contenido.
+     */
+    static htmlDeSeccion(response) {
+        let data = response;
         if (typeof response === 'string') {
             try {
                 data = JSON.parse(response);
             } catch (e) {
-                // Si no es JSON válido, devolver el string como HTML
+                // No es JSON: es el HTML de la sección.
                 return response;
             }
         }
@@ -2540,7 +2725,7 @@ class CimaAPI {
         // Si es un array, CONCATENAR el contenido de TODOS los elementos
         // (no solo el primero, ya que las subsecciones contienen el contenido real)
         if (Array.isArray(data) && data.length > 0) {
-            const allContent = data
+            return data
                 .map(item => {
                     // Añadir título de subsección si existe y hay contenido
                     const title = item.titulo ? `<strong>${item.titulo}</strong><br>` : '';
@@ -2556,16 +2741,116 @@ class CimaAPI {
                 // Un solo <br>: tras el bloque anterior deja una línea en blanco antes del título
                 // del subapartado. Con dos, ahora que los <br> se ven, eran 59 px de hueco.
                 .join('<br>');
-
-            return allContent;
         }
 
         // Si tiene propiedad contenido directamente
-        if (data && data.contenido) {
+        if (data && typeof data === 'object' && data.contenido) {
             return cleanContent(data.contenido);
         }
 
         return '';
+    }
+
+    /** Texto de la criba: el de pantalla (`textoFT`), en minúsculas, sin tildes y con espacios simples. */
+    static normalizarTextoCriba(value) {
+        return CimaAPI.textoFT(value)
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    /**
+     * ¿Aparece `term` en `text` (los dos ya normalizados) al INICIO de una palabra?
+     * Antes se usaba includes() puro y un token corto como "recto" casaba dentro de
+     * "directo", o "renal" dentro de "suprarrenal". Exigir frontera SOLO al inicio mata
+     * esos falsos positivos pero conserva la morfología española (renal→renales,
+     * mama→mamario) y las frases ("carcinoma de celulas renales").
+     */
+    static terminoEnTextoCriba(text, term) {
+        if (!term) return false;
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(^|[^a-z0-9])${escaped}`).test(text);
+    }
+
+    /**
+     * ¿Casa un texto ya normalizado con un filtro de sección? `filtro` trae `includeAny` (o
+     * `terms`), `includeAll` y `excludeAny` en bruto: se normalizan aquí, con la misma función que
+     * el texto. Sin ningún término de inclusión no casa nada.
+     */
+    static casaFiltroSeccion(texto, filtro = {}) {
+        const lista = (v) => (Array.isArray(v) ? v : (v ? [v] : [])).filter(Boolean).map(t => CimaAPI.normalizarTextoCriba(t));
+        const includeAny = lista(filtro.includeAny || filtro.terms);
+        const includeAll = lista(filtro.includeAll);
+        const excludeAny = lista(filtro.excludeAny);
+        const has = (term) => CimaAPI.terminoEnTextoCriba(texto, term);
+        if (includeAll.length > 0 && !includeAll.every(has)) return false;
+        if (includeAny.length > 0 && !includeAny.some(has)) return false;
+        if (excludeAny.length > 0 && excludeAny.some(has)) return false;
+        return includeAny.length > 0 || includeAll.length > 0;
+    }
+
+    /**
+     * ¿Pasa este medicamento por la criba? Sin `atcScope`, todos. Con él, solo los que tienen
+     * algún ATC que empiece por uno de esos prefijos; el resto de la entrada entra sin leer su
+     * ficha, como en una entrada sin filtro.
+     *
+     * `atcScope` existe para lo que depende de la PRESENTACIÓN dentro de una entrada que por lo
+     * demás no necesita criba (R1, 22/11/2026): de las 23 presentaciones comercializadas de
+     * levonorgestrel/etinilestradiol (G03AA07) solo Microgynon tiene la endometriosis en su 4.1,
+     * y de las 15 de progesterona solo 4 tienen la menopausia. Meter el ATC entero repetiría el
+     * error por presentación; filtrar la entrada entera leería cientos de fichas sin necesidad.
+     */
+    static enAlcanceCriba(med, atcScope) {
+        const prefijos = (Array.isArray(atcScope) ? atcScope : (atcScope ? [atcScope] : []))
+            .map(p => String(p).toUpperCase()).filter(Boolean);
+        if (!prefijos.length) return true;
+        const codigos = (Array.isArray(med?.atcs) ? med.atcs : [])
+            .map(a => String(a?.codigo || '').toUpperCase()).filter(Boolean);
+        return codigos.some(c => prefijos.some(p => c.startsWith(p)));
+    }
+
+    /**
+     * Lee la sección de un medicamento para la criba, con el contrato que comparten cliente y
+     * auditor. `leer(nregistro)` devuelve el HTML de la sección (ya pasado por `htmlDeSeccion`)
+     * o lanza.
+     *
+     * Orden: la ficha propia y, si no da texto, la del registro original de una importación
+     * paralela (`_registrosOriginalesDeImportacion`). Un 204 (`NO_CONTENT`) es «aquí no hay
+     * texto» y se sigue probando; un fallo de red también se sigue probando, pero se recuerda.
+     *
+     * Devuelve uno de tres estados, y NINGUNO de los dos últimos significa «no tiene la indicación»:
+     *  - `texto`: `{ texto (normalizado), plano (textoFT), fuente: 'propia'|'original', registro }`.
+     *  - `sin-texto`: CIMA respondió y no hay texto segmentado que leer, ni propio ni del original.
+     *  - `error`: alguna lectura falló (red, corte por tiempo) y ninguna dio texto: no se sabe qué
+     *    dice. `motivo` es `tiempo` o `red`.
+     * Una cancelación deliberada (`AbortError`) no es un estado: se propaga.
+     */
+    static async leerSeccionCriba(nregistro, leer) {
+        const intentos = [String(nregistro), ...CimaAPI._registrosOriginalesDeImportacion(nregistro)];
+        let fallo = null;
+        for (let i = 0; i < intentos.length; i++) {
+            let html;
+            try {
+                html = await leer(intentos[i]);
+            } catch (error) {
+                if (error?.name === 'AbortError') throw error;
+                if (error?.code !== 'NO_CONTENT') fallo = fallo || error;
+                continue;
+            }
+            const plano = CimaAPI.textoFT(html);
+            if (plano) {
+                return {
+                    estado: 'texto',
+                    texto: CimaAPI.normalizarTextoCriba(html),
+                    plano,
+                    fuente: i === 0 ? 'propia' : 'original',
+                    registro: intentos[i],
+                };
+            }
+        }
+        if (fallo) return { estado: 'error', motivo: fallo.code === 'TIMEOUT' ? 'tiempo' : 'red', error: fallo };
+        return { estado: 'sin-texto', motivo: 'sin-texto' };
     }
 
     // Regex para detectar menciones de QT en texto de ficha técnica
@@ -2587,6 +2872,7 @@ class CimaAPI {
      */
     static textoFT(html) {
         const desde = (cp) => { try { return String.fromCodePoint(cp); } catch { return ' '; } };
+        const tabla = CimaAPI.ENTIDADES_HTML;
         return String(html || '')
             .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
             // BLOQUES = separador; etiquetas EN LÍNEA = nada. CIMA parte palabras entre <span>:
@@ -2598,13 +2884,64 @@ class CimaAPI {
             .replace(/\r\n|\n/g, ' ')
             .replace(/&#x([0-9a-f]+);/gi, (_, h) => desde(parseInt(h, 16)))
             .replace(/&#(\d+);/g, (_, d) => desde(parseInt(d, 10)))
-            .replace(/&(nbsp|amp|lt|gt|quot|apos);/gi, (_, n) => ({ nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" })[n.toLowerCase()])
+            // ENTIDADES NOMBRADAS (22/11/2026, R4 de la revisión de Codex): antes solo seis, y
+            // `migra&ntilde;a` no casaba con «migraña». Tabla fija (`ENTIDADES_HTML`), así que
+            // da lo mismo con DOM que sin él. Los nombres distinguen mayúsculas (`&Ntilde;` no
+            // es `&ntilde;`); solo las seis de siempre se aceptan también en mayúsculas, como
+            // antes. Una entidad que no está en la tabla se queda escrita tal cual.
+            .replace(/&([a-z][a-z0-9]{1,31});/gi, (m, n) => (Object.prototype.hasOwnProperty.call(tabla, n)
+                ? tabla[n]
+                : (/^(nbsp|amp|lt|gt|quot|apos)$/i.test(n) ? tabla[n.toLowerCase()] : m)))
+            // Lo invisible parte una palabra sin que se vea, igual que los <span>: guion blando
+            // (`&shy;`) y espacios de anchura cero.
+            .replace(/[\u00ad\u200b-\u200d\u2060\ufeff]/g, '')
             // NFC: una tilde ya descompuesta (`na\u0301useas`) se compone, y `plegar` puede
             // quitarla sin cambiar la longitud.
             .normalize('NFC')
             .replace(/[\s\u00a0]+/g, ' ')
             .trim();
     }
+
+    /**
+     * Entidades HTML nombradas que decodifica `textoFT`: todo Latin-1 (tildes, ñ, ü, ç, ordinales,
+     * comillas latinas, micro, más-menos, grado…), las letras griegas (alfa-bloqueante, beta-2) y
+     * la tipografía de una ficha exportada de Word (rayas, comillas curvas, puntos suspensivos,
+     * menor o igual). Se construye por punto de código, sin caracteres literales en el fuente.
+     */
+    static ENTIDADES_HTML = (() => {
+        const c = (cp) => String.fromCodePoint(cp);
+        const t = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+        // Latin-1, U+00A0…U+00FF, en orden de punto de código.
+        ('nbsp iexcl cent pound curren yen brvbar sect uml copy ordf laquo not shy reg macr deg plusmn '
+            + 'sup2 sup3 acute micro para middot cedil sup1 ordm raquo frac14 frac12 frac34 iquest Agrave '
+            + 'Aacute Acirc Atilde Auml Aring AElig Ccedil Egrave Eacute Ecirc Euml Igrave Iacute Icirc Iuml '
+            + 'ETH Ntilde Ograve Oacute Ocirc Otilde Ouml times Oslash Ugrave Uacute Ucirc Uuml Yacute THORN '
+            + 'szlig agrave aacute acirc atilde auml aring aelig ccedil egrave eacute ecirc euml igrave iacute '
+            + 'icirc iuml eth ntilde ograve oacute ocirc otilde ouml divide oslash ugrave uacute ucirc uuml '
+            + 'yacute thorn yuml').split(' ').forEach((n, i) => { t[n] = c(0xa0 + i); });
+        t.nbsp = ' ';
+        t.shy = '';
+        // Griego: Alpha…Omega (U+0391…, sin sigma final) y alpha…omega (U+03B1…U+03C9).
+        'alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigmaf sigma tau upsilon phi chi psi omega'
+            .split(' ').forEach((n, i) => {
+                t[n] = c(0x3b1 + i);
+                if (n !== 'sigmaf') t[n.charAt(0).toUpperCase() + n.slice(1)] = c(0x391 + i);
+            });
+        const sueltas = {
+            OElig: 0x152, oelig: 0x153, Scaron: 0x160, scaron: 0x161, Yuml: 0x178, fnof: 0x192, circ: 0x2c6, tilde: 0x2dc,
+            thetasym: 0x3d1, upsih: 0x3d2, piv: 0x3d6, ensp: 0x20, emsp: 0x20, thinsp: 0x20,
+            ndash: 0x2013, mdash: 0x2014, lsquo: 0x2018, rsquo: 0x2019, sbquo: 0x201a, ldquo: 0x201c, rdquo: 0x201d,
+            bdquo: 0x201e, dagger: 0x2020, Dagger: 0x2021, bull: 0x2022, hellip: 0x2026, permil: 0x2030, prime: 0x2032,
+            Prime: 0x2033, lsaquo: 0x2039, rsaquo: 0x203a, oline: 0x203e, frasl: 0x2044, euro: 0x20ac, trade: 0x2122,
+            larr: 0x2190, uarr: 0x2191, rarr: 0x2192, darr: 0x2193, harr: 0x2194, minus: 0x2212, lowast: 0x2217,
+            radic: 0x221a, prop: 0x221d, infin: 0x221e, asymp: 0x2248, ne: 0x2260, equiv: 0x2261, le: 0x2264, ge: 0x2265,
+            sdot: 0x22c5, loz: 0x25ca,
+        };
+        for (const [n, cp] of Object.entries(sueltas)) t[n] = c(cp);
+        // Invisibles: no separan nada en pantalla.
+        for (const n of ['zwnj', 'zwj', 'lrm', 'rlm']) t[n] = '';
+        return Object.freeze(t);
+    })();
 
     /**
      * Minúsculas y sin tildes, CARÁCTER A CARÁCTER Y SIN CAMBIAR LA LONGITUD: así una posición

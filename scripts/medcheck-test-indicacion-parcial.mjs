@@ -446,8 +446,8 @@ const datosSinVerificar = () => ({
 }
 
 // --- 8. Hasta 4 grupos a la vez, con el mismo resultado que en serie (22/11/2026) -------------
-// Con las listas ATC5 depuradas, «hipertensión» consulta 40 códigos; en serie tardaba 76 s en
-// frío. Las respuestas llegan desordenadas: lo que se devuelve tiene que salir en el orden de los
+// Con las listas ATC5 depuradas, «hipertensión» consulta 43 códigos, que en serie se suman uno
+// tras otro. Las respuestas llegan desordenadas: lo que se devuelve tiene que salir en el orden de los
 // códigos, con el mismo reparto de completos y fallidos y la misma deduplicación.
 console.log('— 8. En paralelo, mismo orden —');
 {
