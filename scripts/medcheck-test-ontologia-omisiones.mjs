@@ -60,6 +60,15 @@ debe('faringitis', 'J01FA10', 'azitromicina');
 debe('herpes', 'S01AD03', 'aciclovir oftálmico (queratitis herpética)');
 debe('dispepsia', 'A03FA08', 'cinitaprida');
 debe('verrugas', 'D06BB10', 'imiquimod');
+// La encontró él (22/11): su ficha dice «condiloma acuminado», no «verruga». Fallo de VOCABULARIO,
+// que la búsqueda inversa no ve; por eso la entrada lleva ahora los sinónimos de condiloma.
+debe('verrugas', 'D06BB04', 'podofilotoxina');
+{
+    const sin = (terms['verrugas']?.synonyms || []).map(s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase());
+    const ok = sin.includes('condiloma') && sin.includes('condiloma acuminado');
+    if (ok) console.log('✓ «verrugas» reconoce «condiloma» y «condiloma acuminado»');
+    else { fallos += 1; console.log('✗ «verrugas» no reconoce «condiloma»'); }
+}
 
 console.log('— Y el ruido quitado no vuelve —');
 noDebe('hipertensión', 'C02KX01', 'bosentán (hipertensión pulmonar)');
