@@ -272,12 +272,15 @@ if (live) {
     });
 
     const sectionFilter = entry.section41Filter || entry.sectionFilter;
-    if (sectionFilter && meds.length > 0) {
-      const checked = meds.slice(0, sectionLimit);
+    // Con `atcScope`, la muestra y el denominador salen SOLO de lo que se criba: los de fuera
+    // entran sin leer. Antes se muestreaba la entrada entera: «endometriosis» salía «0/1 de 55»
+    // aunque solo se criba G03AA07 y la muestra ni lo incluía (revisión del delta de Codex).
+    const cribables = sectionFilter ? meds.filter(med => enAlcanceCribaAuditor(med, sectionFilter.atcScope)) : [];
+    if (sectionFilter && cribables.length > 0) {
+      const checked = cribables.slice(0, sectionLimit);
       const { matched, unknown } = await countSectionMatches(checked, sectionFilter);
-      // (Con `atcScope`, los de fuera entran sin leer y no cuentan aquí: `matched` es de lo cribado.)
       if (unknown > 0) warnings.push(`${term}: ${unknown}/${checked.length} fichas no verificables al medir el filtro 4.1 (métrica informativa parcial)`);
-      sectionRows.push({ term, candidates: meds.length, checked: checked.length, matched });
+      sectionRows.push({ term, candidates: cribables.length, checked: checked.length, matched });
     }
   }
 }

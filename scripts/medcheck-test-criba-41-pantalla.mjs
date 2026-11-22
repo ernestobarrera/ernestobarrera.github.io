@@ -12,7 +12,9 @@
  *      también con resúmenes anteriores, cuyo `matched` sumaba los no verificables;
  *   2. el aviso de lo no verificado es persistente (va en el render) y dice por qué;
  *   3. cada tarjeta no verificada lo dice, y la confirmada con la ficha del original dice de cuál;
- *   4. el contexto de IA lo transmite: «Sobre:» y el prompt;
+ *   4. el contexto de IA lo transmite: «Sobre:» y el prompt, contado sobre la lista facetada y
+ *      separando lo confirmado, lo no leído y lo que entró por su grupo ATC sin leer su ficha
+ *      (`atcScope`; P2 de la revisión del delta, 22/11/2026);
  *   5. el reintento suma todas las cuentas nuevas.
  *
  * Uso: node scripts/medcheck-test-criba-41-pantalla.mjs
@@ -120,6 +122,28 @@ console.log('— 4. Contexto de IA —');
     ok('la línea «Sobre:» también', app._consultScopeLabel(scope).includes('1 sin verificar en ficha técnica (4.1)'), app._consultScopeLabel(scope));
     const soloB = app._consultScopeFromResults(d, [lista[1]]);
     ok('filtrando a lo confirmado, el aviso desaparece y queda que se acotó por 4.1', soloB.sinVerificar41 === 0 && app._composeConsultPrompt(soloB, { selected: ['guias'] }).includes('se acotó leyendo la sección 4.1'));
+    // El caso de Codex (revisión del delta): glaucoma con Osmofundina confirmada, Manitol Mein
+    // ilegible y timolol fuera de la criba. Antes: «de 1 de los 3 no se pudo leer», sin decir que
+    // la ficha del timolol tampoco se leyó; y facetado a solo timolol, «parte de la lista se acotó
+    // leyendo la 4.1» de un medicamento cuya ficha no se consultó.
+    const glau = (n, nombre, atc, extra) => ({ ...med(n, extra), nombre, atcs: [{ codigo: atc.slice(0, 5), nombre: 'GRUPO', nivel: 4 }, { codigo: atc, nombre: 'SUSTANCIA', nivel: 5 }] });
+    const g = [
+        glau('60001', 'OSMOFUNDINA 20%', 'B05BC01', { _sectionFuente: 'propia' }),
+        glau('60002', 'MANITOL MEIN 20%', 'B05BC01', { _sectionUnverified: true, _sectionMotivo: 'sin-texto' }),
+        glau('60003', 'TIMOLOL 0,5% COLIRIO', 'S01ED01', { _sectionFueraCriba: true }),
+    ];
+    const dg = { resultados: g, totalFilas: 3, matchedIndication: { term: 'glaucoma', label: 'Glaucoma', atc: ['S01E', 'B05BC01'], section41Filter: { section: '4.1', includeAny: ['glaucoma'], atcScope: ['B05BC01'] }, filterSummary: { section: '4.1', candidates: 2, checked: 1, confirmed: 1, excluded: 0, errors: 1, sinTexto: 1, sinCribar: 1, matched: 1, shown: 2 } }, consulta: { intentados: ['S01E', 'B05BC01'], completos: ['S01E', 'B05BC01'], fallidos: [], candidatos: ['60001', '60002', '60003'] } };
+    const sg = app._consultScopeFromResults(dg, g);
+    ok('glaucoma: confirmados, no leídos y fuera de la criba, contados por separado', sg.confirmados41 === 1 && sg.sinVerificar41 === 1 && sg.fueraCriba41 === 1, JSON.stringify({ c: sg.confirmados41, n: sg.sinVerificar41, f: sg.fueraCriba41 }));
+    const pg = app._composeConsultPrompt(sg, { selected: ['guias'] });
+    ok('glaucoma: el prompt dice los tres estados a la vez', pg.includes('1 con la indicación confirmada en su ficha') && pg.includes('1 cuya ficha no se pudo leer, incluido SIN confirmar') && pg.includes('1 que entra por su grupo ATC, sin leer su ficha') && pg.includes('No afirmes que todos la tienen'), pg);
+    ok('glaucoma: ya no dice «se acotó leyendo la 4.1» de toda la lista', !pg.includes('se acotó leyendo') && !pg.includes('Parte de la lista'), pg);
+    const soloTimolol = app._consultScopeFromResults(dg, [g[2]]);
+    const pt = app._composeConsultPrompt(soloTimolol, { selected: ['guias'] });
+    ok('facetado a solo timolol: el prompt no dice que se leyera ninguna 4.1', !pt.includes('sección 4.1') && !pt.includes('se acotó'), pt);
+    const sinManitolIlegible = app._consultScopeFromResults(dg, [g[0], g[2]]);
+    const pc = app._composeConsultPrompt(sinManitolIlegible, { selected: ['guias'] });
+    ok('Osmofundina + timolol: confirmado y fuera de criba, sin la alarma de lo no leído', pc.includes('1 con la indicación confirmada en su ficha') && pc.includes('1 que entra por su grupo ATC') && !pc.includes('SIN confirmar'), pc);
     const sinCriba = app._consultScopeFromResults({ ...d, matchedIndication: { label: 'x', atc: ['N04BC'] } }, lista);
     ok('sin criba 4.1, el prompt no habla de ella', !sinCriba.criba41 && !app._composeConsultPrompt(sinCriba, { selected: ['guias'] }).includes('sección 4.1'));
 }

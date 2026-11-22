@@ -147,7 +147,7 @@ for (const [entrada, caso] of Object.entries(CASOS)) {
     for (const n of caso.entran || []) ok(`entra ${nombreDe(n)} (${n})`, porId.has(n) && !porId.get(n)._sectionUnverified, porId.has(n) ? 'entró sin verificar' : 'no está');
     for (const n of caso.salen || []) ok(`sale ${nombreDe(n)} (${n})`, !porId.has(n));
     for (const n of caso.sinVerificar || []) ok(`entra SIN VERIFICAR ${nombreDe(n)} (${n}), sin ficha segmentada`, porId.get(n)?._sectionUnverified === true && porId.get(n)?._sectionMotivo === 'sin-texto');
-    for (const n of caso.sinLeer || []) ok(`entra sin leer su ficha (fuera de la criba): ${nombreDe(n)}`, porId.has(n) && !leidas.has(n), `lecturas: ${leidas.get(n) || 0}`);
+    for (const n of caso.sinLeer || []) ok(`entra sin leer su ficha (fuera de la criba): ${nombreDe(n)}`, porId.has(n) && !leidas.has(n) && porId.get(n)._sectionFueraCriba === true && !porId.get(n)._sectionFuente, `lecturas: ${leidas.get(n) || 0}, marca ${porId.get(n)?._sectionFueraCriba}`);
 }
 
 console.log(fallos ? `\n${fallos} fallo(s).` : '\nTODO OK — cada entrada corregida selecciona lo que dice su ficha, presentación a presentación.');

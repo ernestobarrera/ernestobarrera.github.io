@@ -4335,6 +4335,7 @@ class MedCheckApp {
             sinTexto: Number(fs.sinTexto) || 0,
             porFallo: Number(fs.porFallo) || 0,
             porTiempo: Number(fs.porTiempo) || 0,
+            porRespuesta: Number(fs.porRespuesta) || 0,
             viaOriginal: Number(fs.viaOriginal) || 0,
             sinCribar: Number(fs.sinCribar) || 0,
         };
@@ -4375,6 +4376,7 @@ class MedCheckApp {
         if (c.sinTexto) motivos.push(`${c.sinTexto} sin ficha segmentada en CIMA, ni propia ni del registro original`);
         if (c.porFallo) motivos.push(`${c.porFallo} porque CIMA no respondió`);
         if (c.porTiempo) motivos.push(`${c.porTiempo} porque se agotó el tiempo de la búsqueda`);
+        if (c.porRespuesta) motivos.push(`${c.porRespuesta} porque CIMA devolvió otra cosa en lugar de la 4.1 (otra sección o una página de error)`);
         const n = c.sinVerificar;
         return `
             <div class="ind-parcial" role="status">
@@ -4390,6 +4392,8 @@ class MedCheckApp {
                 ? 'CIMA no tiene su ficha técnica en secciones (ni la propia ni la del registro original)'
                 : med._sectionMotivo === 'tiempo'
                 ? 'se agotó el tiempo de la búsqueda antes de leer su ficha'
+                : med._sectionMotivo === 'respuesta'
+                ? 'CIMA devolvió otra cosa en lugar de su sección 4.1 (otra sección o una página de error)'
                 : 'CIMA no respondió al pedir su ficha';
             return `<span class="badge badge-41-sin-verificar" title="${this._escapeHtml(`Sin verificar: ${motivo}. Se muestra porque puede tener esta indicación, pero no se ha comprobado en su sección 4.1.`)}"><i class="fas fa-circle-question"></i> 4.1 sin verificar</span>`;
         }
@@ -4483,15 +4487,19 @@ class MedCheckApp {
         };
         this._indReintentando = true;
         repintar();
+        // UN presupuesto para los grupos y la criba de lo nuevo, como en la búsqueda (R5): antes,
+        // cada mitad armaba el suyo y la criba estrenaba un plazo entero al llegar.
+        const presupuesto = this.api._presupuestoPeticiones({});
+        const red = { limitador: presupuesto.limitador, signal: presupuesto.signal };
         try {
             const nuevo = await this.api._consultarGruposATC(
-                fallidos, { comercializados: this._soloComercializados(), noTrack: true });
+                fallidos, { comercializados: this._soloComercializados(), noTrack: true, ...red });
             const vistos = new Set(data.consulta.candidatos || []);
             let anadidos = nuevo.resultados.filter(m => !vistos.has(m.nregistro));
             const filtro = data.matchedIndication?.section41Filter || data.matchedIndication?.sectionFilter;
             let resumen = null;
             if (filtro && anadidos.length) {
-                const cribado = await this.api._filterIndicationResultsBySection(anadidos, filtro);
+                const cribado = await this.api._filterIndicationResultsBySection(anadidos, filtro, red);
                 resumen = cribado.summary;
                 anadidos = { candidatos: anadidos, resultados: cribado.resultados };
             } else {
@@ -4506,6 +4514,7 @@ class MedCheckApp {
             // estaba, todavía marcada como incompleta.
             if (this.lastIndicationResults === data) this.showToast('Esos grupos siguen sin responder; prueba en unos segundos', 'warning');
         } finally {
+            presupuesto.liberar();
             this._indReintentando = false;
             repintar();
         }
@@ -6759,16 +6768,19 @@ class MedCheckApp {
         const sinVia = meds.filter(m => !(m.viasAdministracion || []).some(v => v?.nombre)).length;
         const formas = [...new Set(meds.map(m => this._consultForma(m)).filter(Boolean))];
         // Criba 4.1 (R2, 22/11/2026). No es lo mismo que `sinVerificar` (ATC no comprobado: esos
-        // NO están en la lista): estos SÍ están, pero sin haber leído su ficha. Se cuentan sobre lo
-        // que queda en pantalla con los filtros, que es lo que se pregunta.
+        // NO están en la lista): los no verificados SÍ están, pero sin haber leído su ficha. Las
+        // TRES cuentas —confirmados, no leídos y fuera de la criba (`atcScope`)— salen de lo que
+        // queda en pantalla con los filtros, que es lo que se pregunta (P2 de la revisión del
+        // delta: el resumen de la búsqueda entera hacía decir «se acotó leyendo la 4.1» de una
+        // lista facetada a un medicamento cuya ficha no se consultó).
         const criba41 = !!mi?.filterSummary;
         const sinVerificar41 = criba41 ? meds.filter(m => m?._sectionUnverified).length : 0;
-        // Criba solo sobre parte de los ATC (`atcScope`): el resto entró por su grupo, sin leer su ficha.
-        const criba41Parcial = criba41 && (Number(mi.filterSummary.sinCribar) || 0) > 0;
+        const fueraCriba41 = criba41 ? meds.filter(m => m?._sectionFueraCriba).length : 0;
+        const confirmados41 = criba41 ? meds.filter(m => m?._sectionFuente).length : 0;
         return {
             kind: 'grupo', pas, atcs, consultados, noConsultados, sinVerificar, vias, sinVia, formas, total: meds.length,
             indicacion: (!atcCode && mi?.label) ? mi.label : null, nombre: null,
-            criba41, criba41Parcial, sinVerificar41,
+            criba41, sinVerificar41, fueraCriba41, confirmados41,
         };
     }
 
@@ -7055,12 +7067,23 @@ class MedCheckApp {
                 const n = scope.sinVerificar.reduce((s, c) => s + c.n, 0);
                 lines.push(`- LISTA INCOMPLETA: en los ATC ${atcTxt(scope.sinVerificar)} no se pudo comprobar el ATC de ${n} medicamento(s), que no se incluyen. Pueden faltar principios activos de esos grupos; no concluyas que no existen.`);
             }
-            if (scope.criba41) {
-                lines.push(scope.sinVerificar41
-                    ? `- La lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica, pero de ${scope.sinVerificar41} de los ${scope.total} medicamentos no se pudo leer: se incluyen SIN confirmar que tengan esta indicación autorizada. No afirmes que todos la tienen; distingue lo que la ficha confirma.`
-                    : scope.criba41Parcial
-                    ? '- Parte de la lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica; el resto entra por su grupo ATC.'
-                    : '- La lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica de cada medicamento.');
+            // Criba 4.1 sobre la lista que viaja: lo confirmado, lo no leído y lo que entró por su
+            // grupo sin leer la ficha, a la vez. Si en la lista no queda nada que pasara por la
+            // lectura (facetada a lo de fuera de la criba), no se menciona: no se acotó nada.
+            if (scope.criba41 && (scope.confirmados41 || scope.sinVerificar41)) {
+                if (scope.confirmados41 === scope.total) {
+                    lines.push('- La lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica de cada medicamento.');
+                } else {
+                    const c = scope.confirmados41; const n = scope.sinVerificar41; const f = scope.fueraCriba41;
+                    const partes = [];
+                    if (c) partes.push(`${c} con la indicación confirmada en su ficha`);
+                    if (n) partes.push(n === 1
+                        ? '1 cuya ficha no se pudo leer, incluido SIN confirmar que tenga esta indicación autorizada'
+                        : `${n} cuyas fichas no se pudieron leer, incluidos SIN confirmar que tengan esta indicación autorizada`);
+                    if (f) partes.push(f === 1 ? '1 que entra por su grupo ATC, sin leer su ficha' : `${f} que entran por su grupo ATC, sin leer su ficha`);
+                    const sobre = scope.total === 1 ? 'sobre el medicamento de la lista' : `sobre los ${scope.total} medicamentos de la lista`;
+                    lines.push(`- Sección 4.1 (indicaciones) de la ficha técnica, ${sobre}: ${partes.join('; ')}.${n ? ' No afirmes que todos la tienen; distingue lo que la ficha confirma.' : ''}`);
+                }
             }
             lines.push('Si la respuesta depende de la molécula, la forma, la concentración o la población, distingue.');
             if (duda) lines.push('', `PREGUNTA DEL CLÍNICO (responde PRIMERO qué sostienen las fuentes, bajo qué condiciones y qué no permiten concluir; sin datos identificables): ${duda}`);

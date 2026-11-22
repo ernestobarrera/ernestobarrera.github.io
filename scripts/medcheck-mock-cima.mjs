@@ -16,6 +16,9 @@
  *   MC_MOCK_DOC_SIN_SECCIONES  nregistros (coma) cuya 4.1 responde 200 con `{"error":"No existen
  *                 secciones…"}`, como CIMA con las importaciones paralelas: no hay texto que leer
  *   MC_MOCK_DOC_VACIO  nregistros (coma) cuya 4.1 responde 200 con un array vacío
+ *   MC_MOCK_DOC_OTRA_SECCION  nregistros (coma) cuya 4.1 responde 200 con la 4.2 (posología)
+ *   MC_MOCK_DOC_PAGINA_ERROR  nregistros (coma) cuya 4.1 responde 200 con una página HTML de error
+ *   (Lo demás responde como CIMA: JSON con `[{seccion: '4.1', titulo, contenido}]`.)
  *
  * Maestra ATC y recuentos (los consumen --cobertura-atc y --vigilar-broad):
  *   MC_MOCK_ATC                 códigos que devuelve la maestra
@@ -109,7 +112,13 @@ globalThis.fetch = async (input) => {
     const lista = (v) => (process.env[v] || '').split(',').map(x => x.trim()).filter(Boolean);
     if (lista('MC_MOCK_DOC_SIN_SECCIONES').includes(nreg)) return json({ error: 'No existen secciones para el medicamento indicado' });
     if (lista('MC_MOCK_DOC_VACIO').includes(nreg)) return json([]);
-    return new Response(phraseSoup, { status: 200, headers: { 'content-type': 'text/plain' } });
+    if (lista('MC_MOCK_DOC_OTRA_SECCION').includes(nreg)) {
+      return json([{ seccion: '4.2', titulo: 'Posología y forma de administración', contenido: '<p>Adultos: un comprimido al día, con o sin alimentos.</p>' }]);
+    }
+    if (lista('MC_MOCK_DOC_PAGINA_ERROR').includes(nreg)) {
+      return new Response('<!DOCTYPE html><html><head><title>Error temporal</title></head><body><p>Servicio no disponible temporalmente. Inténtelo más tarde.</p></body></html>', { status: 200, headers: { 'content-type': 'text/html' } });
+    }
+    return json([{ seccion: '4.1', titulo: 'Indicaciones terapéuticas', contenido: phraseSoup }]);
   }
   return new Response('mock: endpoint no contemplado', { status: 404 });
 };

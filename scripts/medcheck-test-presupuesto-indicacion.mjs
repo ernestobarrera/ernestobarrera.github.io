@@ -16,7 +16,13 @@
  *      tiempo: nunca un cero;
  *   3. agotado durante los grupos, el grupo colgado consta como `timeout` y los demás llegan;
  *   4. una cancelación de quien llama se propaga (no se convierte en «sin verificar»);
- *   5. el limitador: como mucho N a la vez, y un turno cancelado en la cola no llega a pedir.
+ *   5. el limitador: como mucho N a la vez, y un turno cancelado en la cola no llega a pedir;
+ *   6. una búsqueda deja de esperar al índice ATC cuando vence SU plazo, y la carga compartida del
+ *      índice sigue para las demás (P2 de la revisión del delta de Codex, 22/11/2026);
+ *   7. una cancelación durante la carga de nombres ATC se propaga: no devuelve un resultado ni da
+ *      el grupo por completo;
+ *   8. la consulta de grupos sin presupuesto de quien llama (sugerencia sin filtro, árbol ATC)
+ *      lleva también plazo total.
  *
  * Uso: node scripts/medcheck-test-presupuesto-indicacion.mjs
  */
@@ -40,6 +46,7 @@ const respuesta = (cuerpo, status = 200) => ({
     ok: status >= 200 && status < 300, status, statusText: String(status),
     headers: { get: (h) => (h.toLowerCase() === 'content-type' ? 'application/json' : null) },
     text: async () => JSON.stringify(cuerpo),
+    json: async () => cuerpo,
 });
 const espera = (ms, signal) => new Promise((resolve, reject) => {
     if (signal?.aborted) { reject(signal.reason); return; }
@@ -52,15 +59,22 @@ const espera = (ms, signal) => new Promise((resolve, reject) => {
  * @param {'ausente'|'caducado'|'fresco'} o.indice
  * @param {boolean} o.conAtcs - si /medicamentos trae ya los ATC (no hace falta verificar)
  * @param {Set<string>} o.cuelgan - tipos de petición que no responden nunca: 'ficha', o un grupo ATC
+ * @param {number} o.indiceTardaMs - el índice responde tras este tiempo (sin señal: carga compartida)
+ * @param {boolean} o.indiceResuelve - el índice fresco trae el ATC de cada `<grupo>-<i>` (`<grupo>AA01`)
+ * @param {Function} o.alPedirDetalle - se llama al pedir /medicamento (p. ej. para cancelar ahí)
  */
-function cargarAPI({ indice = 'ausente', conAtcs = false, cuelgan = new Set() } = {}) {
-    const red = { enVuelo: 0, pico: 0, total: 0, fichas: 0 };
+function cargarAPI({ indice = 'ausente', conAtcs = false, cuelgan = new Set(), indiceTardaMs = 0, indiceResuelve = false, alPedirDetalle = null } = {}) {
+    const red = { enVuelo: 0, pico: 0, total: 0, fichas: 0, detalles: 0, indiceServido: false };
     const fetchImpl = async (url, opts = {}) => {
         const u = new URL(url, 'https://cima.test');
         if (u.pathname.endsWith('atc-index.json')) {
+            if (indiceTardaMs) await espera(indiceTardaMs);
+            red.indiceServido = true;
             if (indice === 'ausente') return respuesta({}, 404);
             const fecha = new Date(Date.now() - (indice === 'caducado' ? 10 : 0) * 86400000).toISOString().slice(0, 10);
-            return respuesta({ _meta: { listprescriptiondate: fecha }, atc: {} }); // no resuelve nada
+            const atc = {};
+            if (indiceResuelve) for (const g of GRUPOS) for (let i = 0; i < POR_GRUPO; i++) atc[`${g}-${i}`] = [`${g}AA01`];
+            return respuesta({ _meta: { listprescriptiondate: fecha }, atc }); // sin `indiceResuelve`, no resuelve nada
         }
         red.enVuelo += 1; red.total += 1; red.pico = Math.max(red.pico, red.enVuelo);
         try {
@@ -76,6 +90,8 @@ function cargarAPI({ indice = 'ausente', conAtcs = false, cuelgan = new Set() } 
             }
             if (u.pathname.endsWith('/medicamento')) {
                 const n = u.searchParams.get('nregistro');
+                red.detalles += 1;
+                alPedirDetalle?.();
                 await espera(15, opts.signal);
                 return respuesta({ nregistro: n, atcs: [{ codigo: `${n.split('-')[0]}AA01`, nivel: 5 }] });
             }
@@ -177,6 +193,51 @@ console.log('— 5. El limitador —');
     ok('un turno cancelado en la cola sale sin entrar', (await turno) === 'AbortError');
     lim.soltar(); lim.soltar();
     ok('y no se queda con un hueco', lim.activos === 0 && lim.enCola === 0, `${lim.activos}/${lim.enCola}`);
+}
+
+/** Lo que tarde `promesa`, con un tope: si no termina, `{ colgada: true }` en vez de colgar el banco. */
+const conTope = (promesa, ms = 3000) => Promise.race([
+    promesa.then((valor) => ({ valor }), (error) => ({ error })),
+    espera(ms).then(() => ({ colgada: true })),
+]);
+
+// --- 6. El índice ATC que tarda: la búsqueda no lo espera más allá de su plazo -------------------
+console.log('— 6. Índice que tarda: manda el plazo de la búsqueda —');
+{
+    const { api, CimaAPI, red } = cargarAPI({ indice: 'fresco', indiceResuelve: true, indiceTardaMs: 400 });
+    CimaAPI.INDICACION_PRESUPUESTO_MS = 40;
+    const t0 = Date.now();
+    const r = await conTope(api._executeIndicationSearch({ ...MATCH, atc: ['A01'], section41Filter: undefined }, { comercializados: true }));
+    const ms = Date.now() - t0;
+    ok(`termina al vencer su plazo (${ms} ms), sin esperar los 400 ms del índice`, !r.colgada && ms < 250 && !red.indiceServido, `${ms} ms, índice servido: ${red.indiceServido}`);
+    ok('el grupo que esperaba al índice consta como fallido por timeout (no como vacío ni completo)', r.error?.code === 'CONSULTA_FALLIDA' && JSON.stringify(r.error.consulta?.fallidos) === '[{"atc":"A01","motivo":"timeout"}]', JSON.stringify(r.error?.consulta?.fallidos ?? r.valor?.consulta));
+    await espera(450);
+    ok('la carga compartida del índice siguió y quedó disponible para las demás búsquedas', red.indiceServido && api._atcIndex && Object.keys(api._atcIndex).length === GRUPOS.length * POR_GRUPO);
+    CimaAPI.INDICACION_PRESUPUESTO_MS = 90000;
+    const detallesAntes = red.detalles;
+    const r2 = await api._executeIndicationSearch({ ...MATCH, atc: ['A01'], section41Filter: undefined }, { comercializados: true });
+    ok('la búsqueda siguiente resuelve con ese índice, sin verificar en vivo', r2.resultados.length === POR_GRUPO && r2.consulta.completos.includes('A01') && red.detalles - detallesAntes <= 1, `${r2.resultados.length} resultados, ${red.detalles - detallesAntes} detalles`);
+}
+
+// --- 7. Cancelar mientras se cargan los nombres ATC ----------------------------------------------
+console.log('— 7. Cancelar al cargar los nombres ATC no es un éxito —');
+{
+    const ctrl = new AbortController();
+    const { api } = cargarAPI({ indice: 'fresco', indiceResuelve: true, alPedirDetalle: () => ctrl.abort() });
+    const r = await conTope(api._executeIndicationSearch({ ...MATCH, atc: ['A01'], section41Filter: undefined }, { comercializados: true, signal: ctrl.signal }));
+    ok('la búsqueda se rechaza con AbortError', r.error?.name === 'AbortError', r.colgada ? 'colgada' : r.error ? String(r.error.name) : `devolvió ${r.valor?.resultados?.length} resultados, completos ${JSON.stringify(r.valor?.consulta?.completos)}`);
+}
+
+// --- 8. Grupos sin presupuesto de quien llama --------------------------------------------------
+console.log('— 8. La consulta de grupos lleva plazo aunque nadie se lo dé —');
+{
+    const { api, CimaAPI } = cargarAPI({ indice: 'fresco', conAtcs: true, cuelgan: new Set(['B01']) });
+    CimaAPI.INDICACION_PRESUPUESTO_MS = 150;
+    const t0 = Date.now();
+    const r = await conTope(api._consultarGruposATC(['A01', 'B01'], { comercializados: true, noTrack: true }));
+    const ms = Date.now() - t0;
+    ok(`sugerencia sin filtro / árbol ATC: termina al agotar el plazo (${ms} ms)`, !r.colgada && ms < 1500, r.colgada ? 'colgada' : `${ms} ms`);
+    ok('el grupo colgado consta como timeout y el otro llega', JSON.stringify(r.valor?.consulta?.fallidos) === '[{"atc":"B01","motivo":"timeout"}]' && r.valor?.resultados?.length === POR_GRUPO, JSON.stringify(r.valor?.consulta ?? r.error?.message));
 }
 
 console.log(fallos ? `\n${fallos} fallo(s).` : '\nTODO OK — presupuesto común y plazo total.');

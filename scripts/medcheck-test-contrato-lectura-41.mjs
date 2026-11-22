@@ -49,7 +49,18 @@ const CASOS = [
     { id: 'entidad nombrada (&ntilde;)', fichas: { A: R.json(s41('<p>Profilaxis de la migra&ntilde;a.</p>')) }, filtro: ['migraña'], espera: 'confirmado' },
     { id: 'entidad numérica (&#241;)', fichas: { A: R.json(s41('<p>Profilaxis de la migra&#241;a.</p>')) }, filtro: ['migraña'], espera: 'confirmado' },
     { id: 'guion en el término (sars-cov-2)', fichas: { A: R.json(s41('<p>Prevención de la COVID-19 causada por el SARS-CoV-2.</p>')) }, filtro: ['sars-cov-2'], espera: 'confirmado' },
-    { id: 'HTML sin JSON', fichas: { A: R.html('<p>Enuresis nocturna primaria.</p>') }, filtro: ['enuresis'], espera: 'confirmado' },
+    // P1 de la revisión del delta (Codex, 22/11/2026): con HTTP 200, lo que no es la sección pedida
+    // no es una lectura. Antes, la 4.2 o una página de error se leían como texto y el auditor
+    // certificaba cero omisiones. Un texto sin JSON tampoco dice de qué sección es.
+    { id: 'HTML sin JSON (no dice de qué sección es)', fichas: { A: R.html('<p>Enuresis nocturna primaria.</p>') }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' },
+    { id: '200 con una página HTML de error', fichas: { A: R.html('<!DOCTYPE html><html><head><title>Error temporal</title></head><body><p>Servicio no disponible.</p></body></html>') }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' },
+    { id: '200 con la 4.2 en lugar de la 4.1', fichas: { A: R.json([{ seccion: '4.2', titulo: 'Posología', contenido: '<p>Adultos: un comprimido al día.</p>' }]) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' },
+    { id: '200 con la 4.2 que SÍ nombra el término', fichas: { A: R.json([{ seccion: '4.2', titulo: 'Posología', contenido: '<p>En la enuresis, 0,2 mg al acostarse.</p>' }]) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' },
+    { id: '200 con un JSON de forma desconocida', fichas: { A: R.json({ mensaje: 'mantenimiento' }) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' },
+    { id: 'subsecciones 4.1.x', fichas: { A: R.json([{ seccion: '4.1', titulo: 'Indicaciones terapéuticas', contenido: '' }, { seccion: '4.1.1', titulo: 'Adultos', contenido: '<p>Enuresis nocturna primaria en mayores de 5 años.</p>' }]) }, filtro: ['enuresis'], espera: 'confirmado' },
+    { id: 'mezcla 4.1 y 4.2: solo cuenta la 4.1', fichas: { A: R.json([{ seccion: '4.1', titulo: 'Indicaciones', contenido: '<p>Diabetes insípida central.</p>' }, { seccion: '4.2', titulo: 'Posología', contenido: '<p>En la enuresis, 0,2 mg al acostarse.</p>' }]) }, filtro: ['enuresis'], espera: 'descartado' },
+    { id: 'la 4.10 no es una subsección de la 4.1', fichas: { A: R.json([{ seccion: '4.10', titulo: 'Otra', contenido: '<p>Enuresis nocturna primaria.</p>' }]) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' },
+    { id: 'importación paralela: la propia trae otra sección, la del original vale', nregistro: '333IP', fichas: { '333IP': R.json([{ seccion: '4.2', contenido: '<p>Un comprimido al día.</p>' }]), '333': R.json(s41('<p>Síndrome de piernas inquietas.</p>')) }, filtro: ['piernas inquietas'], espera: 'confirmado', fuente: 'original' },
     { id: '200 con {"error"} y sin original', fichas: { A: R.json(SIN_SECCIONES) }, filtro: ['enuresis'], espera: 'no-verificable' },
     { id: 'array vacío', fichas: { A: R.json([]) }, filtro: ['enuresis'], espera: 'no-verificable' },
     { id: 'subsecciones sin contenido', fichas: { A: R.json(s41('<p>  </p>')) }, filtro: ['enuresis'], espera: 'no-verificable' },
@@ -91,7 +102,9 @@ async function decisionApp(caso) {
     const r = await api._filterIndicationResultsBySection([{ nregistro: n, nombre: n }], { section: '4.1', includeAny: caso.filtro });
     const m = r.resultados[0];
     if (!m) return { decision: 'descartado' };
-    return m._sectionUnverified ? { decision: 'no-verificable' } : { decision: 'confirmado', fuente: m._sectionFuente };
+    return m._sectionUnverified
+        ? { decision: 'no-verificable', motivo: m._sectionMotivo, porRespuesta: r.summary.porRespuesta }
+        : { decision: 'confirmado', fuente: m._sectionFuente };
 }
 
 // --- El auditor -----------------------------------------------------------------------------------
@@ -114,6 +127,8 @@ for (const caso of CASOS) {
     const aud = await decisionAuditor(caso);
     ok(`${caso.id}: app → ${caso.espera}`, app.decision === caso.espera, JSON.stringify(app));
     ok(`${caso.id}: auditor → ${caso.espera}`, aud.decision === caso.espera, JSON.stringify(aud));
+    if (caso.motivo) ok(`${caso.id}: la app lo marca con el motivo «${caso.motivo}» y lo cuenta aparte`, app.motivo === caso.motivo && app.porRespuesta === 1, JSON.stringify(app));
+    if (caso.motivo === 'respuesta') ok(`${caso.id}: el auditor dice por qué no vale`, /respuesta no válida/.test(aud.reason || ''), aud.reason);
     if (caso.fuente) ok(`${caso.id}: los dos dicen que la ficha leída es la del ${caso.fuente}`, app.fuente === caso.fuente && aud.fuente === caso.fuente, `${app.fuente} / ${aud.fuente}`);
 }
 

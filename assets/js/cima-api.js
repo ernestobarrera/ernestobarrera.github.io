@@ -56,7 +56,7 @@ class CimaAPI {
      * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
      * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
      */
-    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20261122e') {
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20261122f') {
         if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
         if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
         this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
@@ -1020,7 +1020,12 @@ class CimaAPI {
                         for (const a of (Array.isArray(full?.atcs) ? full.atcs : [])) {
                             if (a?.codigo && a?.nombre) cache[a.codigo] = a.nombre;
                         }
-                    } catch (e) { /* sin nombre se ve el código; no es motivo para romper la búsqueda */ }
+                    } catch (e) {
+                        // Sin nombre se ve el código: no es motivo para romper la búsqueda. Una
+                        // cancelación deliberada SÍ (P2 de la revisión del delta): tragarla devolvía
+                        // un resultado y daba el grupo por completo tras cancelarse.
+                        if (e?.name === 'AbortError') throw e;
+                    }
                 }));
             }
             this._atcNameCacheWrite(cache);
@@ -1153,7 +1158,10 @@ class CimaAPI {
             // que NO resuelve se queda en la cola de siempre: un `nregistro` que no está en el
             // índice no es un medicamento sin ATC, es uno que hay que ir a verificar.
             if (needsVerification.length > 0) {
-                const indice = await this.loadAtcIndex();
+                // La carga del índice es COMPARTIDA (una promesa para todas las búsquedas) y no
+                // lleva señal; esta búsqueda deja de esperarla cuando vence su plazo o la cancelan,
+                // sin cortar la carga para las demás (P2 de la revisión del delta, 22/11/2026).
+                const indice = await CimaAPI._esperarConSenal(this.loadAtcIndex(), red.signal);
                 if (indice) {
                     const pendientes = [];
                     let resueltos = 0;
@@ -1452,6 +1460,26 @@ class CimaAPI {
     }
 
     /**
+     * Espera `promesa` mientras `signal` no se aborte; si se aborta antes, rechaza con su motivo
+     * (el plazo agotado, `code: 'TIMEOUT'`, o la cancelación, `AbortError`). La promesa sigue su
+     * curso: es para cargas COMPARTIDAS, como el índice ATC, que otras búsquedas aprovechan.
+     */
+    static _esperarConSenal(promesa, signal) {
+        if (!signal?.addEventListener) return promesa;
+        const motivo = () => signal.reason
+            ?? Object.assign(new Error('Petición cancelada'), { name: 'AbortError' });
+        if (signal.aborted) return Promise.reject(motivo());
+        return new Promise((resolve, reject) => {
+            const alAbortar = () => reject(motivo());
+            signal.addEventListener('abort', alAbortar, { once: true });
+            promesa.then(
+                (valor) => { signal.removeEventListener('abort', alAbortar); resolve(valor); },
+                (error) => { signal.removeEventListener('abort', alAbortar); reject(error); },
+            );
+        });
+    }
+
+    /**
      * Consulta varios grupos ATC y DICE cuáles respondieron.
      *
      * Hasta el 2026-11-02 un grupo cuya consulta fallaba (CIMA colgado, un 503 del Worker) se
@@ -1479,12 +1507,24 @@ class CimaAPI {
      *   fallidos: Array<{atc: string, motivo: string, sinVerificar?: number}>, candidatos: string[]}}>}
      */
     async _consultarGruposATC(atcCodes, options = {}) {
+        // Las peticiones de TODOS los grupos, también las de verificación de ATC que cada uno lanza
+        // dentro, comparten un limitador y un plazo total (R5). Si quien llama no trae presupuesto
+        // —sugerencia sin filtro, árbol ATC—, uno propio: antes solo el limitador, y esas consultas
+        // seguían sin plazo (P2 de la revisión del delta).
+        const propio = options.limitador ? null : this._presupuestoPeticiones(options);
+        if (propio) options = { ...options, limitador: propio.limitador, signal: propio.signal };
+        try {
+            return await this._consultarGruposConPresupuesto(atcCodes, options);
+        } finally {
+            propio?.liberar();
+        }
+    }
+
+    /** @private Cuerpo de `_consultarGruposATC`, con el presupuesto ya puesto. */
+    async _consultarGruposConPresupuesto(atcCodes, options) {
         const completos = [];
         const fallidos = [];
         let allResults = [];
-        // Las peticiones de TODOS los grupos, también las de verificación de ATC que cada uno lanza
-        // dentro, comparten un limitador (R5). Si quien llama no trae el suyo, uno propio.
-        if (!options.limitador) options = { ...options, limitador: CimaAPI.crearLimitador(CimaAPI.INDICACION_MAX_PETICIONES) };
         // Hasta 4 grupos a la vez (22/11/2026). En serie, una indicación con muchos códigos ATC5
         // tardaba la suma de todos: «hipertensión» tiene 43 códigos (los 19 s con la caché caliente
         // y 76 s en frío que se midieron con 40 no los reprodujo Codex: varían código, caché y red;
@@ -1598,6 +1638,7 @@ class CimaAPI {
             sinTexto: 0,                    //   … porque no había texto que leer
             porFallo: 0,                    //   … porque falló la lectura (red)
             porTiempo: 0,                   //   … porque se agotó el tiempo
+            porRespuesta: 0,                //   … porque CIMA devolvió otra cosa (otra sección, error)
             viaOriginal: 0,                 // confirmados con la ficha del registro original
             sinCribar: medications.length - enAlcance, // fuera de `atcScope`: en la lista sin leer
             shown: 0,                       // de los cribados, los que quedan (confirmed + errors)
@@ -1608,6 +1649,7 @@ class CimaAPI {
             delete med._sectionMotivo;
             delete med._sectionFuente;
             delete med._sectionRegistro;
+            delete med._sectionFueraCriba;
         };
 
         try {
@@ -1615,14 +1657,19 @@ class CimaAPI {
                 const batch = medications.slice(i, i + batchSize);
                 const checked = await Promise.all(batch.map(async (med) => {
                     limpiar(med);
-                    if (!CimaAPI.enAlcanceCriba(med, filter.atcScope)) return med;
+                    // Fuera de `atcScope`: entra por su grupo, sin leer su ficha, y se marca para que el
+                    // contexto de IA lo cuente aparte de lo confirmado (P2 de la revisión del delta).
+                    if (!CimaAPI.enAlcanceCriba(med, filter.atcScope)) {
+                        med._sectionFueraCriba = true;
+                        return med;
+                    }
                     // Importación paralela (sufijo IP, IP1…): CIMA no le segmenta la ficha y responde
                     // con éxito `{"error":"No existen secciones…"}`. `leerSeccionCriba` prueba entonces
                     // la del registro original. Hasta el 21/11/2026 ese vacío se leía como «no casa» y
                     // la presentación desaparecía sin aviso (MIRAPEXIN 0,7 MG 97051006IP en «piernas
                     // inquietas»).
                     const lectura = await CimaAPI.leerSeccionCriba(med.nregistro,
-                        (nregistro) => this.getDocSeccion(nregistro, section, 1, red));
+                        (nregistro) => this._docSeccionCruda(nregistro, section, 1, red), section);
                     if (lectura.estado === 'texto') {
                         summary.checked++;
                         if (!CimaAPI.casaFiltroSeccion(lectura.texto, filter)) {
@@ -1642,6 +1689,7 @@ class CimaAPI {
                     summary.errors++;
                     if (lectura.estado === 'sin-texto') summary.sinTexto++;
                     else if (lectura.motivo === 'tiempo') summary.porTiempo++;
+                    else if (lectura.motivo === 'respuesta') summary.porRespuesta++;
                     else summary.porFallo++;
                     med._sectionUnverified = true;
                     med._sectionMotivo = lectura.motivo;
@@ -2664,15 +2712,17 @@ class CimaAPI {
         // `options` se aceptó el 17/09 para poder marcar la petición como SECUNDARIA
         // (`X-MC-Autocomplete`) desde quien la use de apoyo: sin esa marca no entra en la caché del
         // cliente y además cuenta como búsqueda en la analítica, que es lo que no es.
-        const response = await this._request(
-            `/docSegmentado/contenido/${tipo}?nregistro=${nregistro}&seccion=${seccion}`,
-            options
-        );
+        const response = await this._docSeccionCruda(nregistro, seccion, tipo, options);
 
-        // La respuesta se interpreta en `htmlDeSeccion`, que es la MISMA función con la que lee el
-        // auditor (contrato de la criba 4.1, ver allí). Array de subsecciones concatenado, objeto
+        // La respuesta se interpreta en `htmlDeSeccion`: array de subsecciones concatenado, objeto
         // con `contenido` o HTML; vacío si CIMA responde `{"error":…}` o un array sin contenido.
+        // La criba 4.1 NO lee por aquí: valida la respuesta con `htmlSeccionCriba` (ver allí).
         return CimaAPI.htmlDeSeccion(response);
+    }
+
+    /** Respuesta de `docSegmentado/contenido` SIN interpretar (la criba la valida con `htmlSeccionCriba`). */
+    _docSeccionCruda(nregistro, seccion, tipo = 1, options = {}) {
+        return this._request(`/docSegmentado/contenido/${tipo}?nregistro=${nregistro}&seccion=${seccion}`, options);
     }
 
     // ============================================
@@ -2751,6 +2801,53 @@ class CimaAPI {
         return '';
     }
 
+    /**
+     * HTML de la sección para la CRIBA, con la respuesta VALIDADA (P1 de la revisión del delta de
+     * Codex, 22/11/2026). `htmlDeSeccion` acepta cualquier texto, y con él el auditor certificó
+     * «GAPS NUEVOS = 0» leyendo una 4.2 servida con HTTP 200 en lugar de la 4.1, o una página de
+     * error. Aquí solo es lectura lo que CIMA identifica como la sección pedida:
+     *  - JSON obligatorio: se pide JSON, y CIMA y el Worker lo sirven así (comprobado el 22/11). Un
+     *    texto que no lo es —una página de error con 200— no dice de qué sección es.
+     *  - De un array se toman la sección pedida y sus subsecciones (`4.1`, `4.1.x`); un elemento
+     *    que no declara sección se acepta. Si todos declaran OTRA, la respuesta no vale.
+     *  - `{"error":…}` es como CIMA dice «no tengo secciones»: `''`, sin texto.
+     * Una respuesta que no vale lanza `RESPUESTA_INVALIDA`: no se sabe qué dice la ficha, que es lo
+     * contrario de «no tiene la indicación».
+     */
+    static htmlSeccionCriba(response, seccion) {
+        const pedida = String(seccion);
+        const invalida = (motivo) => {
+            const err = new Error(`respuesta no válida al pedir la sección ${pedida}: ${motivo}`);
+            err.code = 'RESPUESTA_INVALIDA';
+            return err;
+        };
+        const esDeLaSeccion = (item) => item?.seccion == null
+            || String(item.seccion) === pedida || String(item.seccion).startsWith(`${pedida}.`);
+        let data = response;
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                throw invalida('no es JSON (¿una página de error?)');
+            }
+        }
+        if (Array.isArray(data)) {
+            const validos = data.filter(esDeLaSeccion);
+            if (data.length && !validos.length) {
+                throw invalida(`trae la sección ${[...new Set(data.map(item => item?.seccion))].join(', ')}`);
+            }
+            return CimaAPI.htmlDeSeccion(validos);
+        }
+        if (data && typeof data === 'object') {
+            if ('contenido' in data) {
+                if (!esDeLaSeccion(data)) throw invalida(`trae la sección ${data.seccion}`);
+                return CimaAPI.htmlDeSeccion(data);
+            }
+            if ('error' in data) return '';
+        }
+        throw invalida('forma desconocida');
+    }
+
     /** Texto de la criba: el de pantalla (`textoFT`), en minúsculas, sin tildes y con espacios simples. */
     static normalizarTextoCriba(value) {
         return CimaAPI.textoFT(value)
@@ -2812,27 +2909,28 @@ class CimaAPI {
 
     /**
      * Lee la sección de un medicamento para la criba, con el contrato que comparten cliente y
-     * auditor. `leer(nregistro)` devuelve el HTML de la sección (ya pasado por `htmlDeSeccion`)
-     * o lanza.
+     * auditor. `leer(nregistro)` devuelve la respuesta de `docSegmentado/contenido` SIN
+     * interpretar (JSON ya analizado o texto) o lanza; aquí se valida con `htmlSeccionCriba`.
      *
      * Orden: la ficha propia y, si no da texto, la del registro original de una importación
      * paralela (`_registrosOriginalesDeImportacion`). Un 204 (`NO_CONTENT`) es «aquí no hay
-     * texto» y se sigue probando; un fallo de red también se sigue probando, pero se recuerda.
+     * texto» y se sigue probando; un fallo de red o una respuesta no válida también se sigue
+     * probando, pero se recuerda.
      *
      * Devuelve uno de tres estados, y NINGUNO de los dos últimos significa «no tiene la indicación»:
      *  - `texto`: `{ texto (normalizado), plano (textoFT), fuente: 'propia'|'original', registro }`.
      *  - `sin-texto`: CIMA respondió y no hay texto segmentado que leer, ni propio ni del original.
-     *  - `error`: alguna lectura falló (red, corte por tiempo) y ninguna dio texto: no se sabe qué
-     *    dice. `motivo` es `tiempo` o `red`.
+     *  - `error`: alguna lectura falló y ninguna dio texto: no se sabe qué dice. `motivo` es
+     *    `tiempo`, `respuesta` (otra sección, una página de error) o `red`.
      * Una cancelación deliberada (`AbortError`) no es un estado: se propaga.
      */
-    static async leerSeccionCriba(nregistro, leer) {
+    static async leerSeccionCriba(nregistro, leer, seccion = '4.1') {
         const intentos = [String(nregistro), ...CimaAPI._registrosOriginalesDeImportacion(nregistro)];
         let fallo = null;
         for (let i = 0; i < intentos.length; i++) {
             let html;
             try {
-                html = await leer(intentos[i]);
+                html = CimaAPI.htmlSeccionCriba(await leer(intentos[i]), seccion);
             } catch (error) {
                 if (error?.name === 'AbortError') throw error;
                 if (error?.code !== 'NO_CONTENT') fallo = fallo || error;
@@ -2849,7 +2947,10 @@ class CimaAPI {
                 };
             }
         }
-        if (fallo) return { estado: 'error', motivo: fallo.code === 'TIMEOUT' ? 'tiempo' : 'red', error: fallo };
+        if (fallo) {
+            const motivo = fallo.code === 'TIMEOUT' ? 'tiempo' : fallo.code === 'RESPUESTA_INVALIDA' ? 'respuesta' : 'red';
+            return { estado: 'error', motivo, error: fallo };
+        }
         return { estado: 'sin-texto', motivo: 'sin-texto' };
     }
 

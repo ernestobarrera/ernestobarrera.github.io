@@ -190,6 +190,13 @@ const hace10dias = new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 1
     // Importación paralela sin ficha propia: se lee la del original y la pasada SÍ concluye.
     const c = runAudit({ mode: 'ok', gaps: '22222IP', baseline: makeBaseline('b12c.json', null), env: { MC_MOCK_DOC_SIN_SECCIONES: '22222IP' } });
     check('IP sin ficha propia → se lee la del original y concluye (GAP nuevo, exit 1)', c.code === 1 && c.out.includes('22222IP'), `exit ${c.code}\n${c.out.slice(-400)}`);
+    // P1 de la revisión del delta (Codex, 22/11/2026): un HTTP 200 que no es la 4.1 —la 4.2, o una
+    // página de error— se leía como texto, no casaba y la pasada certificaba «GAPS NUEVOS = 0».
+    const d = runAudit({ mode: 'ok', gaps: '22222', baseline: makeBaseline('b12d.json', null), env: { MC_MOCK_DOC_OTRA_SECCION: '22222' } });
+    check('200 con la 4.2 en lugar de la 4.1 → exit 2, no aprueba', d.code === 2 && !d.out.includes('GAPS NUEVOS = 0'), `exit ${d.code}\n${d.out.slice(-400)}`);
+    check('200 con la 4.2 → dice qué sección trajo', d.out.includes('trae la sección 4.2'), d.out.slice(-400));
+    const e = runAudit({ mode: 'ok', gaps: '22222', baseline: makeBaseline('b12e.json', null), env: { MC_MOCK_DOC_PAGINA_ERROR: '22222' } });
+    check('200 con una página HTML de error → exit 2, no aprueba', e.code === 2 && !e.out.includes('GAPS NUEVOS = 0'), `exit ${e.code}\n${e.out.slice(-400)}`);
 }
 
 if (failures > 0) {

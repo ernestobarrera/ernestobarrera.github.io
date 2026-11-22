@@ -193,6 +193,8 @@ const nuevaApp = () => {
     app.lastSearchFilters = { comerc: true };
     return app;
 };
+// El reintento pide su presupuesto a la API (R5): las APIs de mentira dan uno que no limita nada.
+const presupuestoFalso = () => ({ limitador: null, signal: undefined, liberar() {} });
 const datosParciales = () => ({
     resultados: [med(5000, 'A10BA02')],
     totalFilas: 1,
@@ -309,6 +311,7 @@ console.log('— 6. El reintento —');
     app.displayIndicationResults = () => { repintados += 1; };
     let pedidos = null;
     app.api = {
+        _presupuestoPeticiones: presupuestoFalso,
         _consultarGruposATC: async (codigos, opts) => { pedidos = { codigos, opts }; return { resultados: [med(1000, 'A10AB01')], consulta: { intentados: codigos, completos: codigos, fallidos: [], candidatos: ['1000'] } }; },
     };
     await app._reintentarGruposFallidos();
@@ -324,6 +327,7 @@ console.log('— 6. El reintento —');
     app.lastIndicationResults = data;
     app.displayIndicationResults = () => {};
     app.api = {
+        _presupuestoPeticiones: presupuestoFalso,
         _consultarGruposATC: async () => {
             app.lastIndicationResults = { resultados: [], consulta: { fallidos: [] } }; // otra búsqueda
             return { resultados: [med(1000, 'A10AB01')], consulta: { intentados: ['A10A'], completos: ['A10A'], fallidos: [], candidatos: ['1000'] } };
@@ -338,10 +342,36 @@ console.log('— 6. El reintento —');
     const data = datosParciales();
     app.lastIndicationResults = data;
     app.displayIndicationResults = () => {};
-    app.api = { _consultarGruposATC: async () => { const e = new Error('x'); e.code = 'CONSULTA_FALLIDA'; throw e; } };
+    let liberado = 0;
+    app.api = {
+        _presupuestoPeticiones: () => ({ limitador: null, signal: undefined, liberar() { liberado += 1; } }),
+        _consultarGruposATC: async () => { const e = new Error('x'); e.code = 'CONSULTA_FALLIDA'; throw e; },
+    };
     await app._reintentarGruposFallidos();
     ok('reintento fallido: sigue incompleta y sigue diciéndolo', data.consulta.fallidos.length === 1 && app._indicacionParcialHtml(data, 1).includes('Lista incompleta'));
     ok('…y se puede volver a reintentar', app._indReintentando === false);
+    ok('…y el plazo se desarma también cuando falla', liberado === 1, liberado);
+}
+{
+    // P2 de la revisión del delta (Codex, 22/11/2026): el reintento armaba un presupuesto para los
+    // grupos y OTRO al llegar a la criba, que estrenaba plazo entero. Ahora uno para los dos.
+    const app = nuevaApp();
+    const data = datosParciales();
+    data.matchedIndication.section41Filter = { section: '4.1', includeAny: ['diabetes'] };
+    app.lastIndicationResults = data;
+    app.displayIndicationResults = () => {};
+    const ctrl = new AbortController();
+    const presupuesto = { limitador: { marca: 'común' }, signal: ctrl.signal, liberar() { presupuesto.liberado = (presupuesto.liberado || 0) + 1; } };
+    let deGrupos = null; let deCriba = null; let armados = 0;
+    app.api = {
+        _presupuestoPeticiones: () => { armados += 1; return presupuesto; },
+        _consultarGruposATC: async (codigos, opts) => { deGrupos = opts; return { resultados: [med(1000, 'A10AB01')], consulta: { intentados: codigos, completos: codigos, fallidos: [], candidatos: ['1000'] } }; },
+        _filterIndicationResultsBySection: async (meds, filtro, opts) => { deCriba = opts; return { resultados: meds, summary: { candidates: 1, checked: 1, confirmed: 1, excluded: 0, errors: 0, matched: 1, shown: 1 } }; },
+    };
+    await app._reintentarGruposFallidos();
+    ok('reintento con criba: UN presupuesto', armados === 1, armados);
+    ok('…y grupos y criba llevan el mismo plazo y el mismo limitador', deGrupos?.signal === ctrl.signal && deCriba?.signal === ctrl.signal && deGrupos?.limitador === presupuesto.limitador && deCriba?.limitador === presupuesto.limitador, JSON.stringify({ grupos: !!deGrupos?.signal, criba: !!deCriba?.signal }));
+    ok('…que se desarma al terminar', presupuesto.liberado === 1, presupuesto.liberado);
 }
 
 // --- 7. Verificación en vivo que falla (hallazgo 5 de Fable, punto 17 de la cola) -------------
@@ -433,6 +463,7 @@ const datosSinVerificar = () => ({
     app.displayIndicationResults = () => {};
     let pedidos = null;
     app.api = {
+        _presupuestoPeticiones: presupuestoFalso,
         _consultarGruposATC: async (codigos) => { pedidos = codigos; return { resultados: [med(100, 'C09AA01'), med(101, 'C09AA02')], consulta: { intentados: codigos, completos: codigos, fallidos: [], candidatos: ['100', '101'] } }; },
     };
     await app._reintentarGruposFallidos();

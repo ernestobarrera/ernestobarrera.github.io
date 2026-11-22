@@ -10,7 +10,8 @@
  *   - el `{"error":"No existen secciones…"}` de CIMA se traducía en «ausente», y la reconciliación
  *     saltaba lo ausente: una ficha no leída salía del universo de verdad y la pasada aprobaba.
  *
- * Ahora la interpretación de la respuesta (`htmlDeSeccion`), la lectura con el original
+ * Ahora la validación de la respuesta (`htmlSeccionCriba`: solo vale un JSON que declare la
+ * sección pedida; otra sección o una página de error con HTTP 200 es inconclusa), la lectura con el original
  * (`leerSeccionCriba`), la normalización (`normalizarTextoCriba`, que pasa por `textoFT`) y el
  * casado (`casaFiltroSeccion`, `terminoEnTextoCriba`) son las funciones ESTÁTICAS de
  * `assets/js/cima-api.js`, cargadas de ese mismo archivo. Aquí solo se pone la red.
@@ -64,8 +65,9 @@ function sinContenido(motivo) {
  *   llamador; si se agotan, lanza (y eso es `unknown`)
  */
 export function crearLectorSeccion({ base, fetchWithRetry }) {
-  // Misma interpretación de la respuesta que `CimaAPI._request` + `getDocSeccion`: 204 o cuerpo
-  // vacío son «aquí no hay texto»; cualquier otro no-OK, o un JSON roto, es un fallo de lectura.
+  // Misma red que `CimaAPI._request`: 204 o cuerpo vacío son «aquí no hay texto»; cualquier otro
+  // no-OK, o un JSON roto, es un fallo de lectura. La respuesta se devuelve SIN interpretar: la
+  // valida `leerSeccionCriba` con `htmlSeccionCriba`, como en el cliente.
   const leer = async (nregistro, section) => {
     const url = new URL(`${base}/docSegmentado/contenido/1`);
     url.searchParams.set('nregistro', nregistro);
@@ -77,12 +79,12 @@ export function crearLectorSeccion({ base, fetchWithRetry }) {
     if (!raw) throw sinContenido('respuesta vacía');
     const tipo = r.headers?.get?.('content-type') || '';
     const data = tipo.includes('application/json') ? JSON.parse(raw) : raw;
-    return CimaAPI.htmlDeSeccion(data);
+    return data;
   };
 
   return async function fetchSectionText(nregistro, section = '4.1') {
     try {
-      const l = await CimaAPI.leerSeccionCriba(nregistro, (nr) => leer(nr, section));
+      const l = await CimaAPI.leerSeccionCriba(nregistro, (nr) => leer(nr, section), section);
       if (l.estado === 'texto') {
         return { status: 'success', text: l.texto, plain: l.plano, fuente: l.fuente, registro: l.registro };
       }
