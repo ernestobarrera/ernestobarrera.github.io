@@ -445,5 +445,30 @@ const datosSinVerificar = () => ({
     ok('la cabecera marca «N sin verificar» sin tacharlo', disp.includes('_indicacionSinVerificar(data)') && disp.includes('sin verificar</span>'));
 }
 
+// --- 8. Hasta 4 grupos a la vez, con el mismo resultado que en serie (22/11/2026) -------------
+// Con las listas ATC5 depuradas, «hipertensión» consulta 40 códigos; en serie tardaba 76 s en
+// frío. Las respuestas llegan desordenadas: lo que se devuelve tiene que salir en el orden de los
+// códigos, con el mismo reparto de completos y fallidos y la misma deduplicación.
+console.log('— 8. En paralelo, mismo orden —');
+{
+    const { api } = cargarAPI({});
+    let activos = 0, maxActivos = 0;
+    const retraso = { A: 30, B: 5, C: 20, D: 1, E: 10, F: 2 };
+    api.searchByATC = async (atc) => {
+        activos++; maxActivos = Math.max(maxActivos, activos);
+        await new Promise(r => setTimeout(r, retraso[atc]));
+        activos--;
+        if (atc === 'C') { const e = new Error('lento'); e.code = 'TIMEOUT'; throw e; }
+        return { resultados: [med(atc === 'F' ? 'A1' : `${atc}1`, 'A10BA02')] };
+    };
+    const r = await api._consultarGruposATC(['A', 'B', 'C', 'D', 'E', 'F']);
+    ok('los resultados salen en el orden de los códigos, no en el de llegada',
+        JSON.stringify(r.resultados.map(m => m.nregistro)) === '["A1","B1","D1","E1"]', JSON.stringify(r.resultados.map(m => m.nregistro)));
+    ok('el duplicado se queda con el primero en orden de códigos', r.resultados.filter(m => m.nregistro === 'A1').length === 1);
+    ok('completos en orden', JSON.stringify(r.consulta.completos) === '["A","B","D","E","F"]', JSON.stringify(r.consulta.completos));
+    ok('el que falla consta como fallido con su motivo', JSON.stringify(r.consulta.fallidos) === '[{"atc":"C","motivo":"timeout"}]', JSON.stringify(r.consulta.fallidos));
+    ok('va en paralelo, pero nunca más de 4 a la vez', maxActivos > 1 && maxActivos <= 4, `máximo ${maxActivos}`);
+}
+
 console.log(fallos ? `\n${fallos} fallo(s)` : '\nOK');
 process.exit(fallos ? 1 : 0);

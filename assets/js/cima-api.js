@@ -1361,9 +1361,28 @@ class CimaAPI {
         const completos = [];
         const fallidos = [];
         let allResults = [];
-        for (const atcCode of atcCodes) {
+        // Hasta 4 grupos a la vez (22/11/2026). En serie, una indicación con muchos códigos ATC5
+        // tardaba la suma de todos: «hipertensión» con 40 códigos, 19 s con la caché del Worker
+        // caliente y 76 s en frío. Las respuestas se recogen por índice y se procesan después en
+        // el orden de `atcCodes`, así que resultados, completos y fallidos salen igual que antes.
+        const respuestas = new Array(atcCodes.length);
+        let siguiente = 0;
+        const trabajador = async () => {
+            while (siguiente < atcCodes.length) {
+                const i = siguiente++;
+                try {
+                    respuestas[i] = { results: await this.searchByATC(atcCodes[i], options) };
+                } catch (error) {
+                    respuestas[i] = { error };
+                }
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(4, atcCodes.length) }, trabajador));
+        for (let i = 0; i < atcCodes.length; i++) {
+            const atcCode = atcCodes[i];
             try {
-                const results = await this.searchByATC(atcCode, options);
+                if (respuestas[i].error) throw respuestas[i].error;
+                const results = respuestas[i].results;
                 // Respondió, pero hubo medicamentos cuyo ATC no se pudo comprobar (hallazgo 5 de
                 // Fable): lo verificado se conserva y el grupo NO consta como completo.
                 const sinVerificar = results.sinVerificar?.length || 0;
@@ -1477,13 +1496,11 @@ class CimaAPI {
     }
 
     _normalizeSectionFilterText(value) {
-        let text = String(value || '').replace(/<[^>]*>/g, ' ');
-        if (typeof document !== 'undefined') {
-            const textarea = document.createElement('textarea');
-            textarea.innerHTML = text;
-            text = textarea.value;
-        }
-        return text
+        // Pasa por `textoFT` (22/11/2026). Antes quitaba las etiquetas con un espacio y solo
+        // decodificaba entidades si había DOM: una palabra que CIMA parte entre <span>
+        // («migra</span><span>ña») no casaba ni en el navegador, y fuera de él tampoco
+        // `migra&#241;a`. Es el mismo defecto que textoFT corrigió el 03/10 en la 4.8 y la 4.5.
+        return CimaAPI.textoFT(value)
             .toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
             .replace(/\s+/g, ' ')

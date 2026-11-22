@@ -130,5 +130,23 @@ console.log('— 3. Sin texto que leer, entra marcada y avisa —');
     ok('matched cuadra con lo devuelto', r.summary.matched === 2, JSON.stringify(r.summary));
 }
 
+// --- 4. El texto se lee como en pantalla (22/11/2026) ----------------------------------------
+// docSegmentado manda las tildes como entidades numéricas y a veces parte una palabra entre
+// <span>. La criba quitaba las etiquetas con un espacio y solo decodificaba con DOM: Botox,
+// Lopresor y Sibelium, con «profilaxis de la migraña» en su 4.1, no casaban.
+console.log('— 4. Entidades y palabras partidas —');
+{
+    const FILTRO_MIG = { section: '4.1', includeAny: ['migraña'] };
+    const { api } = cargarAPI({
+        E: [{ seccion: '4.1', contenido: '<p>Profilaxis de la migra&#241;a cr&#243;nica.</p>' }],
+        S: [{ seccion: '4.1', contenido: '<p>Profilaxis de la <span>migra</span><span>ña</span>.</p>' }],
+        X: [{ seccion: '4.1', contenido: '<p>Hipertensi&#243;n arterial.</p>' }],
+    });
+    const r = await api._filterIndicationResultsBySection([med('E'), med('S'), med('X')], FILTRO_MIG);
+    ok('«migra&#241;a» casa con «migraña» sin DOM', ids(r).includes('E'), JSON.stringify(ids(r)));
+    ok('una palabra partida entre <span> casa', ids(r).includes('S'), JSON.stringify(ids(r)));
+    ok('y lo que no la nombra sigue fuera', !ids(r).includes('X'), JSON.stringify(ids(r)));
+}
+
 console.log(fallos ? `\n${fallos} fallo(s).` : '\nTODO OK — la criba 4.1 solo quita lo que ha leído.');
 process.exit(fallos ? 1 : 0);
