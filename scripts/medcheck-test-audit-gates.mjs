@@ -197,6 +197,15 @@ const hace10dias = new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 1
     check('200 con la 4.2 → dice qué sección trajo', d.out.includes('trae la sección 4.2'), d.out.slice(-400));
     const e = runAudit({ mode: 'ok', gaps: '22222', baseline: makeBaseline('b12e.json', null), env: { MC_MOCK_DOC_PAGINA_ERROR: '22222' } });
     check('200 con una página HTML de error → exit 2, no aprueba', e.code === 2 && !e.out.includes('GAPS NUEVOS = 0'), `exit ${e.code}\n${e.out.slice(-400)}`);
+    // P1 del segundo delta (Codex, 22/11/2026): un JSON con `error` y texto, o un apartado sin
+    // `seccion`, pasaban por lectura. Sin el término salía «GAPS NUEVOS = 0»; con él, un GAP espurio.
+    for (const [clave, nombre] of [['MC_MOCK_DOC_ERROR_CON_TEXTO', 'JSON con error y texto'], ['MC_MOCK_DOC_SIN_ID', 'apartado de posología sin sección']]) {
+        for (const conTermino of [false, true]) {
+            const r = runAudit({ mode: 'ok', gaps: '22222', baseline: makeBaseline(`b12-${clave}-${conTermino}.json`, null), env: { [clave]: '22222', ...(conTermino ? { MC_MOCK_DOC_TEXTO_CON_TERMINO: '1' } : {}) } });
+            check(`200 con ${nombre}${conTermino ? ' que nombra el término' : ''} → exit 2, ni aprueba ni da un GAP`, r.code === 2 && !r.out.includes('GAPS NUEVOS = 0'), `exit ${r.code}\n${r.out.slice(-400)}`);
+            if (!conTermino) check(`200 con ${nombre} → dice por qué no vale`, r.out.includes('respuesta no válida'), r.out.slice(-400));
+        }
+    }
 }
 
 if (failures > 0) {

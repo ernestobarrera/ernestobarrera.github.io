@@ -2808,9 +2808,14 @@ class CimaAPI {
      * error. Aquí solo es lectura lo que CIMA identifica como la sección pedida:
      *  - JSON obligatorio: se pide JSON, y CIMA y el Worker lo sirven así (comprobado el 22/11). Un
      *    texto que no lo es —una página de error con 200— no dice de qué sección es.
-     *  - De un array se toman la sección pedida y sus subsecciones (`4.1`, `4.1.x`); un elemento
-     *    que no declara sección se acepta. Si todos declaran OTRA, la respuesta no vale.
-     *  - `{"error":…}` es como CIMA dice «no tengo secciones»: `''`, sin texto.
+     *  - Solo cuenta el texto de un apartado que DECLARA ser la sección pedida o una subsección
+     *    suya (`4.1`, `4.1.x`; `4.10` no). Un apartado de otra sección declarada se ignora (una
+     *    4.2 junto a la 4.1 no es indicación). Un apartado con texto que NO declara sección
+     *    invalida la respuesta: ignorarlo podría tirar texto de la 4.1, y aceptarlo dio por
+     *    leída una posología (P1 del segundo delta, 22/11/2026). Si nada declara la pedida, no vale.
+     *  - Un `error` manda sobre el texto que lo acompañe. Solo (`{"error":…}`) es como CIMA dice
+     *    «no tengo secciones»: `''`, sin texto. Con texto, o dentro de un apartado, la respuesta
+     *    no vale: el texto de un error no es la ficha.
      * Una respuesta que no vale lanza `RESPUESTA_INVALIDA`: no se sabe qué dice la ficha, que es lo
      * contrario de «no tiene la indicación».
      */
@@ -2821,8 +2826,12 @@ class CimaAPI {
             err.code = 'RESPUESTA_INVALIDA';
             return err;
         };
-        const esDeLaSeccion = (item) => item?.seccion == null
-            || String(item.seccion) === pedida || String(item.seccion).startsWith(`${pedida}.`);
+        const esObjeto = (item) => !!item && typeof item === 'object' && !Array.isArray(item);
+        const declarada = (item) => esObjeto(item) && item.seccion != null && String(item.seccion).trim() !== '';
+        const esDeLaSeccion = (item) => declarada(item)
+            && (String(item.seccion) === pedida || String(item.seccion).startsWith(`${pedida}.`));
+        const conTexto = (item) => CimaAPI.textoFT(esObjeto(item) ? (item.contenido ?? '') : (item ?? '')).trim() !== '';
+        const conError = (item) => esObjeto(item) && 'error' in item;
         let data = response;
         if (typeof data === 'string') {
             try {
@@ -2832,18 +2841,29 @@ class CimaAPI {
             }
         }
         if (Array.isArray(data)) {
+            if (data.some(conError)) throw invalida('un apartado trae un error');
+            if (data.some(item => conTexto(item) && !declarada(item))) {
+                throw invalida('un apartado con texto no dice de qué sección es');
+            }
             const validos = data.filter(esDeLaSeccion);
             if (data.length && !validos.length) {
                 throw invalida(`trae la sección ${[...new Set(data.map(item => item?.seccion))].join(', ')}`);
             }
             return CimaAPI.htmlDeSeccion(validos);
         }
-        if (data && typeof data === 'object') {
+        if (esObjeto(data)) {
+            if (conError(data)) {
+                if (conTexto(data)) throw invalida('trae un error junto al texto');
+                return '';
+            }
             if ('contenido' in data) {
+                if (!declarada(data)) {
+                    if (conTexto(data)) throw invalida('el texto no dice de qué sección es');
+                    return '';
+                }
                 if (!esDeLaSeccion(data)) throw invalida(`trae la sección ${data.seccion}`);
                 return CimaAPI.htmlDeSeccion(data);
             }
-            if ('error' in data) return '';
         }
         throw invalida('forma desconocida');
     }

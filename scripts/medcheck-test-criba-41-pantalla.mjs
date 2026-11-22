@@ -144,6 +144,15 @@ console.log('— 4. Contexto de IA —');
     const sinManitolIlegible = app._consultScopeFromResults(dg, [g[0], g[2]]);
     const pc = app._composeConsultPrompt(sinManitolIlegible, { selected: ['guias'] });
     ok('Osmofundina + timolol: confirmado y fuera de criba, sin la alarma de lo no leído', pc.includes('1 con la indicación confirmada en su ficha') && pc.includes('1 que entra por su grupo ATC') && !pc.includes('SIN confirmar'), pc);
+    // P3 del segundo delta (Codex, 22/11/2026): una importación paralela confirmada con la ficha del
+    // original y timolol. La tarjeta dice «4.1 del original»; el prompt decía «en su ficha».
+    const ip = glau('60004IP', 'MANITOL IMPORTADO 20%', 'B05BC01', { _sectionFuente: 'original', _sectionRegistro: '60004' });
+    const pip = app._composeConsultPrompt(app._consultScopeFromResults(dg, [ip, g[2]]), { selected: ['guias'] });
+    ok('importación paralela + timolol: lo confirmado se atribuye a la ficha del original', pip.includes('1 con la indicación confirmada en la ficha del medicamento original') && pip.includes('importación paralela sin ficha propia') && !pip.includes('confirmada en su ficha'), pip);
+    const pmix = app._composeConsultPrompt(app._consultScopeFromResults(dg, [g[0], ip, g[2]]), { selected: ['guias'] });
+    ok('propia + importación paralela + timolol: dice cuántas con la del original', pmix.includes('2 con la indicación confirmada en su ficha (en 1 importación paralela sin ficha propia, en la del medicamento original)'), pmix);
+    const ptodas = app._composeConsultPrompt(app._consultScopeFromResults(dg, [g[0], ip]), { selected: ['guias'] });
+    ok('todo confirmado con una importación paralela: «se acotó» lo dice', ptodas.includes('de cada medicamento (en 1 importación paralela sin ficha propia, la del medicamento original)'), ptodas);
     const sinCriba = app._consultScopeFromResults({ ...d, matchedIndication: { label: 'x', atc: ['N04BC'] } }, lista);
     ok('sin criba 4.1, el prompt no habla de ella', !sinCriba.criba41 && !app._composeConsultPrompt(sinCriba, { selected: ['guias'] }).includes('sección 4.1'));
 }

@@ -18,6 +18,11 @@
  *   MC_MOCK_DOC_VACIO  nregistros (coma) cuya 4.1 responde 200 con un array vacío
  *   MC_MOCK_DOC_OTRA_SECCION  nregistros (coma) cuya 4.1 responde 200 con la 4.2 (posología)
  *   MC_MOCK_DOC_PAGINA_ERROR  nregistros (coma) cuya 4.1 responde 200 con una página HTML de error
+ *   MC_MOCK_DOC_ERROR_CON_TEXTO  nregistros (coma) cuya 4.1 responde 200 con un JSON que trae
+ *                 `error` y además `seccion: '4.1'` y `contenido`
+ *   MC_MOCK_DOC_SIN_ID  nregistros (coma) cuya 4.1 responde 200 con un apartado de posología
+ *                 que no declara `seccion`
+ *   MC_MOCK_DOC_TEXTO_CON_TERMINO=1  esos dos llevan en su texto la fraseología de MC_MOCK_TERM
  *   (Lo demás responde como CIMA: JSON con `[{seccion: '4.1', titulo, contenido}]`.)
  *
  * Maestra ATC y recuentos (los consumen --cobertura-atc y --vigilar-broad):
@@ -117,6 +122,13 @@ globalThis.fetch = async (input) => {
     }
     if (lista('MC_MOCK_DOC_PAGINA_ERROR').includes(nreg)) {
       return new Response('<!DOCTYPE html><html><head><title>Error temporal</title></head><body><p>Servicio no disponible temporalmente. Inténtelo más tarde.</p></body></html>', { status: 200, headers: { 'content-type': 'text/html' } });
+    }
+    const conTermino = process.env.MC_MOCK_DOC_TEXTO_CON_TERMINO === '1';
+    if (lista('MC_MOCK_DOC_ERROR_CON_TEXTO').includes(nreg)) {
+      return json({ error: 'Servicio temporalmente no disponible', seccion: '4.1', contenido: conTermino ? phraseSoup : '<p>Servicio temporalmente no disponible.</p>' });
+    }
+    if (lista('MC_MOCK_DOC_SIN_ID').includes(nreg)) {
+      return json([{ titulo: 'Posología y forma de administración', contenido: conTermino ? phraseSoup : '<p>Adultos: un comprimido al día, con o sin alimentos.</p>' }]);
     }
     return json([{ seccion: '4.1', titulo: 'Indicaciones terapéuticas', contenido: phraseSoup }]);
   }

@@ -234,10 +234,12 @@ The mapping "indication -> ATC" is a fast proxy with three failure modes:
 **One reading contract for the app and the auditor (2026-11-22, R3).** The 4.1 is read, decoded and
 matched by the static functions of `assets/js/cima-api.js` (`htmlSeccionCriba`, `leerSeccionCriba`,
 `normalizarTextoCriba`, `casaFiltroSeccion`); `medcheck-audit-ontology.mjs` loads them from that file
-through `scripts/lib/lectura-41.mjs` instead of keeping its own copy. Only a JSON answer that CIMA
-labels as the requested section (or its subsections, `4.1.x`) counts as read. A presentation whose 4.1
+through `scripts/lib/lectura-41.mjs` instead of keeping its own copy. Only text in a JSON item that
+declares the requested section (or a subsection, `4.1.x`) counts as read; items of another declared
+section are ignored. An `error` key wins over any text next to it, and text in an item that declares
+no section makes the whole answer invalid. A presentation whose 4.1
 cannot be read — HTTP error, 204, `{"error":"No existen secciones…"}`, empty array, or an HTTP 200
-that is another section or an error page — after trying the
+that is another section, an error page, an `error` carrying text or text without a section — after trying the
 original registry of a parallel import is **not verifiable**: the app shows it marked «4.1 sin
 verificar» and never counts it as confirmed; the reconcile marks the run **inconclusive**, never an
 absence. `scripts/medcheck-test-contrato-lectura-41.mjs` feeds the same CIMA answers to both sides.

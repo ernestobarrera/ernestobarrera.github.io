@@ -10,8 +10,9 @@
  *   - el `{"error":"No existen secciones…"}` de CIMA se traducía en «ausente», y la reconciliación
  *     saltaba lo ausente: una ficha no leída salía del universo de verdad y la pasada aprobaba.
  *
- * Ahora la validación de la respuesta (`htmlSeccionCriba`: solo vale un JSON que declare la
- * sección pedida; otra sección o una página de error con HTTP 200 es inconclusa), la lectura con el original
+ * Ahora la validación de la respuesta (`htmlSeccionCriba`: solo vale el texto de un apartado JSON
+ * que declare la sección pedida; otra sección, una página de error, un `error` con texto o un texto
+ * sin sección, con HTTP 200, es inconclusa), la lectura con el original
  * (`leerSeccionCriba`), la normalización (`normalizarTextoCriba`, que pasa por `textoFT`) y el
  * casado (`casaFiltroSeccion`, `terminoEnTextoCriba`) son las funciones ESTÁTICAS de
  * `assets/js/cima-api.js`, cargadas de ese mismo archivo. Aquí solo se pone la red.

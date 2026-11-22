@@ -6777,10 +6777,13 @@ class MedCheckApp {
         const sinVerificar41 = criba41 ? meds.filter(m => m?._sectionUnverified).length : 0;
         const fueraCriba41 = criba41 ? meds.filter(m => m?._sectionFueraCriba).length : 0;
         const confirmados41 = criba41 ? meds.filter(m => m?._sectionFuente).length : 0;
+        // De los confirmados, las importaciones paralelas sin ficha propia: lo confirmado es la
+        // ficha del original, como dice su tarjeta (P3 del segundo delta, 22/11/2026).
+        const confirmadosOriginal41 = criba41 ? meds.filter(m => m?._sectionFuente === 'original').length : 0;
         return {
             kind: 'grupo', pas, atcs, consultados, noConsultados, sinVerificar, vias, sinVia, formas, total: meds.length,
             indicacion: (!atcCode && mi?.label) ? mi.label : null, nombre: null,
-            criba41, sinVerificar41, fueraCriba41, confirmados41,
+            criba41, sinVerificar41, fueraCriba41, confirmados41, confirmadosOriginal41,
         };
     }
 
@@ -7071,12 +7074,17 @@ class MedCheckApp {
             // grupo sin leer la ficha, a la vez. Si en la lista no queda nada que pasara por la
             // lectura (facetada a lo de fuera de la criba), no se menciona: no se acotó nada.
             if (scope.criba41 && (scope.confirmados41 || scope.sinVerificar41)) {
+                // Las importaciones paralelas sin ficha propia se confirmaron con la del original.
+                const o = scope.confirmadosOriginal41 || 0;
+                const ips = o === 1 ? '1 importación paralela sin ficha propia' : `${o} importaciones paralelas sin ficha propia`;
                 if (scope.confirmados41 === scope.total) {
-                    lines.push('- La lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica de cada medicamento.');
+                    lines.push(`- La lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica de cada medicamento${o ? ` (en ${ips}, la del medicamento original)` : ''}.`);
                 } else {
                     const c = scope.confirmados41; const n = scope.sinVerificar41; const f = scope.fueraCriba41;
                     const partes = [];
-                    if (c) partes.push(`${c} con la indicación confirmada en su ficha`);
+                    if (c && !o) partes.push(`${c} con la indicación confirmada en su ficha`);
+                    else if (c && o === c) partes.push(`${c} con la indicación confirmada en la ficha del medicamento original (${c === 1 ? 'es una importación paralela sin ficha propia' : 'son importaciones paralelas sin ficha propia'})`);
+                    else if (c) partes.push(`${c} con la indicación confirmada en su ficha (en ${ips}, en la del medicamento original)`);
                     if (n) partes.push(n === 1
                         ? '1 cuya ficha no se pudo leer, incluido SIN confirmar que tenga esta indicación autorizada'
                         : `${n} cuyas fichas no se pudieron leer, incluidos SIN confirmar que tengan esta indicación autorizada`);
