@@ -325,7 +325,7 @@ check('resolver sin matches → none', api.resolveIndicationCandidates([]).mode 
     ejecuta('dependencia de opioides', 'dependencia de opioides', 'N07BC');
     ejecuta('trastorno por uso de opioides', 'dependencia de opioides', 'N07BC');
     ejecuta('piernas inquietas', 'piernas inquietas', 'N04BC05');
-    ejecuta('trombosis venosa profunda', 'trombosis', 'B01A');
+    ejecuta('trombosis venosa profunda', 'trombosis', 'B01AF');
     ejecuta('oseltamivir', 'antivirales para la gripe', 'J05AH');
     ejecuta('deshidratación', 'rehidratación oral', 'A07CA');
     ejecuta('sífilis', 'infecciones de transmisión sexual', 'J01CE08');

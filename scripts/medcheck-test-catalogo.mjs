@@ -197,8 +197,9 @@ ok('las apariciones superan al número de términos (hay términos en varios dom
 
     // El caso concreto, con su criterio clinico: un anticoagulante NO es un antiagregante. B01AC
     // son los 230 antiagregantes (AAS, clopidogrel); meterlos aqui seria afirmar lo que nadie
-    // prescribe asi. Por eso es termino propio y no un sinonimo de `trombosis`, que si es B01A
-    // entero. Medido en vivo el 2026-09-14: 208 medicamentos comercializados, ninguno B01AC.
+    // prescribe asi. Por eso es termino propio y no un sinonimo de `trombosis`, que cubre los
+    // antitromboticos de B01A (desde el 2026-11-22, sin los prostanoides de la HAP). Medido en
+    // vivo el 2026-09-14: 208 medicamentos comercializados, ninguno B01AC.
     const anticoag = ontology.terms['anticoagulantes'];
     ok('«anticoagulantes» existe como termino propio', !!anticoag);
     const atcAnticoag = [].concat(anticoag?.atc || []);
@@ -208,8 +209,15 @@ ok('las apariciones superan al número de términos (hay términos en varios dom
         !atcAnticoag.some(c => c.startsWith('B01AC')), atcAnticoag.join(','));
     ok('ni el B01A entero, que los incluiria por la puerta de atras',
         !atcAnticoag.includes('B01A'), atcAnticoag.join(','));
-    ok('`antiagregacion` sigue siendo su pareja, y sigue siendo B01AC',
-        JSON.stringify([].concat(ontology.terms['antiagregación']?.atc || [])) === '["B01AC"]');
+    // `antiagregacion` es su pareja: solo B01AC. Desde el 2026-11-22 por ATC5, porque B01AC entero
+    // traia epoprostenol, iloprost, treprostinil y selexipag, que son de hipertension pulmonar.
+    const atcAntiag = [].concat(ontology.terms['antiagregación']?.atc || []);
+    ok('`antiagregacion` sigue siendo su pareja, y solo B01AC',
+        atcAntiag.length > 0 && atcAntiag.every(c => c.startsWith('B01AC')), atcAntiag.join(','));
+    ok('con AAS, clopidogrel y ticagrelor',
+        ['B01AC06', 'B01AC04', 'B01AC24'].every(c => atcAntiag.includes(c)), atcAntiag.join(','));
+    ok('y sin los prostanoides de la hipertension pulmonar',
+        !atcAntiag.some(c => ['B01AC09', 'B01AC11', 'B01AC21', 'B01AC27'].includes(c) || c === 'B01AC'), atcAntiag.join(','));
 
     // Y el sinonimo que NO puede tener: «anticoagulacion» ya resuelve a `trombosis`, y anadirlo
     // aqui volvia ambiguo un termino que hoy responde solo. Comprobado en vivo ese dia.
@@ -223,7 +231,12 @@ ok('las apariciones superan al número de términos (hay términos en varios dom
     // escribe «AINE» espera ver tambien el diclofenaco en gel. Medido: 43 topicos comercializados
     // que antes no salian. No se mezclan en pantalla porque la agrupacion por ATC los separa.
     const aine = [].concat(ontology.terms['aine']?.atc || []);
-    ok('«AINE» cubre los sistemicos', aine.includes('M01A'), aine.join(','));
+    // Desde el 2026-11-22, por subgrupos: M01A entero traia glucosamina, condroitina y diacereina
+    // (M01AX05/21/25), que no son AINE. Y el generico M01AX, como prefijo, los volveria a traer.
+    ok('«AINE» cubre los sistemicos',
+        ['M01AB', 'M01AC', 'M01AE', 'M01AH'].every(c => aine.includes(c)), aine.join(','));
+    ok('sin glucosamina, condroitina ni diacereina',
+        !aine.some(c => ['M01A', 'M01AX', 'M01AX05', 'M01AX21', 'M01AX25'].includes(c)), aine.join(','));
     ok('y tambien los topicos, que es lo que faltaba', aine.includes('M02AA'), aine.join(','));
     ok('sin colar capsaicina ni salicilatos, que no son AINE',
         !aine.some(c => c === 'M02AB' || c === 'M02AC'), aine.join(','));
