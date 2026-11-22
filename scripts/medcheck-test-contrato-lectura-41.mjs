@@ -119,6 +119,12 @@ const MAL_FORMADOS = [
     ['cadena vacía', ''],
     ['null', null],
 ];
+// Y el texto: una 4.1 bien identificada cuyo `contenido` no es una cadena no es una lectura, y
+// lo dice como respuesta no válida, no como fallo de red.
+for (const [nombre, contenido] of [['un número', 41], ['una lista', ['<p>Enuresis nocturna primaria.</p>']], ['un objeto', { html: '<p>Enuresis nocturna primaria.</p>' }], ['un booleano', true]]) {
+    CASOS.push({ id: `barrido · 4.1 cuyo texto es ${nombre}`, fichas: { A: R.json([{ seccion: '4.1', titulo: 'Indicaciones', contenido }]) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' });
+    CASOS.push({ id: `barrido · objeto suelto 4.1 cuyo texto es ${nombre}`, fichas: { A: R.json({ seccion: '4.1', titulo: 'Indicaciones', contenido }) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' });
+}
 const CON_TERMINO = '<p>En la enuresis, 0,2 mg al acostarse.</p>';
 const SIN_TERMINO = '<p>Adultos: un comprimido al día.</p>';
 for (const [nombre, seccion] of MAL_FORMADOS) {

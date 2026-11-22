@@ -2841,6 +2841,9 @@ class CimaAPI {
             && (item.seccion === pedida || item.seccion.startsWith(`${pedida}.`));
         const conTexto = (item) => CimaAPI.textoFT(esObjeto(item) ? (item.contenido ?? '') : (item ?? '')).trim() !== '';
         const conError = (item) => esObjeto(item) && 'error' in item;
+        // El texto de la sección es una cadena. Un número, una lista o un objeto reventaban al dar
+        // formato y salían inconclusos con el motivo «red», que no es lo que pasó.
+        const textoNoCadena = (item) => item.contenido != null && typeof item.contenido !== 'string';
         let data = response;
         if (typeof data === 'string') {
             try {
@@ -2855,6 +2858,7 @@ class CimaAPI {
                 throw invalida('un apartado con texto no identifica una única sección');
             }
             const validos = data.filter(esDeLaSeccion);
+            if (validos.some(textoNoCadena)) throw invalida('el texto de un apartado no es una cadena');
             if (data.length && !validos.length) {
                 throw invalida(`trae la sección ${[...new Set(data.map(item => item?.seccion))].join(', ')}`);
             }
@@ -2871,6 +2875,7 @@ class CimaAPI {
                     return '';
                 }
                 if (!esDeLaSeccion(data)) throw invalida(`trae la sección ${data.seccion}`);
+                if (textoNoCadena(data)) throw invalida('el texto no es una cadena');
                 return CimaAPI.htmlDeSeccion(data);
             }
         }
