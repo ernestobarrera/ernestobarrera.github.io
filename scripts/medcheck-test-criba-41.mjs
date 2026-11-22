@@ -16,7 +16,9 @@
  *   3. si no hay texto que leer (ni propio ni del original), entra como no verificada y cuenta en
  *      `errors`, que es lo que dispara el aviso de la pantalla;
  *   4. una importación cuyo original NO tiene la indicación sigue saliendo: el arreglo no abre la
- *      criba, solo deja de tirar lo que no ha mirado.
+ *      criba, solo deja de tirar lo que no ha mirado;
+ *   5. el texto se lee como en pantalla (CimaAPI.textoFT): entidades sin DOM y palabras que CIMA
+ *      parte entre <span>.
  *
  * Uso: node scripts/medcheck-test-criba-41.mjs
  */
@@ -74,10 +76,18 @@ const ids = (r) => r.resultados.map(m => m.nregistro).sort();
 console.log('— 0. Qué es una importación paralela —');
 {
     const { CimaAPI } = cargarAPI({});
-    ok('«97051006IP» → «97051006»', CimaAPI._registroOriginalDeImportacion('97051006IP') === '97051006');
-    ok('«04276007IP1» → «04276007»', CimaAPI._registroOriginalDeImportacion('04276007IP1') === '04276007');
-    ok('un registro normal no tiene original', CimaAPI._registroOriginalDeImportacion('97051006') === null);
-    ok('vacío o nulo no rompe', CimaAPI._registroOriginalDeImportacion(null) === null && CimaAPI._registroOriginalDeImportacion('') === null);
+    const orig = (n) => JSON.stringify(CimaAPI._registrosOriginalesDeImportacion(n));
+    ok('«97051006IP» → «97051006»', orig('97051006IP') === '["97051006"]', orig('97051006IP'));
+    ok('«04276007IP1» → «04276007»', orig('04276007IP1') === '["04276007"]', orig('04276007IP1'));
+    ok('«98069001AIP4» → «98069001A» y luego «98069001» (Plavix)', orig('98069001AIP4') === '["98069001A","98069001"]', orig('98069001AIP4'));
+    ok('un registro normal no tiene original', orig('97051006') === '[]');
+    ok('vacío o nulo no rompe', orig(null) === '[]' && orig('') === '[]');
+}
+{
+    // El caso de Plavix: ni la IP ni «98069001A» tienen ficha; la del «98069001» sí.
+    const { api, pedidas } = cargarAPI({ '98069001': seccion41('Prevención de acontecimientos aterotrombóticos tras ictus isquémico.') });
+    const r = await api._filterIndicationResultsBySection([med('98069001AIP4')], { section: '4.1', includeAny: ['ictus'] });
+    ok('si el número con letra no tiene ficha, se prueba sin la letra', ids(r).includes('98069001AIP4') && !r.resultados[0]._sectionUnverified, JSON.stringify(pedidas));
 }
 
 // --- 1. Lo de siempre ----------------------------------------------------------------------------

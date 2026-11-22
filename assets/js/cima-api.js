@@ -1454,8 +1454,8 @@ class CimaAPI {
                     // Su ficha es la del registro original, el mismo número sin el sufijo. Hasta el
                     // 21/11/2026 ese vacío se leía como «no casa» y la presentación desaparecía de la
                     // lista sin aviso (MIRAPEXIN 0,7 MG 97051006IP en «piernas inquietas»).
-                    const original = CimaAPI._registroOriginalDeImportacion(med.nregistro);
-                    if (!text && original) {
+                    for (const original of CimaAPI._registrosOriginalesDeImportacion(med.nregistro)) {
+                        if (text) break;
                         text = this._normalizeSectionFilterText(await this.getDocSeccion(original, section));
                     }
                     // Sin texto no hay nada que comparar: es no poder leer la ficha, no una ficha que
@@ -1481,12 +1481,16 @@ class CimaAPI {
     }
 
     /**
-     * Registro original de una importación paralela («97051006IP» → «97051006», «04276007IP1» →
-     * «04276007»), o null si no lo es. Mismo marcador que `MedCheckApp._esImportacionParalela`.
+     * Registros donde buscar la ficha de una importación paralela, en orden: el número sin el
+     * sufijo («97051006IP» → «97051006», «04276007IP1» → «04276007») y, si acaba en letra, también
+     * sin ella («98069001AIP4» → «98069001A», «98069001»: el de Plavix es el segundo). Vacío si
+     * no es una importación. Mismo marcador que `MedCheckApp._esImportacionParalela`.
      */
-    static _registroOriginalDeImportacion(nregistro) {
+    static _registrosOriginalesDeImportacion(nregistro) {
         const m = /^(.+?)IP\d*\s*$/i.exec(String(nregistro || '').trim());
-        return m ? m[1] : null;
+        if (!m) return [];
+        const sinLetra = m[1].replace(/[a-z]+$/i, '');
+        return sinLetra && sinLetra !== m[1] ? [m[1], sinLetra] : [m[1]];
     }
 
     _normalizeSectionFilterTerms(terms) {
