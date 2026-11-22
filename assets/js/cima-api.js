@@ -2808,14 +2808,15 @@ class CimaAPI {
      * error. Aquí solo es lectura lo que CIMA identifica como la sección pedida:
      *  - JSON obligatorio: se pide JSON, y CIMA y el Worker lo sirven así (comprobado el 22/11). Un
      *    texto que no lo es —una página de error con 200— no dice de qué sección es.
-     *  - Solo cuenta el texto de un apartado que DECLARA ser la sección pedida o una subsección
-     *    suya (`4.1`, `4.1.x`; `4.10` no). Un apartado de otra sección declarada se ignora (una
-     *    4.2 junto a la 4.1 no es indicación). Un apartado con texto que NO declara sección
-     *    invalida la respuesta: ignorarlo podría tirar texto de la 4.1, y aceptarlo dio por
-     *    leída una posología (P1 del segundo delta, 22/11/2026). Si nada declara la pedida, no vale.
-     *  - Un `error` manda sobre el texto que lo acompañe. Solo (`{"error":…}`) es como CIMA dice
-     *    «no tengo secciones»: `''`, sin texto. Con texto, o dentro de un apartado, la respuesta
-     *    no vale: el texto de un error no es la ficha.
+     *  - Solo cuenta el texto de un apartado cuyo `seccion` es UNA sección bien formada (cadena
+     *    `4.1`, `4.1.1`…) y es la pedida o una subsección suya (`4.10` no). Un apartado de otra
+     *    sección bien formada se ignora (una 4.2 junto a la 4.1 no es indicación). Un apartado
+     *    con texto cuyo `seccion` falta o no tiene esa forma invalida la respuesta: ignorarlo
+     *    podría tirar texto de la 4.1, y aceptarlo dio por leída una posología (P1 del segundo y
+     *    del tercer delta, 22/11/2026). Si nada declara la pedida, no vale.
+     *  - Un `error`, en la respuesta o en CUALQUIER apartado (también en una 4.2), manda sobre el
+     *    texto. Solo (`{"error":…}`) es como CIMA dice «no tengo secciones»: `''`, sin texto. Con
+     *    texto, o dentro de un apartado, la respuesta no vale: el texto de un error no es la ficha.
      * Una respuesta que no vale lanza `RESPUESTA_INVALIDA`: no se sabe qué dice la ficha, que es lo
      * contrario de «no tiene la indicación».
      */
@@ -2827,9 +2828,17 @@ class CimaAPI {
             return err;
         };
         const esObjeto = (item) => !!item && typeof item === 'object' && !Array.isArray(item);
-        const declarada = (item) => esObjeto(item) && item.seccion != null && String(item.seccion).trim() !== '';
+        // Identificador en POSITIVO (P1 del tercer delta, 22/11/2026): una cadena con UN número de
+        // sección, `4`, `4.1`, `4.1.1`, y nada más. Los tres repasos anteriores taparon formas
+        // concretas —otra sección, `error` con texto, texto sin sección— y quedaba la siguiente:
+        // `["4.1.1","4.2"]` o `"4.1.1,4.2"` empezaban por «4.1.». Ahora lo que no tiene esta forma
+        // exacta —una lista, un número (4.10 se vuelve «4.1»), espacios, comas, otros dígitos,
+        // ceros a la izquierda (`04.1` se ignoraría como otra sección)— no identifica una sección:
+        // con texto, la respuesta no vale.
+        const SECCION_CANONICA = /^(?:0|[1-9][0-9]*)(?:\.(?:0|[1-9][0-9]*))*$/;
+        const declarada = (item) => esObjeto(item) && typeof item.seccion === 'string' && SECCION_CANONICA.test(item.seccion);
         const esDeLaSeccion = (item) => declarada(item)
-            && (String(item.seccion) === pedida || String(item.seccion).startsWith(`${pedida}.`));
+            && (item.seccion === pedida || item.seccion.startsWith(`${pedida}.`));
         const conTexto = (item) => CimaAPI.textoFT(esObjeto(item) ? (item.contenido ?? '') : (item ?? '')).trim() !== '';
         const conError = (item) => esObjeto(item) && 'error' in item;
         let data = response;
@@ -2843,7 +2852,7 @@ class CimaAPI {
         if (Array.isArray(data)) {
             if (data.some(conError)) throw invalida('un apartado trae un error');
             if (data.some(item => conTexto(item) && !declarada(item))) {
-                throw invalida('un apartado con texto no dice de qué sección es');
+                throw invalida('un apartado con texto no identifica una única sección');
             }
             const validos = data.filter(esDeLaSeccion);
             if (data.length && !validos.length) {
@@ -2858,7 +2867,7 @@ class CimaAPI {
             }
             if ('contenido' in data) {
                 if (!declarada(data)) {
-                    if (conTexto(data)) throw invalida('el texto no dice de qué sección es');
+                    if (conTexto(data)) throw invalida('el texto no identifica una única sección');
                     return '';
                 }
                 if (!esDeLaSeccion(data)) throw invalida(`trae la sección ${data.seccion}`);

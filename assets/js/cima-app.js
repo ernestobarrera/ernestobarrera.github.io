@@ -7076,15 +7076,17 @@ class MedCheckApp {
             if (scope.criba41 && (scope.confirmados41 || scope.sinVerificar41)) {
                 // Las importaciones paralelas sin ficha propia se confirmaron con la del original.
                 const o = scope.confirmadosOriginal41 || 0;
-                const ips = o === 1 ? '1 importación paralela sin ficha propia' : `${o} importaciones paralelas sin ficha propia`;
+                // «del registro original», no «sin ficha propia»: también se recurre al original cuando la
+                // lectura de la propia falla (P3 del tercer delta, 22/11/2026).
+                const ips = o === 1 ? '1 importación paralela' : `${o} importaciones paralelas`;
                 if (scope.confirmados41 === scope.total) {
-                    lines.push(`- La lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica de cada medicamento${o ? ` (en ${ips}, la del medicamento original)` : ''}.`);
+                    lines.push(`- La lista se acotó leyendo la sección 4.1 (indicaciones) de la ficha técnica de cada medicamento${o ? ` (en ${ips}, la del registro original)` : ''}.`);
                 } else {
                     const c = scope.confirmados41; const n = scope.sinVerificar41; const f = scope.fueraCriba41;
                     const partes = [];
                     if (c && !o) partes.push(`${c} con la indicación confirmada en su ficha`);
-                    else if (c && o === c) partes.push(`${c} con la indicación confirmada en la ficha del medicamento original (${c === 1 ? 'es una importación paralela sin ficha propia' : 'son importaciones paralelas sin ficha propia'})`);
-                    else if (c) partes.push(`${c} con la indicación confirmada en su ficha (en ${ips}, en la del medicamento original)`);
+                    else if (c && o === c) partes.push(`${c} con la indicación confirmada en la ficha del registro original (${c === 1 ? 'es una importación paralela' : 'son importaciones paralelas'})`);
+                    else if (c) partes.push(`${c} con la indicación confirmada en su ficha (en ${ips}, en la del registro original)`);
                     if (n) partes.push(n === 1
                         ? '1 cuya ficha no se pudo leer, incluido SIN confirmar que tenga esta indicación autorizada'
                         : `${n} cuyas fichas no se pudieron leer, incluidos SIN confirmar que tengan esta indicación autorizada`);

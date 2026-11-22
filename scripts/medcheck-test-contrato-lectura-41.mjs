@@ -82,7 +82,53 @@ const CASOS = [
     { id: 'importación paralela: ficha del original', nregistro: '97051006IP', fichas: { '97051006IP': R.json(SIN_SECCIONES), '97051006': R.json(s41('<p>Síndrome de piernas inquietas.</p>')) }, filtro: ['piernas inquietas'], espera: 'confirmado', fuente: 'original' },
     { id: 'importación paralela: el original no la tiene', nregistro: '111IP', fichas: { '111IP': R.json(SIN_SECCIONES), '111': R.json(s41('<p>Enfermedad de Parkinson.</p>')) }, filtro: ['piernas inquietas'], espera: 'descartado' },
     { id: 'importación paralela: ni propia ni original', nregistro: '222IP', fichas: { '222IP': R.json(SIN_SECCIONES), '222': R.json(SIN_SECCIONES) }, filtro: ['piernas inquietas'], espera: 'no-verificable' },
+    // Precedencia del error (tercer delta): un `error` en una 4.2 junto a una 4.1 válida también manda.
+    { id: '4.1 válida y una 4.2 con error', fichas: { A: R.json([{ seccion: '4.1', titulo: 'Indicaciones', contenido: '<p>Enuresis nocturna primaria.</p>' }, { seccion: '4.2', error: 'parcial', contenido: '' }]) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' },
+    // Controles bien formados del barrido de abajo.
+    { id: 'subsección de dos cifras 4.1.12', fichas: { A: R.json([{ seccion: '4.1.12', titulo: 'Población pediátrica', contenido: '<p>Enuresis nocturna primaria.</p>' }]) }, filtro: ['enuresis'], espera: 'confirmado' },
+    { id: 'la 4.11 tampoco es una subsección de la 4.1', fichas: { A: R.json([{ seccion: '4.11', titulo: 'Otra', contenido: '<p>Enuresis nocturna primaria.</p>' }]) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' },
 ];
+
+// Barrido de identificadores (P1 del tercer delta, 22/11/2026). Los repasos anteriores taparon las
+// formas de una en una; aquí van todas las mal formadas que se nos ocurren, con el término y sin él,
+// solas y junto a una 4.1 válida que no lo nombra. Ninguna puede dar confirmado ni descartado: el
+// identificador se define en positivo (`SECCION_CANONICA`) y lo demás no identifica una sección.
+const MAL_FORMADOS = [
+    ['lista 4.1.1 + 4.2', ['4.1.1', '4.2']],
+    ['lista con solo la 4.1', ['4.1']],
+    ['cadena «4.1.1,4.2»', '4.1.1,4.2'],
+    ['cadena «4.1.1 4.2»', '4.1.1 4.2'],
+    ['cadena «4.1.1;4.2»', '4.1.1;4.2'],
+    ['cadena «4.1.1/4.2»', '4.1.1/4.2'],
+    ['cadena «4.1.1-4.2»', '4.1.1-4.2'],
+    ['cadena con un salto entre dos', '4.1\n4.2'],
+    ['salto de línea final', '4.1\n'],
+    ['espacio final', '4.1 '],
+    ['espacio inicial', ' 4.1'],
+    ['punto final', '4.1.'],
+    ['doble punto', '4.1..2'],
+    ['letra', '4.1.a'],
+    ['cero a la izquierda «04.1»', '04.1'],
+    ['cero a la izquierda «4.01»', '4.01'],
+    ['número 4.1', 4.1],
+    ['número 4.10 (en JSON, 4.1)', 4.10],
+    ['dígitos de ancho completo', `${String.fromCharCode(0xFF14)}.${String.fromCharCode(0xFF11)}`],
+    ['espacio de anchura cero', `4.1${String.fromCharCode(0x200B)}`],
+    ['objeto', { id: '4.1' }],
+    ['booleano', true],
+    ['cadena vacía', ''],
+    ['null', null],
+];
+const CON_TERMINO = '<p>En la enuresis, 0,2 mg al acostarse.</p>';
+const SIN_TERMINO = '<p>Adultos: un comprimido al día.</p>';
+for (const [nombre, seccion] of MAL_FORMADOS) {
+    for (const [texto, etiqueta] of [[SIN_TERMINO, 'sin el término'], [CON_TERMINO, 'con el término']]) {
+        const apartado = { seccion, titulo: 'Posología', contenido: texto };
+        CASOS.push({ id: `barrido · ${nombre}, solo, ${etiqueta}`, fichas: { A: R.json([apartado]) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' });
+        CASOS.push({ id: `barrido · ${nombre}, junto a una 4.1 válida, ${etiqueta}`, fichas: { A: R.json([{ seccion: '4.1', titulo: 'Indicaciones', contenido: '<p>Diabetes insípida central.</p>' }, apartado]) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' });
+    }
+    CASOS.push({ id: `barrido · ${nombre}, objeto suelto con el término`, fichas: { A: R.json({ seccion, titulo: 'Posología', contenido: CON_TERMINO }) }, filtro: ['enuresis'], espera: 'no-verificable', motivo: 'respuesta' });
+}
 
 // --- La app ---------------------------------------------------------------------------------------
 function cargarApp(fichas) {

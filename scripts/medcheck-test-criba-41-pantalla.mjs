@@ -148,11 +148,11 @@ console.log('— 4. Contexto de IA —');
     // original y timolol. La tarjeta dice «4.1 del original»; el prompt decía «en su ficha».
     const ip = glau('60004IP', 'MANITOL IMPORTADO 20%', 'B05BC01', { _sectionFuente: 'original', _sectionRegistro: '60004' });
     const pip = app._composeConsultPrompt(app._consultScopeFromResults(dg, [ip, g[2]]), { selected: ['guias'] });
-    ok('importación paralela + timolol: lo confirmado se atribuye a la ficha del original', pip.includes('1 con la indicación confirmada en la ficha del medicamento original') && pip.includes('importación paralela sin ficha propia') && !pip.includes('confirmada en su ficha'), pip);
+    ok('importación paralela + timolol: lo confirmado se atribuye a la ficha del original', pip.includes('1 con la indicación confirmada en la ficha del registro original (es una importación paralela)') && !pip.includes('sin ficha propia') && !pip.includes('confirmada en su ficha'), pip);
     const pmix = app._composeConsultPrompt(app._consultScopeFromResults(dg, [g[0], ip, g[2]]), { selected: ['guias'] });
-    ok('propia + importación paralela + timolol: dice cuántas con la del original', pmix.includes('2 con la indicación confirmada en su ficha (en 1 importación paralela sin ficha propia, en la del medicamento original)'), pmix);
+    ok('propia + importación paralela + timolol: dice cuántas con la del original', pmix.includes('2 con la indicación confirmada en su ficha (en 1 importación paralela, en la del registro original)') && !pmix.includes('sin ficha propia'), pmix);
     const ptodas = app._composeConsultPrompt(app._consultScopeFromResults(dg, [g[0], ip]), { selected: ['guias'] });
-    ok('todo confirmado con una importación paralela: «se acotó» lo dice', ptodas.includes('de cada medicamento (en 1 importación paralela sin ficha propia, la del medicamento original)'), ptodas);
+    ok('todo confirmado con una importación paralela: «se acotó» lo dice', ptodas.includes('de cada medicamento (en 1 importación paralela, la del registro original)') && !ptodas.includes('sin ficha propia'), ptodas);
     const sinCriba = app._consultScopeFromResults({ ...d, matchedIndication: { label: 'x', atc: ['N04BC'] } }, lista);
     ok('sin criba 4.1, el prompt no habla de ella', !sinCriba.criba41 && !app._composeConsultPrompt(sinCriba, { selected: ['guias'] }).includes('sección 4.1'));
 }
