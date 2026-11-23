@@ -235,11 +235,11 @@
     "verifiedBy": "pubmed+crossref"
   },
   "fm_pocus_recommendations_paulus_2026": {
-    "citation": "Paulus R. Multiorganizational Recommendations for Point-of-Care Ultrasound in Family Medicine Residency Education. Fam Med. 2026;58(0):1-5.",
+    "citation": "Paulus R. Multiorganizational Recommendations for Point-of-Care Ultrasound in Family Medicine Residency Education. Fam Med. 2026;58(9):623-627.",
     "url": "https://doi.org/10.22454/FamMed.2026.426882",
     "doi": "10.22454/FamMed.2026.426882",
     "pmid": "42546336",
-    "verified": "2026-08-18",
+    "verified": "2026-11-23",
     "verifiedBy": "pubmed+crossref"
   },
   "knee_effusion_liu_2024": {
@@ -319,6 +319,46 @@
     "doi": "10.1148/radiol.213079",
     "pmid": "35787200",
     "verified": "2026-08-19",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "dupuytren_morris_2019": {
+    "citation": "Morris G, Jacobson JA, Kalume Brigido M, Gaetke-Udager K, Yablon CM, Dong Q. Ultrasound Features of Palmar Fibromatosis or Dupuytren Contracture. J Ultrasound Med. 2019;38(2):387-392.",
+    "url": "https://doi.org/10.1002/jum.14699",
+    "doi": "10.1002/jum.14699",
+    "pmid": "30027660",
+    "verified": "2026-11-23",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "ganglion_wang_2007": {
+    "citation": "Wang G, Jacobson JA, Feng FY, Girish G, Caoili EM, Brandon C. Sonography of wrist ganglion cysts: variable and noncystic appearances. J Ultrasound Med. 2007;26(10):1323-1328.",
+    "url": "https://doi.org/10.7863/jum.2007.26.10.1323",
+    "doi": "10.7863/jum.2007.26.10.1323",
+    "pmid": "17901135",
+    "verified": "2026-11-23",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "foreign_body_davis_2015": {
+    "citation": "Davis J, Czerniski B, Au A, Adhikari S, Farrell I, Fields JM. Diagnostic Accuracy of Ultrasonography in Retained Soft Tissue Foreign Bodies: A Systematic Review and Meta-analysis. Acad Emerg Med. 2015;22(7):777-787.",
+    "url": "https://doi.org/10.1111/acem.12714",
+    "doi": "10.1111/acem.12714",
+    "pmid": "26111545",
+    "verified": "2026-11-23",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "fracture_forearm_douma_2016": {
+    "citation": "Douma-den Hamer D, Blanker MH, Edens MA, et al. Ultrasound for Distal Forearm Fracture: A Systematic Review and Diagnostic Meta-Analysis. PLoS One. 2016;11(5):e0155659.",
+    "url": "https://doi.org/10.1371/journal.pone.0155659",
+    "doi": "10.1371/journal.pone.0155659",
+    "pmid": "27196439",
+    "verified": "2026-11-23",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "ivc_rudski_2010": {
+    "citation": "Rudski LG, Lai WW, Afilalo J, et al. Guidelines for the echocardiographic assessment of the right heart in adults: a report from the American Society of Echocardiography endorsed by the European Association of Echocardiography and the Canadian Society of Echocardiography. J Am Soc Echocardiogr. 2010;23(7):685-713.",
+    "url": "https://doi.org/10.1016/j.echo.2010.05.010",
+    "doi": "10.1016/j.echo.2010.05.010",
+    "pmid": "20620859",
+    "verified": "2026-11-23",
     "verifiedBy": "pubmed+crossref"
   }
 }

@@ -380,6 +380,150 @@
         line-height: 1.5;
       }
 
+      /* ── Buscador del atlas ──────────────────────────────────────────────────────────────
+         Vive en la cabecera fija para estar a mano desde cualquier ficha. En móvil, donde el
+         maniquí está oculto, es la vía más corta a una ficha concreta. */
+      .header-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+      .atlas-search {
+        position: relative;
+        flex: 1 1 18rem;
+        max-width: 26rem;
+      }
+      .atlas-search-input {
+        width: 100%;
+        padding: 0.55rem 2.6rem 0.55rem 2.3rem;
+        border: 1px solid #c7d2fe;
+        border-radius: 9999px;
+        background: #fff;
+        color: #1e293b;
+        font-size: 0.9rem;
+        font-family: 'Inter', sans-serif;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .atlas-search-input:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+      }
+      .atlas-search-icon {
+        position: absolute;
+        left: 0.8rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1rem;
+        height: 1rem;
+        color: #6366f1;
+        pointer-events: none;
+      }
+      .atlas-search-kbd {
+        position: absolute;
+        right: 0.7rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.7rem;
+        color: #64748b;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.3rem;
+        padding: 0 0.35rem;
+        pointer-events: none;
+      }
+      .atlas-search-input:focus + .atlas-search-kbd { display: none; }
+      .atlas-search-results {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        max-height: min(65vh, 28rem);
+        overflow-y: auto;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+        padding: 0.3rem;
+        z-index: 120;
+        list-style: none;
+        margin: 0;
+      }
+      .atlas-search-item {
+        padding: 0.55rem 0.7rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+      }
+      .atlas-search-item[aria-selected="true"],
+      .atlas-search-item:hover {
+        background: #eef2ff;
+      }
+      .atlas-search-title {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.88rem;
+      }
+      .atlas-search-meta {
+        font-size: 0.72rem;
+        color: #6366f1;
+        margin-top: 0.1rem;
+      }
+      .atlas-search-snippet {
+        font-size: 0.76rem;
+        color: #475569;
+        margin-top: 0.2rem;
+        line-height: 1.4;
+      }
+      .atlas-search-snippet mark,
+      .atlas-search-title mark {
+        background: #fef08a;
+        color: inherit;
+        border-radius: 0.15rem;
+        padding: 0 0.05rem;
+      }
+      .atlas-search-empty {
+        padding: 0.7rem;
+        font-size: 0.8rem;
+        color: #475569;
+        line-height: 1.5;
+      }
+      /* Pasajes de una ficha, colgando de ella */
+      .atlas-search-pasaje {
+        margin-left: 0.7rem;
+        padding-left: 0.8rem;
+        border-left: 2px solid #e0e7ff;
+        border-radius: 0 0.5rem 0.5rem 0;
+      }
+      .atlas-search-where {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #4f46e5;
+      }
+      .atlas-search-pasaje .atlas-search-snippet { margin-top: 0.1rem; }
+      .atlas-search-more {
+        font-size: 0.7rem;
+        color: #64748b;
+        padding: 0.1rem 0.7rem 0.45rem 2.2rem;
+      }
+      /* Resaltado dentro de la ficha al llegar desde el buscador */
+      mark.atlas-hit {
+        background: #fde047;
+        color: inherit;
+        border-radius: 0.15rem;
+        padding: 0 0.05rem;
+      }
+      .atlas-hit-block {
+        outline: 3px solid rgba(234, 179, 8, 0.85);
+        outline-offset: 4px;
+        border-radius: 0.25rem;
+        transition: outline-color 0.6s;
+      }
+      @media (max-width: 640px) {
+        .atlas-search { max-width: none; flex-basis: 100%; }
+        .atlas-search-kbd { display: none; }
+      }
+
       .pearls-section h5 {
         font-size: 1.05em;
         font-weight: 700;
@@ -913,6 +1057,35 @@
         }
       }
 
+      /* --- Escritorio: el maniquí acompaña al scroll y cabe en la pantalla ---
+         Medido el 23/11/2026: el panel era un elemento de la rejilla estirado a la altura de la
+         columna de fichas (6.126 px con una zona larga abierta), así que `sticky` no tenía
+         recorrido y el panel se iba con la página. Y el dibujo medía 839 px, más que el hueco
+         bajo la cabecera en una pantalla de 900. `align-self: start` le devuelve su altura real;
+         --alto-maniqui (lo calcula ajustarManiqui() en JS) ajusta el dibujo al hueco, y
+         --zoom-maniqui lo agranda DENTRO de #anatomy-scroll, que gana barras de desplazamiento. */
+      @media (min-width: 1025px) {
+        .anatomy-container {
+          align-self: start;
+          position: sticky;
+          top: calc(var(--alto-cabecera, 150px) + 12px);
+        }
+        .anatomy-scroll {
+          max-height: var(--alto-maniqui, 70vh);
+          overflow: auto;
+          overscroll-behavior: auto;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 255, 255, 0.55) transparent;
+        }
+        #anatomical-svg {
+          display: block;
+          height: calc(var(--alto-maniqui, 70vh) * var(--zoom-maniqui, 1));
+          width: auto !important;
+          max-width: none !important;
+          margin-inline: auto;
+        }
+      }
+
     </style>
   </head>
   <body>
@@ -920,7 +1093,7 @@
       class="header-gradient sticky top-0 z-50 transition-all duration-300"
     >
       <div class="container mx-auto px-4 sm:px-6 py-4">
-        <div class="flex justify-between items-center">
+        <div class="header-row">
           <!-- Cabecera clicable: vuelve al punto de partida sin recargar.
                role/tabindex/onkeydown en vez de <a href>, porque un enlace real perdería
                el ?code= del gate si el usuario abre en pestaña nueva, y un <h1> dentro de
@@ -962,6 +1135,27 @@
                 Sistema Interactivo de Ultrasonido Point-of-Care
               </p>
             </div>
+          </div>
+          <!-- Buscador del atlas: lo pinta y lo gobierna iniciarBuscadorPocus() -->
+          <div class="atlas-search" role="search">
+            <svg class="atlas-search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+            </svg>
+            <input
+              id="atlas-search-input"
+              class="atlas-search-input"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Buscar: enfermedad, estructura, signo…"
+              aria-label="Buscar en el atlas"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="atlas-search-results"
+            />
+            <kbd class="atlas-search-kbd" aria-hidden="true">/</kbd>
+            <ul id="atlas-search-results" class="atlas-search-results" role="listbox" hidden></ul>
           </div>
         </div>
       </div>
@@ -1028,7 +1222,9 @@
     <main class="container mx-auto p-4 md:p-8 relative z-10">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 grid-layout">
         <!-- Panel Izquierdo: Anatomía Interactiva Mejorada -->
-        <div class="lg:col-span-1 anatomy-container lg:sticky" style="top: 130px;">
+        <!-- Sin `top` en línea: lo fija el CSS con la altura real de la cabecera (--alto-cabecera),
+             que cambia cuando la cabecera se parte en dos líneas. -->
+        <div class="lg:col-span-1 anatomy-container lg:sticky">
           <div class="glass-morphism rounded-2xl p-6 relative">
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-xl font-bold text-white">
@@ -1045,6 +1241,9 @@
             <div id="tooltip" class="tooltip-advanced"></div>
 
             <div class="relative">
+              <!-- Marco desplazable: el zoom agranda el dibujo DENTRO de este marco, que gana barras
+                   de desplazamiento, en vez de desbordarse sobre el título y la cabecera. -->
+              <div id="anatomy-scroll" class="anatomy-scroll">
               <svg
                 id="anatomical-svg"
                 viewBox="0 0 300 600"
@@ -1412,6 +1611,7 @@
                   </text>
                 </g>
               </svg>
+              </div>
 
               <div class="zoom-controls">
                 <button class="zoom-button" id="zoom-in-btn">
@@ -4822,7 +5022,7 @@ CONCLUSIÓN:`,
           content: {
             technique: `<ul>
               <li><strong>Sonda:</strong> Lineal ≥ 15 MHz.</li>
-              <li><strong>Abordaje dorsal</strong> sobre la articulación metacarpofalángica, plano longitudinal.</li>
+              <li><strong>Abordaje palmar</strong> sobre la articulación metacarpofalángica, plano longitudinal.</li>
               <li><strong>Localizar la polea A1</strong> en la palma de la mano (a nivel de la cabeza del metacarpiano).</li>
               <li><strong>Medir grosor de la polea A1</strong> (normal &lt; 0,5 mm).</li>
               <li><strong>Exploración dinámica:</strong> Pedir flexión activa del dedo y observar el deslizamiento del tendón bajo la polea — este es el gesto diagnóstico definitivo.</li>
@@ -4888,6 +5088,182 @@ Deslizamiento tendinoso dinámico: [[gatillo_deslizamiento]]
 Líquido vaina: Sí / No    Nódulo tendinoso: Sí / No
 
 CONCLUSIÓN:`,
+          },
+        },
+
+        /* Enfermedad de Dupuytren. Va la última del segmento mano/muñeca a propósito: el índice
+           de una ficha dentro de su segmento compone su cardId, y el informe a medio rellenar se
+           guarda en sessionStorage con ese cardId. Insertarla antes desplazaría las demás.
+           Vídeo (23/11/2026): en YouTube no apareció ninguna exploración en directo de Dupuytren;
+           lo más cercano es una clase en portugués con un apartado ecográfico y la misma
+           bibliografía que esta ficha (Créteur, Morris, Molenkamp). Insertable y con subtítulos
+           automáticos en español. No se pudo ver ni leer su transcripción: pendiente de que el
+           autor lo revise. */
+        {
+          segment: "hand_wrist",
+          system: "Musculoesquelético",
+          color: "teal",
+          title: "Enfermedad de Dupuytren (Fibromatosis Palmar)",
+          refId: "dupuytren_morris_2019",
+          keywords: ["Dupuytren", "contractura de Dupuytren", "fibromatosis palmar", "nódulo palmar", "cuerda palmar", "aponeurosis palmar", "fascia palmar", "dedo en flexión"],
+          content: {
+            technique: `<ul>
+              <li><strong>Sonda:</strong> Lineal de la frecuencia más alta disponible (idealmente ≥ 15 MHz). La lesión es muy superficial —unos 2,5 mm de grosor medio—, así que conviene <strong>gel abundante y casi sin apoyo</strong>, o una almohadilla de gel si el relieve de la palma impide el contacto.</li>
+              <li><strong>Posición:</strong> Mano en supinación apoyada en la mesa, con los dedos en la extensión que permita la contractura.</li>
+              <li><strong>Dónde mirar:</strong> Palpar primero y apoyar la sonda sobre lo palpado. Recorrer el radio afectado en <strong>longitudinal</strong>, desde el pliegue palmar distal hasta la falange proximal, y luego en <strong>transversal</strong>. El 4.º radio es el más afectado, seguido del 3.º y el 5.º.</li>
+              <li><strong>Referencia anatómica:</strong> Identificar el tendón flexor (fibrilar, hiperecoico) y, superficial a él, la aponeurosis palmar normal, una lámina fina y ecogénica. La lesión se busca entre esa lámina y la dermis.</li>
+              <li><strong>Exploración dinámica:</strong> Pedir flexoextensión activa del dedo. El tendón flexor debe <strong>deslizar por debajo de la lesión sin arrastrarla</strong>. Si la lesión se mueve con el tendón, es tendinosa y no fascial.</li>
+              <li><strong>Compresión suave</strong> con la sonda y <strong>Doppler</strong> con escala baja.</li>
+              <li><strong>Explorar también la mano contralateral</strong>: la enfermedad puede ser bilateral.</li>
+            </ul>`,
+            findings: `<ul>
+              <li><strong>Nódulo:</strong> engrosamiento <strong>hipoecoico</strong>, nodular o fusiforme, de la aponeurosis palmar, situado <strong>justo superficial al tendón flexor</strong> y con su centro sobre el <strong>metacarpiano distal</strong>, a la altura del pliegue palmar distal. En la serie de Morris medía de media 13 mm de longitud, 7 mm de anchura y 2,5 mm de grosor.</li>
+              <li><strong>No se comprime</strong> con la sonda y casi nunca tiene señal Doppler.</li>
+              <li><strong>Cuerda:</strong> banda hipoecoica lineal, en continuidad con el nódulo, adherida a la cara profunda de la dermis y paralela al tendón flexor, sin formar parte de él.</li>
+              <li><strong>Ecogenicidad:</strong> los nódulos más hipoecoicos contienen más miofibroblastos y son más duros, y en una cohorte progresaron más. Los nódulos antiguos tienden a ser iso o hiperecoicos. Es un <strong>marcador en investigación</strong>: se describe en el informe, pero no sirve para decidir.</li>
+              <li><strong>Rasgos atípicos</strong> (entre el 2 % y el 7 % de las lesiones cada uno en la serie de Morris): señal Doppler, calcificación, compresibilidad, centro sobre la articulación metacarpofalángica o la falange, o posición lateral al tendón en vez de superficial. No excluyen el diagnóstico, pero obligan a repasar el diferencial.</li>
+            </ul>
+            <div class="mt-4 p-4 bg-teal-50 rounded-lg border border-teal-200">
+              <h4 class="text-base font-bold text-teal-700 mb-2">Diagnóstico diferencial de un nódulo palmar</h4>
+              <ul class="text-sm space-y-1">
+                <li><strong>Dedo en gatillo:</strong> polea A1 engrosada y nódulo dentro del tendón, que <strong>se desplaza con él</strong> en la exploración dinámica. Puede coexistir con Dupuytren en la misma mano.</li>
+                <li><strong>Ganglión de la vaina tendinosa:</strong> anecoico, bien delimitado, con refuerzo posterior y anclado a una polea; no viaja con el tendón.</li>
+                <li><strong>Tumor de células gigantes de la vaina tendinosa:</strong> sólido, hipoecoico, pegado al tendón y a menudo con Doppler; suele estar en la cara palmar de los dedos más que en la palma.</li>
+                <li><strong>Quiste epidérmico, cuerpo extraño o lipoma:</strong> orientan el antecedente de herida o punción y su aspecto propio (ver fichas de partes blandas).</li>
+              </ul>
+            </div>`,
+            evidence: `<p><strong>Morris et al. (2019, <em>J Ultrasound Med</em>)</strong> — Serie retrospectiva de 36 pacientes y 55 lesiones con diagnóstico quirúrgico o clínico: <strong>hipoecoicas el 98 %, no compresibles el 95 % y directamente superficiales al tendón flexor el 93 %</strong>, con el centro en el metacarpiano distal en el 89 %. Por radios: 4.º 36 %, 3.º 29 %, 5.º 20 %. Rasgos atípicos: Doppler 6 %, compresibilidad 5 %, calcificación 2 %. <a href="https://doi.org/10.1002/jum.14699" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Molenkamp et al. (2019, <em>BMC Musculoskelet Disord</em>)</strong> — Revisión sistemática de 23 estudios de ecografía y resonancia: diagnóstico, extensión, actividad, guía de procedimientos y seguimiento. La calidad de la evidencia es baja (niveles 3 a 5 de Oxford CEBM). Según los autores, el mayor valor de la imagen está en medir la actividad y seguir la enfermedad en fase precoz. <a href="https://doi.org/10.1186/s12891-019-2606-0" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Molenkamp et al. (2022, <em>J Hand Surg Eur</em>)</strong> — En 38 nódulos con histología, a menor ecogenicidad, más miofibroblastos; en otros 97, a menor ecogenicidad, más dureza medida con tonómetro. <a href="https://doi.org/10.1177/17531934211050214" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>van Straalen et al. (2023, <em>J Plast Reconstr Aesthet Surg</em>)</strong> — Cohorte prospectiva de 151 participantes: los nódulos más oscuros se asociaron a más progresión del déficit de extensión y a cirugía más temprana. Los autores lo proponen como <strong>posible biomarcador pronóstico</strong>, todavía sin validar. <a href="https://doi.org/10.1016/j.bjps.2023.09.009" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Créteur et al. (2010, <em>J Radiol</em>)</strong> — Considera prácticamente patognomónicas las bandas hipoecoicas adheridas al borde del tendón flexor y a la cara profunda de la dermis. Describe los nódulos precoces como hipoecoicos e <strong>hipervascularizados</strong>, algo que choca con el 6 % con Doppler de la serie de Morris, y advierte de que la cuerda puede englobar la arteria digital. <a href="https://doi.org/10.1016/s0221-0363(10)70098-6" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Guerini et al. (2015, <em>Diagn Interv Imaging</em>)</strong> — Revisión de las masas de mano y muñeca: en la mayoría de los casos, la ecografía distingue un quiste de una masa sólida. Es la base del diagnóstico diferencial de esta ficha. <a href="https://doi.org/10.1016/j.diii.2015.10.007" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Sakellariou et al. (2015, <em>Orthopedics</em>)</strong> — 66 aponeurotomías con aguja asistidas con ecografía, que se usó para localizar el paquete neurovascular digital. No hubo ningún déficit nervioso completo permanente. <a href="https://doi.org/10.3928/01477447-20150504-03" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Trojian y Chu (2007, <em>Am Fam Physician</em>)</strong> — Revisión desde atención primaria: derivar a cirugía cuando la contractura de la metacarpofalángica llega a 30° o cuando hay cualquier contractura de la interfalángica proximal. <a href="https://pubmed.ncbi.nlm.nih.gov/17668844/" target="_blank" rel="noopener noreferrer">PubMed</a></p>
+              <p><strong>Certeza: Baja</strong> para el patrón ecográfico (series descriptivas concordantes, sin estudios de precisión diagnóstica frente a un patrón de referencia) · <strong>Baja</strong> para la ecogenicidad como marcador pronóstico (una sola cohorte, sin validación externa) · <strong>Sin datos</strong> de sensibilidad ni especificidad.</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>El diagnóstico es clínico; la ecografía responde otra pregunta</h5>
+              <p>Un nódulo firme en la palma, sobre el 4.º radio, con la piel adherida o en hoyuelo, es Dupuytren mientras no se demuestre lo contrario. El POCUS aporta cuando la clínica duda: confirma que la lesión es <strong>fascial y no tendinosa</strong>, y descarta un quiste o una masa sólida que pida otro estudio.</p>
+              <h5>La maniobra que más discrimina: mover el dedo</h5>
+              <p>Si el tendón desliza por debajo y la lesión se queda quieta, la lesión está en la fascia. Si viaja con el tendón, hay que pensar en dedo en gatillo o en un tumor de la vaina. Las dos cosas pueden coincidir en la misma mano.</p>
+              <h5>Cuándo derivar</h5>
+              <p>Prueba de la mesa de Hueston: si el paciente no puede apoyar la palma plana sobre la mesa, hay contractura. Se deriva a cirugía de la mano con una contractura de la metacarpofalángica de 30° o más, o con cualquier contractura de la interfalángica proximal. Un nódulo sin contractura se vigila, y la ecografía no cambia ese criterio.</p>
+              <h5>Buscar la diátesis</h5>
+              <p>La misma fibromatosis puede aparecer en el dorso de las interfalángicas (nudillos de Garrod), en la planta del pie (<strong>enfermedad de Ledderhose</strong>: nódulos en el tercio medio de la fascia plantar, no en su inserción calcánea como en la fascitis plantar) y en el pene (enfermedad de Peyronie). La afectación múltiple, el inicio a edad joven y los antecedentes familiares se asocian a una enfermedad más agresiva y que recidiva más.</p>
+              <h5>Lo que no es de la consulta</h5>
+              <p>Existe la aponeurotomía con aguja guiada por ecografía, en la que la ecografía sirve para localizar nervios y arterias digitales, que la cuerda puede desplazar o englobar. Es un procedimiento de cirugía de la mano. Si se deriva, conviene describir en el informe el radio afectado, la extensión de la cuerda y su relación con el paquete neurovascular, si se ha visto.</p>
+            </div>`,
+            videos: [
+              {
+                id: "nsI2csY_QCA",
+                intro: "Enfermedad de Dupuytren: anatomía, fisiopatología y aspectos ecográficos",
+                desc: "Clase en portugués con subtítulos automáticos en español. Los aspectos ecográficos son el último apartado, después de la anatomía y la fisiopatología.",
+              },
+            ],
+            reportChecklist: [
+              'Indicación anotada (nódulo palmar, cuerda, contractura, duda diagnóstica)',
+              'Sonda lineal de alta frecuencia, gel abundante sin presionar',
+              'Radio afectado recorrido en longitudinal y transversal',
+              'Relación con el tendón flexor valorada en dinámica (flexoextensión activa)',
+              'Compresibilidad y Doppler valorados',
+              'Mano contralateral explorada',
+              'Prueba de la mesa de Hueston y grados de contractura anotados',
+              'Conclusión y plan documentados'
+            ],
+            reportFields: [
+              {
+                id: 'mano', label: 'Mano explorada', type: 'select',
+                options: [
+                  { value: 'dcha', label: 'Derecha', cls: 'badge-empty', badge: 'Derecha' },
+                  { value: 'izda', label: 'Izquierda', cls: 'badge-empty', badge: 'Izquierda' },
+                  { value: 'ambas', label: 'Ambas', cls: 'badge-empty', badge: 'Ambas' }
+                ]
+              },
+              {
+                id: 'radio', label: 'Radio afectado', type: 'select',
+                options: [
+                  { value: 'r1', label: '1.º (pulgar)', cls: 'badge-empty', badge: '1.º' },
+                  { value: 'r2', label: '2.º (índice)', cls: 'badge-empty', badge: '2.º' },
+                  { value: 'r3', label: '3.º (medio)', cls: 'badge-empty', badge: '3.º' },
+                  { value: 'r4', label: '4.º (anular)', cls: 'badge-empty', badge: '4.º' },
+                  { value: 'r5', label: '5.º (meñique)', cls: 'badge-empty', badge: '5.º' },
+                  { value: 'varios', label: 'Varios', cls: 'badge-empty', badge: 'Varios' }
+                ]
+              },
+              {
+                id: 'lesion', label: 'Tipo de lesión', type: 'select',
+                options: [
+                  { value: 'nodulo', label: 'Nódulo', cls: 'badge-warn', badge: 'Nódulo', interpretation: 'Lesión nodular de la aponeurosis palmar' },
+                  { value: 'cuerda', label: 'Cuerda', cls: 'badge-warn', badge: 'Cuerda', interpretation: 'Banda fibrosa longitudinal' },
+                  { value: 'ambos', label: 'Nódulo y cuerda', cls: 'badge-warn', badge: 'Nódulo + cuerda', interpretation: 'Nódulo con cuerda en continuidad' }
+                ]
+              },
+              {
+                // Sin umbrales: no hay un punto de corte validado en milímetros. Se mide para
+                // seguir la evolución en la misma mano, no para clasificar.
+                id: 'longitud', label: 'Longitud de la lesión', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 100
+              },
+              {
+                id: 'grosor', label: 'Grosor máximo', type: 'number', unit: 'mm', step: 0.1, min: 0, max: 20
+              },
+              {
+                id: 'ecogenicidad', label: 'Ecogenicidad', type: 'select',
+                options: [
+                  { value: 'hipo', label: 'Hipoecoica', cls: 'badge-warn', badge: 'Hipoecoica', interpretation: 'Patrón típico; en investigación, asociado a más actividad' },
+                  { value: 'mixta', label: 'Mixta', cls: 'badge-empty', badge: 'Mixta', interpretation: 'Ecogenicidad intermedia' },
+                  { value: 'iso_hiper', label: 'Iso o hiperecoica', cls: 'badge-normal', badge: 'Iso/hiper', interpretation: 'Compatible con nódulo de larga evolución' }
+                ]
+              },
+              {
+                id: 'relacion_tendon', label: 'Relación con el tendón flexor (dinámica)', type: 'select',
+                options: [
+                  { value: 'independiente', label: 'Superficial; el tendón desliza por debajo', cls: 'badge-normal', badge: 'Fascial', interpretation: 'Compatible con fibromatosis palmar' },
+                  { value: 'arrastra', label: 'Se desplaza con el tendón', cls: 'badge-alert', badge: 'Tendinosa', interpretation: 'Replantear: dedo en gatillo o tumor de vaina' },
+                  { value: 'no_valorada', label: 'No valorada', cls: 'badge-empty', badge: 'No valorada', interpretation: 'Sin exploración dinámica' }
+                ]
+              },
+              {
+                id: 'compresible', label: 'Compresible con la sonda', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'SÍ — atípico', noLabel: 'No',
+                yesInterpretation: 'Atípico: valorar quiste u otra lesión no fascial', noInterpretation: 'Típico de nódulo fibroso'
+              },
+              {
+                id: 'doppler', label: 'Doppler', type: 'select',
+                options: [
+                  { value: 'ausente', label: 'Sin señal', cls: 'badge-normal', badge: 'Sin señal', interpretation: 'Patrón habitual' },
+                  { value: 'presente', label: 'Con señal', cls: 'badge-warn', badge: 'Con señal', interpretation: 'Infrecuente; posible en nódulo precoz. Si es intensa, valorar tumor de vaina' },
+                  { value: 'no_valorado', label: 'No valorado', cls: 'badge-empty', badge: 'No valorado', interpretation: 'Doppler no aplicado' }
+                ]
+              },
+              {
+                id: 'mesa', label: 'Prueba de la mesa de Hueston', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'POSITIVA — no apoya la palma', noLabel: 'Negativa',
+                yesInterpretation: 'Hay contractura: medir grados y valorar derivación', noInterpretation: 'Sin contractura funcional'
+              }
+            ],
+            reportTemplate: `POCUS MANO — ENFERMEDAD DE DUPUYTREN (FIBROMATOSIS PALMAR)
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Nódulo palmar / cuerda / contractura / duda diagnóstica]
+
+TÉCNICA:
+Sonda lineal de alta frecuencia. Longitudinal y transversal del radio afectado.
+Exploración dinámica con flexoextensión activa. Compresión y Doppler. Mano contralateral.
+
+HALLAZGOS:
+Mano explorada: [[mano]]    Radio afectado: [[radio]]
+Tipo de lesión: [[lesion]]
+Longitud: [[longitud]]    Grosor máximo: [[grosor]]
+Ecogenicidad: [[ecogenicidad]]
+Relación con el tendón flexor (dinámica): [[relacion_tendon]]
+Compresible: [[compresible]]    Doppler: [[doppler]]
+Prueba de la mesa de Hueston: [[mesa]]
+Contractura metacarpofalángica: ___°    Interfalángica proximal: ___°
+
+CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
+[Hallazgos compatibles / no compatibles con fibromatosis palmar.
+Derivar a cirugía de la mano si la contractura MCF es ≥ 30° o hay cualquier contractura IFP]`,
           },
         },
 
@@ -5325,6 +5701,474 @@ Glándula derecha: ____    Glándula izquierda: ____
 Conducto Stenon/Wharton: ____
 
 CONCLUSIÓN:`,
+          },
+        },
+
+        /* ── Ampliación del 23/11/2026: lo que faltaba frente a la lista de alcance ──────────
+           Ganglión, cuerpo extraño, fracturas y vena cava inferior. Van al final de pocusData a
+           propósito: así cada una es la última de su zona y ninguna ficha existente cambia de
+           índice (el índice compone el cardId, y el informe a medio rellenar se guarda con él).
+           Sin vídeo por ahora: no se ha encontrado uno revisado con subtítulos en español. */
+        {
+          segment: "hand_wrist",
+          system: "Musculoesquelético",
+          color: "cyan",
+          title: "Ganglión (Quiste Sinovial) de Muñeca y Mano",
+          refId: "ganglion_wang_2007",
+          keywords: ["ganglión", "ganglion", "quiste sinovial", "quiste de muñeca", "bulto en la muñeca", "quiste de la vaina tendinosa", "ganglión oculto"],
+          content: {
+            technique: `<ul>
+              <li><strong>Sonda:</strong> Lineal de alta frecuencia. Gel abundante y apoyo ligero: la presión deforma la lesión y engaña al valorar si es compresible.</li>
+              <li><strong>Dónde buscar:</strong> las localizaciones típicas son el <strong>dorso del carpo, sobre el ligamento escafolunar</strong>, y la <strong>cara volar radial, entre el tendón del flexor radial del carpo y la arteria radial</strong>. En los dedos, el quiste de la vaina tendinosa asienta sobre las poleas A1–A2, en la base del dedo.</li>
+              <li><strong>Dos planos</strong> (longitudinal y transversal) y medir el diámetro mayor.</li>
+              <li><strong>Buscar el pedículo:</strong> el cuello fino que comunica con la articulación o con la vaina tendinosa. Si se ve, el diagnóstico queda casi hecho.</li>
+              <li><strong>Doppler color siempre.</strong> En la cara volar, localizar la arteria radial antes de nada: una lesión con flujo o pulsátil no es un ganglión, y no se punciona.</li>
+              <li><strong>Dolor dorsal sin bulto palpable:</strong> explorar con la muñeca en flexión palmar, que hace más evidente un ganglión dorsal pequeño (ganglión oculto).</li>
+              <li><strong>Exploración dinámica</strong> en los quistes de vaina: al flexionar el dedo, el tendón desliza y el quiste no se mueve con él.</li>
+            </ul>`,
+            findings: `<ul>
+              <li><strong>Patrón típico:</strong> lesión <strong>anecoica</strong>, bien delimitada, a menudo <strong>lobulada</strong> o con <strong>tabiques</strong>, con <strong>refuerzo acústico posterior</strong>, no compresible y <strong>sin flujo Doppler interno</strong>.</li>
+              <li><strong>El ganglión pequeño engaña:</strong> los de 10 mm o menos se ven a menudo <strong>hipoecoicos y sin refuerzo posterior</strong>, es decir, sin los criterios de un quiste simple. Que no parezca un quiste no descarta que lo sea.</li>
+              <li><strong>Pedículo</strong> hacia la articulación o la vaina, cuando se identifica.</li>
+              <li><strong>Lo que obliga a pensar en otra cosa:</strong> flujo Doppler dentro de la lesión, componente sólido, crecimiento rápido, dolor nocturno o localización atípica. Ver la ficha de signos de alarma de masas.</li>
+            </ul>
+            <div class="mt-4 p-4 bg-cyan-50 rounded-lg border border-cyan-200">
+              <h4 class="text-base font-bold text-cyan-700 mb-2">Diagnóstico diferencial de un bulto en la muñeca</h4>
+              <ul class="text-sm space-y-1">
+                <li><strong>Aneurisma o pseudoaneurisma de la arteria radial:</strong> flujo en Doppler, pulsátil. Es el error que nunca hay que cometer antes de pinchar.</li>
+                <li><strong>Tenosinovitis:</strong> líquido alrededor del tendón, a lo largo de la vaina, compresible.</li>
+                <li><strong>Sinovitis o derrame articular:</strong> compresible y con Doppler en la sinovial si hay inflamación.</li>
+                <li><strong>Tumor de células gigantes de la vaina tendinosa:</strong> sólido, hipoecoico y con flujo.</li>
+                <li><strong>Tofo gotoso:</strong> material hiperecoico, a veces con el signo del doble contorno en el cartílago vecino.</li>
+                <li><strong>Lipoma:</strong> ecogénico, estriado y compresible.</li>
+              </ul>
+            </div>`,
+            evidence: `<p><strong>Wang et al. (2007, <em>J Ultrasound Med</em>)</strong> — 20 gangliones de muñeca confirmados por cirugía o aspiración: 10 anecoicos, 7 hipoecoicos y 3 mixtos; tabiques en 8, refuerzo posterior en 15, lobulados 12 y <strong>ninguno con flujo Doppler</strong>. Diez de los 15 volares estaban entre el flexor radial del carpo y la arteria radial. Los de 10 mm o menos solían ser hipoecoicos y sin refuerzo. <a href="https://doi.org/10.7863/jum.2007.26.10.1323" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Dias et al. (2007, <em>J Hand Surg Eur</em>)</strong> — Cohorte prospectiva, 236 pacientes con ganglión dorsal seguidos una media de 70 meses: <strong>el 58 % de los no tratados (23 de 55) desapareció solo</strong>. Recidivó el 58 % tras aspiración y el 39 % tras extirpación. Ni la extirpación ni la aspiración dieron un beneficio significativo a largo plazo frente a no tratar, aunque la satisfacción fue mayor tras la cirugía. <a href="https://doi.org/10.1016/j.jhse.2007.05.007" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Head et al. (2015, <em>J Hand Surg Am</em>)</strong> — Revisión sistemática y metaanálisis, 35 estudios y 2.239 gangliones: recidiva media del <strong>59 % tras aspiración</strong>, 21 % tras extirpación abierta y 6 % tras extirpación artroscópica; complicaciones del 3 %, 14 % y 4 %. En los estudios de cohortes, la aspiración no redujo la recidiva frente a solo tranquilizar. <a href="https://doi.org/10.1016/j.jhsa.2014.12.014" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Certeza: Baja</strong> para el patrón ecográfico (una serie descriptiva pequeña) · <strong>Moderada</strong> para que la aspiración recidiva más que la cirugía (ensayos de calidad moderada) · <strong>Baja</strong> para la historia natural (una cohorte).</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>Tranquilizar también es tratar</h5>
+              <p>Más de la mitad de los gangliones dorsales no tratados desaparecen solos. El valor del POCUS en consulta es confirmar que el bulto es un ganglión y no otra cosa; con eso, la conducta más frecuente es explicar y vigilar.</p>
+              <h5>Antes de pinchar, Doppler</h5>
+              <p>En la cara volar la arteria radial pasa pegada al quiste. Si se decide aspirar por los síntomas, la ecografía permite ver la aguja dentro del quiste y evitar la arteria. Hay que avisar al paciente de que la aspiración recidiva en más de la mitad de los casos: alivia, pero no suele curar.</p>
+              <h5>No parece un quiste, y lo es</h5>
+              <p>Un ganglión pequeño puede verse hipoecoico y sin refuerzo posterior. Lo que lo distingue de una lesión sólida es la ausencia de flujo Doppler y, si se encuentra, el pedículo hacia la articulación o la vaina.</p>
+              <h5>El quiste de la vaina en la base del dedo</h5>
+              <p>Es un nódulo pequeño y duro sobre la polea A1–A2 que no se mueve al flexionar el dedo. Entra en el diferencial del nódulo de Dupuytren y del dedo en gatillo: ver esas fichas.</p>
+            </div>`,
+            reportChecklist: [
+              'Indicación anotada (bulto, dolor, sospecha de ganglión oculto)',
+              'Sonda lineal de alta frecuencia, gel abundante sin presionar',
+              'Lesión medida en dos planos',
+              'Pedículo hacia articulación o vaina buscado',
+              'Doppler color aplicado (lesión y arteria radial si es volar)',
+              'Exploración dinámica si está junto a un tendón',
+              'Conclusión y plan documentados'
+            ],
+            reportFields: [
+              {
+                id: 'lado', label: 'Mano explorada', type: 'select',
+                options: [
+                  { value: 'dcha', label: 'Derecha', cls: 'badge-empty', badge: 'Derecha' },
+                  { value: 'izda', label: 'Izquierda', cls: 'badge-empty', badge: 'Izquierda' }
+                ]
+              },
+              {
+                id: 'localizacion', label: 'Localización', type: 'select',
+                options: [
+                  { value: 'dorsal', label: 'Dorsal (escafolunar)', cls: 'badge-empty', badge: 'Dorsal', interpretation: 'Localización más típica' },
+                  { value: 'volar', label: 'Volar radial (junto a la arteria radial)', cls: 'badge-warn', badge: 'Volar radial', interpretation: 'Comprobar la arteria radial con Doppler antes de cualquier punción' },
+                  { value: 'vaina', label: 'Vaina tendinosa (base del dedo)', cls: 'badge-empty', badge: 'Vaina', interpretation: 'Quiste de la vaina sobre las poleas' },
+                  { value: 'otra', label: 'Otra', cls: 'badge-warn', badge: 'Otra', interpretation: 'Localización atípica: repasar el diferencial' }
+                ]
+              },
+              {
+                // Sin umbrales: el tamaño no decide nada por sí solo; sirve para seguir la lesión.
+                id: 'diametro', label: 'Diámetro mayor', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 80
+              },
+              {
+                id: 'contenido', label: 'Contenido', type: 'select',
+                options: [
+                  { value: 'anecoico', label: 'Anecoico', cls: 'badge-normal', badge: 'Anecoico', interpretation: 'Patrón típico de ganglión' },
+                  { value: 'hipoecoico', label: 'Hipoecoico', cls: 'badge-warn', badge: 'Hipoecoico', interpretation: 'Frecuente en el ganglión pequeño; confirmar ausencia de flujo' },
+                  { value: 'tabicado', label: 'Tabicado o mixto', cls: 'badge-empty', badge: 'Tabicado', interpretation: 'Compatible con ganglión multiloculado' }
+                ]
+              },
+              {
+                id: 'flujo', label: 'Flujo Doppler dentro de la lesión', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'SÍ — no es un ganglión típico', noLabel: 'No',
+                yesInterpretation: 'Valorar lesión sólida o vascular: no puncionar y estudiar', noInterpretation: 'Compatible con contenido líquido'
+              },
+              {
+                id: 'pediculo', label: 'Pedículo hacia articulación o vaina', type: 'boolean',
+                yesLabel: 'Identificado', noLabel: 'No identificado',
+                yesInterpretation: 'Apoya el diagnóstico de ganglión', noInterpretation: 'No lo descarta'
+              },
+              {
+                id: 'compresible', label: 'Compresible con la sonda', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'SÍ — atípico', noLabel: 'No',
+                yesInterpretation: 'Valorar tenosinovitis o derrame articular', noInterpretation: 'Típico de ganglión'
+              }
+            ],
+            reportTemplate: `POCUS MUÑECA / MANO — GANGLIÓN
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Bulto / dolor / sospecha de ganglión oculto]
+
+TÉCNICA:
+Sonda lineal de alta frecuencia. Dos planos. Doppler color. Dinámica si junto a tendón.
+
+HALLAZGOS:
+Mano explorada: [[lado]]    Localización: [[localizacion]]
+Diámetro mayor: [[diametro]]
+Contenido: [[contenido]]
+Flujo Doppler interno: [[flujo]]
+Pedículo: [[pediculo]]
+Compresible: [[compresible]]
+
+CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
+[Compatible / no compatible con ganglión. Si es compatible: explicar y vigilar;
+la aspiración alivia pero recidiva en más de la mitad]`,
+          },
+        },
+        {
+          segment: "soft_tissue",
+          system: "Tejidos Blandos",
+          color: "amber",
+          title: "Cuerpo Extraño en Partes Blandas: Localización y Extracción",
+          refId: "foreign_body_davis_2015",
+          keywords: ["cuerpo extraño", "astilla", "espina", "pincho", "cristal", "vidrio", "madera", "clavo", "extracción de cuerpo extraño"],
+          content: {
+            technique: `<h4 class="text-base font-bold text-amber-700 mb-2">Localizar</h4>
+            <ul>
+              <li><strong>Sonda:</strong> Lineal de alta frecuencia. En dedos y superficies irregulares, mucho gel o la mano o el pie sumergidos en una cubeta con agua, con la sonda dentro sin tocar la piel.</li>
+              <li><strong>Antes de la radiografía o en lugar de ella, según el material:</strong> la radiografía ve el metal, pero la madera, las espinas y el plástico no son radiopacos. Son justo los que mejor ve la ecografía.</li>
+              <li><strong>Barrer la zona en dos planos perpendiculares.</strong> Un cuerpo alargado se ve como una línea en su eje largo y como un punto en el corto: hay que encontrar los dos.</li>
+              <li><strong>Medir</strong> la longitud, la profundidad desde la piel y la orientación, y <strong>marcar en la piel</strong> los dos extremos.</li>
+              <li><strong>Doppler color y relaciones:</strong> distancia a tendones, vasos y nervios. Es lo que decide si se puede extraer en consulta.</li>
+              <li><strong>No meter aire:</strong> explorar antes de anestesiar o de abrir. Las burbujas de la anestesia o de la incisión son hiperecoicas y se confunden con el cuerpo extraño.</li>
+            </ul>
+            ${TECNICA_PROCEDIMIENTO_ECOGUIADO}
+            <h4 class="text-base font-bold text-amber-700 mb-2">Específico de la extracción</h4>
+            <ul>
+              <li><strong>Apto para consulta:</strong> superficial, alargado, accesible y lejos de tendones, vasos y nervios.</li>
+              <li><strong>Derivar:</strong> si es profundo, si está dentro de una vaina tendinosa o de una articulación, si está junto a un paquete neurovascular, si hay déficit motor o sensitivo, o si ya ha fallado un intento.</li>
+              <li><strong>Técnica:</strong> incisión pequeña sobre el extremo más superficial, siguiendo el eje largo. Introducir la pinza mosquito bajo visión <strong>en plano</strong>, hasta ver sus puntas alrededor del cuerpo extraño, y sacarlo por su eje.</li>
+              <li><strong>Comprobar con la sonda</strong> que no queda ningún fragmento, sobre todo con la madera, que se astilla.</li>
+              <li><strong>Herida y vacunación antitetánica</strong> según el protocolo habitual.</li>
+            </ul>`,
+            findings: `<ul>
+              <li><strong>Todo cuerpo extraño es hiperecoico.</strong> Lo que cambia según el material es el artefacto que deja detrás.</li>
+              <li><strong>Madera, espinas, plástico:</strong> línea hiperecoica con <strong>sombra acústica posterior</strong> limpia.</li>
+              <li><strong>Metal y vidrio:</strong> línea hiperecoica con <strong>reverberación o cola de cometa</strong> por detrás.</li>
+              <li><strong>Halo hipoecoico</strong> alrededor: reacción inflamatoria, tejido de granulación o un absceso que empieza. Aparece con los días y ayuda a encontrar cuerpos pequeños.</li>
+              <li><strong>Falsos positivos:</strong> gas en el trayecto de la herida, calcificaciones, huesos sesamoideos, cicatrices y el propio borde de un tendón. Comparar con el lado sano ayuda.</li>
+              <li><strong>Complicaciones que buscar:</strong> absceso, tenosinovitis si está junto a una vaina, granuloma.</li>
+            </ul>`,
+            evidence: `<p><strong>Davis et al. (2015, <em>Acad Emerg Med</em>)</strong> — Revisión sistemática y metaanálisis, 17 estudios: <strong>sensibilidad del 72 % (IC 95 % 57–83) y especificidad del 92 % (88–95)</strong> para detectar cuerpos extraños retenidos. Calidad de los estudios baja y heterogeneidad muy alta (I² 90 %). La madera y el vidrio se escapan a menudo a la exploración y a la radiografía convencional. <a href="https://doi.org/10.1111/acem.12714" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Bradley (2012, <em>Clin Radiol</em>)</strong> — Serie prospectiva, 350 pacientes derivados para ecografía: 63 tuvieron ecografía negativa y ninguno volvió a consultar. De los demás, <strong>252 extracciones guiadas con éxito, sin complicaciones</strong>; éxito global de al menos el 88 %. Las dificultades fueron la localización anatómica, el tipo de cuerpo extraño, el instrumental, las burbujas de aire, la anchura del haz y la movilidad del cuerpo. <a href="https://doi.org/10.1016/j.crad.2011.10.029" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Rooks et al. (2020, <em>J Clin Ultrasound</em>)</strong> — Manual de formación en diagnóstico y extracción ecoguiada: la técnica es segura y eficaz, y la práctica previa en laboratorio con modelos es lo que permite implantarla. <a href="https://doi.org/10.1002/jcu.22856" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Certeza: Baja</strong> para la detección (heterogeneidad alta) · <strong>Baja</strong> para la extracción (series de centros con experiencia, sin comparación).</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>Positivo es fiable; negativo no descarta</h5>
+              <p>Con una sensibilidad del 72 %, una ecografía sin hallazgos no cierra el caso. Una herida que no cura, un dolor muy localizado o una infección que vuelve obligan a reexplorar o a derivar.</p>
+              <h5>La madera es la razón de ser de esta ficha</h5>
+              <p>Una astilla o una espina no salen en la radiografía y la ecografía sí las ve. Con un metal, la radiografía suele bastar para localizarlo.</p>
+              <h5>No explorar a ciegas la herida</h5>
+              <p>Hurgar sin ver agranda la herida y empuja el cuerpo extraño más adentro. Localizarlo y marcarlo antes ahorra la mayor parte del procedimiento.</p>
+              <h5>Practicar antes con un modelo</h5>
+              <p>Un palillo dentro de un trozo de carne o de un bloque de gelatina sirve para entrenar a ver la punta de la pinza y el cuerpo extraño en el mismo plano. La formación práctica previa es lo que hace la técnica segura.</p>
+            </div>`,
+            reportChecklist: [
+              'Mecanismo y material sospechado anotados',
+              'Sonda lineal de alta frecuencia; agua o gel abundante en zonas irregulares',
+              'Barrido en dos planos perpendiculares',
+              'Profundidad, longitud y orientación medidas; extremos marcados en piel',
+              'Relación con tendones, vasos y nervios valorada con Doppler',
+              'Exploración hecha antes de anestesiar (sin aire)',
+              'Comprobación ecográfica final tras la extracción',
+              'Vacunación antitetánica revisada'
+            ],
+            reportFields: [
+              {
+                id: 'material', label: 'Material sospechado', type: 'select',
+                options: [
+                  { value: 'organico', label: 'Madera, espina o plástico', cls: 'badge-empty', badge: 'Orgánico', interpretation: 'Radiotransparente: la ecografía es la prueba' },
+                  { value: 'metal_vidrio', label: 'Metal o vidrio', cls: 'badge-empty', badge: 'Metal/vidrio', interpretation: 'La radiografía también lo localiza' },
+                  { value: 'desconocido', label: 'Desconocido', cls: 'badge-empty', badge: 'Desconocido' }
+                ]
+              },
+              {
+                id: 'visualizado', label: 'Cuerpo extraño visualizado', type: 'select',
+                options: [
+                  { value: 'si', label: 'Sí', cls: 'badge-alert', badge: 'Localizado', interpretation: 'Valorar extracción o derivación' },
+                  { value: 'no', label: 'No', cls: 'badge-warn', badge: 'No visto', interpretation: 'No lo descarta (sensibilidad del 72 %)' }
+                ]
+              },
+              {
+                id: 'profundidad', label: 'Profundidad desde la piel', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 80
+              },
+              {
+                id: 'longitud', label: 'Longitud', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 100
+              },
+              {
+                id: 'halo', label: 'Halo hipoecoico o colección', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'PRESENTE', noLabel: 'Ausente',
+                yesInterpretation: 'Reacción inflamatoria o absceso incipiente', noInterpretation: 'Sin reacción alrededor'
+              },
+              {
+                id: 'relacion', label: 'Relación con estructuras nobles', type: 'select',
+                options: [
+                  { value: 'lejos', label: 'Lejos de tendón, vaso y nervio', cls: 'badge-normal', badge: 'Segura', interpretation: 'Candidato a extracción en consulta' },
+                  { value: 'cerca', label: 'Junto a tendón, vaina, vaso o nervio', cls: 'badge-alert', badge: 'Derivar', interpretation: 'No apto para extracción en consulta' }
+                ]
+              },
+              {
+                id: 'extraccion', label: 'Extracción', type: 'select',
+                options: [
+                  { value: 'completa', label: 'Completa, comprobada con la sonda', cls: 'badge-normal', badge: 'Completa', interpretation: 'Sin restos visibles' },
+                  { value: 'incompleta', label: 'Incompleta o fallida', cls: 'badge-alert', badge: 'Incompleta', interpretation: 'Derivar' },
+                  { value: 'derivado', label: 'No intentada: derivado', cls: 'badge-warn', badge: 'Derivado' },
+                  { value: 'no_indicada', label: 'No indicada', cls: 'badge-empty', badge: 'No indicada' }
+                ]
+              }
+            ],
+            reportTemplate: `POCUS PARTES BLANDAS — CUERPO EXTRAÑO
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Mecanismo, tiempo de evolución, material sospechado]
+
+TÉCNICA:
+Sonda lineal de alta frecuencia. Barrido en dos planos. Doppler color.
+Exploración antes de anestesiar.
+
+HALLAZGOS:
+Material sospechado: [[material]]
+Cuerpo extraño visualizado: [[visualizado]]
+Profundidad: [[profundidad]]    Longitud: [[longitud]]
+Halo hipoecoico / colección: [[halo]]
+Relación con estructuras nobles: [[relacion]]
+Extracción: [[extraccion]]
+
+CONCLUSIÓN / PLAN:
+[Una ecografía negativa no descarta el cuerpo extraño. Revisar vacunación antitetánica]`,
+          },
+        },
+        {
+          segment: "soft_tissue",
+          system: "Musculoesquelético",
+          color: "slate",
+          title: "Fracturas: Detección Ecográfica (Costal y de Extremidades)",
+          refId: "fracture_forearm_douma_2016",
+          keywords: ["fractura", "fractura costal", "costilla", "radio distal", "muñeca infantil", "fractura en rodete", "torus", "cortical ósea", "traumatismo", "hueso"],
+          content: {
+            technique: `<ul>
+              <li><strong>Sonda:</strong> Lineal de alta frecuencia. El hueso normal es una <strong>línea hiperecoica continua con sombra posterior</strong>; lo que se busca es su interrupción.</li>
+              <li><strong>Empezar donde duele:</strong> colocar la sonda sobre el punto de dolor máximo y recorrer la cortical en <strong>longitudinal</strong> (eje largo del hueso) y en <strong>transversal</strong>.</li>
+              <li><strong>Antebrazo distal en niños:</strong> explorar el radio y el cúbito por sus caras <strong>dorsal, volar y lateral</strong> (seis vistas). Con solo cuatro vistas la especificidad fue menor.</li>
+              <li><strong>Costillas:</strong> sonda siguiendo el eje de la costilla sobre el punto doloroso, y después mirar la pleura de esa zona: <strong>deslizamiento pleural y derrame</strong> (ver la ficha de exploración pulmonar).</li>
+              <li><strong>Comparar con el lado sano</strong> en el mismo plano. En niños es obligado por el cartílago de crecimiento.</li>
+              <li><strong>Apoyo suave:</strong> la presión directa de la sonda sobre el foco duele, y eso también orienta.</li>
+            </ul>`,
+            findings: `<ul>
+              <li><strong>Fractura:</strong> <strong>interrupción o escalón de la cortical</strong>, a veces con angulación.</li>
+              <li><strong>Fractura en rodete (torus) del niño:</strong> abombamiento de la cortical sin interrupción.</li>
+              <li><strong>Signos acompañantes:</strong> hematoma subperióstico hipoecoico junto al foco y dolor a la presión de la sonda justo encima.</li>
+              <li><strong>Costal:</strong> escalón en la cortical de la costilla. Buscar en el mismo sitio un neumotórax (sin deslizamiento pleural) o un derrame.</li>
+              <li><strong>Trampa del cartílago de crecimiento (fisis):</strong> en el niño es una interrupción hipoecoica, lisa y simétrica de la cortical. Es normal: se distingue comparando con el lado sano.</li>
+              <li><strong>Lo que la ecografía no resuelve bien:</strong> la alineación para planificar una reducción, las fracturas intraarticulares y los huesos profundos o de forma compleja.</li>
+            </ul>`,
+            evidence: `<p><strong>Douma-den Hamer et al. (2016, <em>PLoS One</em>)</strong> — Revisión sistemática y metaanálisis, 16 estudios prospectivos con 1.204 pacientes, casi todos niños, frente a radiografía: fractura de antebrazo distal con <strong>sensibilidad del 97 % (IC 95 % 93–99) y especificidad del 95 % (89–98)</strong>; cociente de probabilidad positivo 20 y negativo 0,03. Con seis vistas la especificidad fue mayor que con cuatro. <a href="https://doi.org/10.1371/journal.pone.0155659" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Gilbertson et al. (2022, <em>Ann Emerg Med</em>)</strong> — Metaanálisis frente a TC, 6 estudios y 663 pacientes con traumatismo torácico cerrado: fractura costal con <strong>sensibilidad del 89,3 % y especificidad del 98,4 %</strong>; cociente de probabilidad positivo 55,7 y negativo 0,11. Sin diferencias entre la ecografía hecha en urgencias y la de radiología. Riesgo de sesgo alto. <a href="https://doi.org/10.1016/j.annemergmed.2022.02.006" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Battle et al. (2019, <em>Emerg Med J</em>)</strong> — Revisión sistemática de 13 estudios: la ecografía parece superior a la radiografía de tórax para las fracturas costales, pero la calidad baja impide una conclusión firme. <a href="https://doi.org/10.1136/emermed-2017-207416" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Champagne et al. (2019, <em>BMC Emerg Med</em>)</strong> — Revisión sistemática en adultos, 26 estudios y 2.360 pacientes: sensibilidad y especificidad agrupadas de 0,93 y 0,92 en miembro superior y de 0,83 y 0,93 en miembro inferior, con la mejor precisión en pie y tobillo. Los autores piden más estudios antes de usarla como primera prueba. <a href="https://doi.org/10.1186/s12873-019-0226-5" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Certeza: Moderada</strong> para la fractura de antebrazo distal en niños · <strong>Baja</strong> para la fractura costal (riesgo de sesgo alto) · <strong>Baja</strong> para las extremidades del adulto (heterogeneidad alta).</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>Dónde aporta más en consulta</h5>
+              <p>En la muñeca del niño, porque evita radiación con una precisión alta; en las costillas, que la radiografía simple pasa por alto con frecuencia; y en el centro sin radiología, para decidir quién necesita desplazarse.</p>
+              <h5>Confirma, pero no planifica</h5>
+              <p>La ecografía responde si hay fractura. Si hay que reducir, inmovilizar con precisión o valorar la articulación, sigue haciendo falta la radiografía.</p>
+              <h5>El cartílago de crecimiento no es una fractura</h5>
+              <p>La fisis del niño interrumpe la cortical de forma lisa y simétrica. Comparar siempre con el lado sano antes de concluir.</p>
+              <h5>Costilla rota: mirar la pleura</h5>
+              <p>La complicación que cambia la conducta es el neumotórax. Con la sonda ya sobre la costilla, comprobar el deslizamiento pleural cuesta segundos.</p>
+            </div>`,
+            reportChecklist: [
+              'Mecanismo y punto de dolor máximo anotados',
+              'Sonda lineal de alta frecuencia',
+              'Cortical recorrida en longitudinal y transversal',
+              'Comparación con el lado sano',
+              'En antebrazo infantil: seis vistas (dorsal, volar y lateral de radio y cúbito)',
+              'En costilla: deslizamiento pleural y derrame valorados',
+              'Necesidad de radiografía decidida y anotada'
+            ],
+            reportFields: [
+              {
+                id: 'hueso', label: 'Hueso explorado', type: 'select',
+                options: [
+                  { value: 'radio_cubito', label: 'Radio o cúbito distal', cls: 'badge-empty', badge: 'Antebrazo distal' },
+                  { value: 'costilla', label: 'Costilla', cls: 'badge-empty', badge: 'Costilla' },
+                  { value: 'mano_pie', label: 'Metacarpiano o metatarsiano', cls: 'badge-empty', badge: 'Mano/pie' },
+                  { value: 'clavicula', label: 'Clavícula', cls: 'badge-empty', badge: 'Clavícula' },
+                  { value: 'otro', label: 'Otro', cls: 'badge-empty', badge: 'Otro' }
+                ]
+              },
+              {
+                id: 'lado', label: 'Lado', type: 'select',
+                options: [
+                  { value: 'dcho', label: 'Derecho', cls: 'badge-empty', badge: 'Derecho' },
+                  { value: 'izdo', label: 'Izquierdo', cls: 'badge-empty', badge: 'Izquierdo' }
+                ]
+              },
+              {
+                id: 'cortical', label: 'Cortical', type: 'select',
+                options: [
+                  { value: 'continua', label: 'Continua', cls: 'badge-normal', badge: 'Continua', interpretation: 'Sin signos de fractura en la zona explorada' },
+                  { value: 'escalon', label: 'Interrupción o escalón', cls: 'badge-alert', badge: 'Fractura', interpretation: 'Fractura: valorar radiografía si hay que reducir o inmovilizar' },
+                  { value: 'rodete', label: 'Abombamiento sin interrupción', cls: 'badge-warn', badge: 'Rodete', interpretation: 'Compatible con fractura en rodete (torus)' },
+                  { value: 'dudosa', label: 'Dudosa', cls: 'badge-warn', badge: 'Dudosa', interpretation: 'No concluyente: radiografía' }
+                ]
+              },
+              {
+                id: 'hematoma', label: 'Hematoma junto a la cortical', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'PRESENTE', noLabel: 'Ausente',
+                yesInterpretation: 'Apoya la fractura', noInterpretation: 'Sin hematoma visible'
+              },
+              {
+                id: 'comparacion', label: 'Comparación con el lado sano', type: 'select',
+                options: [
+                  { value: 'hecha', label: 'Hecha', cls: 'badge-normal', badge: 'Hecha' },
+                  { value: 'no_hecha', label: 'No hecha', cls: 'badge-warn', badge: 'No hecha', interpretation: 'En niños, riesgo de confundir la fisis con una fractura' }
+                ]
+              },
+              {
+                id: 'pleura', label: 'Signos de neumotórax (sin deslizamiento pleural)', type: 'boolean', yesIsAlert: true,
+                visibleWhen: { fieldId: 'hueso', equals: 'costilla' },
+                yesLabel: 'SÍ', noLabel: 'No, desliza',
+                yesInterpretation: 'Sospecha de neumotórax: valorar derivación urgente', noInterpretation: 'Deslizamiento pleural conservado'
+              }
+            ],
+            reportTemplate: `POCUS ÓSEO — DETECCIÓN DE FRACTURA
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Mecanismo, punto de dolor máximo]
+
+TÉCNICA:
+Sonda lineal de alta frecuencia. Cortical en longitudinal y transversal.
+Comparación con el lado sano.
+
+HALLAZGOS:
+Hueso explorado: [[hueso]]    Lado: [[lado]]
+Cortical: [[cortical]]
+Hematoma junto a la cortical: [[hematoma]]
+Comparación con el lado sano: [[comparacion]]
+Neumotórax (si costilla): [[pleura]]
+
+CONCLUSIÓN / PLAN:
+[Con / sin signos ecográficos de fractura. Radiografía si hay que valorar alineación,
+articulación o reducción]`,
+          },
+        },
+        {
+          segment: "cardiac",
+          system: "Cardiovascular",
+          color: "blue",
+          title: "Vena Cava Inferior (VCI): Diámetro y Colapsabilidad",
+          refId: "ivc_rudski_2010",
+          keywords: ["vena cava inferior", "VCI", "cava", "presión de aurícula derecha", "presión venosa central", "volemia", "congestión", "insuficiencia cardíaca", "deshidratación", "índice de colapso"],
+          content: {
+            technique: `<ul>
+              <li><strong>Sonda:</strong> Sectorial o convexa. Paciente en <strong>decúbito supino</strong>.</li>
+              <li><strong>Ventana subxifoidea, eje largo:</strong> seguir la VCI hasta su entrada en la aurícula derecha e identificar la desembocadura de una vena suprahepática.</li>
+              <li><strong>Dónde medir:</strong> a <strong>1–2 cm de la unión con la aurícula derecha</strong>, perpendicular al eje del vaso, el diámetro máximo.</li>
+              <li><strong>Colapso:</strong> pedir una <strong>inspiración brusca por la nariz</strong> («sniff») y medir el diámetro mínimo. Índice de colapso = (máximo − mínimo) / máximo.</li>
+              <li><strong>Confirmar en transversal</strong> que se mide por el centro del vaso. Un corte longitudinal desplazado hacia el borde lo infraestima (efecto cilindro).</li>
+              <li><strong>Modo M con cuidado:</strong> la VCI se desplaza con la respiración y puede salirse de la línea de medida, lo que simula un colapso que no existe.</li>
+              <li><strong>No confundirla con la aorta:</strong> la aorta está a la izquierda de la línea media, tiene pared gruesa, late y no cambia con la respiración, y de ella salen el tronco celíaco y la mesentérica. La VCI está a la derecha, tiene pared fina, recibe las suprahepáticas y varía con la respiración.</li>
+            </ul>`,
+            findings: `<ul>
+              <li><strong>VCI ≤ 21 mm que colapsa más del 50 % con el «sniff»:</strong> presión de aurícula derecha normal, unos 3 mmHg (0–5).</li>
+              <li><strong>VCI > 21 mm que colapsa menos del 50 %:</strong> presión alta, unos 15 mmHg (10–20).</li>
+              <li><strong>Combinaciones intermedias:</strong> unos 8 mmHg (5–10).</li>
+              <li><strong>VCI pletórica</strong> (dilatada y casi sin colapso) en un paciente con disnea o edemas: apoya la congestión venosa sistémica (insuficiencia cardíaca, taponamiento, tromboembolia pulmonar, valvulopatía tricuspídea). Se interpreta junto con el corazón (FoCUS) y el pulmón (líneas B, derrame).</li>
+              <li><strong>VCI fina que colapsa del todo:</strong> encaja con presión baja (deshidratación, hipovolemia), pero <strong>no predice por sí sola</strong> si el paciente mejorará con líquidos.</li>
+              <li><strong>Lecturas engañosas:</strong> deportistas jóvenes (VCI grande sin significado patológico), presión intraabdominal alta, insuficiencia tricuspídea importante y ventilación mecánica.</li>
+            </ul>`,
+            evidence: `<p><strong>Rudski et al. (2010, <em>J Am Soc Echocardiogr</em>)</strong> — Guía de la American Society of Echocardiography, avalada por la asociación europea, para el corazón derecho: estimación de la presión de aurícula derecha por el diámetro de la VCI (umbral de 2,1 cm) y su colapso con el «sniff» (umbral del 50 %), con los tres escalones de 3, 8 y 15 mmHg. <a href="https://doi.org/10.1016/j.echo.2010.05.010" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Cardozo Júnior et al. (2023, <em>Med Intensiva</em>)</strong> — Revisión sistemática y metaanálisis, 8 estudios y 497 pacientes en respiración espontánea: la colapsabilidad de la VCI predijo la respuesta a líquidos con <strong>sensibilidad del 63 % (IC 95 % 46–78) y especificidad del 83 % (76–87)</strong>. Riesgo de sesgo alto. Conclusión de los autores: <strong>no usarla de forma aislada</strong> para decidir líquidos. <a href="https://doi.org/10.1016/j.medine.2021.12.018" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Zhang et al. (2014, <em>Ultrasound Med Biol</em>)</strong> — Metaanálisis, 8 estudios y 235 pacientes críticos: sensibilidad 0,76 y especificidad 0,86 de la variación respiratoria de la VCI, con mejor rendimiento en ventilación mecánica que en respiración espontánea. <a href="https://doi.org/10.1016/j.ultrasmedbio.2013.12.010" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Certeza: Moderada</strong> para estimar la presión de aurícula derecha (criterio de guía) · <strong>Baja</strong> para predecir la respuesta a líquidos en respiración espontánea.</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>No es un medidor de volemia</h5>
+              <p>La VCI estima la presión de la aurícula derecha. Una VCI pletórica que no colapsa en un paciente con disnea orienta a congestión, sobre todo si coincide con líneas B y derrame pleural. Una VCI fina y colapsada encaja con deshidratación, pero no basta para decidir si dar líquidos.</p>
+              <h5>Los tres errores que más cambian el resultado</h5>
+              <p>Medir la aorta creyendo que es la cava; medir en un corte oblicuo o desplazado del centro; y medir demasiado lejos de la aurícula. Los tres se evitan identificando la desembocadura de una suprahepática y confirmando en transversal.</p>
+              <h5>Un valor aislado dice poco; la comparación dice más</h5>
+              <p>En el seguimiento de un paciente con insuficiencia cardíaca, comparar la VCI con la de la visita anterior, mismo explorador y misma posición, informa más que la cifra de un solo día.</p>
+              <h5>El deportista con la cava grande</h5>
+              <p>En jóvenes entrenados, una VCI dilatada puede ser normal. Sin clínica que la acompañe, no se interpreta como congestión.</p>
+            </div>`,
+            reportChecklist: [
+              'Indicación anotada (disnea, edemas, control de insuficiencia cardíaca, deshidratación)',
+              'Decúbito supino, ventana subxifoidea en eje largo',
+              'Desembocadura de una suprahepática identificada',
+              'Aorta diferenciada de la VCI',
+              'Diámetro medido a 1–2 cm de la aurícula derecha',
+              'Colapso medido con inspiración brusca («sniff»)',
+              'Medida confirmada en transversal',
+              'Conclusión integrada con FoCUS y pulmón'
+            ],
+            reportFields: [
+              {
+                id: 'dmax', label: 'Diámetro máximo de la VCI', type: 'number', unit: 'mm', step: 1, min: 0, max: 40,
+                thresholds: [
+                  { min: 0, max: 21, cls: 'badge-normal', label: 'No dilatada (≤ 21 mm)' },
+                  { min: 21.01, max: 999, cls: 'badge-warn', label: 'Dilatada (> 21 mm)' }
+                ]
+              },
+              {
+                id: 'colapso', label: 'Colapso con el «sniff»', type: 'number', unit: '%', step: 1, min: 0, max: 100,
+                thresholds: [
+                  { min: 50.01, max: 100, cls: 'badge-normal', label: 'Colapsa > 50 %' },
+                  { min: 0, max: 50, cls: 'badge-warn', label: 'Colapsa ≤ 50 %' }
+                ]
+              },
+              {
+                id: 'pad', label: 'Presión de aurícula derecha estimada', type: 'select',
+                options: [
+                  { value: 'normal', label: 'Normal, unos 3 mmHg (0–5)', cls: 'badge-normal', badge: '≈ 3 mmHg', interpretation: 'VCI ≤ 21 mm que colapsa > 50 %' },
+                  { value: 'intermedia', label: 'Intermedia, unos 8 mmHg (5–10)', cls: 'badge-warn', badge: '≈ 8 mmHg', interpretation: 'Combinación intermedia' },
+                  { value: 'alta', label: 'Alta, unos 15 mmHg (10–20)', cls: 'badge-alert', badge: '≈ 15 mmHg', interpretation: 'VCI > 21 mm que colapsa < 50 %: orienta a congestión' }
+                ]
+              },
+              {
+                id: 'transversal', label: 'Medida confirmada en transversal', type: 'boolean',
+                yesLabel: 'Sí', noLabel: 'No',
+                yesInterpretation: 'Diámetro fiable', noInterpretation: 'Posible infraestimación por corte desplazado'
+              }
+            ],
+            reportTemplate: `POCUS VENA CAVA INFERIOR
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Disnea / edemas / control de insuficiencia cardíaca / deshidratación]
+
+TÉCNICA:
+Decúbito supino. Ventana subxifoidea, eje largo. Medida a 1–2 cm de la aurícula derecha.
+Inspiración brusca («sniff»). Confirmación en transversal.
+
+HALLAZGOS:
+Diámetro máximo: [[dmax]]
+Colapso con el «sniff»: [[colapso]]
+Presión de aurícula derecha estimada: [[pad]]
+Medida confirmada en transversal: [[transversal]]
+
+CONCLUSIÓN:
+[Integrar con FoCUS y ecografía pulmonar. La VCI aislada no decide la fluidoterapia]`,
           },
         },
 
@@ -6399,11 +7243,46 @@ CONCLUSIÓN:`,
         assembleAndSave(cardId);
       };
 
-      // Funciones de zoom
+      /* ── Maniquí: tamaño y zoom ───────────────────────────────────────────────────────────
+         En escritorio el zoom NO usa transform: un scale() agrandaba el dibujo desde su centro,
+         por encima del título y por debajo de la cabecera, y lo dejaba cortado. Ahora cambia el
+         alto del dibujo dentro de #anatomy-scroll, que gana barras de desplazamiento, y se
+         conserva el punto que estaba en el centro del marco. En tableta (panel recortado a
+         240 px) y móvil (panel oculto) se mantiene el comportamiento anterior. */
+      const POCUS_ESCRITORIO = window.matchMedia("(min-width: 1025px)");
+
+      // Altura disponible para el dibujo: la ventana menos la cabecera fija, los márgenes del
+      // panel y lo que ocupa el panel aparte del dibujo (título, rellenos).
+      window.ajustarManiqui = function () {
+        const raiz = document.documentElement;
+        const header = document.querySelector("header");
+        const altoCabecera = (header && header.offsetHeight) || 150;
+        raiz.style.setProperty("--alto-cabecera", altoCabecera + "px");
+        const panel = document.querySelector(".anatomy-container .glass-morphism");
+        const marco = document.getElementById("anatomy-scroll");
+        if (!panel || !marco || !POCUS_ESCRITORIO.matches) return;
+        const resto = panel.getBoundingClientRect().height - marco.getBoundingClientRect().height;
+        const disponible = Math.max(320, window.innerHeight - altoCabecera - 24 - resto);
+        raiz.style.setProperty("--alto-maniqui", Math.floor(disponible) + "px");
+      };
+
       window.updateZoom = function () {
         const svg = document.getElementById("anatomical-svg");
-        if (svg) {
-          svg.style.transform = `scale(${window.POCUSApp.zoomLevel})`;
+        if (!svg) return;
+        const z = window.POCUSApp.zoomLevel;
+        if (!POCUS_ESCRITORIO.matches) {
+          svg.style.transform = `scale(${z})`;
+          return;
+        }
+        svg.style.transform = "";
+        const marco = document.getElementById("anatomy-scroll");
+        // Punto del dibujo que está en el centro del marco, en proporción, antes del cambio
+        const cx = marco ? (marco.scrollLeft + marco.clientWidth / 2) / (marco.scrollWidth || 1) : 0.5;
+        const cy = marco ? (marco.scrollTop + marco.clientHeight / 2) / (marco.scrollHeight || 1) : 0.5;
+        svg.style.setProperty("--zoom-maniqui", z);
+        if (marco) {
+          marco.scrollLeft = cx * marco.scrollWidth - marco.clientWidth / 2;
+          marco.scrollTop = cy * marco.scrollHeight - marco.clientHeight / 2;
         }
       };
 
@@ -6561,10 +7440,15 @@ CONCLUSIÓN:`,
             var card = document.getElementById('card-' + destino.segment + '-' + destino.index);
             if (!card) return false;
             if (o.escribirUrl !== false) escribirUrlProfunda({ ficha: slug });
-            var header = document.querySelector('header');
-            var alto = (header && header.offsetHeight) || 130;
-            var top = card.getBoundingClientRect().top + window.pageYOffset - alto - 16;
-            window.scrollTo({ top: Math.max(0, top), behavior: o.suave === false ? 'auto' : 'smooth' });
+            // `desplazar: false` y `destacar: false` los usa el buscador cuando va a un pasaje:
+            // el desplazamiento y el resaltado son entonces los del pasaje, no los de la ficha.
+            if (o.desplazar !== false) {
+              var header = document.querySelector('header');
+              var alto = (header && header.offsetHeight) || 130;
+              var top = card.getBoundingClientRect().top + window.pageYOffset - alto - 16;
+              window.scrollTo({ top: Math.max(0, top), behavior: o.suave === false ? 'auto' : 'smooth' });
+            }
+            if (o.destacar === false) return true;
             // Reinicia la animación si se vuelve a pedir la misma ficha
             card.classList.remove('deeplink-target');
             void card.offsetWidth;
@@ -6676,6 +7560,571 @@ CONCLUSIÓN:`,
         }
       });
 
+      /* ── Buscador del atlas ──────────────────────────────────────────────────────────────
+         Hasta aquí, a una ficha solo se llegaba sabiendo en qué zona del maniquí vivía: quien
+         buscaba «Dupuytren» tenía que adivinar «MSK/Reuma → Mano / Muñeca».
+
+         La unidad que se indexa es el PASAJE, no la ficha: cada párrafo, viñeta, titular,
+         elemento del checklist o campo del informe, con su pestaña y el último subtítulo bajo el
+         que cuelga («Perlas clínicas › Cuándo derivar»). Así, buscar «prueba de la mesa» no deja
+         al usuario en la cabecera de la ficha, sino que abre esa pestaña, baja hasta el párrafo
+         y lo resalta. La ficha se puntúa entera (título > palabras clave `keywords` > zona y
+         sistema > texto) y debajo se enseñan sus pasajes con coincidencia.
+
+         `CONTRATO:` la parte pura (plegado, pasajes, índice y puntuación) va de aquí al marcador
+         de fin y no toca el DOM: `scripts/pocus-test-buscador.mjs` la ejecuta fuera del
+         navegador. Lo que sí toca el DOM vive en `iniciarBuscadorPocus`, después del marcador.
+
+         Sin resultados, lo dice: el atlas no es exhaustivo y un buscador mudo haría creer que
+         la consulta estaba mal escrita. */
+
+      // Marcas diacríticas combinantes (U+0300–U+036F). Se construye con fromCharCode para no
+      // depender de que un escape \u sobreviva a las herramientas que editan este fichero.
+      var POCUS_DIACRITICOS = new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g');
+
+      // Minúsculas y sin acentos, carácter a carácter, para que cada posición del texto plegado
+      // corresponda a la misma del original: así se puede resaltar sobre el texto con tildes.
+      function pocusPlegar(texto) {
+        var s = String(texto || '');
+        var out = '';
+        for (var i = 0; i < s.length; i++) {
+          var c = s[i].normalize('NFD').replace(POCUS_DIACRITICOS, '').toLowerCase();
+          out += c.length === 1 ? c : s[i];
+        }
+        return out;
+      }
+
+      var POCUS_ENTIDADES = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'", nbsp: ' ', le: '≤', ge: '≥', ndash: '–', mdash: '—' };
+
+      // Texto plano a partir de HTML. Sin DOM a propósito: un innerHTML sobre un nodo suelto
+      // descargaría las imágenes de todas las fichas solo para indexarlas.
+      function pocusTextoPlano(html) {
+        return String(html || '')
+          .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&#x([0-9a-f]+);/gi, function(_, h) { return String.fromCodePoint(parseInt(h, 16)); })
+          .replace(/&#(\d+);/g, function(_, d) { return String.fromCodePoint(parseInt(d, 10)); })
+          .replace(/&([a-z]+);/gi, function(m, n) { return POCUS_ENTIDADES[n.toLowerCase()] || m; })
+          .replace(/\s+/g, ' ')
+          .replace(/ ([,.;:)])/g, '$1')  // «<strong>x</strong> ,» no deja «x ,»
+          .trim();
+      }
+
+      // Palabras que no discriminan: «prueba de la mesa» se busca por «prueba» y «mesa», y la
+      // frase entera puntúa aparte. Sin esto, «de» y «la» se resaltarían en todos los pasajes.
+      var POCUS_VACIAS = new Set(['de', 'la', 'el', 'los', 'las', 'del', 'al', 'lo', 'en', 'y', 'o', 'u', 'e', 'a',
+        'un', 'una', 'unos', 'unas', 'con', 'sin', 'por', 'para', 'que', 'se', 'su', 'sus', 'es', 'son', 'ni', 'no',
+        'si', 'mas', 'muy', 'como', 'sobre', 'entre', 'tras']);
+
+      function pocusTerminos(consulta) {
+        return pocusPlegar(consulta)
+          .split(/[^a-z0-9ñ]+/)
+          .filter(function(t) { return t.length >= 2 && !POCUS_VACIAS.has(t); });
+      }
+
+      // La consulta entera, plegada y con espacios normalizados. Solo cuenta si tiene más de una
+      // palabra: con una, ya la cubren los términos.
+      function pocusFrase(consulta) {
+        var f = pocusPlegar(consulta).replace(/\s+/g, ' ').trim();
+        return f.indexOf(' ') > 0 ? f : '';
+      }
+
+      // Pestañas en el orden en que aparecen en la ficha, con el nombre que ve el usuario.
+      var POCUS_PESTANAS = {
+        findings: 'Hallazgos clave',
+        technique: 'Técnica',
+        evidence: 'Evidencia',
+        pearls: 'Perlas clínicas',
+        video: 'Vídeo',
+        report: 'Informe',
+      };
+
+      var POCUS_BLOQUES = /^(p|li|ul|ol|div|section|h[1-6]|tr|td|th|table|thead|tbody|figure|figcaption|blockquote|br|hr|dl|dt|dd)$/;
+
+      /* Parte el HTML de una pestaña en pasajes. Cada etiqueta de bloque cierra el pasaje en
+         curso; las de línea (strong, em, a…) no añaden nada, igual que `textContent`, para que el
+         texto del pasaje se pueda volver a encontrar en el DOM. Un titular (h1–h6) se guarda
+         como pasaje propio y pasa a ser el contexto de los siguientes hasta que se cierra el
+         contenedor en el que apareció. */
+      function pocusPasajes(html) {
+        var out = [];
+        var buf = '';
+        var enTitular = false;
+        var contexto = '';
+        var prof = 0;
+        var profContexto = -1;
+        var limpio = String(html || '')
+          .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+          .replace(/<!--[\s\S]*?-->/g, ' ');
+        var re = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>|[^<]+|</g;
+        var m;
+        function volcar() {
+          var t = pocusTextoPlano(buf);
+          buf = '';
+          if (!t) return;
+          if (enTitular) {
+            contexto = t;
+            out.push({ texto: t, contexto: '', titular: true });
+          } else {
+            out.push({ texto: t, contexto: contexto, titular: false });
+          }
+        }
+        while ((m = re.exec(limpio))) {
+          if (!m[2]) { buf += m[0]; continue; }
+          var nombre = m[2].toLowerCase();
+          var cierre = m[1] === '/';
+          if (!POCUS_BLOQUES.test(nombre)) continue;
+          volcar();
+          if (/^h[1-6]$/.test(nombre)) {
+            enTitular = !cierre;
+            if (!cierre) profContexto = prof;
+          } else if (nombre === 'div' || nombre === 'section') {
+            if (!cierre) prof++;
+            else {
+              prof = Math.max(0, prof - 1);
+              if (profContexto >= 0 && prof < profContexto) { contexto = ''; profContexto = -1; }
+            }
+          }
+        }
+        volcar();
+        return out;
+      }
+
+      // Pasajes de una ficha en el orden de sus pestañas. El informe aporta su checklist y los
+      // nombres de sus campos; el vídeo, su título y su descripción.
+      function pocusPasajesDeFicha(app) {
+        var c = app.content || {};
+        var out = [];
+        function anadir(tab, lista) {
+          lista.forEach(function(p) {
+            out.push({ tab: tab, contexto: p.contexto, texto: p.texto, titular: !!p.titular, fTexto: pocusPlegar(p.texto) });
+          });
+        }
+        ['findings', 'technique', 'evidence', 'pearls'].forEach(function(tab) {
+          anadir(tab, pocusPasajes(c[tab]));
+        });
+        anadir('video', (c.videos || []).reduce(function(acc, v) {
+          if (v.intro) acc.push({ texto: pocusTextoPlano(v.intro), contexto: '' });
+          if (v.desc) acc.push({ texto: pocusTextoPlano(v.desc), contexto: pocusTextoPlano(v.intro || '') });
+          return acc;
+        }, []));
+        var informe = [];
+        (c.reportChecklist || []).forEach(function(item) {
+          informe.push({ texto: pocusTextoPlano(item), contexto: 'Checklist' });
+        });
+        (c.reportFields || []).forEach(function(f) {
+          if (f.label) informe.push({ texto: pocusTextoPlano(f.label), contexto: 'Campos del informe' });
+        });
+        anadir('report', informe.filter(function(p) { return p.texto; }));
+        return out;
+      }
+
+      // `etiquetasZona`: { segmento: 'Mano / Muñeca', … }. Se pasa desde fuera porque en la
+      // página sale del menú de navegación, que es donde el usuario ya ve esos nombres.
+      function construirIndicePocus(datos, etiquetasZona) {
+        var zonas = etiquetasZona || {};
+        return datos.map(function(app) {
+          var zona = zonas[app.segment] || '';
+          var pasajes = pocusPasajesDeFicha(app);
+          return {
+            slug: pocusSlug(app.title),
+            title: app.title,
+            system: app.system || '',
+            zona: zona,
+            fTitulo: pocusPlegar(app.title),
+            fClaves: pocusPlegar((app.keywords || []).join(' · ')),
+            fMeta: pocusPlegar((app.system || '') + ' ' + zona),
+            pasajes: pasajes,
+            fCuerpo: pasajes.map(function(p) { return p.fTexto; }).join(' | '),
+          };
+        });
+      }
+
+      function pocusEmpiezaPalabra(texto, pos) {
+        return pos === 0 || /[^a-z0-9ñ]/.test(texto[pos - 1]);
+      }
+
+      // Posiciones a resaltar: primero la frase entera, después cada término que no caiga dentro.
+      function pocusMarcas(fTexto, terminos, frase) {
+        var marcas = [];
+        function cubierta(a, b) {
+          return marcas.some(function(m) { return a < m[1] && b > m[0]; });
+        }
+        if (frase) {
+          var p = fTexto.indexOf(frase);
+          while (p >= 0) { marcas.push([p, p + frase.length]); p = fTexto.indexOf(frase, p + frase.length); }
+        }
+        terminos.forEach(function(t) {
+          var q = fTexto.indexOf(t);
+          while (q >= 0) {
+            if (!cubierta(q, q + t.length)) marcas.push([q, q + t.length]);
+            q = fTexto.indexOf(t, q + t.length);
+          }
+        });
+        return marcas.sort(function(a, b) { return a[0] - b[0]; });
+      }
+
+      // Ventana de ~160 caracteres alrededor de la primera marca, cortada en límite de palabra.
+      function pocusVentana(texto, marcas) {
+        var ANCHO = 160;
+        var primera = marcas.length ? marcas[0][0] : -1;
+        var ini = primera < 0 ? 0 : Math.max(0, primera - 50);
+        if (ini > 0) {
+          var espIni = texto.indexOf(' ', ini);
+          if (espIni >= 0 && espIni < primera) ini = espIni + 1;
+        }
+        var fin = Math.min(texto.length, ini + ANCHO);
+        if (fin < texto.length) {
+          var espFin = texto.lastIndexOf(' ', fin);
+          if (espFin > ini && espFin > primera) fin = espFin;
+        }
+        return {
+          texto: texto.slice(ini, fin),
+          previo: ini > 0,
+          sigue: fin < texto.length,
+          marcas: marcas
+            .filter(function(m) { return m[0] >= ini && m[1] <= fin; })
+            .map(function(m) { return [m[0] - ini, m[1] - ini]; }),
+        };
+      }
+
+      /* Todos los términos tienen que aparecer en algún sitio de la ficha (Y lógico): «quiste
+         rodilla» debe dar el de Baker y no todas las fichas que mencionan un quiste. Pesa más
+         dónde aparece que cuántas veces: título > palabras clave > zona/sistema > texto. Dentro
+         de la ficha, los pasajes se ordenan por la frase exacta y por cuántos términos reúnen. */
+      function buscarEnPocus(indice, consulta, maximo, maxPasajes) {
+        var terminos = pocusTerminos(consulta);
+        if (!terminos.length) return [];
+        var frase = pocusFrase(consulta);
+        var fraseCompleta = pocusPlegar(consulta).replace(/\s+/g, ' ').trim();
+        var tope = maxPasajes || 3;
+        var resultados = [];
+        indice.forEach(function(e) {
+          var puntos = 0;
+          for (var i = 0; i < terminos.length; i++) {
+            var t = terminos[i];
+            var enTitulo = e.fTitulo.indexOf(t);
+            var p = 0;
+            if (enTitulo >= 0) p = Math.max(p, pocusEmpiezaPalabra(e.fTitulo, enTitulo) ? 12 : 8);
+            if (e.fClaves.indexOf(t) >= 0) p = Math.max(p, 9);
+            if (e.fMeta.indexOf(t) >= 0) p = Math.max(p, 4);
+            var veces = e.fCuerpo.split(t).length - 1;
+            if (veces) p += 1 + Math.min(veces, 5) * 0.2;
+            if (!p) return;  // un término sin coincidencia descarta la ficha
+            puntos += p;
+          }
+          // La frase entera en el título suma; el título exacto gana siempre, para que «Lipoma»
+          // abra «Lipoma» y no «Lipoma vs Quiste Epidérmico».
+          if (fraseCompleta.length >= 3 && e.fTitulo.indexOf(fraseCompleta) >= 0) puntos += 15;
+          if (e.fTitulo === fraseCompleta) puntos += 100;
+
+          var coincidentes = [];
+          e.pasajes.forEach(function(pj, orden) {
+            var reunidos = terminos.filter(function(t) { return pj.fTexto.indexOf(t) >= 0; }).length;
+            if (!reunidos) return;
+            var conFrase = !!frase && pj.fTexto.indexOf(frase) >= 0;
+            coincidentes.push({
+              pj: pj,
+              orden: orden,
+              peso: reunidos * 10 + (reunidos === terminos.length ? 10 : 0) + (conFrase ? 30 : 0),
+              conFrase: conFrase,
+              completo: reunidos === terminos.length,
+            });
+          });
+          coincidentes.sort(function(a, b) { return b.peso - a.peso || a.orden - b.orden; });
+          // Una ficha con la frase exacta en un pasaje va por delante de otra que solo junta las
+          // palabras sueltas en sitios distintos.
+          if (coincidentes.some(function(c) { return c.conFrase; })) puntos += 20;
+          else if (coincidentes.some(function(c) { return c.completo; })) puntos += 5;
+
+          var enTituloTodos = terminos.every(function(t) {
+            return e.fTitulo.indexOf(t) >= 0 || e.fClaves.indexOf(t) >= 0;
+          });
+          var vistaPrevia = null;
+          if (!coincidentes.length && e.pasajes.length) {
+            var primero = e.pasajes.filter(function(p) { return !p.titular; })[0] || e.pasajes[0];
+            vistaPrevia = pocusVentana(primero.texto, []);
+          }
+          resultados.push({
+            slug: e.slug,
+            title: e.title,
+            system: e.system,
+            zona: e.zona,
+            puntos: puntos,
+            enTitulo: enTituloTodos,
+            total: coincidentes.length,
+            vistaPrevia: vistaPrevia,
+            pasajes: coincidentes.slice(0, tope).map(function(c) {
+              var v = pocusVentana(c.pj.texto, pocusMarcas(c.pj.fTexto, terminos, frase));
+              return {
+                tab: c.pj.tab,
+                pestana: POCUS_PESTANAS[c.pj.tab] || c.pj.tab,
+                contexto: c.pj.contexto,
+                completo: c.pj.texto,
+                texto: v.texto,
+                previo: v.previo,
+                sigue: v.sigue,
+                marcas: v.marcas,
+              };
+            }),
+          });
+        });
+        resultados.sort(function(a, b) {
+          return b.puntos - a.puntos || a.title.localeCompare(b.title, 'es');
+        });
+        return resultados.slice(0, maximo || 8);
+      }
+      /* ── Fin de la parte pura del buscador ── */
+
+      function pocusEscapar(s) {
+        return String(s).replace(/[&<>"']/g, function(c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      function pocusResaltar(texto, marcas) {
+        var out = '';
+        var cursor = 0;
+        marcas.forEach(function(m) {
+          if (m[0] < cursor) return;  // solapada con la anterior
+          out += pocusEscapar(texto.slice(cursor, m[0])) + '<mark>' + pocusEscapar(texto.slice(m[0], m[1])) + '</mark>';
+          cursor = m[1];
+        });
+        return out + pocusEscapar(texto.slice(cursor));
+      }
+
+      /* ── Resaltado dentro de la ficha ─────────────────────────────────────────────────────
+         Al abrir un pasaje se busca su elemento en la pestaña (el más pequeño cuyo texto lo
+         contiene, comparando sin espacios ni tildes) y se marcan los términos en sus nodos de
+         texto. Las marcas duran hasta la siguiente búsqueda; el contorno, unos segundos. */
+      function pocusSinEspacios(s) {
+        return pocusPlegar(s).replace(/\s+/g, '');
+      }
+
+      function pocusLocalizarPasaje(contenedor, texto, terminos) {
+        if (!contenedor) return null;
+        var objetivo = pocusSinEspacios(texto);
+        var candidatos = contenedor.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6, td, th, figcaption, label, dt, dd, .rp-label');
+        var mejor = null;
+        var largo = Infinity;
+        candidatos.forEach(function(el) {
+          var t = pocusSinEspacios(el.textContent);
+          if (t.indexOf(objetivo) >= 0 && t.length < largo) { mejor = el; largo = t.length; }
+        });
+        if (mejor) return mejor;
+        // Si el texto no casa literal, el elemento más pequeño que reúna todos los términos.
+        candidatos.forEach(function(el) {
+          var t = pocusPlegar(el.textContent);
+          var todos = terminos.every(function(x) { return t.indexOf(x) >= 0; });
+          if (todos && t.length < largo) { mejor = el; largo = t.length; }
+        });
+        return mejor;
+      }
+
+      function pocusLimpiarResaltados() {
+        document.querySelectorAll('mark.atlas-hit').forEach(function(m) {
+          var padre = m.parentNode;
+          m.replaceWith(document.createTextNode(m.textContent));
+          if (padre) padre.normalize();
+        });
+        document.querySelectorAll('.atlas-hit-block').forEach(function(el) { el.classList.remove('atlas-hit-block'); });
+      }
+
+      function pocusResaltarEn(el, terminos, frase) {
+        var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+          acceptNode: function(n) {
+            return n.parentElement && n.parentElement.closest('mark, script, style, textarea, select, option')
+              ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+          },
+        });
+        var nodos = [];
+        while (walker.nextNode()) nodos.push(walker.currentNode);
+        nodos.forEach(function(nodo) {
+          var texto = nodo.nodeValue;
+          var marcas = pocusMarcas(pocusPlegar(texto), terminos, frase);
+          if (!marcas.length) return;
+          var frag = document.createDocumentFragment();
+          var cursor = 0;
+          marcas.forEach(function(m) {
+            if (m[0] < cursor) return;
+            frag.appendChild(document.createTextNode(texto.slice(cursor, m[0])));
+            var mk = document.createElement('mark');
+            mk.className = 'atlas-hit';
+            mk.textContent = texto.slice(m[0], m[1]);
+            frag.appendChild(mk);
+            cursor = m[1];
+          });
+          frag.appendChild(document.createTextNode(texto.slice(cursor)));
+          nodo.parentNode.replaceChild(frag, nodo);
+        });
+      }
+
+      // Abre la ficha, cambia a la pestaña del pasaje, baja hasta él y lo resalta.
+      function pocusIrAPasaje(slug, pasaje, terminos, frase) {
+        return window.abrirFicha(slug, { desplazar: false, destacar: false }).then(function(ok) {
+          if (!ok) return false;
+          var card = document.querySelector('.content-card[data-ficha="' + slug + '"]');
+          if (!card) return false;
+          var boton = card.querySelector('.tab-button[onclick*="\'' + pasaje.tab + '\'"]');
+          if (boton) window.switchTab(card.id, pasaje.tab, boton);
+          var contenedor = document.getElementById(pasaje.tab + '-' + card.id);
+          var el = pocusLocalizarPasaje(contenedor, pasaje.completo, terminos) || contenedor || card;
+          pocusLimpiarResaltados();
+          pocusResaltarEn(el, terminos, frase);
+          el.classList.add('atlas-hit-block');
+          setTimeout(function() { el.classList.remove('atlas-hit-block'); }, 3500);
+          var header = document.querySelector('header');
+          var alto = (header && header.offsetHeight) || 130;
+          var hueco = Math.max(0, (window.innerHeight - alto) / 3);
+          var top = el.getBoundingClientRect().top + window.pageYOffset - alto - hueco;
+          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+          return true;
+        });
+      }
+
+      function iniciarBuscadorPocus() {
+        var input = document.getElementById('atlas-search-input');
+        var lista = document.getElementById('atlas-search-results');
+        if (!input || !lista) return;
+
+        // Nombre visible de cada zona, tal como aparece en el menú de navegación.
+        var etiquetas = {};
+        document.querySelectorAll('#system-nav [onclick*="navigateToSegment"]').forEach(function(b) {
+          var m = (b.getAttribute('onclick') || '').match(/navigateToSegment\('([a-z_]+)'\)/);
+          if (m && !etiquetas[m[1]]) etiquetas[m[1]] = b.textContent.replace(/▾/g, '').trim();
+        });
+        var indice = construirIndicePocus(pocusData, etiquetas);
+        var actuales = [];
+        var opciones = [];   // filas seleccionables: { i: resultado, k: pasaje (-1 = la ficha) }
+        var activo = -1;
+        var terminosVigentes = [];
+        var fraseVigente = '';
+
+        function cerrar() {
+          lista.hidden = true;
+          lista.innerHTML = '';
+          input.setAttribute('aria-expanded', 'false');
+          input.removeAttribute('aria-activedescendant');
+          actuales = [];
+          opciones = [];
+          activo = -1;
+        }
+
+        function marcarActivo(n) {
+          activo = n;
+          lista.querySelectorAll('.atlas-search-item').forEach(function(li, k) {
+            li.setAttribute('aria-selected', k === n ? 'true' : 'false');
+            if (k === n) {
+              input.setAttribute('aria-activedescendant', li.id);
+              li.scrollIntoView({ block: 'nearest' });
+            }
+          });
+        }
+
+        function abrir(n) {
+          var o = opciones[n];
+          if (!o) return;
+          var r = actuales[o.i];
+          var terminos = terminosVigentes;
+          var frase = fraseVigente;
+          input.value = '';
+          cerrar();
+          input.blur();
+          pocusLimpiarResaltados();
+          if (o.k < 0) window.abrirFicha(r.slug, { suave: true });
+          else pocusIrAPasaje(r.slug, r.pasajes[o.k], terminos, frase);
+        }
+
+        function pintar() {
+          var consulta = input.value;
+          terminosVigentes = pocusTerminos(consulta);
+          fraseVigente = pocusFrase(consulta);
+          if (!terminosVigentes.length) { cerrar(); return; }
+          actuales = buscarEnPocus(indice, consulta, 8, 3);
+          opciones = [];
+          if (!actuales.length) {
+            lista.innerHTML =
+              '<li class="atlas-search-empty" role="presentation">Ninguna ficha del atlas trata <strong>' +
+              pocusEscapar(consulta.trim()) + '</strong>. El atlas no es exhaustivo: prueba con otro término, ' +
+              'una estructura (tendón, vesícula…) o elige una zona en el menú.</li>';
+          } else {
+            var html = '';
+            actuales.forEach(function(r, i) {
+              var n = opciones.length;
+              opciones.push({ i: i, k: -1 });
+              var titulo = pocusResaltar(r.title, pocusMarcas(pocusPlegar(r.title), terminosVigentes, fraseVigente));
+              var vp = r.vistaPrevia;
+              html += '<li id="atlas-search-opt-' + n + '" class="atlas-search-item atlas-search-card" role="option" aria-selected="false" data-n="' + n + '">' +
+                '<div class="atlas-search-title">' + titulo + '</div>' +
+                '<div class="atlas-search-meta">' + pocusEscapar([r.zona, r.system].filter(Boolean).join(' · ')) + '</div>' +
+                (vp && vp.texto ? '<div class="atlas-search-snippet">' + pocusEscapar(vp.texto) + (vp.sigue ? ' …' : '') + '</div>' : '') +
+                '</li>';
+              r.pasajes.forEach(function(p, k) {
+                var m = opciones.length;
+                opciones.push({ i: i, k: k });
+                var donde = p.pestana + (p.contexto ? ' › ' + p.contexto : '');
+                html += '<li id="atlas-search-opt-' + m + '" class="atlas-search-item atlas-search-pasaje" role="option" aria-selected="false" data-n="' + m + '">' +
+                  '<div class="atlas-search-where">' + pocusEscapar(donde) + '</div>' +
+                  '<div class="atlas-search-snippet">' + (p.previo ? '… ' : '') + pocusResaltar(p.texto, p.marcas) + (p.sigue ? ' …' : '') + '</div>' +
+                  '</li>';
+              });
+              if (r.total > r.pasajes.length) {
+                html += '<li class="atlas-search-more" role="presentation">y ' + (r.total - r.pasajes.length) +
+                  ' pasaje' + (r.total - r.pasajes.length === 1 ? '' : 's') + ' más en esta ficha</li>';
+              }
+            });
+            lista.innerHTML = html;
+          }
+          lista.hidden = false;
+          input.setAttribute('aria-expanded', 'true');
+          activo = -1;
+          if (opciones.length) {
+            // Si la consulta nombra la ficha, Intro abre la ficha; si no, su mejor pasaje.
+            var primero = actuales[0];
+            marcarActivo(primero.enTitulo || !primero.pasajes.length ? 0 : 1);
+          }
+        }
+
+        input.addEventListener('input', pintar);
+        input.addEventListener('focus', function() { if (input.value) pintar(); });
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'ArrowDown' && opciones.length) {
+            e.preventDefault();
+            marcarActivo((activo + 1) % opciones.length);
+          } else if (e.key === 'ArrowUp' && opciones.length) {
+            e.preventDefault();
+            marcarActivo((activo - 1 + opciones.length) % opciones.length);
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            abrir(activo >= 0 ? activo : 0);
+          } else if (e.key === 'Escape') {
+            input.value = '';
+            cerrar();
+            input.blur();
+          }
+        });
+        // mousedown y no click: el click llega después del blur y para entonces la lista ya
+        // podría haberse cerrado.
+        lista.addEventListener('mousedown', function(e) {
+          var li = e.target.closest('.atlas-search-item');
+          if (!li) return;
+          e.preventDefault();
+          abrir(Number(li.dataset.n));
+        });
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.atlas-search')) cerrar();
+        });
+        // «/» enfoca el buscador desde cualquier sitio, salvo mientras se escribe en un campo
+        // (el informe tiene textareas e inputs numéricos).
+        document.addEventListener('keydown', function(e) {
+          if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+          var t = e.target;
+          if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+          e.preventDefault();
+          input.focus();
+        });
+      }
+
       // === Gate de acceso (?code=…) — disuasorio, no seguridad real ===
       // GitHub Pages sirve el HTML entero; esto solo evita el acceso casual a una
       // página no enlazada. Para añadir/rotar códigos: editar _POCUS_ACCESS_HASHES.
@@ -6763,6 +8212,7 @@ CONCLUSIÓN:`,
         // queda desconectado del DOM, no destruido, y resetToWelcome() lo vuelve a
         // insertar con su cita ya hidratada. Sin esto, volver al inicio exige recargar.
         window.POCUSApp.welcomeNode = welcomeMessage;
+        iniciarBuscadorPocus();
         const tooltip = document.getElementById("tooltip");
         // El tooltip se posiciona con coordenadas de viewport (getBoundingClientRect),
         // así que debe ser position:fixed y colgar del <body> para que ningún ancestro
@@ -6833,17 +8283,28 @@ CONCLUSIÓN:`,
           .getElementById("reset-zoom-btn")
           .addEventListener("click", resetZoom);
 
-        // Zoom con rueda del ratón
+        // Zoom con la rueda SOLO con Ctrl (o el pellizco del trackpad, que llega como rueda con
+        // ctrlKey). Antes cualquier giro de rueda sobre el maniquí se convertía en zoom y anulaba
+        // el desplazamiento de la página: quien bajaba con el puntero encima veía el dibujo crecer
+        // en vez de avanzar. Sin Ctrl, la rueda desplaza el marco si está ampliado, o la página.
         document
           .getElementById("anatomical-svg")
           .addEventListener("wheel", function (e) {
+            if (!e.ctrlKey) return;
             e.preventDefault();
             if (e.deltaY < 0) {
               zoomIn();
             } else {
               zoomOut();
             }
-          });
+          }, { passive: false });
+
+        // Ajustar el maniquí al hueco disponible ahora y cada vez que cambie la ventana o la
+        // cabecera (que se parte en dos líneas en anchos intermedios).
+        ajustarManiqui();
+        window.addEventListener("resize", ajustarManiqui);
+        if (window.ResizeObserver) new ResizeObserver(ajustarManiqui).observe(document.querySelector("header"));
+        POCUS_ESCRITORIO.addEventListener("change", function () { ajustarManiqui(); updateZoom(); });
 
         // Función para renderizar contenido del segmento
         async function renderSegmentContent(segmentId) {
