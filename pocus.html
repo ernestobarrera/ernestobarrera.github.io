@@ -575,6 +575,68 @@
         opacity: 1;
       }
 
+      /* Maniquí v2: dos vistas superpuestas; se ve la que marca data-vista en el <svg>. */
+      #anatomical-svg[data-vista="anterior"] #vista-posterior,
+      #anatomical-svg[data-vista="posterior"] #vista-anterior {
+        display: none;
+      }
+
+      .vista-lado {
+        font-size: 9px;
+        font-weight: 600;
+        fill: rgba(255, 255, 255, 0.75);
+        text-anchor: middle;
+        pointer-events: none;
+      }
+
+      .trazo-anatomico {
+        fill: none;
+        stroke: #fed7aa;
+        stroke-width: 1.2;
+        stroke-linecap: round;
+        opacity: 0.8;
+      }
+
+      /* Partes blandas es una categoría, no un sitio: su rótulo se ve siempre. */
+      .zona-categoria-texto {
+        font-size: 9px;
+        font-weight: 700;
+        fill: #fff;
+        text-anchor: middle;
+        pointer-events: none;
+      }
+
+      .zona-categoria-sub {
+        font-size: 7.5px;
+        font-weight: 500;
+        opacity: 0.85;
+      }
+
+      .vista-selector {
+        display: flex;
+        justify-content: center;
+        gap: 0.25rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .vista-btn {
+        padding: 0.2rem 0.85rem;
+        border-radius: 0.5rem;
+        font-size: 0.8rem;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        transition: background-color 0.2s ease;
+      }
+
+      .vista-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .vista-btn.activa {
+        background: rgba(255, 255, 255, 0.35);
+        font-weight: 600;
+      }
+
       .welcome-card {
         background: white;
         border-radius: 16px;
@@ -1187,6 +1249,7 @@
               <button onclick="navigateToSegment('epigastric')">Aorta / Epigastrio</button>
               <button onclick="navigateToSegment('rlq')">FID (Apendicitis)</button>
               <button onclick="navigateToSegment('llq')">FII (Diverticulitis)</button>
+              <button onclick="navigateToSegment('inguinal')">Región inguinal (Hernia)</button>
             </div>
           </div>
 
@@ -1209,6 +1272,7 @@
               <button onclick="navigateToSegment('shoulder')">Hombro</button>
               <button onclick="navigateToSegment('elbow')">Codo</button>
               <button onclick="navigateToSegment('hip')">Cadera</button>
+              <button onclick="navigateToSegment('lumbar')">Columna lumbar</button>
               <button onclick="navigateToSegment('knee')">Rodilla</button>
               <button onclick="navigateToSegment('hand_wrist')">Mano / Muñeca</button>
               <button onclick="navigateToSegment('foot')">Pie (Gota)</button>
@@ -1241,6 +1305,14 @@
               </button>
             </div>
 
+            <!-- Vista del maniquí. La posterior tiene zonas propias (columna lumbar, riñones,
+                 hueco poplíteo, talón). Al navegar desde el menú a una zona que solo existe en la
+                 otra vista, la página cambia sola (asegurarVistaPara). -->
+            <div class="vista-selector" role="group" aria-label="Vista del maniquí">
+              <button type="button" class="vista-btn activa" data-vista="anterior" aria-pressed="true">Anterior</button>
+              <button type="button" class="vista-btn" data-vista="posterior" aria-pressed="false">Posterior</button>
+            </div>
+
             <div id="tooltip" class="tooltip-advanced"></div>
 
             <div class="relative">
@@ -1249,433 +1321,174 @@
               <div id="anatomy-scroll" class="anatomy-scroll">
               <svg
                 id="anatomical-svg"
-                viewBox="0 0 300 600"
+                viewBox="20 0 260 600"
                 class="w-full max-w-md mx-auto"
+                data-vista="anterior"
               >
                 <defs>
-                  <linearGradient
-                    id="activeGradient"
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
-                    <stop
-                      offset="0%"
-                      style="stop-color: #3b82f6; stop-opacity: 0.8"
-                    />
-                    <stop
-                      offset="100%"
-                      style="stop-color: #8b5cf6; stop-opacity: 0.8"
-                    />
+                  <linearGradient id="activeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color: #3b82f6; stop-opacity: 0.8" />
+                    <stop offset="100%" style="stop-color: #8b5cf6; stop-opacity: 0.8" />
                   </linearGradient>
-
-                  <linearGradient
-                    id="bodyGradient"
-                    x1="0%"
-                    y1="0%"
-                    x2="0%"
-                    y2="100%"
-                  >
-                    <stop
-                      offset="0%"
-                      style="stop-color: #fef3c7; stop-opacity: 0.3"
-                    />
-                    <stop
-                      offset="100%"
-                      style="stop-color: #fde68a; stop-opacity: 0.3"
-                    />
+                  <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color: #fef3c7; stop-opacity: 0.3" />
+                    <stop offset="100%" style="stop-color: #fde68a; stop-opacity: 0.3" />
                   </linearGradient>
                 </defs>
 
-                <!-- Cuerpo Base Mejorado -->
-                <g id="body-base">
-                  <!-- Cabeza -->
-                  <ellipse
-                    cx="150"
-                    cy="60"
-                    rx="40"
-                    ry="45"
-                    fill="url(#bodyGradient)"
-                    stroke="#fed7aa"
-                    stroke-width="2"
-                  />
+                <!-- Maniquí v2 (23/11/2026). Proporciones de ocho cabezas (cabeza 19-89, pezones
+                     ~160, ombligo ~230, entrepierna 312, rodilla ~432, pies ~580) y brazos algo
+                     separados del tronco para que el costado y el codo no se confundan. El viewBox empieza
+                     en x=20 y mide 260: recorta márgenes vacíos para que el dibujo quepa entero en el
+                     marco del panel, que en pantallas de ~1100 px se queda más estrecho que el SVG.
 
-                  <!-- Cuello -->
-                  <rect
-                    x="130"
-                    y="95"
-                    width="40"
-                    height="30"
-                    rx="8"
-                    fill="url(#bodyGradient)"
-                    stroke="#fed7aa"
-                    stroke-width="2"
-                  />
+                     Reglas que vigila scripts/pocus-audit.mjs:
+                     - Un segmento es un SITIO del cuerpo. El tipo de patología lo dice `system`.
+                     - El centro de cada zona cae DENTRO del contorno de su vista (clase `contorno`).
+                       Solo las zonas de `zonas-comunes` quedan fuera: son categorías sin sitio
+                       fijo (partes blandas), y por eso se dibujan aparte, como una etiqueta.
+                     - Dentro de una misma vista, ninguna zona pisa a otra de distinto segmento.
 
-                  <!-- Torso -->
-                  <path
-                    d="M 100 125 Q 100 120 110 120 L 190 120 Q 200 120 200 125 L 200 280 Q 200 290 190 290 L 110 290 Q 100 290 100 280 Z"
-                    fill="url(#bodyGradient)"
-                    stroke="#fed7aa"
-                    stroke-width="2"
-                  />
+                     El contorno del cuerpo es simétrico: la mitad izquierda del dibujo, en curvas
+                     cuadráticas, y su espejo. Si se retoca, retocar las dos mitades a la vez.
 
-                  <!-- Brazos -->
-                  <path
-                    d="M 100 140 Q 80 145 70 165 L 65 230 Q 65 240 70 245 L 75 240 Q 80 235 80 225 L 85 165 Q 90 150 100 145"
-                    fill="url(#bodyGradient)"
-                    stroke="#fed7aa"
-                    stroke-width="2"
-                  />
-                  <path
-                    d="M 200 140 Q 220 145 230 165 L 235 230 Q 235 240 230 245 L 225 240 Q 220 235 220 225 L 215 165 Q 210 150 200 145"
-                    fill="url(#bodyGradient)"
-                    stroke="#fed7aa"
-                    stroke-width="2"
-                  />
+                     Lateralidad: en la vista anterior la derecha del paciente queda a la izquierda
+                     de quien mira; en la posterior, al revés. Lo recuerdan los rótulos «Derecha» e
+                     «Izquierda» bajo los pies, que se ven siempre. -->
 
-                  <!-- Piernas -->
-                  <path
-                    d="M 120 290 L 115 450 Q 115 460 120 465 L 125 460 Q 130 455 130 445 L 135 290"
-                    fill="url(#bodyGradient)"
-                    stroke="#fed7aa"
-                    stroke-width="2"
-                  />
-                  <path
-                    d="M 165 290 L 170 450 Q 170 460 165 465 L 160 460 Q 155 455 155 445 L 150 290"
-                    fill="url(#bodyGradient)"
-                    stroke="#fed7aa"
-                    stroke-width="2"
-                  />
-                  <circle
-                    cx="72"
-                    cy="230"
-                    r="15"
-                    class="anatomy-segment"
-                    data-segment="hand_wrist"
-                    data-tooltip="Mano / Muñeca (AR)"
-                  />
-                  <text x="70" y="208" class="anatomy-label">Mano</text>
+                <!-- ═══ Vista anterior ═══ -->
+                <g id="vista-anterior" class="vista-maniqui">
+                  <g id="silueta-anterior">
+                    <ellipse class="contorno" cx="150" cy="54" rx="27" ry="35" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="2" />
+                    <path class="contorno" d="M 138 86 Q 138 98 137 108 Q 116 110 100 120 Q 86 124 83 140 Q 74 185 69 230 Q 60 268 53 302 Q 43 326 48 346 Q 58 356 66 342 Q 68 320 67 302 Q 78 268 86 232 Q 92 200 104 168 Q 106 200 108 236 Q 108 262 100 296 Q 99 370 111 432 Q 104 490 120 548 Q 112 566 118 576 Q 136 584 141 572 Q 142 560 140 548 Q 136 490 142 432 Q 150 370 150 312 Q 150 370 158 432 Q 164 490 160 548 Q 158 560 159 572 Q 164 584 182 576 Q 188 566 180 548 Q 196 490 189 432 Q 201 370 200 296 Q 192 262 192 236 Q 194 200 196 168 Q 208 200 214 232 Q 222 268 233 302 Q 232 320 234 342 Q 242 356 252 346 Q 257 326 247 302 Q 240 268 231 230 Q 226 185 217 140 Q 214 124 200 120 Q 184 110 163 108 Q 162 98 162 86 Z" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="2" stroke-linejoin="round" />
+                  </g>
+                  <text x="46" y="596" class="vista-lado">Derecha</text>
+                  <text x="254" y="596" class="vista-lado">Izquierda</text>
 
-                <!-- Zonas Interactivas Mejoradas -->
-                <g id="interactive-zones">
-                  <circle
-                    cx="150"
-                    cy="45"
-                    r="20"
-                    class="anatomy-segment"
-                    data-segment="ocular"
-                    data-tooltip="Ocular"
-                  />
-                  <text x="150" y="48" class="anatomy-label">Ocular</text>
+                  <g id="zonas-anterior">
+                    <ellipse cx="150" cy="48" rx="18" ry="8" class="anatomy-segment" data-segment="ocular" data-tooltip="Ocular" />
+                    <text x="150" y="51" class="anatomy-label">Ocular</text>
+                    <rect x="123" y="34" width="8" height="14" rx="4" class="anatomy-segment" data-segment="temporal_artery" data-tooltip="Arteria Temporal (ACG)" />
+                    <text x="104" y="30" class="anatomy-label">A. Temporal</text>
 
-                  <rect
-                    x="125"
-                    y="95"
-                    width="50"
-                    height="25"
-                    rx="8"
-                    class="anatomy-segment"
-                    data-segment="neck"
-                    data-tooltip="Cuello (Tiroides/Linfático)"
-                  />
-                  <text x="150" y="110" class="anatomy-label">Tiroides</text>
-                  <circle
-                    cx="185"
-                    cy="110"
-                    r="14"
-                    class="anatomy-segment"
-                    data-segment="neck_lateral"
-                    data-tooltip="Cuello Lateral"
-                  />
-                  <text x="185" y="106" class="anatomy-label">
-                    <tspan x="185" dy="0">Cuello</tspan>
-                    <tspan x="185" dy="11">Lateral</tspan>
-                  </text>
+                    <rect x="139" y="90" width="22" height="14" rx="6" class="anatomy-segment" data-segment="neck" data-tooltip="Cuello (Tiroides/Linfático)" />
+                    <text x="150" y="100" class="anatomy-label">Tiroides</text>
+                    <circle cx="160" cy="104" r="6" class="anatomy-segment" data-segment="neck_lateral" data-tooltip="Cuello Lateral" />
+                    <text x="186" y="102" class="anatomy-label">Cuello lat.</text>
 
-                  <ellipse
-                    cx="150"
-                    cy="155"
-                    rx="25"
-                    ry="20"
-                    class="anatomy-segment"
-                    data-segment="cardiac"
-                    data-tooltip="Cardíaco"
-                  />
-                  <text x="150" y="170" class="anatomy-label">Corazón</text>
+                    <ellipse cx="94" cy="134" rx="9" ry="13" class="anatomy-segment" data-segment="shoulder" data-tooltip="Hombro" />
+                    <ellipse cx="206" cy="134" rx="9" ry="13" class="anatomy-segment" data-segment="shoulder" data-tooltip="Hombro" />
+                    <text x="80" y="118" class="anatomy-label">Hombro</text>
 
-                  <path
-                    d="M 110 130 L 140 130 L 140 180 L 110 180 Z"
-                    class="anatomy-segment"
-                    data-segment="lung"
-                    data-tooltip="Pulmonar"
-                  />
-                  <!-- Vista anterior: la derecha del paciente queda a la izquierda de quien mira,
-                       igual que el hígado y la FID. Las etiquetas estaban al revés. -->
-                  <text x="120" y="145" class="anatomy-label">Pulmón Der</text>
+                    <rect x="112" y="128" width="26" height="48" rx="6" class="anatomy-segment" data-segment="lung" data-tooltip="Pulmonar" />
+                    <rect x="162" y="128" width="26" height="48" rx="6" class="anatomy-segment" data-segment="lung" data-tooltip="Pulmonar" />
+                    <text x="125" y="140" class="anatomy-label">Pulmón Der</text>
+                    <text x="175" y="140" class="anatomy-label">Pulmón Izq</text>
+                    <!-- El corazón, algo a la izquierda del paciente (a la derecha del dibujo). -->
+                    <ellipse cx="156" cy="166" rx="15" ry="12" class="anatomy-segment" data-segment="cardiac" data-tooltip="Cardíaco" />
+                    <text x="156" y="169" class="anatomy-label">Corazón</text>
 
-                  <path
-                    d="M 160 130 L 190 130 L 190 180 L 160 180 Z"
-                    class="anatomy-segment"
-                    data-segment="lung"
-                    data-tooltip="Pulmonar"
-                  />
-                  <text x="180" y="145" class="anatomy-label">Pulmón Izq</text>
+                    <ellipse cx="78" cy="230" rx="8" ry="8" class="anatomy-segment" data-segment="elbow" data-tooltip="Codo (epicondilitis)" />
+                    <ellipse cx="222" cy="230" rx="8" ry="8" class="anatomy-segment" data-segment="elbow" data-tooltip="Codo (epicondilitis)" />
+                    <text x="60" y="216" class="anatomy-label">Codo</text>
+                    <ellipse cx="58" cy="320" rx="11" ry="11" class="anatomy-segment" data-segment="hand_wrist" data-tooltip="Mano / Muñeca (AR)" />
+                    <ellipse cx="242" cy="320" rx="11" ry="11" class="anatomy-segment" data-segment="hand_wrist" data-tooltip="Mano / Muñeca (AR)" />
+                    <text x="40" y="296" class="anatomy-label">Mano</text>
 
-                  <rect
-                    x="110"
-                    y="205"
-                    width="40"
-                    height="40"
-                    rx="5"
-                    class="anatomy-segment"
-                    data-segment="ruq"
-                    data-tooltip="Hígado y Vía Biliar (CSD)"
-                  />
-                  <text x="130" y="228" class="anatomy-label">Hígado</text>
+                    <!-- Flancos: la hidronefrosis se explora por la línea axilar media. -->
+                    <rect x="103" y="186" width="10" height="32" rx="4" class="anatomy-segment" data-segment="renal" data-tooltip="Riñón / Flanco (hidronefrosis)" />
+                    <rect x="187" y="186" width="10" height="32" rx="4" class="anatomy-segment" data-segment="renal" data-tooltip="Riñón / Flanco (hidronefrosis)" />
+                    <rect x="114" y="184" width="34" height="34" rx="5" class="anatomy-segment" data-segment="ruq" data-tooltip="Hígado y Vía Biliar (CSD)" />
+                    <text x="131" y="204" class="anatomy-label">Hígado</text>
+                    <rect x="152" y="184" width="34" height="34" rx="5" class="anatomy-segment" data-segment="luq" data-tooltip="Bazo (CSI)" />
+                    <text x="169" y="204" class="anatomy-label">Bazo</text>
+                    <rect x="134" y="222" width="32" height="18" rx="5" class="anatomy-segment" data-segment="epigastric" data-tooltip="Aorta / Epigastrio" />
+                    <text x="150" y="234" class="anatomy-label">Aorta</text>
+                    <rect x="114" y="244" width="32" height="26" rx="5" class="anatomy-segment" data-segment="rlq" data-tooltip="Fosa Ilíaca Derecha (Apendicitis)" />
+                    <text x="130" y="260" class="anatomy-label">FID</text>
+                    <rect x="154" y="244" width="32" height="26" rx="5" class="anatomy-segment" data-segment="llq" data-tooltip="Fosa Ilíaca Izquierda (Diverticulitis)" />
+                    <text x="170" y="260" class="anatomy-label">FII</text>
 
-                  <rect
-                    x="150"
-                    y="205"
-                    width="40"
-                    height="40"
-                    rx="5"
-                    class="anatomy-segment"
-                    data-segment="luq"
-                    data-tooltip="Bazo (CSI)"
-                  />
-                  <text x="170" y="228" class="anatomy-label">Bazo</text>
+                    <ellipse cx="150" cy="280" rx="20" ry="9" class="anatomy-segment" data-segment="suprapubic" data-tooltip="Vejiga / Ginecológico" />
+                    <text x="150" y="283" class="anatomy-label">Vejiga</text>
+                    <ellipse cx="150" cy="302" rx="9" ry="6" class="anatomy-segment" data-segment="scrotal" data-tooltip="Testicular" />
+                    <text x="150" y="320" class="anatomy-label">Testicular</text>
+                    <!-- Región inguinal, a ambos lados, entre la fosa ilíaca y la cadera. -->
+                    <ellipse cx="121" cy="282" rx="5" ry="5" class="anatomy-segment" data-segment="inguinal" data-tooltip="Región inguinal (hernia)" />
+                    <ellipse cx="179" cy="282" rx="5" ry="5" class="anatomy-segment" data-segment="inguinal" data-tooltip="Región inguinal (hernia)" />
+                    <text x="200" y="278" class="anatomy-label">Ingle</text>
+                    <ellipse cx="107" cy="292" rx="7" ry="7" class="anatomy-segment" data-segment="hip" data-tooltip="Cadera lateral (trocánter)" />
+                    <ellipse cx="193" cy="292" rx="7" ry="7" class="anatomy-segment" data-segment="hip" data-tooltip="Cadera lateral (trocánter)" />
+                    <text x="86" y="306" class="anatomy-label">Cadera</text>
 
-                  <rect
-                    x="120"
-                    y="245"
-                    width="60"
-                    height="20"
-                    rx="5"
-                    class="anatomy-segment"
-                    data-segment="epigastric"
-                    data-tooltip="Aorta / Epigastrio"
-                  />
-                  <text x="150" y="258" class="anatomy-label">Aorta</text>
+                    <rect x="117" y="326" width="20" height="48" rx="8" class="anatomy-segment" data-segment="dvt" data-tooltip="TVP (femoral y poplítea)" />
+                    <rect x="163" y="326" width="20" height="48" rx="8" class="anatomy-segment" data-segment="dvt" data-tooltip="TVP (femoral y poplítea)" />
+                    <text x="127" y="353" class="anatomy-label">TVP</text>
+                    <text x="173" y="353" class="anatomy-label">TVP</text>
+                    <rect x="113" y="414" width="28" height="30" rx="10" class="anatomy-segment" data-segment="knee" data-tooltip="Rodilla (derrame, quiste de Baker)" />
+                    <rect x="159" y="414" width="28" height="30" rx="10" class="anatomy-segment" data-segment="knee" data-tooltip="Rodilla (derrame, quiste de Baker)" />
+                    <text x="150" y="460" class="anatomy-label">Rodilla</text>
+                    <ellipse cx="129" cy="566" rx="8" ry="8" class="anatomy-segment" data-segment="foot" data-tooltip="Pie (Gota)" />
+                    <ellipse cx="171" cy="566" rx="8" ry="8" class="anatomy-segment" data-segment="foot" data-tooltip="Pie (Gota)" />
+                    <text x="150" y="556" class="anatomy-label">Pie</text>
+                  </g>
+                </g>
 
-                  <rect
-                    x="110"
-                    y="265"
-                    width="35"
-                    height="25"
-                    rx="5"
-                    class="anatomy-segment"
-                    data-segment="rlq"
-                    data-tooltip="Fosa Ilíaca Derecha (Apendicitis)"
-                  />
-                  <text x="127" y="280" class="anatomy-label">FID</text>
+                <!-- ═══ Vista posterior ═══ -->
+                <g id="vista-posterior" class="vista-maniqui">
+                  <g id="silueta-posterior">
+                    <ellipse class="contorno" cx="150" cy="54" rx="27" ry="35" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="2" />
+                    <path class="contorno" d="M 138 86 Q 138 98 137 108 Q 116 110 100 120 Q 86 124 83 140 Q 74 185 69 230 Q 60 268 53 302 Q 43 326 48 346 Q 58 356 66 342 Q 68 320 67 302 Q 78 268 86 232 Q 92 200 104 168 Q 106 200 108 236 Q 108 262 100 296 Q 99 370 111 432 Q 104 490 120 548 Q 112 566 118 576 Q 136 584 141 572 Q 142 560 140 548 Q 136 490 142 432 Q 150 370 150 312 Q 150 370 158 432 Q 164 490 160 548 Q 158 560 159 572 Q 164 584 182 576 Q 188 566 180 548 Q 196 490 189 432 Q 201 370 200 296 Q 192 262 192 236 Q 194 200 196 168 Q 208 200 214 232 Q 222 268 233 302 Q 232 320 234 342 Q 242 356 252 346 Q 257 326 247 302 Q 240 268 231 230 Q 226 185 217 140 Q 214 124 200 120 Q 184 110 163 108 Q 162 98 162 86 Z" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="2" stroke-linejoin="round" />
+                    <!-- Trazos de orientación: columna, pliegue interglúteo y pliegues glúteos. -->
+                    <path class="trazo-anatomico" d="M 150 112 L 150 270" stroke-dasharray="3 4" />
+                    <path class="trazo-anatomico" d="M 150 274 L 150 306" />
+                    <path class="trazo-anatomico" d="M 112 314 Q 130 322 146 314" />
+                    <path class="trazo-anatomico" d="M 154 314 Q 170 322 188 314" />
+                  </g>
+                  <text x="46" y="596" class="vista-lado">Izquierda</text>
+                  <text x="254" y="596" class="vista-lado">Derecha</text>
 
-                  <rect
-                    x="155"
-                    y="265"
-                    width="35"
-                    height="25"
-                    rx="5"
-                    class="anatomy-segment"
-                    data-segment="llq"
-                    data-tooltip="Fosa Ilíaca Izquierda (Diverticulitis)"
-                  />
-                  <text x="172" y="280" class="anatomy-label">FII</text>
+                  <g id="zonas-posterior">
+                    <ellipse cx="94" cy="134" rx="9" ry="13" class="anatomy-segment" data-segment="shoulder" data-tooltip="Hombro" />
+                    <ellipse cx="206" cy="134" rx="9" ry="13" class="anatomy-segment" data-segment="shoulder" data-tooltip="Hombro" />
+                    <text x="80" y="118" class="anatomy-label">Hombro</text>
+                    <ellipse cx="78" cy="230" rx="8" ry="8" class="anatomy-segment" data-segment="elbow" data-tooltip="Codo (epicondilitis)" />
+                    <ellipse cx="222" cy="230" rx="8" ry="8" class="anatomy-segment" data-segment="elbow" data-tooltip="Codo (epicondilitis)" />
+                    <text x="60" y="216" class="anatomy-label">Codo</text>
+                    <ellipse cx="58" cy="320" rx="11" ry="11" class="anatomy-segment" data-segment="hand_wrist" data-tooltip="Mano / Muñeca (dorso)" />
+                    <ellipse cx="242" cy="320" rx="11" ry="11" class="anatomy-segment" data-segment="hand_wrist" data-tooltip="Mano / Muñeca (dorso)" />
+                    <text x="40" y="296" class="anatomy-label">Mano</text>
 
-                  <ellipse
-                    cx="150"
-                    cy="305"
-                    rx="35"
-                    ry="15"
-                    class="anatomy-segment"
-                    data-segment="suprapubic"
-                    data-tooltip="Vejiga / Ginecológico"
-                  />
-                  <text x="150" y="302" class="anatomy-label">Vejiga</text>
+                    <!-- Riñones: retroperitoneales, a ambos lados de la columna, T12-L2. -->
+                    <rect x="118" y="188" width="20" height="30" rx="8" class="anatomy-segment" data-segment="renal" data-tooltip="Riñón (hidronefrosis)" />
+                    <rect x="162" y="188" width="20" height="30" rx="8" class="anatomy-segment" data-segment="renal" data-tooltip="Riñón (hidronefrosis)" />
+                    <text x="150" y="184" class="anatomy-label">Riñones</text>
+                    <rect x="130" y="224" width="40" height="40" rx="8" class="anatomy-segment" data-segment="lumbar" data-tooltip="Columna lumbar (paravertebral)" />
+                    <text x="150" y="247" class="anatomy-label">Lumbar</text>
+                    <ellipse cx="107" cy="292" rx="7" ry="7" class="anatomy-segment" data-segment="hip" data-tooltip="Cadera lateral (trocánter)" />
+                    <ellipse cx="193" cy="292" rx="7" ry="7" class="anatomy-segment" data-segment="hip" data-tooltip="Cadera lateral (trocánter)" />
+                    <text x="86" y="306" class="anatomy-label">Cadera</text>
 
-                  <ellipse
-                    cx="150"
-                    cy="325"
-                    rx="20"
-                    ry="10"
-                    class="anatomy-segment"
-                    data-segment="scrotal"
-                    data-tooltip="Testicular"
-                  />
-                  <text x="150" y="333" class="anatomy-label">Testicular</text>
+                    <!-- Hueco poplíteo: quiste de Baker. -->
+                    <rect x="113" y="414" width="28" height="30" rx="10" class="anatomy-segment" data-segment="knee" data-tooltip="Rodilla (hueco poplíteo, Baker)" />
+                    <rect x="159" y="414" width="28" height="30" rx="10" class="anatomy-segment" data-segment="knee" data-tooltip="Rodilla (hueco poplíteo, Baker)" />
+                    <text x="150" y="460" class="anatomy-label">Hueco poplíteo</text>
+                    <!-- Talón: Aquiles y fascia plantar. -->
+                    <ellipse cx="128" cy="560" rx="8" ry="8" class="anatomy-segment" data-segment="foot" data-tooltip="Talón (Aquiles, fascia plantar)" />
+                    <ellipse cx="172" cy="560" rx="8" ry="8" class="anatomy-segment" data-segment="foot" data-tooltip="Talón (Aquiles, fascia plantar)" />
+                    <text x="150" y="548" class="anatomy-label">Talón</text>
+                  </g>
+                </g>
 
-                  <ellipse
-                    cx="85"
-                    cy="155"
-                    rx="12"
-                    ry="18"
-                    class="anatomy-segment"
-                    data-segment="shoulder"
-                    data-tooltip="Hombro"
-                  />
-                  <text x="85" y="158" class="anatomy-label">Hombro</text>
-                  <ellipse
-                    cx="215"
-                    cy="155"
-                    rx="12"
-                    ry="18"
-                    class="anatomy-segment"
-                    data-segment="shoulder"
-                    data-tooltip="Hombro"
-                  />
-                  <text x="215" y="158" class="anatomy-label">Hombro</text>
-
-                  <!-- Zonas de localización (23/11/2026). Antes de existir, el trocantéreo, la
-                       epicondilitis y la hidronefrosis vivían en «Partes blandas» (un óvalo sobre
-                       el antebrazo) o en el hígado, solo porque no había dónde ponerlas. Un
-                       segmento es un SITIO del cuerpo; el tipo de patología ya lo dice `system`.
-                       Las coordenadas respetan los bordes de las zonas vecinas para que ninguna
-                       robe el clic a otra (lo vigila scripts/pocus-audit.mjs). -->
-
-                  <!-- Codo: brazo de la izquierda del dibujo, el mismo que lleva la mano. El otro
-                       antebrazo lo ocupa la zona genérica de partes blandas. -->
-                  <circle
-                    cx="75"
-                    cy="195"
-                    r="9"
-                    class="anatomy-segment"
-                    data-segment="elbow"
-                    data-tooltip="Codo (epicondilitis)"
-                  />
-                  <text x="48" y="198" class="anatomy-label">Codo</text>
-
-                  <!-- Riñón: flancos, entre el borde del tronco y las zonas de hígado y bazo. -->
-                  <rect
-                    x="96"
-                    y="208"
-                    width="14"
-                    height="34"
-                    rx="5"
-                    class="anatomy-segment"
-                    data-segment="renal"
-                    data-tooltip="Riñón / Flanco (hidronefrosis)"
-                  />
-                  <rect
-                    x="190"
-                    y="208"
-                    width="14"
-                    height="34"
-                    rx="5"
-                    class="anatomy-segment"
-                    data-segment="renal"
-                    data-tooltip="Riñón / Flanco (hidronefrosis)"
-                  />
-                  <text x="103" y="204" class="anatomy-label">Riñón</text>
-
-                  <!-- Cadera lateral (trocánter mayor): esquina inferolateral del tronco, por
-                       fuera de las fosas ilíacas y del nacimiento de las piernas. -->
-                  <circle
-                    cx="102"
-                    cy="290"
-                    r="8"
-                    class="anatomy-segment"
-                    data-segment="hip"
-                    data-tooltip="Cadera lateral (trocánter)"
-                  />
-                  <circle
-                    cx="198"
-                    cy="290"
-                    r="8"
-                    class="anatomy-segment"
-                    data-segment="hip"
-                    data-tooltip="Cadera lateral (trocánter)"
-                  />
-                  <text x="86" y="306" class="anatomy-label">Cadera</text>
-
-                  <!-- Pierna: el orden anatómico manda, de arriba abajo y simétrico en ambos
-                       lados — muslo (TVP) · rodilla · pie. Antes la zona de TVP bajaba hasta
-                       y=410, es decir se comía el nivel de la articulación, y la de la rodilla
-                       quedaba por debajo, sobre la tibia y solo en una pierna. Además la de TVP
-                       derecha estaba en x=170, unos 17 px fuera del contorno de la pierna.
-                       Las x salen del trazado real de las piernas del `body-base`: centro ~126
-                       (izquierda) y ~158,5 (derecha) a la altura del muslo. -->
-                  <rect
-                    x="119"
-                    y="336"
-                    width="13"
-                    height="26"
-                    rx="6"
-                    class="anatomy-segment"
-                    data-segment="dvt"
-                    data-tooltip="TVP (femoral y poplítea)"
-                  />
-                  <text x="125" y="353" class="anatomy-label">TVP</text>
-                  <rect
-                    x="152"
-                    y="336"
-                    width="13"
-                    height="26"
-                    rx="6"
-                    class="anatomy-segment"
-                    data-segment="dvt"
-                    data-tooltip="TVP (femoral y poplítea)"
-                  />
-                  <text x="158" y="353" class="anatomy-label">TVP</text>
-
-                  <rect
-                    x="117"
-                    y="366"
-                    width="17"
-                    height="24"
-                    rx="8"
-                    class="anatomy-segment"
-                    data-segment="knee"
-                    data-tooltip="Rodilla (derrame, quiste de Baker)"
-                  />
-                  <rect
-                    x="151"
-                    y="366"
-                    width="17"
-                    height="24"
-                    rx="8"
-                    class="anatomy-segment"
-                    data-segment="knee"
-                    data-tooltip="Rodilla (derrame, quiste de Baker)"
-                  />
-                  <!-- Una sola etiqueta, centrada en el hueco entre ambas rodillas: repetirla a
-                       cada lado no cabe en 17 px de ancho de pierna. -->
-                  <text x="142" y="402" class="anatomy-label">Rodilla</text>
-                  <rect
-                    x="100"
-                    y="55"
-                    width="20"
-                    height="8"
-                    rx="4"
-                    class="anatomy-segment"
-                    data-segment="temporal_artery"
-                    data-tooltip="Arteria Temporal (ACG)"
-                  />
-                  <text x="100" y="45" class="anatomy-label">A. Temporal</text>
-
-                  <circle
-                    cx="120"
-                    cy="460"
-                    r="10"
-                    class="anatomy-segment"
-                    data-segment="foot"
-                    data-tooltip="Pie (Gota)"
-                  />
-                  <text x="125" y="480" class="anatomy-label">Pie</text>
-
-                  <ellipse
-                    cx="228"
-                    cy="200"
-                    rx="14"
-                    ry="18"
-                    class="anatomy-segment"
-                    data-segment="soft_tissue"
-                    data-tooltip="Partes Blandas / Piel"
-                  />
-                  <text x="228" y="195" class="anatomy-label">
-                    <tspan x="245" dy="0">Partes</tspan>
-                    <tspan x="245" dy="11">Blandas</tspan>
-                  </text>
+                <!-- ═══ Común a las dos vistas: categorías sin sitio fijo ═══
+                     Partes blandas es un TIPO de patología (celulitis, lipoma, cuerpo extraño…)
+                     que puede estar en cualquier parte. Antes era un óvalo sobre el antebrazo y
+                     parecía un sitio; fuera del cuerpo deja claro que no lo es. Va arriba a la derecha
+                     porque abajo la tapan los botones de zoom. -->
+                <g id="zonas-comunes">
+                  <rect x="194" y="16" width="80" height="38" rx="10" class="anatomy-segment" data-segment="soft_tissue" data-tooltip="Partes Blandas / Piel (cualquier zona)" />
+                  <text x="234" y="32" class="zona-categoria-texto">Partes blandas</text>
+                  <text x="234" y="45" class="zona-categoria-texto zona-categoria-sub">cualquier zona</text>
                 </g>
               </svg>
               </div>
@@ -4966,7 +4779,7 @@ CONCLUSIÓN:`,
         // Tanda 3: Prioridad media (10–14)
 
         {
-          segment: "rlq",
+          segment: "inguinal",
           system: "Abdominal",
           color: "green",
           title: "Hernia Inguinal",
@@ -5612,7 +5425,7 @@ CONCLUSIÓN:`,
         },
 
         {
-          segment: "soft_tissue",
+          segment: "lumbar",
           system: "Musculoesquelético",
           color: "stone",
           title: "Musculatura Paravertebral / Multífidus",
@@ -7619,9 +7432,35 @@ CONCLUSIÓN:
         return Promise.resolve(false);
       };
 
+      /* ── Vistas del maniquí (anterior / posterior) ── */
+      window.cambiarVistaManiqui = function(vista) {
+        var svg = document.getElementById('anatomical-svg');
+        if (!svg || (vista !== 'anterior' && vista !== 'posterior')) return;
+        svg.setAttribute('data-vista', vista);
+        document.querySelectorAll('.vista-btn').forEach(function(b) {
+          var activa = b.getAttribute('data-vista') === vista;
+          b.classList.toggle('activa', activa);
+          b.setAttribute('aria-pressed', activa ? 'true' : 'false');
+        });
+      };
+
+      /* Si el segmento no tiene zona en la vista visible pero sí en la otra (lumbar solo existe
+         detrás), cambia de vista; si no, no toca nada. Sin esto, el menú llevaría a una zona
+         resaltada pero invisible. */
+      function asegurarVistaPara(segmentId) {
+        var svg = document.getElementById('anatomical-svg');
+        if (!svg) return;
+        var actual = svg.getAttribute('data-vista') || 'anterior';
+        var otra = actual === 'anterior' ? 'posterior' : 'anterior';
+        var sel = '.anatomy-segment[data-segment="' + segmentId + '"]';
+        var enActual = document.querySelector('#vista-' + actual + ' ' + sel) || document.querySelector('#zonas-comunes ' + sel);
+        if (!enActual && document.querySelector('#vista-' + otra + ' ' + sel)) window.cambiarVistaManiqui(otra);
+      }
+
       // Funciones de navegación por sistemas
       window.navigateToSegment = function(segmentId, opciones) {
         var o = opciones || {};
+        asegurarVistaPara(segmentId);
         // Cerrar dropdowns abiertos
         document.querySelectorAll('.nav-chip-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
         // Desactivar todos los segmentos SVG
@@ -8397,6 +8236,11 @@ CONCLUSIÓN:
               ? "Ocultar Etiquetas"
               : "Mostrar Etiquetas";
           });
+
+        // Selector de vista del maniquí (anterior / posterior)
+        document.querySelectorAll(".vista-btn").forEach((b) => {
+          b.addEventListener("click", () => window.cambiarVistaManiqui(b.dataset.vista));
+        });
 
         // Marcar segmentos SVG que tienen contenido
         const segmentsWithContent = [...new Set(pocusData.map(d => d.segment))];

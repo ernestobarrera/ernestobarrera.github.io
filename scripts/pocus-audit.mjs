@@ -225,14 +225,30 @@ const SOLAPES_ACEPTADOS = new Set([
   'scrotal|suprapubic'
 ]);
 
-function cajasDeZonas(src) {
-  const ini = src.indexOf('<g id="interactive-zones">');
+/* ── Vistas del maniquí ────────────────────────────────────────────────────────────────────
+   Desde el maniquí v2 (23/11/2026) hay dos vistas, anterior y posterior, cada una con su grupo
+   `silueta-<vista>` (las piezas de clase `contorno` forman el cuerpo) y su grupo `zonas-<vista>`.
+   `zonas-comunes` son categorías sin sitio fijo (partes blandas): se dibujan fuera del cuerpo y
+   cuentan en las dos vistas para los solapes, pero no para el contorno.
+
+   Las dos vistas se superponen en el mismo sitio del dibujo, así que los solapes se miran DENTRO
+   de cada vista: un hombro anterior y otro posterior en las mismas coordenadas no compiten,
+   porque nunca se ven a la vez. */
+const VISTAS = ['anterior', 'posterior'];
+
+const num = (t, k) => {
+  const m = t.match(new RegExp(`\\s${k}="(-?[\\d.]+)"`));
+  return m ? parseFloat(m[1]) : null;
+};
+
+// Bloque de un <g id="…"> sin grupos anidados dentro (los de zonas y siluetas no los llevan).
+function bloqueDe(src, id) {
+  const ini = src.indexOf(`<g id="${id}">`);
   if (ini < 0) return null;
-  const bloque = src.slice(ini, src.indexOf('</g>', ini));
-  const num = (t, k) => {
-    const m = t.match(new RegExp(`${k}="(-?[\\d.]+)"`));
-    return m ? parseFloat(m[1]) : null;
-  };
+  return src.slice(ini, src.indexOf('</g>', ini));
+}
+
+function cajasDe(bloque) {
   const out = [];
   for (const t of bloque.split(/(?=<rect|<circle|<ellipse|<path)/)) {
     const seg = (t.match(/data-segment="([a-z_]+)"/) || [])[1];
@@ -248,31 +264,112 @@ function cajasDeZonas(src) {
       const cx = num(t, 'cx'), cy = num(t, 'cy'), rx = num(t, 'rx'), ry = num(t, 'ry');
       if (cx !== null && rx !== null) caja = [cx - rx, cy - ry, cx + rx, cy + ry];
     } else if (t.startsWith('<path')) {
-      const d = (t.match(/d="([^"]+)"/) || [])[1];
+      const d = (t.match(/\sd="([^"]+)"/) || [])[1];
       const ps = d ? [...d.matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/g)].map((m) => [+m[1], +m[2]]) : [];
       if (ps.length) caja = [Math.min(...ps.map((p) => p[0])), Math.min(...ps.map((p) => p[1])),
                              Math.max(...ps.map((p) => p[0])), Math.max(...ps.map((p) => p[1]))];
     }
     if (caja) out.push({ seg, caja });
+    else problemas.push(`no consigo leer la geometría de una zona «${seg}»: ni el solape ni el contorno se pueden comprobar`);
   }
   return out;
 }
 
-const cajas = cajasDeZonas(html);
-if (!cajas || !cajas.length) inconcluso('no consigo leer las cajas de las zonas del maniquí');
+/* Contorno como polígonos. Las piezas son elipses o trazados con M, L, Q y Z absolutos (es lo
+   que produce el generador de la silueta); las cuadráticas se aplanan en 16 tramos. Un comando
+   que no se sepa leer deja la pasada INCONCLUSA: aproximar en silencio un contorno mal leído
+   aprobaría zonas que caen fuera. */
+function poligonosDe(bloque, vista) {
+  const out = [];
+  for (const t of bloque.split(/(?=<ellipse|<path|<circle|<rect)/)) {
+    if (!/class="contorno"/.test(t)) continue;
+    if (t.startsWith('<ellipse')) {
+      const cx = num(t, 'cx'), cy = num(t, 'cy'), rx = num(t, 'rx'), ry = num(t, 'ry');
+      const pol = [];
+      for (let k = 0; k < 48; k++) {
+        const a = (k / 48) * 2 * Math.PI;
+        pol.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]);
+      }
+      out.push(pol);
+    } else if (t.startsWith('<path')) {
+      const d = (t.match(/\sd="([^"]+)"/) || [])[1] || '';
+      const tokens = d.trim().split(/[\s,]+/);
+      const pol = [];
+      let p = null;
+      for (let i = 0; i < tokens.length;) {
+        const cmd = tokens[i++];
+        const n = () => parseFloat(tokens[i++]);
+        if (cmd === 'M' || cmd === 'L') { p = [n(), n()]; pol.push(p); }
+        else if (cmd === 'Q') {
+          const c = [n(), n()], q = [n(), n()];
+          for (let s = 1; s <= 16; s++) {
+            const u = s / 16;
+            pol.push([(1 - u) ** 2 * p[0] + 2 * (1 - u) * u * c[0] + u * u * q[0],
+                      (1 - u) ** 2 * p[1] + 2 * (1 - u) * u * c[1] + u * u * q[1]]);
+          }
+          p = q;
+        } else if (cmd === 'Z') { /* cierra: el polígono ya se trata como cerrado */ }
+        else inconcluso(`el contorno de la vista ${vista} usa el comando «${cmd}», que este comprobador no sabe leer`);
+      }
+      if (pol.some((q) => q.some((v) => !Number.isFinite(v))))
+        inconcluso(`el contorno de la vista ${vista} tiene coordenadas que no son números`);
+      out.push(pol);
+    }
+  }
+  return out;
+}
 
+function dentro(pt, pol) {
+  let c = false;
+  for (let i = 0, j = pol.length - 1; i < pol.length; j = i++) {
+    const [xi, yi] = pol[i], [xj, yj] = pol[j];
+    if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+}
+
+const comunes = bloqueDe(html, 'zonas-comunes');
+const cajasComunes = comunes ? cajasDe(comunes) : [];
 const sePisan = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
-const vistos = new Set();
-for (let i = 0; i < cajas.length; i++) {
-  for (let j = i + 1; j < cajas.length; j++) {
-    if (cajas[i].seg === cajas[j].seg) continue;
-    if (!sePisan(cajas[i].caja, cajas[j].caja)) continue;
-    const par = [cajas[i].seg, cajas[j].seg].sort().join('|');
-    if (SOLAPES_ACEPTADOS.has(par) || vistos.has(par)) { vistos.add(par); continue; }
-    vistos.add(par);
-    problemas.push(`las zonas «${cajas[i].seg}» y «${cajas[j].seg}» se solapan en el maniquí: una robará el clic a la otra`);
+
+for (const vista of VISTAS) {
+  const zonas = bloqueDe(html, `zonas-${vista}`);
+  const silueta = bloqueDe(html, `silueta-${vista}`);
+  if (!zonas) inconcluso(`no encuentro el grupo zonas-${vista} del maniquí`);
+  if (!silueta) inconcluso(`no encuentro el grupo silueta-${vista} del maniquí`);
+
+  const propias = cajasDe(zonas);
+  if (!propias.length) inconcluso(`no consigo leer ninguna zona de la vista ${vista}`);
+  const contorno = poligonosDe(silueta, vista);
+  if (!contorno.length) inconcluso(`la vista ${vista} no tiene ninguna pieza de clase «contorno»`);
+
+  // Cada zona de la vista cae dentro del cuerpo. Es lo que falló con el trocantéreo: una zona
+  // puesta donde había hueco, no donde está la estructura.
+  for (const { seg, caja } of propias) {
+    const centro = [(caja[0] + caja[2]) / 2, (caja[1] + caja[3]) / 2];
+    if (!contorno.some((pol) => dentro(centro, pol)))
+      problemas.push(`vista ${vista}: la zona «${seg}» tiene el centro en (${centro.join(', ')}), fuera del cuerpo`);
+  }
+
+  const cajas = [...propias, ...cajasComunes];
+  const vistos = new Set();
+  for (let i = 0; i < cajas.length; i++) {
+    for (let j = i + 1; j < cajas.length; j++) {
+      if (cajas[i].seg === cajas[j].seg) continue;
+      if (!sePisan(cajas[i].caja, cajas[j].caja)) continue;
+      const par = [cajas[i].seg, cajas[j].seg].sort().join('|');
+      if (SOLAPES_ACEPTADOS.has(par) || vistos.has(par)) { vistos.add(par); continue; }
+      vistos.add(par);
+      problemas.push(`vista ${vista}: las zonas «${cajas[i].seg}» y «${cajas[j].seg}» se solapan: una robará el clic a la otra`);
+    }
   }
 }
+
+/* Un segmento que solo existe en la vista posterior (lumbar) obliga a la página a cambiar de
+   vista al navegar a él desde el menú. Si desaparece esa función, el menú llevaría a una zona
+   invisible. */
+if (!html.includes('function asegurarVistaPara'))
+  problemas.push('pocus.html ya no define `asegurarVistaPara`: el menú podría llevar a una zona de la vista oculta');
 
 const verificadas = Object.values(refs).filter((r) => r.verified).length;
 
