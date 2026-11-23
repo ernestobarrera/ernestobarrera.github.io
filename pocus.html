@@ -1196,6 +1196,7 @@
             <div class="nav-chip-dropdown">
               <button onclick="navigateToSegment('suprapubic')">Vejiga / Ginecológico</button>
               <button onclick="navigateToSegment('scrotal')">Testicular</button>
+              <button onclick="navigateToSegment('renal')">Riñón (Hidronefrosis)</button>
             </div>
           </div>
 
@@ -1206,6 +1207,8 @@
             <button class="nav-chip nav-chip-has-dropdown" onclick="toggleNavDropdown(this)">MSK/Reuma ▾</button>
             <div class="nav-chip-dropdown">
               <button onclick="navigateToSegment('shoulder')">Hombro</button>
+              <button onclick="navigateToSegment('elbow')">Codo</button>
+              <button onclick="navigateToSegment('hip')">Cadera</button>
               <button onclick="navigateToSegment('knee')">Rodilla</button>
               <button onclick="navigateToSegment('hand_wrist')">Mano / Muñeca</button>
               <button onclick="navigateToSegment('foot')">Pie (Gota)</button>
@@ -1408,7 +1411,9 @@
                     data-segment="lung"
                     data-tooltip="Pulmonar"
                   />
-                  <text x="120" y="145" class="anatomy-label">Pulmón Izq</text>
+                  <!-- Vista anterior: la derecha del paciente queda a la izquierda de quien mira,
+                       igual que el hígado y la FID. Las etiquetas estaban al revés. -->
+                  <text x="120" y="145" class="anatomy-label">Pulmón Der</text>
 
                   <path
                     d="M 160 130 L 190 130 L 190 180 L 160 180 Z"
@@ -1416,7 +1421,7 @@
                     data-segment="lung"
                     data-tooltip="Pulmonar"
                   />
-                  <text x="180" y="145" class="anatomy-label">Pulmón Der</text>
+                  <text x="180" y="145" class="anatomy-label">Pulmón Izq</text>
 
                   <rect
                     x="110"
@@ -1520,6 +1525,68 @@
                     data-tooltip="Hombro"
                   />
                   <text x="215" y="158" class="anatomy-label">Hombro</text>
+
+                  <!-- Zonas de localización (23/11/2026). Antes de existir, el trocantéreo, la
+                       epicondilitis y la hidronefrosis vivían en «Partes blandas» (un óvalo sobre
+                       el antebrazo) o en el hígado, solo porque no había dónde ponerlas. Un
+                       segmento es un SITIO del cuerpo; el tipo de patología ya lo dice `system`.
+                       Las coordenadas respetan los bordes de las zonas vecinas para que ninguna
+                       robe el clic a otra (lo vigila scripts/pocus-audit.mjs). -->
+
+                  <!-- Codo: brazo de la izquierda del dibujo, el mismo que lleva la mano. El otro
+                       antebrazo lo ocupa la zona genérica de partes blandas. -->
+                  <circle
+                    cx="75"
+                    cy="195"
+                    r="9"
+                    class="anatomy-segment"
+                    data-segment="elbow"
+                    data-tooltip="Codo (epicondilitis)"
+                  />
+                  <text x="48" y="198" class="anatomy-label">Codo</text>
+
+                  <!-- Riñón: flancos, entre el borde del tronco y las zonas de hígado y bazo. -->
+                  <rect
+                    x="96"
+                    y="208"
+                    width="14"
+                    height="34"
+                    rx="5"
+                    class="anatomy-segment"
+                    data-segment="renal"
+                    data-tooltip="Riñón / Flanco (hidronefrosis)"
+                  />
+                  <rect
+                    x="190"
+                    y="208"
+                    width="14"
+                    height="34"
+                    rx="5"
+                    class="anatomy-segment"
+                    data-segment="renal"
+                    data-tooltip="Riñón / Flanco (hidronefrosis)"
+                  />
+                  <text x="103" y="204" class="anatomy-label">Riñón</text>
+
+                  <!-- Cadera lateral (trocánter mayor): esquina inferolateral del tronco, por
+                       fuera de las fosas ilíacas y del nacimiento de las piernas. -->
+                  <circle
+                    cx="102"
+                    cy="290"
+                    r="8"
+                    class="anatomy-segment"
+                    data-segment="hip"
+                    data-tooltip="Cadera lateral (trocánter)"
+                  />
+                  <circle
+                    cx="198"
+                    cy="290"
+                    r="8"
+                    class="anatomy-segment"
+                    data-segment="hip"
+                    data-tooltip="Cadera lateral (trocánter)"
+                  />
+                  <text x="86" y="306" class="anatomy-label">Cadera</text>
 
                   <!-- Pierna: el orden anatómico manda, de arriba abajo y simétrico en ambos
                        lados — muslo (TVP) · rodilla · pie. Antes la zona de TVP bajaba hasta
@@ -4406,7 +4473,7 @@ CONCLUSIÓN:`,
         },
 
         {
-          segment: "soft_tissue",
+          segment: "elbow",
           system: "Musculoesquelético",
           color: "lime",
           title: "Epicondilitis Lateral",
@@ -4483,7 +4550,7 @@ CONCLUSIÓN:`,
         },
 
         {
-          segment: "soft_tissue",
+          segment: "hip",
           system: "Musculoesquelético",
           color: "yellow",
           title: "Síndrome Dolor Trocantéreo Mayor (STGM)",
@@ -4637,7 +4704,7 @@ CONCLUSIÓN:`,
         // Tanda 2: Urgencias/agudos en AP (7–9)
 
         {
-          segment: "ruq",
+          segment: "renal",
           system: "Urgencias",
           color: "blue",
           title: "Hidronefrosis / Cólico Renal",
