@@ -6,33 +6,22 @@
  "source_page": "https://www.aemps.gob.es/medicamentos-de-uso-humano/evaluacion-de-tecnologias-sanitarias/informes-de-posicionamiento-terapeutico/",
  "fecha_fuente": "2026-11-10",
  "etag": "W/\"6af30b67-5de8f\"",
- "generated_at": "2026-11-14",
+ "generated_at": "2026-11-24",
  "entradas": 840,
  "versiones_duplicadas_retiradas": 1,
  "de_marca": 834,
  "resueltas": 823,
  "de_clase": 4,
  "verificacion": {
-  "dci": 2948,
+  "dci": 2954,
   "atc": 4
  },
  "consultas_cima": 517,
  "errores_cima": 0,
- "registros_con_ipt": 1516,
+ "registros_con_ipt": 1522,
  "novedades": {
-  "nuevos": [
-   "ipt-2ee0d7d3c9",
-   "ipt-3c4350df2d",
-   "ipt-d5ba9abecb",
-   "ipt-40e2cee47e",
-   "ipt-7ec564a8d4",
-   "ipt-b7601384d0",
-   "ipt-bafeb10371",
-   "ipt-a7c92a7063"
-  ],
-  "actualizados": [
-   "ipt-f03ce82200"
-  ]
+  "nuevos": [],
+  "actualizados": []
  },
  "sin_resolver": [
   {
@@ -2247,6 +2236,7 @@
 "113884006IP1":["ipt-e889f167f1"],
 "113884006IP2":["ipt-e889f167f1"],
 "113884006IP3":["ipt-e889f167f1"],
+"113884006IP4":["ipt-e889f167f1"],
 "113885001IP":["ipt-68f412880a","ipt-c4dff5bac5"],
 "113885001IP1":["ipt-68f412880a","ipt-c4dff5bac5"],
 "113885002IP":["ipt-68f412880a","ipt-c4dff5bac5"],
@@ -2336,12 +2326,16 @@
 "1161109001IP":["ipt-781df30d2c"],
 "1161116001IP":["ipt-dc9c13fb1a"],
 "1161116001IP1":["ipt-dc9c13fb1a"],
+"1161119001IP":["ipt-1eebd6cdf7"],
 "1161136002IP":["ipt-19605b9a34","ipt-685e8972b7","ipt-0182c8a8c9","ipt-dce9edd640"],
 "1161136004IP":["ipt-19605b9a34","ipt-685e8972b7","ipt-0182c8a8c9","ipt-dce9edd640"],
 "1161136006IP":["ipt-19605b9a34","ipt-685e8972b7","ipt-0182c8a8c9","ipt-dce9edd640"],
 "1161147001IP":["ipt-0287b1b6be"],
+"1161147001IP1":["ipt-0287b1b6be"],
 "1161147003IP":["ipt-0287b1b6be"],
+"1161147003IP1":["ipt-0287b1b6be"],
 "1161147005IP":["ipt-0287b1b6be"],
+"1161147005IP1":["ipt-0287b1b6be"],
 "1161169001IP":["ipt-05371afd10","ipt-bbbefe6367","ipt-a4c8278c82"],
 "1161169001IP1":["ipt-05371afd10","ipt-bbbefe6367","ipt-a4c8278c82"],
 "11691003IP":["ipt-34f9dfa483","ipt-cd0e9ce3b6"],
@@ -2441,6 +2435,7 @@
 "1221685051IP":["ipt-679fc79d89","ipt-48698b19a1"],
 "1221685055IP":["ipt-679fc79d89","ipt-48698b19a1"],
 "1231750003IP":["ipt-7ec564a8d4","ipt-0af6ec3b86"],
+"1241906001IP":["ipt-efea27d12d"],
 "13886002IP":["ipt-513432266e"],
 "13886002IP1":["ipt-513432266e"],
 "13886002IP2":["ipt-513432266e"],
