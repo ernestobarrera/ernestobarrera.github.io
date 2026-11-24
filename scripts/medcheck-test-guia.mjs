@@ -67,7 +67,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 
 await test('todos los pasos tienen acciones reconocidas y contenido', () => {
     const { app } = setup();
-    const types = new Set(['view', 'modal', 'modalTab', 'profileSection', 'searchResults', 'modalList', 'indicationAi', 'evidence51', 'comboAi', 'indicationSelector']);
+    const types = new Set(['view', 'modal', 'modalTab', 'profileSection', 'searchResults', 'modalList', 'indicationAi', 'evidence51', 'comboAi', 'indicationSelector', 'indicationSubgroups']);
     for (const tour of Object.values(app._guideTours())) {
         assert.ok(tour.steps.length && tour.label && tour.desc);
         for (const step of tour.steps) {
@@ -163,6 +163,43 @@ await test('IA de grupo: fallo de carga no intenta abrir un panel inexistente', 
     app.toggleIndAiPanel = () => assert.fail('no hay botón ni resultados');
     await app._runGuideStepAction({ action: { type: 'indicationAi' } });
     assert.match(app._guideStepNotice, /No se ha podido cargar/);
+});
+await test('subgrupos de Indicaciones: con lista propia no la sustituye por el ejemplo', async () => {
+    const { app } = setup();
+    app.currentView = 'indications';
+    queries.set('#indication-results .result-card', [card('1')]);
+    elements.set('indication-input', { value: 'rosácea' });
+    app.performIndicationSearch = () => assert.fail('no debe borrar la búsqueda del usuario');
+    await app._runGuideStepAction({ action: { type: 'indicationSubgroups' } });
+    assert.equal(elements.get('indication-input').value, 'rosácea');
+    assert.equal(app._guideStepNotice, undefined);
+});
+await test('subgrupos de Indicaciones: sin lista busca el ejemplo con varios subgrupos', async () => {
+    const { app } = setup(); let busquedas = 0;
+    elements.set('indication-input', { value: '' });
+    app.performIndicationSearch = async () => {
+        busquedas++;
+        assert.equal(app.currentView, 'indications');
+        assert.equal(elements.get('indication-input').value, 'estreñimiento');
+        queries.set('#indication-results .result-card', [card('1')]);
+    };
+    await app._runGuideStepAction({ action: { type: 'indicationSubgroups' } });
+    assert.equal(busquedas, 1);
+    assert.equal(app._guideStepNotice, undefined);
+});
+await test('subgrupos de Indicaciones: si el ejemplo no carga, lo dice en la tarjeta', async () => {
+    const { app } = setup();
+    elements.set('indication-input', { value: '' });
+    app.performIndicationSearch = async () => {};
+    await app._runGuideStepAction({ action: { type: 'indicationSubgroups' } });
+    assert.match(app._guideStepNotice, /No se ha podido cargar la indicación de ejemplo/);
+});
+await test('subgrupos de Indicaciones: el paso explica el caso de un solo subgrupo', () => {
+    const { app } = setup();
+    const paso = app._guideTours().indications.steps.find(s => s.action?.type === 'indicationSubgroups');
+    assert.ok(paso, 'la subguía de Indicaciones enseña las cajas de subgrupo');
+    assert.match(paso.target, /pa-por-subgrupo/);
+    assert.match(paso.unavailable, /un solo subgrupo/);
 });
 await test('spotlight: ignora primer panel oculto y elige alternativa visible', async () => {
     const { app, overlay } = setup();

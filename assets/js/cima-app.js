@@ -22513,8 +22513,8 @@ ${ftFechaDocsHtml}
                         icon: 'fa-filter',
                         action: { type: 'view', view: 'search' },
                         body: `
-                            <p>Las casillas recortan el listado sobre la marcha y cada una lleva su recuento: comercializado, genérico, con o sin receta y <span class="guide-highlight">biosimilar</span>. Con resultados en pantalla, viven en el botón <span class="guide-key">Filtros</span> de la barra, y su número dice cuántos hay puestos dentro. Debajo, cada filtro puesto aparece como <span class="guide-highlight">etiqueta</span>; su <span class="guide-key">×</span> lo quita sin abrir el panel.</p>
-                            <p>«Incluir duplicados» merece una frase: un mismo medicamento puede tener varios registros —el nacional y sus importaciones paralelas— y solo algunos publican ficha técnica con secciones. Por defecto se muestran los que sí la publican. Nunca se oculta el único registro de un medicamento.</p>
+                            <p>Las casillas recortan el listado sobre la marcha y cada una lleva su recuento: comercializado, genérico, con o sin receta y <span class="guide-highlight">biosimilar</span>. Con resultados en pantalla, viven en el botón <span class="guide-key">Filtros</span> de la barra, y su número dice cuántos hay puestos dentro. Debajo, cada filtro puesto aparece como <span class="guide-highlight">etiqueta</span>; su <span class="guide-key">×</span> lo quita sin abrir el panel. Buscar e Indicaciones guardan cada una sus filtros: lo que marques aquí no llega puesto a una indicación.</p>
+                            <p>«Incluir duplicados» merece una frase: un mismo medicamento puede tener varios registros —el nacional y sus importaciones paralelas— y solo algunos publican ficha técnica con secciones. Por defecto se muestran los que sí la publican. Nunca se oculta el único registro de un medicamento. Dentro de cada grupo van primero los registros con ficha técnica, y el grupo que coincide con lo que has escrito sale el primero.</p>
                             <p><strong>Financiado</strong> y <strong>Sin cobertura SNS</strong> son dos casillas de la misma pregunta, y sus números <span class="guide-highlight">no suman el total</span>: de una parte del catálogo el Ministerio no publica situación, y esos no entran en ninguno de los dos lados. No saber no es lo mismo que no. Por eso marcar las dos no es lo mismo que no marcar ninguna: sin marcar sale todo; marcando las dos quedan solo aquellos sobre los que hay un pronunciamiento.</p>
                             <p class="guide-case"><strong>Caso</strong>Buscas OMNIC OCAS y aparecen ocho tarjetas casi idénticas. Con la casilla sin marcar queda la que trae la información clínica; si necesitas ver todos los registros, la marcas.</p>
                             <p>Los filtros y sus recuentos describen el listado actual. La subguía <span class="guide-key">Búsqueda y navegación</span> muestra autocompletado, facetas y comparación dentro de la ficha.</p>
@@ -22549,7 +22549,8 @@ ${ftFechaDocsHtml}
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
                             <p>La ficha concentra la lectura profunda: datos del medicamento, indicaciones, posología, interacciones, reacciones, seguridad, índice de la ficha, otros documentos —los <span class="guide-highlight">IPT</span> de la AEMPS y los materiales—, evidencia y utilización.</p>
-                            <p>Algunas pestañas <span class="guide-highlight">solo aparecen si hay algo que enseñar</span>: Alertas AEMPS, Farmacogenómica, Financiación, Utilización y QT. Que no estén significa que ese medicamento no tiene ese contenido; no hay que buscarlas.</p>
+                            <p>Algunas pestañas <span class="guide-highlight">solo aparecen si hay algo que enseñar</span>: Alertas AEMPS, Farmacogenómica, Financiación, Utilización de este fármaco y QT. Que no estén significa que ese medicamento no tiene ese contenido; no hay que buscarlas.</p>
+                            <p><span class="guide-key">Datos del medicamento</span> empieza por cómo se prescribe: financiación, receta, suministro y presentaciones. En escritorio, al bajar por el texto las pestañas se quedan arriba, con el nombre del medicamento.</p>
                             <p>En <span class="guide-key">Evidencia</span>, si PubMed no reconoce un término —pasa al escribirlo en español—, <span class="guide-highlight">lo avisa</span>: un recuento bajo puede ser de idioma, no de evidencia.</p>
                             <p>La guía abre un medicamento de ejemplo para recorrer la ficha con datos reales.</p>
                         `,
@@ -22631,8 +22632,21 @@ ${ftFechaDocsHtml}
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
                             <p>Al abrir un medicamento, el modal reúne la información accionable: datos del medicamento, indicaciones, posología, interacciones, reacciones, seguridad, índice de la ficha, otros documentos, evidencia, utilización y consulta a IA.</p>
-                            <p>Cinco pestañas son <span class="guide-highlight">condicionales</span>: Alertas AEMPS, Farmacogenómica, Financiación, Utilización y QT. Su ausencia indica que esa ficha no dispone de ese contenido; no demuestra ausencia de riesgo ni de evidencia.</p>
+                            <p>Cinco pestañas son <span class="guide-highlight">condicionales</span>: Alertas AEMPS, Farmacogenómica, Financiación, Utilización de este fármaco y QT. Su ausencia indica que esa ficha no dispone de ese contenido; no demuestra ausencia de riesgo ni de evidencia.</p>
+                            <p>En escritorio, al bajar por un texto largo las pestañas se quedan pegadas arriba con el nombre del medicamento, y cambiar de pestaña abre la nueva por el principio.</p>
                             <p>Si no había una ficha abierta, la guía carga un ejemplo real para poder recorrerla.</p>
+                        `,
+                    },
+                    {
+                        // El título y no el bloque: el bloque entero mide ~330 px y en el móvil dejaba
+                        // la tarjeta con una sola línea legible (medido a 390 px el 24/11/2026).
+                        target: '#tab-info .detail-block[data-bloque="prescripcion"] .detail-block-title',
+                        title: 'Datos del medicamento: primero, cómo se prescribe',
+                        icon: 'fa-list-ul',
+                        action: { type: 'modalTab', tab: 'info' },
+                        body: `
+                            <p>La primera pestaña ordena sus filas en tres bloques: <span class="guide-highlight">Cómo se prescribe</span> —financiación, receta, estado, suministro, presentaciones y el acceso a Equivalencias—, <span class="guide-highlight">Qué es</span> e <span class="guide-highlight">Identificadores</span>.</p>
+                            <p class="guide-case"><strong>Caso</strong>Antes de hacer la receta quieres saber si está financiado y si tiene un problema de suministro: las dos cosas están en las primeras filas, sin cambiar de pestaña.</p>
                         `,
                     },
                     {
@@ -22643,7 +22657,7 @@ ${ftFechaDocsHtml}
                         unavailable: 'El medicamento de este ejemplo no muestra seguimiento adicional. El símbolo aparece únicamente cuando CIMA lo declara.',
                         body: `
                             <p><strong>▼ Seguimiento adicional</strong> identifica una vigilancia regulatoria más estrecha; no significa por sí mismo que el medicamento sea inseguro. La insignia y el aviso de Seguridad enlazan la explicación de la AEMPS.</p>
-                            <p>En la ficha general, revisa también el código nacional de la presentación comercializada y su envase. Son datos de presentación, distintos del número de registro del medicamento.</p>
+                            <p>En el bloque «Identificadores», revisa también el código nacional de la presentación comercializada y su envase. Son datos de presentación, distintos del número de registro del medicamento.</p>
                         `,
                     },
                     {
@@ -22708,7 +22722,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'modalTab', tab: 'safety' },
                         body: `
                             <p>Seguridad enseña las secciones 4.4, 4.6 y 4.7 y, con sus atajos, los pasajes que la ficha dedica a embarazo, lactancia, edad avanzada, conducción, insuficiencia renal o hepática, y disfagia o sonda.</p>
-                            <p>El texto es el de la ficha, sin valoración propia. El enlace abre la sección en CIMA y señala el pasaje o epígrafe original cuando se puede localizar.</p>
+                            <p>El texto es el de la ficha, sin valoración propia. Debajo de cada extracto, <span class="guide-key">Leer la 4.x aquí</span> despliega el apartado entero en su propia tarjeta, y <span class="guide-key">Ver sección en CIMA ↗</span> lo abre en la fuente y señala el pasaje cuando se puede localizar.</p>
                             <p class="guide-case"><strong>Caso</strong>Duda sobre si un hipnótico lleva advertencias para la edad avanzada: pulsas «Edad avanzada» y lees los pasajes de su 4.2 y su 4.4.</p>
                         `,
                     },
@@ -22850,8 +22864,8 @@ ${ftFechaDocsHtml}
                         icon: 'fa-left-right',
                         action: { type: 'modalList', tab: 'posology' },
                         body: `
-                            <p>La cabecera muestra <span class="guide-key">posición / tarjetas visibles</span>. Las flechas recorren esa lista conservando la pestaña, cuando el siguiente producto dispone de ella.</p>
-                            <p>Fuera del tour puedes usar <span class="guide-key">← / →</span> o <span class="guide-key">K / J</span>. Durante la guía, ← / → cambian de paso. «Ver más», grupos y filtros modifican el conjunto visible y actualizan el contador.</p>
+                            <p>La cabecera muestra <span class="guide-key">posición / total</span> sobre la lista entera —también lo que queda tras «Ver más» y en los grupos plegados—, la misma cifra que el contador de resultados. Las flechas recorren las tarjetas conservando la pestaña, cuando el siguiente producto dispone de ella; al llegar a la última de un grupo con «Ver más», lo despliegan y siguen dentro de él.</p>
+                            <p>Fuera del tour puedes usar <span class="guide-key">← / →</span> o <span class="guide-key">K / J</span>. Durante la guía, ← / → cambian de paso. Los filtros cambian el total y el contador se actualiza solo.</p>
                             <p>Si un filtro deja fuera la ficha abierta, aparece «– / N» y el botón siguiente entra en el primer resultado. Para esta demostración se abre una tarjeta de la lista.</p>
                         `,
                     },
@@ -23058,7 +23072,7 @@ ${ftFechaDocsHtml}
                                 <li><i class="fas fa-chart-bar"></i> analítica</li>
                                 <li><i class="fas fa-dna"></i> farmacogenómica</li>
                                 <li><i class="fas fa-file-medical-alt"></i> materiales</li>
-                                <li><i class="fas fa-right-left"></i> exportar</li>
+                                <li><i class="fas fa-right-left"></i> importar / exportar</li>
                             </ul>
                             <p>Las subpestañas tienen URL propia: atrás/adelante recuperan sección, agrupación y drill-down.</p>
                         `,
@@ -23186,7 +23200,8 @@ ${ftFechaDocsHtml}
                         icon: 'fa-window-maximize',
                         action: { type: 'modalTab', tab: 'utilizacion' },
                         body: `
-                            <p>La misma capa vive dentro de cada ficha, en la pestaña <span class="guide-highlight">Utilización</span>: la cifra de ese principio activo y su reparto dentro del grupo, con salida hacia el árbol completo.</p>
+                            <p>La misma capa vive dentro de cada ficha, en la pestaña <span class="guide-highlight">Utilización de este fármaco</span>: la cifra de ese principio activo y su reparto dentro del grupo, con salida hacia el árbol completo.</p>
+                            <p>Si el principio activo no figura en las tablas del Ministerio, la pestaña lo dice y enseña el reparto de su grupo dejando claro que él no está dentro.</p>
                             <p>La ficha responde «cuánto se usa este medicamento»; la vista, «cómo se reparte el uso en su grupo». Los dos sentidos están enlazados.</p>
                         `,
                     },
@@ -23242,6 +23257,7 @@ ${ftFechaDocsHtml}
                         body: `
                             <p>Esta vista parte del <span class="guide-highlight">problema clínico</span> y lo relaciona con grupos terapéuticos. La cabecera muestra los ATC consultados y, cuando existe criba adicional, cuántos candidatos se han verificado en la sección 4.1.</p>
                             <p>Un mapeo por grupo orienta la búsqueda; comprueba la indicación autorizada de cada producto en su ficha. El listado completo no equivale a una verificación individual de todos sus usos.</p>
+                            <p>Si la 4.1 de alguna presentación no se ha podido leer, aparece igualmente con la marca <span class="guide-key">4.1 sin verificar</span>: no se oculta, pero tampoco cuenta como confirmada.</p>
                         `,
                         position: 'bottom',
                     },
@@ -23272,6 +23288,18 @@ ${ftFechaDocsHtml}
                         body: `
                             <p>Bajo los accesos rápidos, <span class="guide-highlight">«Ver catálogo completo»</span> abre el índice de todas las indicaciones del diccionario, agrupadas por área clínica y con filtro de texto en vivo.</p>
                             <p>Se genera desde la ontología local en cada apertura; su cobertura depende de la versión del diccionario.</p>
+                        `,
+                    },
+                    {
+                        target: '#indication-results .pa-por-subgrupo',
+                        action: { type: 'indicationSubgroups' },
+                        title: 'Principios activos por subgrupo',
+                        icon: 'fa-layer-group',
+                        unavailable: 'La lista en pantalla reúne un solo subgrupo terapéutico, y sus principios activos van en una fila plana. Las cajas aparecen cuando hay dos o más.',
+                        body: `
+                            <p>Los principios activos se reparten en cajas por <span class="guide-highlight">subgrupo terapéutico</span> (nivel 4 del ATC). El nombre de la caja filtra por el subgrupo entero; cada chip, por su principio activo; <span class="guide-key">Ctrl+clic</span> suma varios.</p>
+                            <p class="guide-case"><strong>Caso</strong>Buscas estreñimiento —el ejemplo de la guía si no había lista— y ves de un vistazo osmóticos, laxantes de contacto y formadores de volumen.</p>
+                            <p>Arriba, el selector queda recogido en una línea; <span class="guide-key">Cambiar indicación</span> lo vuelve a abrir.</p>
                         `,
                     },
                     {
@@ -23308,7 +23336,7 @@ ${ftFechaDocsHtml}
                         title: 'Armar la combinación',
                         icon: 'fa-plus',
                         body: `
-                            <p>Añade medicamentos uno a uno. A partir de dos se habilitan las consultas de interacción y de evidencia.</p>
+                            <p>Añade medicamentos uno a uno. Cada uno aparece enseguida debajo, con sus botones de ficha técnica. A partir de dos se habilitan las consultas a IA externa y la búsqueda en PubMed.</p>
                         `,
                     },
                     {
@@ -23319,6 +23347,18 @@ ${ftFechaDocsHtml}
                             <p><span class="guide-highlight">«Últimos medicamentos»</span> trae las fichas que has abierto en esta sesión, por orden de uso. Marcas las que quieras y las añades de golpe.</p>
                             <p>Solo entran las que marques: es un espejo de por dónde has pasado, no una lista sugerida. Y vive en la sesión del navegador —al cerrarlo desaparece—, para no dejar rastro de lo consultado.</p>
                             <p class="guide-case"><strong>Caso</strong>Has ido abriendo una a una ocho fichas. Al llegar aquí ya están todas: las marcas y montas la consulta sin reescribir ocho nombres.</p>
+                        `,
+                    },
+                    {
+                        // La cabecera y no la sección: la sección crece con cada medicamento y, con una
+                        // lista larga, empujaba la tarjeta fuera de la pantalla del móvil.
+                        target: '#combo-ficha .interaction-header',
+                        title: 'Leer cada ficha, una a una',
+                        icon: 'fa-file-medical',
+                        body: `
+                            <p>Es lo primero bajo la lista y siempre está a la vista: cada medicamento lleva sus botones <span class="guide-key">4.5 Interacciones</span> y <span class="guide-key">4.8 Reacciones</span>, que abren esa sección de su ficha técnica con el texto literal.</p>
+                            <p>MedCheck no cruza las fichas ni busca en ellas por ti: la lectura de cada una es tuya.</p>
+                            <p class="guide-case"><strong>Caso</strong>Vas a añadir un macrólido a una lista que lleva una estatina: abres la 4.5 de cada uno y lees qué dice cada ficha sobre el otro.</p>
                         `,
                     },
                     {
@@ -23637,6 +23677,25 @@ ${ftFechaDocsHtml}
         if (action.type === 'indicationSelector') {
             await this._runGuideStepAction({ action: { type: 'view', view: 'indications' } });
             this._abrirSelectorIndicacion({ foco: false });
+            await this._guideWait(80);
+            return;
+        }
+
+        // Las cajas de subgrupo de Indicaciones solo salen con dos subgrupos o más. Si no hay lista,
+        // se busca un ejemplo que los tiene; si el usuario ya tiene la suya, no se le sustituye: con
+        // un solo subgrupo el paso lo dice (`unavailable`) en vez de borrarle la búsqueda.
+        if (action.type === 'indicationSubgroups') {
+            await this._runGuideStepAction({ action: { type: 'view', view: 'indications' } });
+            const hayLista = !!document.querySelector('#indication-results .result-card');
+            if (!hayLista) {
+                const input = document.getElementById('indication-input');
+                if (!input) return;
+                input.value = 'estreñimiento';
+                await this.performIndicationSearch();
+                if (!document.querySelector('#indication-results .result-card')) {
+                    this._guideStepNotice = 'No se ha podido cargar la indicación de ejemplo. Cierra la guía y comprueba que Indicaciones devuelve resultados antes de repetir este paso.';
+                }
+            }
             await this._guideWait(80);
             return;
         }
