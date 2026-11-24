@@ -235,6 +235,33 @@
       }
       .nav-chip-wrapper:not(.hover-suprimido):has(:focus-visible) .nav-chip-dropdown { display: block; }
 
+      /* Subzona abierta dentro del chip padre («MSK/Reuma · Hombro»). Solo donde el maniquí no
+         acompaña al contenido (≤1024 px): en escritorio ya lo dice la zona resaltada. */
+      .nav-chip-subzona { display: none; }
+      @media (max-width: 1024px) {
+        .nav-chip.active .nav-chip-subzona { display: inline; font-weight: 600; }
+      }
+
+      /* Tamaño táctil: con dedo, los chips medían 33 px de alto, por debajo de los ~44 px
+         recomendados. Se gana altura sin cambiar el aspecto con ratón. */
+      @media (pointer: coarse) {
+        .nav-chip { padding: 9px 14px; }
+        .nav-chip-dropdown button { padding: 11px 12px; }
+      }
+
+      /* Móvil: la cabecera fija ocupaba el 34 % de la pantalla (291 de 844 px) mientras se
+         lee. Se retira al bajar y vuelve al subir; la gobierna iniciarCabeceraQueSeRetira(). */
+      @media (max-width: 640px) {
+        header.cabecera-retirada { transform: translateY(-100%); }
+      }
+
+      /* Zonas del maniquí alcanzables con el teclado */
+      .anatomy-segment:focus { outline: none; }
+      .anatomy-segment:focus-visible {
+        stroke: #fbbf24;
+        stroke-width: 3;
+      }
+
       .tooltip-advanced {
         position: fixed;
         background: rgba(17, 24, 39, 0.95);
@@ -1100,11 +1127,15 @@
       ====================================================== */
 
       /* --- Pestañas del card: se envuelven en 2 filas en móvil --- */
+      /* Las pestañas se envuelven en varias filas a cualquier ancho. Antes solo por debajo de
+         640 px: entre 641 y ~1000 hacían scroll horizontal sin barra visible y «Informe»
+         quedaba oculta sin que nada lo sugiriera (medido el 24/11/2026 a 820 px). */
+      .tab-bar-scroll {
+        flex-wrap: wrap !important;
+        overflow-x: visible !important;
+      }
       @media (max-width: 640px) {
-        /* Las pestañas pasan de scroll horizontal a wrap en 2 líneas */
         .tab-bar-scroll {
-          flex-wrap: wrap !important;
-          overflow-x: visible !important;
           gap: 4px !important;
           padding-bottom: 4px !important;
         }
@@ -7605,6 +7636,9 @@ CONCLUSIÓN:
       window.navigateToSegment = function(segmentId, opciones) {
         var o = opciones || {};
         asegurarVistaPara(segmentId);
+        // El desplazamiento de abajo resta la altura de la cabecera: tiene que estar a la vista.
+        const cabecera = document.querySelector('header');
+        if (cabecera) cabecera.classList.remove('cabecera-retirada');
         // Cerrar dropdowns abiertos
         document.querySelectorAll('.nav-chip-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
         // Desactivar todos los segmentos SVG
@@ -7687,11 +7721,23 @@ CONCLUSIÓN:
         btn.classList.add('active');
         btn.setAttribute('aria-current', 'true');
         const wrapper = btn.closest('.nav-chip-wrapper');
-        if (wrapper) wrapper.querySelector('.nav-chip-has-dropdown').classList.add('active');
+        if (!wrapper) return;
+        const chip = wrapper.querySelector('.nav-chip-has-dropdown');
+        chip.classList.add('active');
+        const subzona = chip.querySelector('.nav-chip-subzona');
+        if (subzona) subzona.textContent = ' · ' + btn.textContent.trim();
       };
 
       // Al elegir una opción, el menú se cierra aunque el ratón o el foco sigan dentro.
       document.querySelectorAll('.nav-chip-wrapper').forEach(function(wrapper) {
+        // Hueco para la subzona entre el nombre y la flecha: «MSK/Reuma» + span + « ▾».
+        const chip = wrapper.querySelector('.nav-chip-has-dropdown');
+        const nombre = chip.textContent.replace('▾', '').trim();
+        const subzona = document.createElement('span');
+        subzona.className = 'nav-chip-subzona';
+        chip.textContent = nombre;
+        chip.appendChild(subzona);
+        chip.appendChild(document.createTextNode(' ▾'));
         wrapper.querySelector('.nav-chip-dropdown').addEventListener('click', function(e) {
           if (e.target.closest('button')) wrapper.classList.add('hover-suprimido');
         });
@@ -8371,18 +8417,29 @@ CONCLUSIÓN:
         const segments = document.querySelectorAll(".anatomy-segment");
 
         // Event listeners para segmentos anatómicos
+        const paradasTeclado = new Set();
         segments.forEach((segment) => {
+          // El clic en el maniquí va por navigateToSegment, igual que la barra: antes llamaba a
+          // renderSegmentContent directamente y la URL se quedaba con la zona anterior, de modo
+          // que copiar la dirección compartía otra cosa distinta de la que había en pantalla.
           segment.addEventListener("click", function (e) {
-            const segmentId = e.currentTarget.dataset.segment;
-            segments.forEach((s) => s.classList.remove("active"));
+            window.navigateToSegment(e.currentTarget.dataset.segment);
+          });
 
-            // Activar todos los segmentos con el mismo data-segment
-            document
-              .querySelectorAll(`.anatomy-segment[data-segment="${segmentId}"]`)
-              .forEach((s) => s.classList.add("active"));
-
-            welcomeMessage.style.display = "none";
-            renderSegmentContent(segmentId);
+          // Teclado: cada zona es un botón con nombre (el del tooltip), Enter o Espacio la abre.
+          // Las de la vista oculta tienen display:none y el navegador las salta solas.
+          // Una parada de tabulador por zona y vista: las dos rodillas son la misma zona.
+          const vista = segment.closest('[id^="vista-"]');
+          const clave = (vista ? vista.id : "comunes") + "|" + segment.dataset.segment;
+          segment.setAttribute("tabindex", paradasTeclado.has(clave) ? "-1" : "0");
+          paradasTeclado.add(clave);
+          segment.setAttribute("role", "button");
+          if (segment.dataset.tooltip) segment.setAttribute("aria-label", segment.dataset.tooltip);
+          segment.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              window.navigateToSegment(e.currentTarget.dataset.segment);
+            }
           });
 
           segment.addEventListener("mouseenter", function (e) {
@@ -8457,6 +8514,39 @@ CONCLUSIÓN:
         ajustarManiqui();
         window.addEventListener("resize", ajustarManiqui);
         if (window.ResizeObserver) new ResizeObserver(ajustarManiqui).observe(document.querySelector("header"));
+        iniciarCabeceraQueSeRetira();
+
+        /* Móvil: la cabecera se retira al bajar y vuelve al subir (CSS: .cabecera-retirada).
+           Solo reacciona a desplazamientos que haya hecho la persona —un gesto táctil, la rueda
+           o una tecla en el último medio segundo—. Los desplazamientos programados (ir a una
+           zona, a una ficha, a un pasaje del buscador) calculan su destino restando la altura de
+           la cabecera; si esta se retirara durante el viaje, la tarjeta quedaría a media pantalla. */
+        function iniciarCabeceraQueSeRetira() {
+          const header = document.querySelector("header");
+          const movil = window.matchMedia("(max-width: 640px)");
+          let ultimoY = window.scrollY;
+          let ultimoGesto = 0;
+          const marcarGesto = () => { ultimoGesto = Date.now(); };
+          ["touchmove", "wheel", "keydown"].forEach((t) => window.addEventListener(t, marcarGesto, { passive: true }));
+          window.addEventListener("scroll", () => {
+            const y = window.scrollY;
+            const dy = y - ultimoY;
+            ultimoY = y;
+            if (!movil.matches || y < header.offsetHeight) {
+              header.classList.remove("cabecera-retirada");
+              return;
+            }
+            if (Date.now() - ultimoGesto > 500) return;
+            // Con el buscador en uso no se retira: el teclado del móvil también desplaza la página.
+            if (document.activeElement && document.activeElement.id === "atlas-search-input") return;
+            if (dy > 6 && !header.classList.contains("cabecera-retirada")) {
+              header.classList.add("cabecera-retirada");
+              document.querySelectorAll(".nav-chip-dropdown.show").forEach((d) => d.classList.remove("show"));
+            } else if (dy < -6) {
+              header.classList.remove("cabecera-retirada");
+            }
+          }, { passive: true });
+        }
         POCUS_ESCRITORIO.addEventListener("change", function () { ajustarManiqui(); updateZoom(); });
 
         // Función para renderizar contenido del segmento
