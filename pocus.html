@@ -4635,10 +4635,11 @@ CONCLUSIÓN:`,
 
         /* Quiste renal simple (24/11/2026). Va detrás de Hidronefrosis, la última de `renal`, para
            no desplazar el cardId de la otra ficha del segmento.
-           Doctrina de la ficha: el POCUS reconoce lo SIMPLE y deriva lo que no lo es; no clasifica
-           por Bosniak, que es una clasificación de TC/RM (Silverman 2019: no incorpora formalmente
-           la ecografía). Toda cifra está verificada contra PubMed y CrossRef; el texto completo de
-           Bosniak 2019 no fue accesible, así que de ese artículo solo se usa lo que dice su resumen. */
+           Doctrina de la ficha: el POCUS reconoce lo SIMPLE y deriva lo que no lo es. Bosniak 2019 y
+           ACR 2018 se leyeron en texto completo (PDF aportado por el autor, 24/11/2026): Bosniak 2019
+           admite la ecografía en escala de grises SOLO para el quiste simple (nota de la tabla 2 y
+           p. 484); fuera de eso, el papel de la ecografía para asignar clase es incierto. Una primera
+           versión de esta ficha, escrita solo con el resumen, decía lo contrario: no volver a ella. */
         {
           segment: "renal",
           system: "Abdominal",
@@ -4655,29 +4656,28 @@ CONCLUSIÓN:`,
               <li><strong>Doppler color</strong> sobre cualquier componente que no sea líquido.</li>
             </ul>`,
             findings: `<ul>
-              <li><strong>Quiste de aspecto simple — los cuatro criterios a la vez:</strong> anecoico (sin ecos internos), redondo u ovalado, pared fina y bien delimitada, y refuerzo acústico posterior (Rometti 2020).</li>
-              <li><strong>Deja de ser simple</strong> si aparece cualquiera de estos: tabiques, calcificaciones, ecos internos o irregularidad de la pared (Rometti 2020). La hemorragia o la infección también dan ecos internos.</li>
-              <li><strong>Componente sólido</strong> (y más si tiene flujo en Doppler): no es un quiste simple.</li>
-              <li><strong>Dato accionable:</strong> si cumple los cuatro criterios, habitualmente no necesita más pruebas de imagen (Rometti 2020). Si falla uno solo, no es simple: prueba de imagen reglada (ecografía, TC o RM) según el circuito local.</li>
+              <li><strong>Quiste simple (Bosniak I) en ecografía:</strong> anecoico, bien delimitado, con pared fina y lisa, y con refuerzo acústico posterior; sin tabiques, calcificaciones ni componente sólido. Es el único caso en que la ecografía en escala de grises basta para asignar una clase de Bosniak (Silverman 2019).</li>
+              <li><strong>Dato accionable:</strong> el quiste simple es benigno y <strong>no requiere seguimiento</strong> (Silverman 2019; Herts 2018).</li>
+              <li><strong>Si no es simple</strong> (tabiques, calcio, ecos internos, pared gruesa o irregular, componente sólido o flujo Doppler): TC o RM con protocolo renal, según el circuito local (Silverman 2019). La hemorragia o la infección también dan ecos internos.</li>
+              <li><strong>Un «quiste» en el hilio:</strong> Doppler antes de nada. Un aneurisma de la arteria renal puede parecerlo (Herts 2018).</li>
               <li><strong>Un quiste junto a la pelvis renal</strong> (parapiélico) puede parecer una hidronefrosis: en la hidronefrosis los cálices dilatados confluyen en la pelvis; los quistes no comunican entre sí.</li>
             </ul>`,
-            evidence: `<p><strong>Terada et al. (2002, <em>J Urol</em>)</strong> — 14.314 personas en un programa de cribado ecográfico: el <strong>11,9%</strong> tenía al menos un quiste renal. La prevalencia pasa del <strong>5,1%</strong> en la cuarta década al <strong>36,1%</strong> en la octava; el doble en varones. Los quistes crecen de media 2,8 mm al año. <a href="https://doi.org/10.1016/S0022-5347(05)65373-6" target="_blank">DOI</a></p>
-              <p><strong>Terada et al. (2008, <em>Urology</em>)</strong> — 61 pacientes seguidos una media de 9,9 años: la mayoría de los quistes aumentan de tamaño y número (1,6 mm al año). En 2 pacientes apareció una neoplasia a partir de un quiste (la serie no era solo de quistes simples: incluía multiloculados), y esos quistes crecieron al mismo ritmo que los benignos. <a href="https://doi.org/10.1016/j.urology.2007.07.075" target="_blank">DOI</a></p>
+            evidence: `<p><strong>Silverman et al. (2019, <em>Radiology</em>) — Bosniak v2019</strong>, respaldada por la Society of Abdominal Radiology. La ecografía en escala de grises puede diagnosticar el quiste simple Bosniak I si es anecoico, de bordes lisos y bien definidos y con refuerzo posterior; fuera de ese caso, el papel de la ecografía para asignar una clase es incierto. Lo que no es simple en ecografía requiere en general TC o RM con protocolo renal. Frase de informe propuesta para Bosniak I: «quiste renal simple benigno que no requiere seguimiento». Los cánceres descritos en quistes Bosniak I se atribuyen casi con seguridad a técnica de imagen incorrecta. <a href="https://doi.org/10.1148/radiol.2019182646" target="_blank">DOI</a></p>
+              <p><strong>Herts et al. (2018, <em>J Am Coll Radiol</em>) — Comité de Hallazgos Incidentales del ACR.</strong> La mayoría de las masas renales son quistes benignos, y se ven hasta en el <strong>40%</strong> de los TC. Bosniak I y II son fiablemente benignos y no requieren seguimiento. El crecimiento de un quiste sin cambio morfológico no indica malignidad, y una neoplasia en un quiste de aspecto benigno no aparece sin un cambio morfológico detectable. Es una guía de consenso centrada en el TC. <a href="https://doi.org/10.1016/j.jacr.2017.04.028" target="_blank">DOI</a></p>
+              <p><strong>Terada et al. (2002, <em>J Urol</em>)</strong> — 14.314 personas en un programa de cribado ecográfico: el <strong>11,9%</strong> tenía al menos un quiste renal, del <strong>5,1%</strong> en la cuarta década al <strong>36,1%</strong> en la octava; el doble en varones. <a href="https://doi.org/10.1016/S0022-5347(05)65373-6" target="_blank">DOI</a></p>
               <p><strong>Destefani et al. (2017, <em>Ultrasound Med Biol</em>)</strong> — Criterios ecográficos reproducibles entre observadores (κ 0,70). De 51 quistes mínimamente complejos en ecografía, 38 resultaron Bosniak I-II y 6 IIF en TC/RM; <strong>ninguno fue III-IV</strong>. Ecografías hechas por radiólogos. <a href="https://doi.org/10.1016/j.ultrasmedbio.2017.06.028" target="_blank">DOI</a></p>
-              <p><strong>Silverman et al. (2019, <em>Radiology</em>) — Bosniak v2019</strong>: las masas quísticas son más a menudo benignas que las sólidas y, cuando son malignas, menos agresivas; el carcinoma renal quístico está sobrediagnosticado y sobretratado. La clasificación no incorpora formalmente la ecografía. <a href="https://doi.org/10.1148/radiol.2019182646" target="_blank">DOI</a></p>
-              <p><strong>Rometti et al. (2020, <em>J Educ Teach Emerg Med</em>)</strong> — Caso docente de POCUS: resume los cuatro criterios del quiste simple y los rasgos que lo hacen complejo. Fuente docente, no un estudio de precisión. <a href="https://doi.org/10.21980/J8C92V" target="_blank">DOI</a></p>
-              <p><strong>Certeza: Moderada</strong> (reconocer el quiste simple en manos de radiólogos) · <strong>Baja</strong> (en POCUS por médicos de familia: en la búsqueda para esta ficha no apareció ningún estudio de precisión)</p>`,
+              <p><strong>Certeza: Alta</strong> (el quiste simple verdadero es benigno y no requiere seguimiento: consenso del ACR y de la Society of Abdominal Radiology) · <strong>Baja</strong> (precisión del POCUS en manos de médicos de familia: toda la evidencia es de ecografías hechas por radiólogos, y la búsqueda para esta ficha no encontró estudios en AP)</p>`,
             pearls: `<div class="pearls-section">
               <h5>Reconocer lo simple, derivar lo demás</h5>
-              <p>El papel del POCUS es decidir si el quiste cumple los cuatro criterios. Si duda en uno, no es simple. Caracterizar lo que no es simple es trabajo de la imagen reglada.</p>
-              <h5>No escriba «Bosniak I» en un informe de POCUS</h5>
-              <p>Bosniak es una clasificación de TC y RM, y no incorpora formalmente la ecografía (Silverman 2019). Lo correcto es «quiste de aspecto simple en ecografía».</p>
+              <p>El papel del POCUS es decidir si el quiste cumple todos los criterios. Si duda en uno, no es simple. Caracterizar lo que no es simple es trabajo del TC o la RM.</p>
+              <h5>Cómo nombrarlo en el informe</h5>
+              <p>Bosniak 2019 admite que la ecografía diagnostique el quiste simple (Bosniak I). Aun así, la evidencia procede de ecografías hechas por radiólogos: en un informe de POCUS es prudente escribir «quiste de aspecto simple en ecografía» y reservar la clase de Bosniak para cuando el hallazgo sea inequívoco.</p>
               <h5>Crecer no es una señal de alarma por sí solo</h5>
-              <p>Los quistes simples crecen con la edad (Terada 2002, 2008). Lo que cambia la conducta es la <strong>morfología</strong>: tabiques, calcio, ecos, pared irregular o componente sólido.</p>
-              <h5>Muchos quistes en los dos riñones</h5>
-              <p>Riñones grandes con múltiples quistes bilaterales, o antecedentes familiares: pensar en poliquistosis renal. Esta ficha no aplica.</p>
+              <p>El crecimiento sin cambio morfológico no indica malignidad (Herts 2018). Lo que cambia la conducta es la <strong>morfología</strong>: tabiques, ecos, pared gruesa o irregular, o componente sólido.</p>
+              <h5>Cuándo no aplicar esta ficha</h5>
+              <p>Paciente sintomático; síndromes que predisponen a cáncer renal (Von Hippel-Lindau y otros), en los que un quiste de aspecto benigno puede ser o volverse cáncer; o cáncer con capacidad de metastatizar al riñón, como pulmón, linfoma o melanoma (Herts 2018; Silverman 2019). Riñones grandes con múltiples quistes bilaterales: pensar en poliquistosis renal.</p>
               <h5>Contexto de AP</h5>
-              <p>Es uno de los hallazgos casuales más frecuentes a partir de los 50 años y genera ansiedad y derivaciones. Explicar al paciente que es frecuente y benigno es parte del valor del POCUS.</p>
+              <p>Es uno de los hallazgos casuales más frecuentes a partir de los 50 años y genera ansiedad y derivaciones. Explicar al paciente que es frecuente, benigno y que no necesita controles es parte del valor del POCUS.</p>
             </div>`,
             reportChecklist: [
               'Sonda convexa, ambos riñones evaluados',
@@ -4701,9 +4701,9 @@ CONCLUSIÓN:`,
               {
                 id: 'quiste_aspecto', label: 'Aspecto ecográfico', type: 'select',
                 options: [
-                  { value: 'simple', label: 'Cumple los cuatro criterios', cls: 'badge-normal', badge: 'Aspecto simple', interpretation: 'Quiste de aspecto simple: habitualmente no precisa más pruebas de imagen.' },
-                  { value: 'no_simple', label: 'Falla algún criterio (tabiques, calcio, ecos, pared)', cls: 'badge-warn', badge: 'No simple', interpretation: 'No cumple criterios de quiste simple: prueba de imagen reglada (ecografía, TC o RM).' },
-                  { value: 'solido', label: 'Componente sólido o flujo Doppler', cls: 'badge-alert', badge: 'Componente sólido', interpretation: 'Componente sólido: derivar para caracterización con imagen reglada.' }
+                  { value: 'simple', label: 'Cumple todos los criterios de quiste simple', cls: 'badge-normal', badge: 'Aspecto simple', interpretation: 'Quiste simple: benigno, no requiere seguimiento (Bosniak 2019; ACR 2018).' },
+                  { value: 'no_simple', label: 'No simple (tabiques, calcio, ecos, pared)', cls: 'badge-warn', badge: 'No simple', interpretation: 'No es un quiste simple: TC o RM con protocolo renal.' },
+                  { value: 'solido', label: 'Componente sólido o flujo Doppler', cls: 'badge-alert', badge: 'Componente sólido', interpretation: 'Componente sólido: TC o RM con protocolo renal para caracterizarlo.' }
                 ]
               }
             ],
