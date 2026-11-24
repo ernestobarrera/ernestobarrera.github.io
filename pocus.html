@@ -255,6 +255,77 @@
         header.cabecera-retirada { transform: translateY(-100%); }
       }
 
+      /* ── Maniquí a pantalla completa en el móvil ──────────────────────────────────────────
+         Por debajo de 640 px el panel está oculto (empujaría las fichas una pantalla abajo).
+         El chip «Maniquí» lo abre por encima de todo; al tocar una zona se cierra y se abre esa
+         zona, como con cualquier chip. El dibujo usa el mismo marco con zoom que el escritorio:
+         --alto-maniqui (ajustarManiqui) lo ajusta a la pantalla y --zoom-maniqui lo agranda
+         dentro de #anatomy-scroll, que gana desplazamiento con el dedo. */
+      .maniqui-fab,
+      .maniqui-cerrar { display: none; }
+      .maniqui-fab {
+        position: fixed;
+        right: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        z-index: 60;
+        align-items: center;
+        gap: 6px;
+        padding: 11px 16px;
+        border: none;
+        border-radius: 9999px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        font: 600 0.85rem 'Inter', sans-serif;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.35);
+        cursor: pointer;
+      }
+      .maniqui-cerrar {
+        width: 40px;
+        height: 40px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #1e293b;
+        font-size: 1.1rem;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+      }
+      @media (max-width: 640px) {
+        .maniqui-fab { display: inline-flex; }
+        body.maniqui-abierto { overflow: hidden; }
+        /* <main> es `relative z-10` y crea su propio contexto de apilamiento: sin subirlo, el
+           z-index del panel no sale de él y la cabecera (z-50) tapa la parte de arriba, cruz
+           incluida. Medido así el 24/11/2026: el toque en la cruz caía en el subtítulo. */
+        body.maniqui-abierto main { z-index: 80; }
+        body.maniqui-abierto .anatomy-container {
+          display: block;
+          position: fixed !important;
+          inset: 0;
+          top: 0 !important;
+          z-index: 70;
+          overflow-y: auto;
+          padding: calc(8px + env(safe-area-inset-top, 0px)) 8px 8px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        body.maniqui-abierto .anatomy-container .glass-morphism { padding: 12px; }
+        body.maniqui-abierto .anatomy-container .glass-morphism > .flex:first-child { margin-bottom: 8px; }
+        body.maniqui-abierto .maniqui-cerrar { display: inline-flex; }
+        body.maniqui-abierto .anatomy-scroll {
+          max-height: var(--alto-maniqui, 70vh);
+          overflow: auto;
+        }
+        body.maniqui-abierto #anatomical-svg {
+          display: block;
+          height: calc(var(--alto-maniqui, 70vh) * var(--zoom-maniqui, 1));
+          width: auto !important;
+          max-width: none !important;
+          margin-inline: auto;
+          transform: none !important;
+        }
+      }
+
       /* Zonas del maniquí alcanzables con el teclado */
       .anatomy-segment:focus { outline: none; }
       .anatomy-segment:focus-visible {
@@ -1340,6 +1411,17 @@
       </nav>
     </header>
 
+    <!-- Solo en el móvil, donde el panel del maniquí está oculto: lo abre a pantalla completa.
+         Flotante y no en la barra: allí añadía una fila a una cabecera que ya ocupaba un tercio
+         de la pantalla, y aquí sigue a mano cuando la cabecera se retira al leer. -->
+    <button type="button" id="abrir-maniqui" class="maniqui-fab" aria-expanded="false" onclick="abrirManiquiMovil()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="4.5" r="2.5" />
+        <path d="M12 7.5v7m0 0l-3 7m3-7l3 7M6 10.5l6-1.5 6 1.5" />
+      </svg>
+      Maniquí
+    </button>
+
     <main class="container mx-auto p-4 md:p-8 relative z-10">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 grid-layout">
         <!-- Panel Izquierdo: Anatomía Interactiva Mejorada -->
@@ -1351,12 +1433,16 @@
               <h2 class="text-xl font-bold text-white">
                 Exploración Anatómica
               </h2>
-              <button
-                id="toggle-labels"
-                class="px-3 py-1 bg-white/20 text-white rounded-lg text-sm hover:bg-white/30 transition-colors"
-              >
-                Mostrar Etiquetas
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  id="toggle-labels"
+                  class="px-3 py-1 bg-white/20 text-white rounded-lg text-sm hover:bg-white/30 transition-colors"
+                >
+                  Mostrar Etiquetas
+                </button>
+                <!-- Solo en el móvil, con el maniquí abierto a pantalla completa -->
+                <button type="button" id="maniqui-cerrar" class="maniqui-cerrar" aria-label="Cerrar el maniquí">&#x2715;</button>
+              </div>
             </div>
 
             <!-- Vista del maniquí. La posterior tiene zonas propias (columna lumbar, riñones,
@@ -7371,9 +7457,14 @@ CONCLUSIÓN:
          conserva el punto que estaba en el centro del marco. En tableta (panel recortado a
          240 px) y móvil (panel oculto) se mantiene el comportamiento anterior. */
       const POCUS_ESCRITORIO = window.matchMedia("(min-width: 1025px)");
+      const POCUS_MOVIL = window.matchMedia("(max-width: 640px)");
+      // El maniquí abierto a pantalla completa en el móvil usa el mismo marco que el escritorio.
+      const maniquiAPantallaCompleta = () => POCUS_MOVIL.matches && document.body.classList.contains("maniqui-abierto");
+      const maniquiEnMarco = () => POCUS_ESCRITORIO.matches || maniquiAPantallaCompleta();
 
-      // Altura disponible para el dibujo: la ventana menos la cabecera fija, los márgenes del
-      // panel y lo que ocupa el panel aparte del dibujo (título, rellenos).
+      // Altura disponible para el dibujo: la ventana menos la cabecera fija (que en el móvil a
+      // pantalla completa queda debajo), los márgenes del panel y lo que ocupa el panel aparte
+      // del dibujo (título, rellenos).
       window.ajustarManiqui = function () {
         const raiz = document.documentElement;
         const header = document.querySelector("header");
@@ -7381,17 +7472,36 @@ CONCLUSIÓN:
         raiz.style.setProperty("--alto-cabecera", altoCabecera + "px");
         const panel = document.querySelector(".anatomy-container .glass-morphism");
         const marco = document.getElementById("anatomy-scroll");
-        if (!panel || !marco || !POCUS_ESCRITORIO.matches) return;
+        if (!panel || !marco || !maniquiEnMarco()) return;
         const resto = panel.getBoundingClientRect().height - marco.getBoundingClientRect().height;
-        const disponible = Math.max(320, window.innerHeight - altoCabecera - 24 - resto);
+        const encima = maniquiAPantallaCompleta() ? 16 : altoCabecera + 24;
+        const disponible = Math.max(320, window.innerHeight - encima - resto);
         raiz.style.setProperty("--alto-maniqui", Math.floor(disponible) + "px");
+      };
+
+      window.abrirManiquiMovil = function () {
+        document.body.classList.add("maniqui-abierto");
+        const chip = document.getElementById("abrir-maniqui");
+        if (chip) chip.setAttribute("aria-expanded", "true");
+        ajustarManiqui();
+        updateZoom();
+        const cerrar = document.getElementById("maniqui-cerrar");
+        if (cerrar) cerrar.focus({ preventScroll: true });
+      };
+
+      window.cerrarManiquiMovil = function () {
+        if (!document.body.classList.contains("maniqui-abierto")) return;
+        document.body.classList.remove("maniqui-abierto");
+        const chip = document.getElementById("abrir-maniqui");
+        if (chip) chip.setAttribute("aria-expanded", "false");
+        updateZoom();
       };
 
       window.updateZoom = function () {
         const svg = document.getElementById("anatomical-svg");
         if (!svg) return;
         const z = window.POCUSApp.zoomLevel;
-        if (!POCUS_ESCRITORIO.matches) {
+        if (!maniquiEnMarco()) {
           svg.style.transform = `scale(${z})`;
           return;
         }
@@ -7639,6 +7749,11 @@ CONCLUSIÓN:
         // El desplazamiento de abajo resta la altura de la cabecera: tiene que estar a la vista.
         const cabecera = document.querySelector('header');
         if (cabecera) cabecera.classList.remove('cabecera-retirada');
+        // Si se llegó desde el maniquí a pantalla completa (móvil), se cierra antes de desplazar.
+        // El tooltip también: con el dedo no llega el mouseleave que lo escondería.
+        window.cerrarManiquiMovil();
+        const tooltipZona = document.getElementById('tooltip');
+        if (tooltipZona) tooltipZona.classList.remove('show');
         // Cerrar dropdowns abiertos
         document.querySelectorAll('.nav-chip-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
         // Desactivar todos los segmentos SVG
@@ -8515,6 +8630,19 @@ CONCLUSIÓN:
         window.addEventListener("resize", ajustarManiqui);
         if (window.ResizeObserver) new ResizeObserver(ajustarManiqui).observe(document.querySelector("header"));
         iniciarCabeceraQueSeRetira();
+
+        // Maniquí a pantalla completa (móvil): se cierra con su botón, con Escape o al dejar de
+        // ser móvil (girar una tableta pequeña), y devuelve el foco al chip que lo abrió.
+        const cerrarYVolver = () => {
+          window.cerrarManiquiMovil();
+          const chip = document.getElementById("abrir-maniqui");
+          if (chip && POCUS_MOVIL.matches) chip.focus({ preventScroll: true });
+        };
+        document.getElementById("maniqui-cerrar").addEventListener("click", cerrarYVolver);
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && document.body.classList.contains("maniqui-abierto")) cerrarYVolver();
+        });
+        POCUS_MOVIL.addEventListener("change", () => { if (!POCUS_MOVIL.matches) window.cerrarManiquiMovil(); });
 
         /* Móvil: la cabecera se retira al bajar y vuelve al subir (CSS: .cabecera-retirada).
            Solo reacciona a desplazamientos que haya hecho la persona —un gesto táctil, la rueda

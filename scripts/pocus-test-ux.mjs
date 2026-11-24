@@ -175,6 +175,11 @@ async function main() {
     await raton('mousePressed', x, y, { button: 'left', clickCount: 1 });
     await raton('mouseReleased', x, y, { button: 'left', clickCount: 1 });
   };
+  const tocar = async (x, y) => {
+    await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await espera(120);
+  };
   const tecla = async (key, code, vk) => {
     await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk });
     await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk });
@@ -218,6 +223,61 @@ async function main() {
   const altoCabecera = await ev(`Math.round(document.querySelector('header').getBoundingClientRect().height)`);
   console.log(`  (informativo) cabecera completa: ${altoCabecera} px de 844`);
 
+  // Maniquí a pantalla completa
+  await abrir(base, 390, 844, true);
+  const abierto = () => ev(`document.body.classList.contains('maniqui-abierto')`);
+  const hayBoton = await ev(`(() => { const b = document.getElementById('abrir-maniqui'); return !!b && getComputedStyle(b).display !== 'none'; })()`);
+  comprobar('el botón flotante «Maniquí» se ve en el móvil', hayBoton);
+  // Sin botón, el resto de esta parte no se puede ejecutar: cuenta como fallo, no como inconcluso.
+  if (hayBoton) {
+  comprobar('el panel del maniquí sigue oculto hasta pedirlo', await ev(`getComputedStyle(document.querySelector('.anatomy-container')).display === 'none'`));
+  const chipManiqui = await centro(`document.getElementById('abrir-maniqui')`);
+  await tocar(chipManiqui.x, chipManiqui.y);
+  await espera(500);
+  const panel = await ev(`(() => { const p = document.querySelector('.anatomy-container').getBoundingClientRect(); const s = document.getElementById('anatomical-svg').getBoundingClientRect(); return { top: Math.round(p.top), alto: Math.round(p.height), svgArriba: Math.round(s.top), svgAbajo: Math.round(s.bottom), svgAncho: Math.round(s.width), vh: innerHeight, expandido: document.getElementById('abrir-maniqui').getAttribute('aria-expanded'), bloqueo: getComputedStyle(document.body).overflow }; })()`);
+  comprobar('al tocar «Maniquí» el panel cubre la pantalla', (await abierto()) && panel.top === 0 && panel.alto === panel.vh, panel);
+  // Medir el rectángulo no basta: el panel ocupaba la pantalla y aun así la cabecera quedaba
+  // encima. Lo que cuenta es qué elemento recibe el toque en cada punto.
+  const tapados = await ev(`[[195, 20], [195, 120], [20, 422], [370, 422], [195, 830]].filter(([x, y]) => { const e = document.elementFromPoint(x, y); return !e || !e.closest('.anatomy-container'); })`);
+  comprobar('nada queda por encima del maniquí abierto (ni la cabecera ni el botón)', tapados.length === 0, tapados);
+  comprobar('el dibujo entero cabe en la pantalla sin desplazar', panel.svgArriba >= 0 && panel.svgAbajo <= panel.vh, panel);
+  comprobar('aria-expanded del botón y página bloqueada detrás', panel.expandido === 'true' && panel.bloqueo === 'hidden', panel);
+  const zonaMenor = await ev(`Math.round(Math.min(...[...document.querySelectorAll('#vista-anterior .anatomy-segment')].map(s => { const r = s.getBoundingClientRect(); return Math.min(r.width, r.height); })))`);
+  console.log(`  (informativo) dibujo de ${panel.svgAncho}×${panel.svgAbajo - panel.svgArriba} px; la zona más pequeña mide ${zonaMenor} px de lado (con zoom crece)`);
+  await captura('movil-maniqui');
+
+  const altoAntes = await ev(`document.getElementById('anatomical-svg').getBoundingClientRect().height`);
+  const mas = await centro(`document.getElementById('zoom-in-btn')`);
+  await tocar(mas.x, mas.y);
+  await tocar(mas.x, mas.y);
+  await espera(300);
+  const altoDespues = await ev(`document.getElementById('anatomical-svg').getBoundingClientRect().height`);
+  comprobar('el zoom agranda el dibujo dentro del marco', altoDespues > altoAntes * 1.15, { altoAntes, altoDespues });
+  await ev(`resetZoom()`);
+  await espera(200);
+
+  const rodillaMovil = await centro(`document.querySelector('#vista-anterior .anatomy-segment[data-segment="knee"]')`);
+  await tocar(rodillaMovil.x, rodillaMovil.y);
+  await espera(1500);
+  comprobar('al tocar una zona el maniquí se cierra', !(await abierto()) && (await ev(`getComputedStyle(document.body).overflow`)) !== 'hidden');
+  comprobar('…y abre esa zona (URL, barra y fichas)', (await ev(`new URLSearchParams(location.search).get('zona')`)) === 'knee' && (await marcados()).includes('Rodilla [actual]') && (await ev(`document.querySelectorAll('.content-card').length`)) > 0, await marcados());
+  comprobar('…sin dejar el tooltip de la zona flotando', !(await ev(`document.getElementById('tooltip').classList.contains('show')`)));
+  await captura('movil-tras-maniqui');
+
+  await ev(`window.scrollTo(0, 0)`);
+  await espera(200);
+  await tocar(chipManiqui.x, chipManiqui.y);
+  await espera(300);
+  const cruz = await centro(`document.getElementById('maniqui-cerrar')`);
+  await tocar(cruz.x, cruz.y);
+  await espera(300);
+  comprobar('la cruz cierra el maniquí', !(await abierto()));
+  await ev(`abrirManiquiMovil()`);
+  await tecla('Escape', 'Escape', 27);
+  await espera(200);
+  comprobar('Escape cierra el maniquí', !(await abierto()));
+  }
+
   // ── Tablet ───────────────────────────────────────────────────────────────────────────────
   console.log('\nTablet 820×1180, táctil');
   await abrir(base + '?zona=knee', 820, 1180, true);
@@ -230,6 +290,7 @@ async function main() {
   // ── Escritorio ───────────────────────────────────────────────────────────────────────────
   console.log('\nEscritorio 1366×800, ratón');
   await abrir(base, 1366, 800, false);
+  comprobar('en escritorio no aparece el botón «Maniquí» (el panel ya está a la vista)', await ev(`(() => { const b = document.getElementById('abrir-maniqui'); return !!b && getComputedStyle(b).display === 'none'; })()`));
   const chip = await centro(MSK);
   await raton('mouseMoved', chip.x, chip.y);
   await espera(150);
