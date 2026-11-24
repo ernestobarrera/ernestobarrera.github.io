@@ -211,6 +211,29 @@
       .nav-chip-dropdown button:hover {
         background: rgba(59, 130, 246, 0.3);
       }
+      .nav-chip-dropdown button.active {
+        background: rgba(59, 130, 246, 0.5);
+        color: #fff;
+        font-weight: 600;
+      }
+      /* Desplegables: se abren al pasar el ratón (solo con puntero fino: en táctil, un hover
+         emulado los dejaría abiertos tras el toque) y al llegar con el teclado. El clic sigue
+         funcionando en todos. `hover-suprimido` lo pone el JS al elegir una opción, para que el
+         menú se cierre aunque el ratón siga encima; se quita al salir del menú. */
+      @media (hover: hover) and (pointer: fine) {
+        .nav-chip-wrapper:not(.hover-suprimido):hover .nav-chip-dropdown { display: block; }
+        /* Puente invisible sobre el hueco de 4px entre chip y menú: sin él, bajar el ratón
+           hacia el menú lo cerraba al cruzar el hueco. */
+        .nav-chip-dropdown::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: -6px;
+          height: 6px;
+        }
+      }
+      .nav-chip-wrapper:not(.hover-suprimido):has(:focus-visible) .nav-chip-dropdown { display: block; }
 
       .tooltip-advanced {
         position: fixed;
@@ -7615,6 +7638,7 @@ CONCLUSIÓN:
       window.resetToWelcome = function(opciones) {
         document.querySelectorAll('.nav-chip-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
         document.querySelectorAll('.anatomy-segment').forEach(function(s) { s.classList.remove('active'); });
+        window.marcarZonaEnBarra(null);
         // Parar los vídeos del segmento que se abandona, igual que hace renderSegmentContent
         Object.values(window.POCUSApp.videoPlayers).forEach(function(player) {
           try { player.pauseVideo(); } catch (e) {}
@@ -7637,14 +7661,45 @@ CONCLUSIÓN:
       };
 
       window.toggleNavDropdown = function(btn) {
-        var wrapper = btn.parentElement;
-        var dropdown = wrapper.querySelector('.nav-chip-dropdown');
-        var isOpen = dropdown.classList.contains('show');
+        const wrapper = btn.parentElement;
+        const dropdown = wrapper.querySelector('.nav-chip-dropdown');
+        // Abierto por clase o por hover: si ya se ve, el clic lo cierra en los dos casos.
+        const isOpen = getComputedStyle(dropdown).display !== 'none';
         // Cerrar todos los dropdowns
         document.querySelectorAll('.nav-chip-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
-        // Toggle el actual
-        if (!isOpen) dropdown.classList.add('show');
+        if (isOpen) wrapper.classList.add('hover-suprimido');
+        else dropdown.classList.add('show');
       };
+
+      /* Marca en la barra la zona abierta: el chip directo o, si la zona vive en un desplegable,
+         el chip padre y la opción. Se llama desde renderSegmentContent, por donde pasan todas las
+         vías (maniquí, barra, buscador, enlace profundo), y con null desde resetToWelcome.
+         Busca por el mismo onclick que ya leen pocus-audit y pocus-test-buscador, para no tener
+         una segunda tabla zona → chip que pueda desincronizarse. */
+      window.marcarZonaEnBarra = function(segmentId) {
+        document.querySelectorAll('#system-nav .active').forEach(function(el) {
+          el.classList.remove('active');
+          el.removeAttribute('aria-current');
+        });
+        if (!segmentId) return;
+        const btn = document.querySelector('#system-nav button[onclick="navigateToSegment(\'' + segmentId + '\')"]');
+        if (!btn) return;
+        btn.classList.add('active');
+        btn.setAttribute('aria-current', 'true');
+        const wrapper = btn.closest('.nav-chip-wrapper');
+        if (wrapper) wrapper.querySelector('.nav-chip-has-dropdown').classList.add('active');
+      };
+
+      // Al elegir una opción, el menú se cierra aunque el ratón o el foco sigan dentro.
+      document.querySelectorAll('.nav-chip-wrapper').forEach(function(wrapper) {
+        wrapper.querySelector('.nav-chip-dropdown').addEventListener('click', function(e) {
+          if (e.target.closest('button')) wrapper.classList.add('hover-suprimido');
+        });
+        wrapper.addEventListener('mouseleave', function() { wrapper.classList.remove('hover-suprimido'); });
+        wrapper.addEventListener('focusout', function(e) {
+          if (!wrapper.contains(e.relatedTarget)) wrapper.classList.remove('hover-suprimido');
+        });
+      });
 
       // Cerrar dropdowns al hacer clic fuera
       document.addEventListener('click', function(e) {
@@ -8406,6 +8461,7 @@ CONCLUSIÓN:
 
         // Función para renderizar contenido del segmento
         async function renderSegmentContent(segmentId) {
+          window.marcarZonaEnBarra(segmentId);
           await _refsReady;
           contentArea.innerHTML = "";
 
