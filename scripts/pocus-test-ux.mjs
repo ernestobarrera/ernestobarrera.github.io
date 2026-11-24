@@ -256,6 +256,48 @@ async function main() {
   await ev(`resetZoom()`);
   await espera(200);
 
+  // Girar el muñeco con el dedo (24/11/2026). Deslizar en horizontal lo estrecha con |cos θ|
+  // y, pasados 90°, enseña la otra cara; al soltar completa el giro si pasó de 60°.
+  const vista = () => ev(`document.getElementById('anatomical-svg').getAttribute('data-vista')`);
+  const dedos = (type, puntos) => send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : puntos });
+  const deslizar = async (x0, y, dx, pasos, mitad) => {
+    await dedos('touchStart', [{ x: x0, y, id: 1 }]);
+    let enMedio = null;
+    for (let i = 1; i <= pasos; i++) {
+      await dedos('touchMove', [{ x: x0 + (dx * i) / pasos, y, id: 1 }]);
+      await espera(16);
+      if (mitad && i === Math.round(pasos * 0.4)) enMedio = await ev(`document.getElementById('giro').getAttribute('transform')`);
+    }
+    await dedos('touchEnd');
+    await espera(450);
+    return enMedio;
+  };
+  comprobar('la vista anterior tiene cara y la posterior pelo en la nuca',
+    await ev(`document.querySelectorAll('#vista-anterior .rasgo-relleno').length === 2 && !document.querySelector('#vista-posterior .rasgo-relleno') && !!document.querySelector('#vista-posterior .pelo')`));
+  const cuerpo = await ev(`(() => { const r = document.getElementById('anatomical-svg').getBoundingClientRect(); return { x: r.x + r.width * 0.25, y: r.y + r.height * 0.45, w: r.width }; })()`);
+  const estrecho = await deslizar(cuerpo.x, cuerpo.y, cuerpo.w * 0.9, 16, true);
+  comprobar('al deslizar el dedo el muñeco se estrecha mientras gira', /scale\(0\.\d+ 1\)/.test(estrecho || ''), estrecho);
+  comprobar('…y al soltar enseña la espalda, sin cerrar el panel ni abrir zona',
+    (await vista()) === 'posterior' && (await abierto()) && !(await ev(`new URLSearchParams(location.search).get('zona')`)), await vista());
+  comprobar('…sin dejar el dibujo estrechado', !(await ev(`document.getElementById('giro').getAttribute('transform')`)));
+  await deslizar(cuerpo.x + 60, cuerpo.y, -30, 4);
+  comprobar('un deslizamiento corto no gira', (await vista()) === 'posterior');
+  await captura('movil-espalda');
+  const btnAnterior = await centro(`document.querySelector('.vista-btn[data-vista="anterior"]')`);
+  await tocar(btnAnterior.x, btnAnterior.y);
+  await espera(600);
+  comprobar('el botón Anterior gira hasta la cara', (await vista()) === 'anterior');
+  const mitadSvg = await ev(`(() => { const r = document.getElementById('anatomical-svg').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+  const pinza = (type, d) => dedos(type, [{ x: mitadSvg.x - d, y: mitadSvg.y, id: 3 }, { x: mitadSvg.x + d, y: mitadSvg.y, id: 4 }]);
+  await pinza('touchStart', 30);
+  for (let i = 1; i <= 8; i++) { await pinza('touchMove', 30 + i * 6); await espera(16); }
+  await pinza('touchEnd');
+  await espera(300);
+  const zoomPinza = await ev(`window.POCUSApp.zoomLevel`);
+  comprobar('pellizcar con dos dedos amplía el dibujo', zoomPinza > 1.3, zoomPinza);
+  await ev(`resetZoom()`);
+  await espera(200);
+
   const rodillaMovil = await centro(`document.querySelector('#vista-anterior .anatomy-segment[data-segment="knee"]')`);
   await tocar(rodillaMovil.x, rodillaMovil.y);
   await espera(1500);
@@ -313,6 +355,20 @@ async function main() {
   comprobar('tras salir y volver, el hover reabre el desplegable', await menuVisible(3));
   await raton('mouseMoved', 1300, 700);
   await espera(80);
+
+  // Arrastrar el muñeco con el ratón también lo gira, y el arrastre no cuenta como clic en zona.
+  const svgEsc = await ev(`(() => { const r = document.getElementById('anatomical-svg').getBoundingClientRect(); return { x: r.x + r.width * 0.3, y: r.y + r.height * 0.5, w: r.width }; })()`);
+  await raton('mouseMoved', svgEsc.x, svgEsc.y);
+  await raton('mousePressed', svgEsc.x, svgEsc.y, { button: 'left', clickCount: 1 });
+  for (let i = 1; i <= 12; i++) await raton('mouseMoved', svgEsc.x + (svgEsc.w * 0.8 * i) / 12, svgEsc.y, { buttons: 1 });
+  await raton('mouseReleased', svgEsc.x + svgEsc.w * 0.8, svgEsc.y, { button: 'left', clickCount: 1 });
+  await espera(450);
+  comprobar('arrastrar el muñeco con el ratón lo gira sin abrir zona',
+    (await ev(`document.getElementById('anatomical-svg').getAttribute('data-vista')`)) === 'posterior' &&
+    (await ev(`new URLSearchParams(location.search).get('zona')`)) === 'hip',
+    await ev('location.search'));
+  await ev(`cambiarVistaManiqui('anterior')`);
+  await espera(100);
 
   const rodilla = await centro(`document.querySelector('#vista-anterior .anatomy-segment[data-segment="knee"]')`);
   await clic(rodilla.x, rodilla.y);

@@ -733,6 +733,58 @@
         opacity: 0.85;
       }
 
+      /* Rasgos que distinguen la cara de la espalda (24/11/2026): en la vista anterior, ojos,
+         cejas, nariz, boca y flequillo; en la posterior, el pelo cubre la cabeza y se marcan
+         las escápulas. Van en tono oscuro porque el trazo melocotón de la silueta apenas se ve
+         sobre el cuerpo claro. Ninguna pieza lleva la clase `contorno`: no son cuerpo. */
+      .rasgo {
+        fill: none;
+        stroke: #7c2d12;
+        stroke-opacity: 0.55;
+        stroke-width: 1.3;
+        stroke-linecap: round;
+        pointer-events: none;
+      }
+      .rasgo-relleno {
+        fill: #7c2d12;
+        fill-opacity: 0.6;
+        pointer-events: none;
+      }
+      .pelo {
+        fill: #5b3a24;
+        fill-opacity: 0.55;
+        pointer-events: none;
+      }
+      .pelo-mechon {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.22);
+        stroke-width: 1;
+        stroke-linecap: round;
+        pointer-events: none;
+      }
+
+      /* Giro con el dedo: el dibujo no debe seleccionarse al arrastrar, y el navegador se queda
+         solo el desplazamiento vertical; el horizontal y el pellizco los gestiona el JS. */
+      #anatomical-svg {
+        touch-action: pan-y;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #anatomical-svg.arrastrando { cursor: grabbing; }
+
+      .giro-pista {
+        text-align: center;
+        font-size: 0.72rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin: -0.35rem 0 0.6rem;
+      }
+      .giro-pista-raton { display: none; }
+      @media (hover: hover) and (pointer: fine) {
+        .giro-pista-tactil { display: none; }
+        .giro-pista-raton { display: inline; }
+      }
+
       .vista-selector {
         display: flex;
         justify-content: center;
@@ -1452,6 +1504,10 @@
               <button type="button" class="vista-btn activa" data-vista="anterior" aria-pressed="true">Anterior</button>
               <button type="button" class="vista-btn" data-vista="posterior" aria-pressed="false">Posterior</button>
             </div>
+            <p class="giro-pista">
+              <span class="giro-pista-tactil">Desliza el muñeco a un lado para girarlo · pellizca para ampliar</span>
+              <span class="giro-pista-raton">Arrastra el muñeco a un lado para girarlo</span>
+            </p>
 
             <div id="tooltip" class="tooltip-advanced"></div>
 
@@ -1474,6 +1530,10 @@
                     <stop offset="0%" style="stop-color: #fef3c7; stop-opacity: 0.3" />
                     <stop offset="100%" style="stop-color: #fde68a; stop-opacity: 0.3" />
                   </linearGradient>
+                  <!-- El pelo se recorta a la cabeza para no tener que encajar sus curvas a mano. -->
+                  <clipPath id="clip-cabeza">
+                    <ellipse cx="150" cy="54" rx="27" ry="35" />
+                  </clipPath>
                 </defs>
 
                 <!-- Maniquí v2 (23/11/2026). Proporciones de ocho cabezas (cabeza 19-89, pezones
@@ -1496,11 +1556,27 @@
                      de quien mira; en la posterior, al revés. Lo recuerdan los rótulos «Derecha» e
                      «Izquierda» bajo los pies, que se ven siempre. -->
 
+                <!-- Las dos vistas van dentro de #giro, que es lo que estrecha el JS al girar el
+                     muñeco con el dedo (scaleX = |cos θ|; a los 90° se cambia de vista). Partes
+                     blandas queda fuera: no es del cuerpo y no gira. -->
+                <g id="giro">
                 <!-- ═══ Vista anterior ═══ -->
                 <g id="vista-anterior" class="vista-maniqui">
                   <g id="silueta-anterior">
+                    <!-- Orejas, detrás de la cabeza -->
+                    <ellipse cx="124" cy="57" rx="4" ry="8" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="1.5" />
+                    <ellipse cx="176" cy="57" rx="4" ry="8" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="1.5" />
                     <ellipse class="contorno" cx="150" cy="54" rx="27" ry="35" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="2" />
                     <path class="contorno" d="M 138 86 Q 138 98 137 108 Q 116 110 100 120 Q 86 124 83 140 Q 74 185 69 230 Q 60 268 53 302 Q 43 326 48 346 Q 58 356 66 342 Q 68 320 67 302 Q 78 268 86 232 Q 92 200 104 168 Q 106 200 108 236 Q 108 262 100 296 Q 99 370 111 432 Q 104 490 120 548 Q 112 566 118 576 Q 136 584 141 572 Q 142 560 140 548 Q 136 490 142 432 Q 150 370 150 312 Q 150 370 158 432 Q 164 490 160 548 Q 158 560 159 572 Q 164 584 182 576 Q 188 566 180 548 Q 196 490 189 432 Q 201 370 200 296 Q 192 262 192 236 Q 194 200 196 168 Q 208 200 214 232 Q 222 268 233 302 Q 232 320 234 342 Q 242 356 252 346 Q 257 326 247 302 Q 240 268 231 230 Q 226 185 217 140 Q 214 124 200 120 Q 184 110 163 108 Q 162 98 162 86 Z" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="2" stroke-linejoin="round" />
+                    <!-- Cara: flequillo, cejas, ojos, nariz y boca. Los ojos quedan bajo la zona
+                         «Ocular», que es translúcida. -->
+                    <path class="pelo" clip-path="url(#clip-cabeza)" d="M 118 14 H 182 V 46 Q 172 31 150 31 Q 128 31 118 46 Z" />
+                    <path class="rasgo" d="M 134 41 Q 140 38 146 41" />
+                    <path class="rasgo" d="M 154 41 Q 160 38 166 41" />
+                    <ellipse class="rasgo-relleno" cx="140" cy="48" rx="3.2" ry="2.1" />
+                    <ellipse class="rasgo-relleno" cx="160" cy="48" rx="3.2" ry="2.1" />
+                    <path class="rasgo" d="M 150 52 Q 147 59 150.5 61" />
+                    <path class="rasgo" d="M 142 70 Q 150 75 158 70" />
                   </g>
                   <text x="46" y="596" class="vista-lado">Derecha</text>
                   <text x="254" y="596" class="vista-lado">Izquierda</text>
@@ -1577,6 +1653,8 @@
                 <!-- ═══ Vista posterior ═══ -->
                 <g id="vista-posterior" class="vista-maniqui">
                   <g id="silueta-posterior">
+                    <ellipse cx="124" cy="57" rx="4" ry="8" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="1.5" />
+                    <ellipse cx="176" cy="57" rx="4" ry="8" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="1.5" />
                     <ellipse class="contorno" cx="150" cy="54" rx="27" ry="35" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="2" />
                     <path class="contorno" d="M 138 86 Q 138 98 137 108 Q 116 110 100 120 Q 86 124 83 140 Q 74 185 69 230 Q 60 268 53 302 Q 43 326 48 346 Q 58 356 66 342 Q 68 320 67 302 Q 78 268 86 232 Q 92 200 104 168 Q 106 200 108 236 Q 108 262 100 296 Q 99 370 111 432 Q 104 490 120 548 Q 112 566 118 576 Q 136 584 141 572 Q 142 560 140 548 Q 136 490 142 432 Q 150 370 150 312 Q 150 370 158 432 Q 164 490 160 548 Q 158 560 159 572 Q 164 584 182 576 Q 188 566 180 548 Q 196 490 189 432 Q 201 370 200 296 Q 192 262 192 236 Q 194 200 196 168 Q 208 200 214 232 Q 222 268 233 302 Q 232 320 234 342 Q 242 356 252 346 Q 257 326 247 302 Q 240 268 231 230 Q 226 185 217 140 Q 214 124 200 120 Q 184 110 163 108 Q 162 98 162 86 Z" fill="url(#bodyGradient)" stroke="#fed7aa" stroke-width="2" stroke-linejoin="round" />
                     <!-- Trazos de orientación: columna, pliegue interglúteo y pliegues glúteos. -->
@@ -1584,6 +1662,14 @@
                     <path class="trazo-anatomico" d="M 150 274 L 150 306" />
                     <path class="trazo-anatomico" d="M 112 314 Q 130 322 146 314" />
                     <path class="trazo-anatomico" d="M 154 314 Q 170 322 188 314" />
+                    <!-- Nuca: el pelo cubre casi toda la cabeza; sin cara, se lee como espalda. -->
+                    <path class="pelo" clip-path="url(#clip-cabeza)" d="M 118 14 H 182 V 76 Q 166 84 150 84 Q 134 84 118 76 Z" />
+                    <path class="pelo-mechon" d="M 150 22 L 150 40" />
+                    <path class="pelo-mechon" d="M 140 30 Q 137 52 139 74" />
+                    <path class="pelo-mechon" d="M 160 30 Q 163 52 161 74" />
+                    <!-- Escápulas -->
+                    <path class="trazo-anatomico" d="M 112 132 Q 126 128 138 134 Q 130 152 122 168 Q 112 152 112 132 Z" />
+                    <path class="trazo-anatomico" d="M 188 132 Q 174 128 162 134 Q 170 152 178 168 Q 188 152 188 132 Z" />
                   </g>
                   <text x="46" y="596" class="vista-lado">Izquierda</text>
                   <text x="254" y="596" class="vista-lado">Derecha</text>
@@ -1619,6 +1705,7 @@
                     <text x="150" y="548" class="anatomy-label">Talón</text>
                   </g>
                 </g>
+                </g><!-- /#giro -->
 
                 <!-- ═══ Común a las dos vistas: categorías sin sitio fijo ═══
                      Partes blandas es un TIPO de patología (celulitis, lipoma, cuerpo extraño…)
@@ -7536,6 +7623,150 @@ CONCLUSIÓN:
         updateZoom();
       };
 
+      /* ── Gestos sobre el maniquí (24/11/2026) ─────────────────────────────────────────────
+         Un dedo (o el ratón) en horizontal GIRA el muñeco: #giro se estrecha con |cos θ| y, al
+         pasar de 90°, cambia de vista. Al soltar, el giro se completa si pasó de 60° y, si no,
+         vuelve. Con el dibujo ampliado, ese mismo arrastre lo desplaza. Dos dedos lo amplían.
+         El desplazamiento vertical sigue siendo del navegador (touch-action: pan-y), para que
+         la hoja y la página se muevan como siempre. Un arrastre nunca cuenta como clic en zona. */
+      function vistaManiqui() {
+        const svg = document.getElementById("anatomical-svg");
+        return (svg && svg.getAttribute("data-vista")) || "anterior";
+      }
+      function otraVista(v) {
+        return v === "anterior" ? "posterior" : "anterior";
+      }
+
+      // Pinta el giro: `grados` respecto de la vista `base` con la que empezó el gesto.
+      function pintarGiro(base, grados) {
+        const g = document.getElementById("giro");
+        if (!g) return;
+        const a = Math.abs(grados) % 360;
+        const vista = a > 90 && a < 270 ? otraVista(base) : base;
+        if (vistaManiqui() !== vista) {
+          window.cambiarVistaManiqui(vista);
+          if (navigator.vibrate) {
+            try { navigator.vibrate(8); } catch (_) { /* sin vibración */ }
+          }
+        }
+        const sx = Math.max(0.03, Math.abs(Math.cos((grados * Math.PI) / 180)));
+        if (sx > 0.999) g.removeAttribute("transform");
+        else g.setAttribute("transform", `translate(150 0) scale(${sx.toFixed(3)} 1) translate(-150 0)`);
+      }
+
+      let _animGiro = null;
+      function pararGiro() {
+        if (_animGiro) cancelAnimationFrame(_animGiro);
+        _animGiro = null;
+      }
+      function animarGiro(base, desde, hasta, ms) {
+        pararGiro();
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          pintarGiro(base, hasta);
+          return;
+        }
+        let t0 = null;
+        const paso = (t) => {
+          if (t0 === null) t0 = t;
+          const p = Math.min(1, (t - t0) / ms);
+          const suave = 1 - Math.pow(1 - p, 3);
+          pintarGiro(base, desde + (hasta - desde) * suave);
+          _animGiro = p < 1 ? requestAnimationFrame(paso) : null;
+        };
+        _animGiro = requestAnimationFrame(paso);
+      }
+
+      // Media vuelta animada hasta la otra vista (botones Anterior/Posterior).
+      window.girarManiqui = function () {
+        if (_animGiro) return;
+        animarGiro(vistaManiqui(), 0, 180, 420);
+      };
+
+      function iniciarGestosManiqui() {
+        const svg = document.getElementById("anatomical-svg");
+        const marco = document.getElementById("anatomy-scroll");
+        if (!svg || !marco) return;
+        const punteros = new Map();
+        let g = null;
+        let suprimirClic = false;
+        const ampliado = () => window.POCUSApp.zoomLevel > 1.05;
+        const distancia = () => {
+          const [a, b] = Array.from(punteros.values());
+          return Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        };
+
+        svg.addEventListener("pointerdown", (e) => {
+          window.POCUSApp.ultimoPuntero = e.pointerType;
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          punteros.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (punteros.size === 1) {
+            if (_animGiro) { pararGiro(); pintarGiro(vistaManiqui(), 0); }
+            g = { modo: null, id: e.pointerId, x0: e.clientX, y0: e.clientY, base: vistaManiqui(),
+                  sl: marco.scrollLeft, st: marco.scrollTop, grados: 0 };
+          } else if (punteros.size === 2) {
+            if (g && g.modo === "giro") animarGiro(g.base, g.grados, 0, 150);
+            g = { modo: "pinza", d0: distancia(), z0: window.POCUSApp.zoomLevel };
+          }
+        });
+
+        svg.addEventListener("pointermove", (e) => {
+          if (!g || !punteros.has(e.pointerId)) return;
+          punteros.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (g.modo === "pinza") {
+            if (punteros.size < 2) return;
+            window.POCUSApp.zoomLevel = Math.min(2, Math.max(1, (g.z0 * distancia()) / g.d0));
+            updateZoom();
+            return;
+          }
+          if (e.pointerId !== g.id) return;
+          const dx = e.clientX - g.x0;
+          const dy = e.clientY - g.y0;
+          if (!g.modo) {
+            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+            const horizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
+            if (horizontal) g.modo = ampliado() ? "pan" : "giro";
+            else g.modo = e.pointerType === "mouse" && ampliado() ? "pan" : "nada";
+            if (g.modo !== "nada") {
+              try { svg.setPointerCapture(e.pointerId); } catch (_) { /* puntero ya liberado */ }
+              svg.classList.add("arrastrando");
+            }
+          }
+          if (g.modo === "giro") {
+            const ancho = Math.max(140, svg.getBoundingClientRect().width);
+            g.grados = Math.max(-180, Math.min(180, (dx / ancho) * 180));
+            pintarGiro(g.base, g.grados);
+          } else if (g.modo === "pan") {
+            marco.scrollLeft = g.sl - dx;
+            marco.scrollTop = g.st - dy;
+          }
+        });
+
+        const fin = (e) => {
+          if (!punteros.has(e.pointerId)) return;
+          punteros.delete(e.pointerId);
+          if (!g) return;
+          if (g.modo === "giro" && e.pointerId === g.id) {
+            const completar = e.type !== "pointercancel" && Math.abs(g.grados) >= 60;
+            animarGiro(g.base, g.grados, completar ? Math.sign(g.grados) * 180 : 0, 260);
+          }
+          if (g.modo) {
+            suprimirClic = true;
+            setTimeout(() => { suprimirClic = false; }, 350);
+          }
+          svg.classList.remove("arrastrando");
+          // Tras un pellizco queda un dedo apoyado: no debe empezar otro gesto.
+          g = null;
+        };
+        svg.addEventListener("pointerup", fin);
+        svg.addEventListener("pointercancel", fin);
+        svg.addEventListener("click", (e) => {
+          if (!suprimirClic) return;
+          suprimirClic = false;
+          e.stopPropagation();
+          e.preventDefault();
+        }, true);
+      }
+
       /* ══ Enlaces profundos ══════════════════════════════════════════════════════════════
          El atlas es una sola página que pinta el contenido por JS, así que hasta ahora la URL
          era siempre la misma: no había forma de enviar a alguien «la ficha del pólipo» ni de
@@ -7718,9 +7949,15 @@ CONCLUSIÓN:
       };
 
       /* ── Vistas del maniquí (anterior / posterior) ── */
-      window.cambiarVistaManiqui = function(vista) {
+      window.cambiarVistaManiqui = function(vista, opciones) {
         var svg = document.getElementById('anatomical-svg');
         if (!svg || (vista !== 'anterior' && vista !== 'posterior')) return;
+        // Con { animar: true } (botones Anterior/Posterior) el muñeco gira en vez de saltar.
+        if (opciones && opciones.animar && window.girarManiqui &&
+            svg.getAttribute('data-vista') !== vista) {
+          window.girarManiqui();
+          return;
+        }
         svg.setAttribute('data-vista', vista);
         document.querySelectorAll('.vista-btn').forEach(function(b) {
           var activa = b.getAttribute('data-vista') === vista;
@@ -8558,6 +8795,9 @@ CONCLUSIÓN:
           });
 
           segment.addEventListener("mouseenter", function (e) {
+            // Un toque en pantalla también dispara mouseenter, y el globo se quedaba pegado
+            // porque nunca llega el mouseleave. Solo para ratón o lápiz.
+            if (window.POCUSApp.ultimoPuntero === "touch") return;
             const tooltipText = e.currentTarget.dataset.tooltip;
             tooltip.textContent = tooltipText;
             tooltip.classList.add("show");
@@ -8587,8 +8827,10 @@ CONCLUSIÓN:
 
         // Selector de vista del maniquí (anterior / posterior)
         document.querySelectorAll(".vista-btn").forEach((b) => {
-          b.addEventListener("click", () => window.cambiarVistaManiqui(b.dataset.vista));
+          b.addEventListener("click", () => window.cambiarVistaManiqui(b.dataset.vista, { animar: true }));
         });
+
+        iniciarGestosManiqui();
 
         // Marcar segmentos SVG que tienen contenido
         const segmentsWithContent = [...new Set(pocusData.map(d => d.segment))];
