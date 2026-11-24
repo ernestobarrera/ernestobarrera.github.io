@@ -360,5 +360,13 @@
     "pmid": "20620859",
     "verified": "2026-11-23",
     "verifiedBy": "pubmed+crossref"
+  },
+  "renal_cyst_silverman_2019": {
+    "citation": "Silverman SG, Pedrosa I, Ellis JH, et al. Bosniak Classification of Cystic Renal Masses, Version 2019: An Update Proposal and Needs Assessment. Radiology. 2019;292(2):475-488.",
+    "url": "https://doi.org/10.1148/radiol.2019182646",
+    "doi": "10.1148/radiol.2019182646",
+    "pmid": "31210616",
+    "verified": "2026-11-24",
+    "verifiedBy": "pubmed+crossref"
   }
 }
