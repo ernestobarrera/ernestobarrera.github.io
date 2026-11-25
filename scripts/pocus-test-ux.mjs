@@ -441,6 +441,30 @@ async function main() {
     await espera(300);
     await captura(`iconografia-${nombre}`);
   }
+  // Todas las demás fichas con medios (la iconografía escala a todo el atlas): en escritorio, que
+  // cada figura cargue de verdad y lleve su pie con licencia, y que salgan la línea de salto y
+  // «Para saber más». La lista sale de `pocusData` de la propia página, no de una copia aquí.
+  console.log('\nIconografía (D-6) · todas las fichas con medios, escritorio');
+  const conMedia = await ev(`pocusData.filter(a => a.content && Array.isArray(a.content.media) && a.content.media.length).map(a => ({ slug: pocusSlug(a.title), n: a.content.media.length, e: (a.content.enlaces || []).length }))`);
+  for (const f of conMedia) {
+    if (f.slug === FICHA_ICONO) continue;
+    await abrir(`${base}?ficha=${f.slug}`, 1366, 800, false);
+    const t = `document.querySelector('.content-card[data-ficha="${f.slug}"]')`;
+    for (let i = 0; i < 25 && !(await ev(`!!${t}`).catch(() => false)); i++) await espera(200);
+    const r = await ev(`(async () => {
+      const c = ${t}; if (!c) return null;
+      const imgs = [...c.querySelectorAll('.pocus-figura img')];
+      for (const im of imgs) { im.scrollIntoView({ block: 'center' }); await new Promise(r => setTimeout(r, 200)); }
+      await Promise.all(imgs.map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
+      return { figs: imgs.length, cargan: imgs.filter(im => im.complete && im.naturalWidth > 0).length,
+        pies: [...c.querySelectorAll('.pocus-figura figcaption a[rel~="license"]')].length,
+        salto: !!c.querySelector('[id^="findings-"] > .pocus-salto-media'),
+        enlaces: c.querySelectorAll('[id^="evidence-"] .pocus-saber-mas li a').length };
+    })()`);
+    comprobar(`«${f.slug}»: ${f.n} figuras cargan, con pie de licencia, línea de salto y ${f.e} enlaces`,
+      !!r && r.figs === f.n && r.cargan === f.n && r.pies === f.n && r.salto && r.enlaces === f.e, r);
+  }
+
   const otraFicha = await ev(`(async () => { await window.renderSegmentContent('cardiac'); return document.querySelectorAll('.pocus-figura, .pocus-saber-mas, .pocus-salto-media').length; })()`);
   comprobar('una ficha sin medios no pinta bloques vacíos de iconografía', otraFicha === 0, otraFicha);
 }
