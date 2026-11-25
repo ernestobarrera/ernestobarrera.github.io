@@ -1325,6 +1325,31 @@
         }
       }
 
+
+      /* ── Valores de referencia ── */
+      .nav-chip-vr { border-color: rgba(196, 181, 253, 0.6); }
+      .vr-card { background: #fff; border-radius: 0.75rem; box-shadow: 0 10px 25px rgba(0,0,0,0.08); padding: 1.5rem; margin-bottom: 1.5rem; }
+      .vr-card h3 { font-size: 1.15rem; font-weight: 700; color: #3730a3; margin: 0 0 0.75rem; }
+      .vr-aviso { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 0.75rem; padding: 1rem 1.25rem; font-size: 0.875rem; color: #3730a3; line-height: 1.55; }
+      .vr-tabla-wrap { overflow-x: auto; }
+      .vr-tabla { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 560px; }
+      .vr-tabla th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; padding: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+      .vr-tabla td { padding: 0.65rem 0.5rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; color: #334155; }
+      .vr-estructura { font-weight: 700; color: #1e293b; }
+      .vr-medida { display: block; font-size: 0.78rem; color: #64748b; font-weight: 400; }
+      .vr-valor { font-weight: 600; color: #0f172a; }
+      .vr-nota { font-size: 0.8rem; color: #475569; line-height: 1.5; }
+      .vr-cita { font-size: 0.78rem; color: #4f46e5; text-decoration: underline; }
+      .vr-ficha { margin-top: 0.35rem; display: inline-block; font-size: 0.75rem; font-weight: 600; color: #4338ca; background: #eef2ff; border-radius: 9999px; padding: 2px 10px; border: none; cursor: pointer; }
+      .vr-ficha:hover { background: #e0e7ff; }
+      .vr-calc-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
+      .vr-calc-campos label { display: block; font-size: 0.72rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem; }
+      .vr-calc-campos input, .vr-calc-campos select { width: 100%; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.4rem 0.5rem; font-size: 0.9rem; background: #fff; }
+      .vr-resultado { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.875rem; color: #334155; line-height: 1.55; min-height: 2.5rem; }
+      .vr-resultado .measure-badge { margin-right: 0.5rem; }
+      .vr-pie { font-size: 0.78rem; color: #64748b; margin-top: 0.75rem; line-height: 1.5; }
+      .vr-acceso { margin-top: 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem; border-radius: 9999px; background: linear-gradient(90deg, #6366f1, #8b5cf6); color: #fff; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer; }
+      .vr-acceso:hover { opacity: 0.9; }
     </style>
   </head>
   <body>
@@ -1458,6 +1483,7 @@
           </div>
 
           <button class="nav-chip" onclick="navigateToSegment('soft_tissue')">Partes Blandas</button>
+          <button class="nav-chip nav-chip-vr" onclick="mostrarValoresReferencia()">Valores normales</button>
           </div>
         </div>
       </nav>
@@ -1835,6 +1861,9 @@
                 </p>
               </div>
             </div>
+            <button type="button" class="vr-acceso" onclick="mostrarValoresReferencia()">
+              📏 Valores normales de referencia (adultos y pediatría)
+            </button>
             <div
               class="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-xl text-left"
             >
@@ -2829,12 +2858,14 @@ CONCLUSIÓN / RECOMENDACIÓN:
           system: "Abdominal",
           color: "green",
           title: "Hepatomegalia y Esteatosis",
+          refId: "liver_gosink_1981",
+          refIds: ["liver_kratzer_2003"],
           content: {
             videos: [
               { id: "wXh4IVL9Qko", intro: "Bases de la ecografía del hígado", desc: "POCUS 101. Ventanas y estructura hepática normal, punto de partida para valorar tamaño y ecogenicidad. En inglés, con subtítulos automáticos en español." },
             ],
             technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Medir la longitud craneocaudal del hígado en la línea medioclavicular. Comparar la ecogenicidad del hígado con la del riñón derecho.</li></ul>`,
-            findings: `<strong>Hepatomegalia:</strong> Una longitud > 15-16 cm en la línea medioclavicular. <strong>Esteatosis (hígado graso):</strong> Se manifiesta como un <strong>aumento de la ecogenicidad del parénquima hepático</strong>. El hígado aparece más "brillante" que la corteza renal adyacente (comparación hepatorrenal). En casos severos, hay una pobre visualización de las estructuras portales y del diafragma debido a la atenuación del sonido.`,
+            findings: `<strong>Hepatomegalia:</strong> ≥ 15,5 cm sugiere hepatomegalia (lo estaba en el 75 % de los casos contrastados con autopsia); ≤ 13 cm es normal en el 93 %; entre 13 y 15,5 cm, zona dudosa (Gosink 1981). Media poblacional en la línea medioclavicular: 14,0 ± 1,7 cm, y solo el 11,5 % supera los 16 cm (Kratzer 2003). <strong>Esteatosis (hígado graso):</strong> Se manifiesta como un <strong>aumento de la ecogenicidad del parénquima hepático</strong>. El hígado aparece más "brillante" que la corteza renal adyacente (comparación hepatorrenal). En casos severos, hay una pobre visualización de las estructuras portales y del diafragma debido a la atenuación del sonido.`,
             evidence: `<p>El POCUS es una excelente herramienta de cribado para la esteatosis hepática, con buena sensibilidad y especificidad, especialmente para la esteatosis moderada a severa.</p>`,
             pearls: `<p>La comparación hepatorrenal es clave. Un hígado normal es isoecoico o ligeramente hiperecogénico respecto al riñón. Un hígado marcadamente más brillante es patológico.</p>`,
           },
@@ -2865,7 +2896,7 @@ CONCLUSIÓN / RECOMENDACIÓN:
               { id: "w8wc8-40F1E", intro: "POCUS de la aorta abdominal", desc: "AMBOSS. Recorrido de la aorta desde el epigastrio hasta la bifurcación y medida del diámetro. En inglés, con subtítulos automáticos en español." },
             ],
             technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Medir diámetro anteroposterior máximo de pared externa a externa, desde epigastrio a bifurcación.</li></ul>`,
-            findings: `Se busca una dilatación focal de la aorta. Un diámetro <strong>> 3.0 cm</strong> se considera aneurismático. Es importante medir el diámetro máximo y evaluar la presencia de trombo mural, que aparece como material ecogénico adherido a la pared que reduce la luz permeable.
+            findings: `Se busca una dilatación focal de la aorta. Un diámetro <strong>≥ 3,0 cm</strong> se considera aneurismático. Es importante medir el diámetro máximo y evaluar la presencia de trombo mural, que aparece como material ecogénico adherido a la pared que reduce la luz permeable.
     
     <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
       <h4 class="text-base font-bold text-green-700 mb-3 text-center">Comparación Visual: Aorta Normal vs AAA</h4>
@@ -2999,6 +3030,7 @@ CONCLUSIÓN / RECOMENDACIÓN:
   system: "Urogenital",
   color: "yellow",
   title: "Evaluación Ecográfica de la Vejiga",
+  refId: "bladder_wall_hakenberg_2000",
   content: {
     technique: `<ul>
       <li><strong>Sonda:</strong> Convexa (3.5-5 MHz) o lineal para vejiga muy superficial.</li>
@@ -3014,7 +3046,7 @@ CONCLUSIÓN / RECOMENDACIÓN:
           <h5 class="font-semibold text-sm text-yellow-700 mb-2">1. Anatomía Normal</h5>
           <ul class="text-xs space-y-1">
             <li>• <strong>Contenido:</strong> Anecoico (negro)</li>
-            <li>• <strong>Pared:</strong> 3-5 mm (llena), < 7 mm (vacía)</li>
+            <li>• <strong>Pared:</strong> ≈ 3 mm (3,0 ± 1,0 mm en mujeres; 3,3 ± 1,1 mm en hombres; algo mayor con la edad). Hakenberg 2000</li>
             <li>• <strong>Forma:</strong> Rectangular/piramidal (sagital)</li>
             <li>• <strong>Jets ureterales:</strong> Flujo Doppler color</li>
           </ul>
@@ -6467,6 +6499,220 @@ CONCLUSIÓN:
         },
 
       ];
+
+      /* ── Valores de referencia (vista propia, no una ficha) ────────────────────────────
+         Nació el 25/11/2026 a partir de dos tablas institucionales de medidas normales que él
+         aportó. Esas tablas NO se reproducen: tenían errores (próstata con un orden de magnitud
+         de menos, bazo pediátrico con un tramo cambiado, revistas mal citadas) y citaban
+         manuales de 2004-2013. Se usaron como lista de qué medidas hacían falta.
+
+         `CONTRATO:` aquí solo entra una cifra que el RESUMEN de su fuente primaria en PubMed dice
+         explícitamente, con su `refId` en assets/data/pocus-refs.json. Lo que no se pudo
+         comprobar así (porta, testículo, útero por paridad, hígado pediátrico por talla, pared
+         vesicular, residuo posmiccional, grados de hidronefrosis) se quedó fuera a propósito; el
+         registro con el motivo de cada exclusión está en documentos/externos/pocus-hoja-ruta.md.
+         Única excepción declarada en pantalla: la tabla renal pediátrica por tramos, que viene
+         de un manual que reproduce a Rosenbaum 1984 y se contrastó con la regresión del original.
+
+         `ficha` es el slug de la ficha relacionada (pocusSlug del título): si se renombra la
+         ficha, el botón «Ver ficha» deja de funcionar, igual que cualquier enlace ?ficha=. */
+      const pocusValoresRef = {
+        secciones: [
+          {
+            id: 'abdomen',
+            titulo: 'Abdomen',
+            filas: [
+              {
+                estructura: 'Hígado',
+                medida: 'Longitud craneocaudal en la línea medioclavicular',
+                valor: 'Media 14,0 ± 1,7 cm (mujeres 13,5; hombres 14,5)',
+                nota: '2.080 adultos de población general. Superaba los 16 cm el 11,5 %. Influyen el IMC, la talla, el sexo y la edad.',
+                refs: ['liver_kratzer_2003'],
+                ficha: 'hepatomegalia-y-esteatosis'
+              },
+              {
+                estructura: 'Hígado',
+                medida: 'Interpretación del tamaño',
+                valor: '≤ 13 cm: normal · 13–15,5 cm: zona dudosa · ≥ 15,5 cm: probable hepatomegalia',
+                nota: 'Contrastado con autopsia (36 pacientes, línea medio-hepática): ≤ 13 cm fue normal en el 93 % y ≥ 15,5 cm estaba aumentado en el 75 %. Una cuarta parte cayó en la zona dudosa.',
+                refs: ['liver_gosink_1981'],
+                ficha: 'hepatomegalia-y-esteatosis'
+              },
+              {
+                estructura: 'Bazo',
+                medida: 'Longitud',
+                valor: 'Límite clásico: 12 cm. Depende de la talla y del sexo',
+                nota: 'En 1.230 donantes sanos superaron los 12 cm el 6 % de las mujeres y el 26 % de los hombres. En un hombre alto, 12–13 cm puede ser normal.',
+                refs: ['spleen_chow_2016'],
+                ficha: 'esplenomegalia'
+              },
+              {
+                estructura: 'Riñón',
+                medida: 'Longitud',
+                valor: 'Mediana 11,2 cm (izquierdo) y 10,9 cm (derecho)',
+                nota: '665 adultos de 30 a 70 años. Disminuye con la edad, casi solo por pérdida de parénquima, y se correlaciona sobre todo con la talla. Igual en prono que en supino.',
+                refs: ['kidney_emamian_1993'],
+                ficha: 'hidronefrosis-colico-renal'
+              },
+              {
+                estructura: 'Colédoco',
+                medida: 'Diámetro',
+                valor: 'Media 3,7 ± 1,2 mm (rango 1,0–8,6). Media + 2 DE ≈ 6 mm',
+                nota: '251 adultos sin enfermedad biliar. Crece unos 0,04 mm por año: media 3,1 mm antes de los 50 y 4,2 mm después. Límite propuesto en ancianos: 8,5 mm. La cifra de 6 mm es un cálculo propio a partir de la media y la DE publicadas.',
+                refs: ['cbd_bachar_2003'],
+                ficha: 'colelitiasis-y-colecistitis'
+              },
+              {
+                estructura: 'Colédoco',
+                medida: 'Mayores de 75 años y tras colecistectomía',
+                valor: 'Media 6,2 ± 2,3 mm sin colecistectomía; 8,7 ± 2,9 mm tras ella',
+                nota: '92 personas asintomáticas de más de 75 años. Límite razonable: 10 mm. Tras la colecistectomía pueden verse hasta 14 mm. Interpretar siempre con la clínica y la analítica.',
+                refs: ['cbd_kaim_1998'],
+                ficha: 'colelitiasis-y-colecistitis'
+              },
+              {
+                estructura: 'Aorta abdominal',
+                medida: 'Diámetro máximo',
+                valor: 'Aneurisma: ≥ 3,0 cm',
+                nota: 'Definición habitual de aneurisma de aorta abdominal que usa el USPSTF en su recomendación de cribado.',
+                refs: ['aaa_uspstf_2019'],
+                ficha: 'aneurisma-de-aorta-abdominal-aaa'
+              },
+              {
+                estructura: 'Vena cava inferior',
+                medida: 'Diámetro y colapso con el «sniff»',
+                valor: '≤ 21 mm y colapso > 50 %: presión de aurícula derecha normal (≈ 3 mmHg)',
+                nota: '> 21 mm con colapso < 50 %: presión alta (≈ 15 mmHg). Combinaciones intermedias: ≈ 8 mmHg.',
+                refs: ['ivc_rudski_2010'],
+                ficha: 'vena-cava-inferior-vci-diametro-y-colapsabilidad'
+              }
+            ]
+          },
+          {
+            id: 'urogenital',
+            titulo: 'Urogenital y ginecológico',
+            filas: [
+              {
+                estructura: 'Vejiga',
+                medida: 'Grosor de la pared',
+                valor: '3,0 ± 1,0 mm (mujeres) · 3,3 ± 1,1 mm (hombres)',
+                nota: 'Sonda suprapúbica. Aumenta algo con la edad (hombres: 3,1 mm antes de los 20 años; 3,6 mm después de los 60). Media 3,7 mm en hombres con STUI y próstata aumentada. El volumen vesical apenas influye.',
+                refs: ['bladder_wall_hakenberg_2000'],
+                ficha: 'evaluacion-ecografica-de-la-vejiga'
+              },
+              {
+                estructura: 'Endometrio',
+                medida: 'Posmenopausia con sangrado',
+                valor: '≤ 4 mm: valor predictivo negativo > 99 % para cáncer de endometrio',
+                nota: 'Con un umbral de 5 mm, sensibilidad del 96 % para cáncer (metaanálisis, 5.892 mujeres). Un endometrio > 4 mm hallado por casualidad, sin sangrado, no obliga por sí solo a estudiarlo: valoración individual. La ecografía transvaginal no sirve para cribar sin sangrado.',
+                refs: ['endometrium_acog_2018', 'endometrium_smith_bindman_1998']
+              },
+              {
+                estructura: 'Endometrio',
+                medida: 'Premenopausia',
+                valor: 'Depende del ciclo: ≤ 4 mm el día 4 y ≤ 8 mm el día 8',
+                nota: '155 mujeres premenopáusicas sin patología, ecografía transvaginal. Sin la fecha del ciclo no hay un límite único.',
+                refs: ['endometrium_merz_1996']
+              },
+              {
+                estructura: 'Ovario',
+                medida: 'Volumen (L × A × AP × 0,523)',
+                valor: 'Límite superior: 20 cm³ en premenopausia y 10 cm³ en posmenopausia',
+                nota: '58.673 mediciones transvaginales. Media 4,9 cm³ en premenopausia y 2,2 cm³ en posmenopausia; disminuye con cada década desde los 30 años. Otra serie (725 pacientes) dio medias mayores: 9,8 cm³ con menstruación y 5,8 cm³ en posmenopausia.',
+                refs: ['ovary_pavlik_2000', 'ovary_cohen_1990']
+              }
+            ]
+          },
+          {
+            id: 'cuello',
+            titulo: 'Cuello',
+            filas: [
+              {
+                estructura: 'Tiroides',
+                medida: 'Volumen total (suma de los dos lóbulos)',
+                valor: 'Mediana 9,2 ml (hombres) · 6,2 ml (mujeres)',
+                nota: 'Población española sin déficit de yodo (268 adultos sanos de L\'Hospitalet). Media 9,9 ml en hombres y 6,6 ml en mujeres. Volumen de cada lóbulo ≈ L × A × AP × 0,479.',
+                refs: ['thyroid_maravall_2004', 'thyroid_brunn_1981'],
+                ficha: 'nodulo-tiroideo'
+              }
+            ]
+          }
+        ],
+
+        // Rosenberg 1991: límite superior de la longitud esplénica. Edad en meses.
+        bazoPediatrico: [
+          { meses: 3, limite: 6.0, etiqueta: '3 meses' },
+          { meses: 6, limite: 6.5, etiqueta: '6 meses' },
+          { meses: 12, limite: 7.0, etiqueta: '12 meses' },
+          { meses: 24, limite: 8.0, etiqueta: '2 años' },
+          { meses: 48, limite: 9.0, etiqueta: '4 años' },
+          { meses: 72, limite: 9.5, etiqueta: '6 años' },
+          { meses: 96, limite: 10.0, etiqueta: '8 años' },
+          { meses: 120, limite: 11.0, etiqueta: '10 años' },
+          { meses: 144, limite: 11.5, etiqueta: '12 años' },
+          { meses: 180, limite: { mujer: 12.0, hombre: 13.0 }, etiqueta: '15 años o más' }
+        ],
+
+        // Rosenbaum 1984 por tramos de edad (desde: incluido, hasta: excluido; en meses).
+        rinonPediatrico: [
+          { desde: 0, hasta: 0.25, media: 4.48, de: 0.31, etiqueta: '0 a 1 semana' },
+          { desde: 0.25, hasta: 4, media: 5.28, de: 0.66, etiqueta: '1 semana a 4 meses' },
+          { desde: 4, hasta: 8, media: 6.15, de: 0.67, etiqueta: '4 a 8 meses' },
+          { desde: 8, hasta: 12, media: 6.23, de: 0.63, etiqueta: '8 a 12 meses' },
+          { desde: 12, hasta: 24, media: 6.65, de: 0.54, etiqueta: '1 a 2 años' },
+          { desde: 24, hasta: 36, media: 7.36, de: 0.54, etiqueta: '2 a 3 años' },
+          { desde: 36, hasta: 48, media: 7.36, de: 0.64, etiqueta: '3 a 4 años' },
+          { desde: 48, hasta: 60, media: 7.87, de: 0.50, etiqueta: '4 a 5 años' },
+          { desde: 60, hasta: 72, media: 8.09, de: 0.54, etiqueta: '5 a 6 años' },
+          { desde: 72, hasta: 84, media: 7.83, de: 0.72, etiqueta: '6 a 7 años' },
+          { desde: 84, hasta: 96, media: 8.33, de: 0.51, etiqueta: '7 a 8 años' },
+          { desde: 96, hasta: 108, media: 8.90, de: 0.88, etiqueta: '8 a 9 años' },
+          { desde: 108, hasta: 120, media: 9.20, de: 0.90, etiqueta: '9 a 10 años' },
+          { desde: 120, hasta: 132, media: 9.17, de: 0.82, etiqueta: '10 a 11 años' },
+          { desde: 132, hasta: 144, media: 9.60, de: 0.64, etiqueta: '11 a 12 años' },
+          { desde: 144, hasta: 156, media: 10.42, de: 0.87, etiqueta: '12 a 13 años' },
+          { desde: 156, hasta: 168, media: 9.79, de: 0.75, etiqueta: '13 a 14 años' },
+          { desde: 168, hasta: 180, media: 10.05, de: 0.62, etiqueta: '14 a 15 años' },
+          { desde: 180, hasta: 192, media: 10.93, de: 0.76, etiqueta: '15 a 16 años' },
+          { desde: 192, hasta: 204, media: 10.04, de: 0.86, etiqueta: '16 a 17 años' },
+          { desde: 204, hasta: 216, media: 10.53, de: 0.29, etiqueta: '17 a 18 años' },
+          { desde: 216, hasta: 228, media: 10.81, de: 1.13, etiqueta: '18 a 19 años' }
+        ],
+
+        // Cohen 1993 (0-24 meses) y Cohen 1990 (premenárquicas). Volumen en cm³.
+        ovarioPediatrico: [
+          { edad: '1 día a 3 meses', valor: 'Media 1,06 (rango 0,7–3,6)', ref: 'ovary_peds_cohen_1993' },
+          { edad: '4 a 12 meses', valor: 'Media 1,05 (rango 0,2–2,7)', ref: 'ovary_peds_cohen_1993' },
+          { edad: '13 a 24 meses', valor: 'Media 0,67 (rango 0,1–1,7)', ref: 'ovary_peds_cohen_1993' },
+          { edad: 'Premenárquicas (grupo de edad sin desglosar)', valor: 'Media 3,0', ref: 'ovary_cohen_1990' }
+        ]
+      };
+
+      /* Cálculo puro de las dos calculadoras pediátricas: sin DOM, para poder probarlo aparte. */
+      function pocusLimiteBazo(meses, sexo) {
+        const tabla = pocusValoresRef.bazoPediatrico;
+        if (!(meses >= 0) || meses > 240) return { fueraDeRango: true };
+        // Antes de los 3 meses se usa el primer límite publicado; entre dos edades, el de la edad
+        // ya cumplida, que es el más estricto (el resumen solo da los puntos, no la curva).
+        let idx = 0;
+        for (let i = 0; i < tabla.length; i++) if (meses >= tabla[i].meses) idx = i;
+        const punto = tabla[idx];
+        const siguiente = tabla[idx + 1] || null;
+        if (typeof punto.limite === 'object') {
+          if (sexo !== 'mujer' && sexo !== 'hombre') return { punto, necesitaSexo: true, siguiente };
+          return { punto, limite: punto.limite[sexo], siguiente };
+        }
+        return { punto, limite: punto.limite, siguiente, antesDelPrimero: meses < tabla[0].meses };
+      }
+
+      function pocusRangoRinon(meses) {
+        const tramo = pocusValoresRef.rinonPediatrico.find(function (t) { return meses >= t.desde && meses < t.hasta; });
+        if (!tramo) return { fueraDeRango: true };
+        // Ecuaciones de regresión del resumen de Rosenbaum 1984 (las que sí están verificadas).
+        const esperada = meses < 12 ? 4.98 + 0.155 * meses : 6.79 + 0.22 * (meses / 12);
+        return { tramo, minimo: tramo.media - 2 * tramo.de, maximo: tramo.media + 2 * tramo.de, esperada };
+      }
+
       function mostrarErrorVideo(event) {
         try {
           const iframe = event.target.getIframe();
@@ -7839,6 +8085,9 @@ CONCLUSIÓN:
         var hashCrudo = window.location.hash.replace(/^#/, '');
         var hash = new URLSearchParams(hashCrudo);
 
+        // La vista de valores de referencia no es una ficha ni una zona: va antes que ambas.
+        if ((query.get('vista') || hash.get('vista')) === 'valores') return { tipo: 'valores' };
+
         var ficha = query.get('ficha') || hash.get('ficha');
         if (ficha) return resolverDestinoProfundo(ficha);
 
@@ -7860,8 +8109,10 @@ CONCLUSIÓN:
         var url = new URL(window.location.href);
         url.searchParams.delete('ficha');
         url.searchParams.delete('zona');
+        url.searchParams.delete('vista');
         if (destino && destino.ficha) url.searchParams.set('ficha', destino.ficha);
         if (destino && destino.zona) url.searchParams.set('zona', destino.zona);
+        if (destino && destino.vista) url.searchParams.set('vista', destino.vista);
         url.hash = '';
         history.replaceState({}, '', url.pathname + url.search);
       }
@@ -7938,6 +8189,10 @@ CONCLUSIÓN:
         var destino = leerDestinoProfundo();
         if (!destino) return Promise.resolve(false);
         var o = opciones || {};
+        if (destino.tipo === 'valores') {
+          return Promise.resolve(window.mostrarValoresReferencia({ escribirUrl: true }))
+            .then(function() { return true; });
+        }
         if (destino.tipo === 'ficha') return window.abrirFicha(destino.slug, { escribirUrl: true, suave: o.suave });
         if (destino.tipo === 'zona') {
           return Promise.resolve(window.navigateToSegment(destino.segmento, { escribirUrl: true }))
@@ -8943,6 +9198,8 @@ CONCLUSIÓN:
           const usedRefs = new Set();
           data.forEach((app, index) => {
             if (app.refId) usedRefs.add(app.refId);
+            // Fuentes adicionales de una ficha que cita más de una cifra con autor distinto.
+            (app.refIds || []).forEach((id) => usedRefs.add(id));
             const card = createContentCard(app, index, segmentId);
             contentArea.appendChild(card);
             initializeReportCard(card.id);
@@ -8958,6 +9215,175 @@ CONCLUSIÓN:
 
         // Exponer renderSegmentContent para el índice de navegación
         window.renderSegmentContent = renderSegmentContent;
+
+        /* Vista de valores de referencia. Vive aquí, y no junto a los datos, porque necesita
+           contentArea y renderReferences, que solo existen dentro de este arranque. Vacía
+           #content-area igual que renderSegmentContent, así que volver a una zona o al inicio
+           la sustituye sin más. */
+        async function mostrarValoresReferencia(opciones) {
+          const o = opciones || {};
+          await _refsReady;
+          Object.values(window.POCUSApp.videoPlayers).forEach((player) => {
+            try { player.pauseVideo(); } catch (e) {}
+          });
+          window.POCUSApp.videoPlayers = {};
+          document.querySelectorAll('.nav-chip-dropdown.show').forEach((d) => d.classList.remove('show'));
+          document.querySelectorAll('.anatomy-segment').forEach((s) => s.classList.remove('active'));
+
+          const usadas = new Set();
+          const cita = (id) => {
+            usadas.add(id);
+            const ref = references[id];
+            const corta = ref ? ref.citation.split('.')[0].replace(/,.*$/, '') + ' ' + ((ref.citation.match(/\b(19|20)\d{2}\b/) || [''])[0]) : id;
+            return `<a href="#ref-${id}" class="reference-link vr-cita">${corta}</a>`;
+          };
+
+          const tablas = pocusValoresRef.secciones.map((sec) => {
+            const filas = sec.filas.map((f) => `
+                <tr>
+                  <td class="vr-estructura">${f.estructura}<span class="vr-medida">${f.medida}</span></td>
+                  <td class="vr-valor">${f.valor}</td>
+                  <td class="vr-nota">${f.nota}<br>${f.refs.map(cita).join(' · ')}
+                    ${f.ficha ? `<br><button type="button" class="vr-ficha" data-ficha="${f.ficha}">Ver ficha →</button>` : ''}</td>
+                </tr>`).join('');
+            return `
+              <div class="vr-card">
+                <h3>${sec.titulo}</h3>
+                <div class="vr-tabla-wrap">
+                  <table class="vr-tabla">
+                    <thead><tr><th>Estructura</th><th>Valor de referencia</th><th>Contexto y fuente</th></tr></thead>
+                    <tbody>${filas}</tbody>
+                  </table>
+                </div>
+              </div>`;
+          }).join('');
+
+          const ovario = pocusValoresRef.ovarioPediatrico.map((r) =>
+            `<tr><td class="vr-estructura">${r.edad}</td><td class="vr-valor">${r.valor}</td><td class="vr-nota">${cita(r.ref)}</td></tr>`
+          ).join('');
+
+          const camposEdad = (prefijo) => `
+              <div><label for="${prefijo}-edad">Edad</label><input id="${prefijo}-edad" type="number" min="0" step="any" inputmode="decimal"></div>
+              <div><label for="${prefijo}-unidad">Unidad</label><select id="${prefijo}-unidad"><option value="anos">años</option><option value="meses">meses</option></select></div>`;
+
+          contentArea.innerHTML = `
+            <div class="vr-card">
+              <h3 class="text-2xl">📏 Valores normales de referencia</h3>
+              <div class="vr-aviso">
+                Son valores de <strong>población sana</strong>, no criterios diagnósticos: una medida fuera de rango
+                se interpreta con la clínica. Cada cifra se ha comprobado en el resumen de su <strong>fuente primaria</strong>
+                en PubMed (noviembre de 2026); lo que no se pudo comprobar así se ha dejado fuera. Cuando una ficha del atlas
+                usa el mismo valor, el botón «Ver ficha» lleva a ella.
+              </div>
+            </div>
+            ${tablas}
+            <div class="vr-card">
+              <h3>Pediatría · Bazo según la edad</h3>
+              <p class="vr-nota">Límite superior de la longitud esplénica (corte coronal que incluya el hilio, respiración tranquila). ${cita('spleen_peds_rosenberg_1991')}</p>
+              <div class="vr-calc-campos">
+                ${camposEdad('vr-bazo')}
+                <div><label for="vr-bazo-sexo">Sexo (solo ≥ 15 años)</label><select id="vr-bazo-sexo"><option value="">—</option><option value="mujer">Mujer</option><option value="hombre">Hombre</option></select></div>
+                <div><label for="vr-bazo-long">Longitud medida (cm)</label><input id="vr-bazo-long" type="number" min="0" step="0.1" inputmode="decimal"></div>
+              </div>
+              <div id="vr-bazo-res" class="vr-resultado" aria-live="polite">Introduce la edad.</div>
+              <p class="vr-pie">El estudio publica límites en edades concretas (3, 6 y 12 meses; 2, 4, 6, 8, 10, 12 y ≥ 15 años). Entre dos de ellas se aplica el de la edad ya cumplida, que es el más estricto. Rango del estudio: recién nacidos a 20 años.</p>
+            </div>
+            <div class="vr-card">
+              <h3>Pediatría · Riñón según la edad</h3>
+              <p class="vr-nota">Longitud renal media ± 2 DE por tramo de edad. ${cita('kidney_peds_rosenbaum_1984')}</p>
+              <div class="vr-calc-campos">
+                ${camposEdad('vr-rinon')}
+                <div><label for="vr-rinon-long">Longitud medida (cm)</label><input id="vr-rinon-long" type="number" min="0" step="0.1" inputmode="decimal"></div>
+              </div>
+              <div id="vr-rinon-res" class="vr-resultado" aria-live="polite">Introduce la edad.</div>
+              <p class="vr-pie"><strong>Procedencia de la tabla:</strong> los tramos (media y DE) vienen de un manual de ecografía pediátrica (Siegel, 2004) que reproduce la serie de Rosenbaum (203 niños). El resumen original solo publica las ecuaciones de regresión; se han contrastado con la tabla y en casi todos los tramos la diferencia es menor de 1 DE. Hay pocos niños por tramo, y por eso la media no siempre crece de un año al siguiente.</p>
+            </div>
+            <div class="vr-card">
+              <h3>Pediatría · Volumen ovárico (cm³)</h3>
+              <div class="vr-tabla-wrap">
+                <table class="vr-tabla">
+                  <thead><tr><th>Edad</th><th>Volumen</th><th>Fuente</th></tr></thead>
+                  <tbody>${ovario}</tbody>
+                </table>
+              </div>
+              <p class="vr-pie">Los quistes ováricos son frecuentes en lactantes: se vieron en el 84 % de los ovarios de 0 a 24 meses, y quistes de más de 9 mm en el 18 % de los ovarios con quistes.</p>
+            </div>`;
+
+          renderReferences(usadas);
+
+          contentArea.querySelectorAll('.vr-ficha').forEach((b) => {
+            b.addEventListener('click', () => window.abrirFicha(b.dataset.ficha));
+          });
+
+          const num = (id) => {
+            const v = parseFloat(String(document.getElementById(id).value).replace(',', '.'));
+            return Number.isFinite(v) ? v : null;
+          };
+          const meses = (prefijo) => {
+            const e = num(prefijo + '-edad');
+            if (e === null) return null;
+            return document.getElementById(prefijo + '-unidad').value === 'meses' ? e : e * 12;
+          };
+          const cm = (x) => x.toFixed(1).replace('.', ',');
+          const badge = (cls, txt) => `<span class="measure-badge ${cls}">${txt}</span>`;
+
+          const calcBazo = () => {
+            const res = document.getElementById('vr-bazo-res');
+            const m = meses('vr-bazo');
+            if (m === null) { res.innerHTML = 'Introduce la edad.'; return; }
+            const r = pocusLimiteBazo(m, document.getElementById('vr-bazo-sexo').value);
+            if (r.fueraDeRango) { res.innerHTML = 'Fuera del rango del estudio (0 a 20 años): usa los valores de adulto.'; return; }
+            if (r.necesitaSexo) {
+              res.innerHTML = `A partir de los 15 años el límite depende del sexo: <strong>12,0 cm</strong> en chicas y <strong>13,0 cm</strong> en chicos. Elige el sexo.`;
+              return;
+            }
+            let txt = `Límite superior: <strong>${cm(r.limite)} cm</strong> (el publicado para ${r.punto.etiqueta}).`;
+            if (r.antesDelPrimero) txt += ' El estudio no da límite antes de los 3 meses: se usa el de los 3 meses.';
+            if (r.siguiente && typeof r.siguiente.limite === 'number') txt += ` A los ${r.siguiente.etiqueta}: ${cm(r.siguiente.limite)} cm.`;
+            const l = num('vr-bazo-long');
+            if (l !== null) {
+              txt = (l <= r.limite
+                ? badge('badge-normal', 'Dentro del límite')
+                : badge('badge-warn', 'Supera el límite') + 'Por encima del límite superior publicado para la edad: valorar con la clínica. ') + txt;
+            }
+            res.innerHTML = txt;
+          };
+
+          const calcRinon = () => {
+            const res = document.getElementById('vr-rinon-res');
+            const m = meses('vr-rinon');
+            if (m === null) { res.innerHTML = 'Introduce la edad.'; return; }
+            const r = pocusRangoRinon(m);
+            if (r.fueraDeRango) { res.innerHTML = 'Fuera del rango de la tabla (0 a 19 años): usa los valores de adulto.'; return; }
+            let txt = `Tramo ${r.tramo.etiqueta}: media <strong>${cm(r.tramo.media)} cm</strong>, rango ± 2 DE <strong>${cm(r.minimo)}–${cm(r.maximo)} cm</strong>. Esperada por la ecuación de regresión: ${cm(r.esperada)} cm.`;
+            const l = num('vr-rinon-long');
+            if (l !== null) {
+              let b;
+              if (l < r.minimo) b = badge('badge-warn', 'Por debajo de −2 DE') + 'Pequeño para la edad: comparar con el otro riñón y con la clínica. ';
+              else if (l > r.maximo) b = badge('badge-warn', 'Por encima de +2 DE') + 'Grande para la edad: comparar con el otro riñón y con la clínica. ';
+              else b = badge('badge-normal', 'Dentro de ± 2 DE');
+              txt = b + txt;
+            }
+            res.innerHTML = txt;
+          };
+
+          ['vr-bazo-edad', 'vr-bazo-unidad', 'vr-bazo-sexo', 'vr-bazo-long'].forEach((id) => {
+            document.getElementById(id).addEventListener('input', calcBazo);
+          });
+          ['vr-rinon-edad', 'vr-rinon-unidad', 'vr-rinon-long'].forEach((id) => {
+            document.getElementById(id).addEventListener('input', calcRinon);
+          });
+
+          if (o.escribirUrl !== false) escribirUrlProfunda({ vista: 'valores' });
+          if (o.desplazar !== false) {
+            setTimeout(() => {
+              const headerHeight = document.querySelector('header').offsetHeight || 130;
+              const targetTop = contentArea.getBoundingClientRect().top + window.pageYOffset - headerHeight - 16;
+              window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+            }, 100);
+          }
+        }
+        window.mostrarValoresReferencia = mostrarValoresReferencia;
 
         // Función para crear tarjetas de contenido
         function createContentCard(app, index, segmentId) {

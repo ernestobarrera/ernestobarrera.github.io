@@ -118,8 +118,8 @@ for (const seg of conFicha)
   if (!enMenu.has(seg)) problemas.push(`segmento «${seg}» no alcanzable desde el menú de navegación`);
 
 for (const app of data)
-  if (app.refId && !refs[app.refId])
-    problemas.push(`«${app.title}» apunta a un refId que no existe en pocus-refs.json: ${app.refId}`);
+  for (const id of [app.refId, ...(app.refIds || [])].filter(Boolean))
+    if (!refs[id]) problemas.push(`«${app.title}» apunta a un refId que no existe en pocus-refs.json: ${id}`);
 
 const titulos = data.map((a) => a.title);
 for (const t of new Set(titulos))
@@ -156,6 +156,59 @@ data.forEach((a, i) => {
 for (const s of slugs)
   if (conFicha.has(s.replace(/-/g, '_')))
     problemas.push(`el slug «${s}» choca con la zona «${s.replace(/-/g, '_')}»: ?zona= dejaría de alcanzarla`);
+
+/* ── Valores de referencia (`pocusValoresRef`, desde el 25/11/2026) ─────────────────────────
+   Su contrato es que cada cifra lleve una fuente VERIFICADA del JSON. Una cita a un id que no
+   existe no rompe nada visible —sale el id en crudo y la fuente no aparece en la lista—, y un
+   botón «Ver ficha» con un slug viejo simplemente no hace nada. Las dos cosas son silenciosas,
+   así que se vigilan aquí. Si el bloque desaparece del todo, también se avisa: la vista entera
+   dependería de él. */
+function extraerObjeto(src, marca) {
+  const ini = src.indexOf(marca);
+  if (ini < 0) return null;
+  const i = src.indexOf('{', ini);
+  let prof = 0, enStr = null, esc = false;
+  for (let k = i; k < src.length; k++) {
+    const c = src[k];
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { esc = true; continue; }
+    if (enStr) { if (c === enStr) enStr = null; continue; }
+    if (c === '"' || c === "'" || c === '`') { enStr = c; continue; }
+    if (c === '{') prof++;
+    else if (c === '}') { prof--; if (prof === 0) return src.slice(i, k + 1); }
+  }
+  return null;
+}
+
+let valoresRef = null;
+const literalValores = extraerObjeto(html, 'const pocusValoresRef = {');
+if (!literalValores) {
+  problemas.push('pocus.html ya no declara `const pocusValoresRef = {`: la vista de valores de referencia quedaría vacía');
+} else {
+  try {
+    valoresRef = eval(`(${literalValores})`);
+  } catch (e) {
+    inconcluso(`\`pocusValoresRef\` no evalúa: ${e.message}`);
+  }
+  const slugsSet = new Set(slugs);
+  const citadas = [];
+  for (const sec of valoresRef.secciones || []) {
+    for (const f of sec.filas || []) {
+      const donde = `valores de referencia › ${sec.titulo} › ${f.estructura} (${f.medida})`;
+      if (!f.refs || !f.refs.length) problemas.push(`${donde}: fila sin fuente`);
+      for (const id of f.refs || []) citadas.push([id, donde]);
+      if (f.ficha && !slugsSet.has(f.ficha))
+        problemas.push(`${donde}: «Ver ficha» apunta a un slug que no existe: ${f.ficha}`);
+    }
+  }
+  for (const r of valoresRef.ovarioPediatrico || []) citadas.push([r.ref, `valores de referencia › ovario pediátrico › ${r.edad}`]);
+  for (const id of ['spleen_peds_rosenberg_1991', 'kidney_peds_rosenbaum_1984'])
+    if (html.includes(`cita('${id}')`)) citadas.push([id, 'valores de referencia › calculadoras pediátricas']);
+  for (const [id, donde] of citadas) {
+    if (!refs[id]) problemas.push(`${donde}: cita un refId que no existe en pocus-refs.json: ${id}`);
+    else if (!refs[id].verified) problemas.push(`${donde}: cita ${id}, que no está verificada (contrato: solo fuentes verificadas)`);
+  }
+}
 
 // Contrato de la página: si desaparece el resolutor, todos los enlaces repartidos mueren.
 for (const simbolo of ['function pocusSlug', 'window.abrirFicha', 'window.aplicarEnlaceProfundo'])

@@ -368,5 +368,149 @@
     "pmid": "31210616",
     "verified": "2026-11-24",
     "verifiedBy": "pubmed+crossref+texto-completo"
+  },
+  "liver_kratzer_2003": {
+    "citation": "Kratzer W, Fritz V, Mason RA, et al. Factors affecting liver size: a sonographic survey of 2080 subjects. J Ultrasound Med. 2003;22(11):1155-1161.",
+    "url": "https://doi.org/10.7863/jum.2003.22.11.1155",
+    "doi": "10.7863/jum.2003.22.11.1155",
+    "pmid": "14620885",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "liver_gosink_1981": {
+    "citation": "Gosink BB, Leymaster CE. Ultrasonic determination of hepatomegaly. J Clin Ultrasound. 1981;9(1):37-44.",
+    "url": "https://doi.org/10.1002/jcu.1870090110",
+    "doi": "10.1002/jcu.1870090110",
+    "pmid": "6792230",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "spleen_chow_2016": {
+    "citation": "Chow KU, Luxembourg B, Seifried E, Bonig H. Spleen size is significantly influenced by body height and sex: establishment of normal values for spleen size at US with a cohort of 1200 healthy individuals. Radiology. 2016;279(1):306-313.",
+    "url": "https://doi.org/10.1148/radiol.2015150887",
+    "doi": "10.1148/radiol.2015150887",
+    "pmid": "26509293",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "kidney_emamian_1993": {
+    "citation": "Emamian SA, Nielsen MB, Pedersen JF, Ytte L. Kidney dimensions at sonography: correlation with age, sex, and habitus in 665 adult volunteers. AJR Am J Roentgenol. 1993;160(1):83-86.",
+    "url": "https://doi.org/10.2214/ajr.160.1.8416654",
+    "doi": "10.2214/ajr.160.1.8416654",
+    "pmid": "8416654",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "cbd_bachar_2003": {
+    "citation": "Bachar GN, Cohen M, Belenky A, et al. Effect of aging on the adult extrahepatic bile duct: a sonographic study. J Ultrasound Med. 2003;22(9):879-882.",
+    "url": "https://doi.org/10.7863/jum.2003.22.9.879",
+    "doi": "10.7863/jum.2003.22.9.879",
+    "pmid": "14510259",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "cbd_kaim_1998": {
+    "citation": "Kaim A, Steinke K, Frank M, et al. Diameter of the common bile duct in the elderly patient: measurement by ultrasound. Eur Radiol. 1998;8(8):1413-1415.",
+    "url": "https://doi.org/10.1007/s003300050563",
+    "doi": "10.1007/s003300050563",
+    "pmid": "9853225",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "aaa_uspstf_2019": {
+    "citation": "US Preventive Services Task Force, Owens DK, Davidson KW, et al. Screening for abdominal aortic aneurysm: US Preventive Services Task Force recommendation statement. JAMA. 2019;322(22):2211-2218.",
+    "url": "https://doi.org/10.1001/jama.2019.18928",
+    "doi": "10.1001/jama.2019.18928",
+    "pmid": "31821437",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "bladder_wall_hakenberg_2000": {
+    "citation": "Hakenberg OW, Linne C, Manseck A, Wirth MP. Bladder wall thickness in normal adults and men with mild lower urinary tract symptoms and benign prostatic enlargement. Neurourol Urodyn. 2000;19(5):585-593.",
+    "url": "https://doi.org/10.1002/1520-6777(2000)19:5<585::aid-nau5>3.0.co;2-u",
+    "doi": "10.1002/1520-6777(2000)19:5<585::aid-nau5>3.0.co;2-u",
+    "pmid": "11002301",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "endometrium_acog_2018": {
+    "citation": "ACOG. Committee Opinion No. 734: The role of transvaginal ultrasonography in evaluating the endometrium of women with postmenopausal bleeding. Obstet Gynecol. 2018;131(5):e124-e129.",
+    "url": "https://doi.org/10.1097/AOG.0000000000002631",
+    "doi": "10.1097/AOG.0000000000002631",
+    "pmid": "29683909",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "endometrium_smith_bindman_1998": {
+    "citation": "Smith-Bindman R, Kerlikowske K, Feldstein VA, et al. Endovaginal ultrasound to exclude endometrial cancer and other endometrial abnormalities. JAMA. 1998;280(17):1510-1517.",
+    "url": "https://doi.org/10.1001/jama.280.17.1510",
+    "doi": "10.1001/jama.280.17.1510",
+    "pmid": "9809732",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "endometrium_merz_1996": {
+    "citation": "Merz E, Miric-Tesanic D, Bahlmann F, Weber G, Wellek S. Sonographic size of uterus and ovaries in pre- and postmenopausal women. Ultrasound Obstet Gynecol. 1996;7(1):38-42.",
+    "url": "https://doi.org/10.1046/j.1469-0705.1996.07010038.x",
+    "doi": "10.1046/j.1469-0705.1996.07010038.x",
+    "pmid": "8932630",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "ovary_pavlik_2000": {
+    "citation": "Pavlik EJ, DePriest PD, Gallion HH, et al. Ovarian volume related to age. Gynecol Oncol. 2000;77(3):410-412.",
+    "url": "https://doi.org/10.1006/gyno.2000.5783",
+    "doi": "10.1006/gyno.2000.5783",
+    "pmid": "10831351",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "ovary_cohen_1990": {
+    "citation": "Cohen HL, Tice HM, Mandel FS. Ovarian volumes measured by US: bigger than we think. Radiology. 1990;177(1):189-192.",
+    "url": "https://doi.org/10.1148/radiology.177.1.2204964",
+    "doi": "10.1148/radiology.177.1.2204964",
+    "pmid": "2204964",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "ovary_peds_cohen_1993": {
+    "citation": "Cohen HL, Shapiro MA, Mandel FS, Shapiro ML. Normal ovaries in neonates and infants: a sonographic study of 77 patients 1 day to 24 months old. AJR Am J Roentgenol. 1993;160(3):583-586.",
+    "url": "https://doi.org/10.2214/ajr.160.3.8430559",
+    "doi": "10.2214/ajr.160.3.8430559",
+    "pmid": "8430559",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "thyroid_maravall_2004": {
+    "citation": "Maravall FJ, Gómez-Arnáiz N, Gumá A, et al. Reference values of thyroid volume in a healthy, non-iodine-deficient Spanish population. Horm Metab Res. 2004;36(9):645-649.",
+    "url": "https://doi.org/10.1055/s-2004-825901",
+    "doi": "10.1055/s-2004-825901",
+    "pmid": "15486817",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "thyroid_brunn_1981": {
+    "citation": "Brunn J, Block U, Ruf G, et al. Volumetric analysis of thyroid lobes by real-time ultrasound (artículo en alemán). Dtsch Med Wochenschr. 1981;106(41):1338-1340.",
+    "url": "https://doi.org/10.1055/s-2008-1070506",
+    "doi": "10.1055/s-2008-1070506",
+    "pmid": "7274082",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "spleen_peds_rosenberg_1991": {
+    "citation": "Rosenberg HK, Markowitz RI, Kolberg H, et al. Normal splenic size in infants and children: sonographic measurements. AJR Am J Roentgenol. 1991;157(1):119-121.",
+    "url": "https://doi.org/10.2214/ajr.157.1.2048509",
+    "doi": "10.2214/ajr.157.1.2048509",
+    "pmid": "2048509",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
+  },
+  "kidney_peds_rosenbaum_1984": {
+    "citation": "Rosenbaum DM, Korngold E, Teele RL. Sonographic assessment of renal length in normal children. AJR Am J Roentgenol. 1984;142(3):467-469.",
+    "url": "https://doi.org/10.2214/ajr.142.3.467",
+    "doi": "10.2214/ajr.142.3.467",
+    "pmid": "6607625",
+    "verified": "2026-11-25",
+    "verifiedBy": "pubmed-resumen"
   }
 }
