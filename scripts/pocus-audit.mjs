@@ -424,10 +424,126 @@ for (const vista of VISTAS) {
 if (!html.includes('function asegurarVistaPara'))
   problemas.push('pocus.html ya no define `asegurarVistaPara`: el menú podría llevar a una zona de la vista oculta');
 
+/* ── D-6 · Iconografía con licencia abierta y enlaces (25/11/2026) ──────────────────────────────
+   Una imagen ajena sin atribución completa no es un fallo de estilo: es usarla fuera de su
+   licencia. Por eso aquí bloquea todo lo que la licencia exige (título original, autor, fuente,
+   licencia con su enlace) y lo que el contrato D-6 prohíbe: enlazar la imagen a la web ajena,
+   modificar una obra ND y ficheros que nadie cita (peso muerto con licencia sin rastrear). */
+const MEDIA_DIR = path.join(RAIZ, 'assets', 'pocus', 'media');
+const MEDIA_PREFIJO = 'assets/pocus/media/';
+const MEDIA_MAX_KB = 700;
+const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+/* Licencia declarada → tramo de URL que debe llevar su enlace. Lo que no está aquí no entra:
+   ampliar la lista es una decisión, no un descuido. */
+const LICENCIAS = {
+  'CC0 1.0': 'publicdomain/zero/1.0',
+  'CC BY 2.0': 'licenses/by/2.0', 'CC BY 3.0': 'licenses/by/3.0', 'CC BY 4.0': 'licenses/by/4.0',
+  'CC BY-SA 3.0': 'licenses/by-sa/3.0', 'CC BY-SA 4.0': 'licenses/by-sa/4.0',
+  'CC BY-NC 4.0': 'licenses/by-nc/4.0',
+  'CC BY-NC-SA 3.0': 'licenses/by-nc-sa/3.0', 'CC BY-NC-SA 4.0': 'licenses/by-nc-sa/4.0',
+  'CC BY-NC-ND 4.0': 'licenses/by-nc-nd/4.0',
+};
+/* En una obra ND solo cabe el cambio de formato (CC 4.0 §2(a)(4): no es obra derivada). */
+const SOLO_FORMATO = /^convertido de [a-z0-9]+ a [a-z0-9]+$/i;
+
+/* Tamaño real de un WebP (lienzo VP8X, VP8 con pérdida o VP8L sin pérdida). Si el ancho y el
+   alto declarados no casan, la página reserva un hueco con otra proporción y la imagen salta. */
+function dimsWebp(buf) {
+  if (buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WEBP') return null;
+  const tipo = buf.toString('ascii', 12, 16);
+  if (tipo === 'VP8X') return [1 + buf.readUIntLE(24, 3), 1 + buf.readUIntLE(27, 3)];
+  if (tipo === 'VP8 ') return [buf.readUInt16LE(26) & 0x3fff, buf.readUInt16LE(28) & 0x3fff];
+  if (tipo === 'VP8L') {
+    const b = buf.readUInt32LE(21);
+    return [(b & 0x3fff) + 1, ((b >> 14) & 0x3fff) + 1];
+  }
+  return null;
+}
+
+const citadosMedia = new Set();
+let nMedia = 0, nEnlaces = 0, fichasConMedia = 0;
+const vacio = (v) => v == null || String(v).trim() === '';
+
+for (const app of data) {
+  const c = app.content || {};
+  const media = c.media || [];
+  const enlaces = c.enlaces || [];
+  if (c.media !== undefined && !Array.isArray(c.media)) problemas.push(`«${app.title}»: \`media\` debe ser un array`);
+  if (c.enlaces !== undefined && !Array.isArray(c.enlaces)) problemas.push(`«${app.title}»: \`enlaces\` debe ser un array`);
+  if (Array.isArray(c.media) && media.length) fichasConMedia++;
+
+  (Array.isArray(media) ? media : []).forEach((m, i) => {
+    nMedia++;
+    const donde = `«${app.title}» › medio ${i + 1}${m && m.titulo ? ` («${m.titulo}»)` : ''}`;
+    const falta = ['src', 'ancho', 'alto', 'titulo', 'queMirar', 'alt', 'original', 'autor', 'fuente',
+      'fuenteUrl', 'licencia', 'licenciaUrl', 'verificado', 'verificadoPor'].filter((k) => vacio(m[k]));
+    if (falta.length) problemas.push(`${donde}: falta ${falta.join(', ')}`);
+
+    const tramo = LICENCIAS[m.licencia];
+    if (!vacio(m.licencia) && !tramo)
+      problemas.push(`${donde}: licencia «${m.licencia}» fuera de la lista permitida`);
+    else if (tramo && !String(m.licenciaUrl || '').includes(`creativecommons.org/${tramo}`))
+      problemas.push(`${donde}: el enlace de licencia no corresponde a ${m.licencia} (${m.licenciaUrl})`);
+    if (/-ND\b/.test(m.licencia || '') && !vacio(m.cambios) && !SOLO_FORMATO.test(m.cambios))
+      problemas.push(`${donde}: obra ${m.licencia} con cambios («${m.cambios}»): una licencia ND solo admite el cambio de formato`);
+
+    for (const k of ['fuenteUrl', 'licenciaUrl'])
+      if (!vacio(m[k]) && !/^https:\/\//.test(m[k])) problemas.push(`${donde}: ${k} no es https`);
+    if (!vacio(m.verificado) && !FECHA.test(m.verificado))
+      problemas.push(`${donde}: \`verificado\` debe ser una fecha AAAA-MM-DD`);
+
+    if (vacio(m.src)) return;
+    if (/^https?:/i.test(m.src) || !m.src.startsWith(MEDIA_PREFIJO)) {
+      problemas.push(`${donde}: src «${m.src}» fuera de ${MEDIA_PREFIJO} (contrato D-6: se aloja aquí, no se enlaza a la web ajena)`);
+      return;
+    }
+    citadosMedia.add(path.basename(m.src));
+    const fichero = path.join(RAIZ, ...m.src.split('/'));
+    if (!fs.existsSync(fichero)) { problemas.push(`${donde}: no existe ${m.src}`); return; }
+    const buf = fs.readFileSync(fichero);
+    const kb = Math.round(buf.length / 1024);
+    if (kb > MEDIA_MAX_KB) problemas.push(`${donde}: ${m.src} pesa ${kb} KB (límite ${MEDIA_MAX_KB} KB)`);
+    if (/\.webp$/i.test(m.src)) {
+      const d = dimsWebp(buf);
+      if (!d) problemas.push(`${donde}: ${m.src} no se deja leer como WebP`);
+      else if (d[0] !== Number(m.ancho) || d[1] !== Number(m.alto))
+        problemas.push(`${donde}: declara ${m.ancho}×${m.alto} y el fichero mide ${d[0]}×${d[1]}`);
+    }
+  });
+
+  (Array.isArray(enlaces) ? enlaces : []).forEach((e, i) => {
+    nEnlaces++;
+    const donde = `«${app.title}» › enlace ${i + 1}`;
+    const falta = ['titulo', 'url', 'tipo', 'idioma', 'acceso', 'comprobado'].filter((k) => vacio(e[k]));
+    if (falta.length) problemas.push(`${donde}: falta ${falta.join(', ')}`);
+    if (!vacio(e.url) && !/^https:\/\//.test(e.url)) problemas.push(`${donde}: la URL no es https`);
+    if (!vacio(e.comprobado) && !FECHA.test(e.comprobado))
+      problemas.push(`${donde}: \`comprobado\` debe ser una fecha AAAA-MM-DD`);
+  });
+}
+
+if (fs.existsSync(MEDIA_DIR))
+  for (const f of fs.readdirSync(MEDIA_DIR))
+    if (!citadosMedia.has(f)) problemas.push(`${MEDIA_PREFIJO}${f} no lo cita ninguna ficha: peso muerto con licencia sin rastrear`);
+
+if (nMedia || nEnlaces) {
+  /* Definición exacta Y llamada desde la tarjeta: buscar solo el texto «function construirMediaHtml»
+     dejaba pasar un renombrado a construirMediaHtmlX (lo cazó la prueba de mutación del 25/11). */
+  for (const [fn, campo] of [['construirMediaHtml', 'media'], ['construirSaltoMediaHtml', 'media'], ['construirEnlacesHtml', 'enlaces']]) {
+    if (!new RegExp(`function ${fn}\\s*\\(`).test(html))
+      problemas.push(`hay fichas con medios o enlaces y pocus.html ya no define \`${fn}\`: no se pintarían`);
+    if (!html.includes(`${fn}(app.content.${campo})`))
+      problemas.push(`la tarjeta ya no llama a \`${fn}(app.content.${campo})\`: los ${campo} no se pintarían`);
+  }
+  if (!html.includes('conservan su propia licencia'))
+    problemas.push('falta la nota de portada «las imágenes de terceros conservan su propia licencia» (D-6)');
+}
+
 const verificadas = Object.values(refs).filter((r) => r.verified).length;
 
 console.log(`Atlas POCUS — ${data.length} fichas en ${conFicha.size} segmentos`);
 console.log(`Referencias: ${Object.keys(refs).length} (${verificadas} verificadas)`);
+console.log(`Iconografía: ${nMedia} medio(s) en ${fichasConMedia} ficha(s) · ${nEnlaces} enlace(s) «Para saber más»`);
 console.log('');
 
 /* Con `--enlaces` sale el mapa completo de enlaces profundos, listo para pegar donde haga

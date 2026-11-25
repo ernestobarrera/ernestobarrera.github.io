@@ -395,6 +395,54 @@ async function main() {
     enCuello = await ev(`document.activeElement.textContent.trim().startsWith('Cuello')`);
   }
   comprobar('con el teclado, el foco en «Cuello» abre su desplegable', enCuello && (await menuVisible(0)));
+
+  // ── Iconografía D-6 (25/11/2026) ─────────────────────────────────────────────────────────
+  // pocus-audit.mjs ya exige la atribución en los datos; aquí se mira lo que solo se ve pintado:
+  // que cada imagen carga de verdad (son `loading="lazy"`, así que se recorren una a una), que el
+  // pie con la licencia está debajo, que en el móvil no desbordan y que «Para saber más» sale en
+  // Evidencia y no en Hallazgos.
+  const FICHA_ICONO = 'exploracion-pulmonar-protocolo-blue';
+  for (const [nombre, ancho, alto, tactil] of [['móvil', 390, 844, true], ['escritorio', 1366, 800, false]]) {
+    console.log(`\nIconografía (D-6) · ${nombre}`);
+    await abrir(`${base}?ficha=${FICHA_ICONO}`, ancho, alto, tactil);
+    const tarjeta = `document.querySelector('.content-card[data-ficha="${FICHA_ICONO}"]')`;
+    let nFig = 0;
+    for (let i = 0; i < 25 && !nFig; i++) {
+      await espera(200);
+      nFig = await ev(`(${tarjeta} || { querySelectorAll: () => [] }).querySelectorAll('#' + (${tarjeta} || {}).id + ' .pocus-figura').length`).catch(() => 0);
+    }
+    comprobar(`[${nombre}] la ficha piloto pinta sus 4 figuras en Hallazgos`, nFig === 4, nFig);
+
+    // La línea de salto: es lo primero de Hallazgos, se ve sin desplazar y lleva a «Cómo se ve»
+    // de un toque, dejando su título bajo la cabecera (no tapado por ella).
+    const salto = await ev(`(() => { const b = ${tarjeta}.querySelector('[id^="findings-"] > .pocus-salto-media'); if (!b) return null; const r = b.getBoundingClientRect(); return { primero: b.parentElement.firstElementChild === b, texto: b.textContent.trim(), dentro: r.top >= 0 && r.bottom <= innerHeight, alto: Math.round(r.height) }; })()`);
+    comprobar(`[${nombre}] la línea «Cómo se ve · 4 imágenes» abre Hallazgos y se ve sin desplazar`, !!salto && salto.primero && /4 imágenes/.test(salto.texto) && salto.dentro, salto);
+    if (tactil) comprobar(`[${nombre}] la línea de salto mide al menos 38 px de alto para el dedo`, !!salto && salto.alto >= 38, salto);
+    const pSalto = await centro(`${tarjeta}.querySelector('.pocus-salto-media')`);
+    if (tactil) await tocar(pSalto.x, pSalto.y); else await clic(pSalto.x, pSalto.y);
+    await espera(1200);
+    const llegada = await ev(`(() => { const h = document.querySelector('header').getBoundingClientRect().bottom; const t = ${tarjeta}.querySelector('.pocus-media-cabecera').getBoundingClientRect().top; return { cabecera: Math.round(h), titulo: Math.round(t), vh: innerHeight }; })()`);
+    comprobar(`[${nombre}] al pulsarla, «Cómo se ve» queda a la vista justo bajo la cabecera`, llegada.titulo >= llegada.cabecera - 1 && llegada.titulo <= llegada.cabecera + 120, llegada);
+    const cargadas = await ev(`(async () => {
+      const imgs = [...${tarjeta}.querySelectorAll('.pocus-figura img')];
+      for (const im of imgs) { im.scrollIntoView({ block: 'center' }); await new Promise(r => setTimeout(r, 250)); }
+      await Promise.all(imgs.map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
+      return imgs.map(im => ({ src: im.getAttribute('src').split('/').pop(), ok: im.complete && im.naturalWidth > 0, w: Math.round(im.getBoundingClientRect().width) }));
+    })()`);
+    comprobar(`[${nombre}] las 4 imágenes cargan (WebP servido y decodificado)`, cargadas.length === 4 && cargadas.every(c => c.ok), cargadas);
+    const pies = await ev(`[...${tarjeta}.querySelectorAll('.pocus-figura')].map(f => { const c = f.querySelector('figcaption'); const l = c && c.querySelector('a[rel~="license"]'); return !!(c && l && /creativecommons\\.org/.test(l.href) && c.querySelector('.pocus-figura-credito') && c.getBoundingClientRect().top >= f.querySelector('img').getBoundingClientRect().bottom - 1); })`);
+    comprobar(`[${nombre}] cada figura lleva debajo su pie con enlace a la licencia`, pies.length === 4 && pies.every(Boolean), pies);
+    d = await desbordes();
+    comprobar(`[${nombre}] sin desborde horizontal con las figuras`, d.scrollW <= d.vw && d.fuera === 0, d);
+    if (ancho < 500) comprobar(`[${nombre}] en el móvil las figuras van en una sola columna`, new Set(cargadas.map(c => c.w)).size === 1 && cargadas[0].w >= ancho * 0.7, cargadas.map(c => c.w));
+    const saberMas = await ev(`(() => { const t = ${tarjeta}; const ev = t.querySelector('[id^="evidence-"] .pocus-saber-mas'); const hz = t.querySelector('[id^="findings-"] .pocus-saber-mas'); return { enEvidencia: ev ? ev.querySelectorAll('li a[href^="https://"]').length : 0, enHallazgos: !!hz }; })()`);
+    comprobar(`[${nombre}] «Para saber más» va en Evidencia con sus 3 enlaces, no en Hallazgos`, saberMas.enEvidencia === 3 && !saberMas.enHallazgos, saberMas);
+    await ev(`${tarjeta}.querySelector('.pocus-figura').scrollIntoView({ block: 'start' })`);
+    await espera(300);
+    await captura(`iconografia-${nombre}`);
+  }
+  const otraFicha = await ev(`(async () => { await window.renderSegmentContent('cardiac'); return document.querySelectorAll('.pocus-figura, .pocus-saber-mas, .pocus-salto-media').length; })()`);
+  comprobar('una ficha sin medios no pinta bloques vacíos de iconografía', otraFicha === 0, otraFicha);
 }
 
 main()

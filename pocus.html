@@ -444,6 +444,103 @@
         line-height: 1.4;
       }
 
+      /* ── D-6 · Iconografía: «Cómo se ve» (Hallazgos) y «Para saber más» (Evidencia) ──────
+         Cada figura lleva su atribución completa al pie: es la licencia la que lo exige, no
+         el estilo. El pie va en letra pequeña pero nunca oculto. */
+      .pocus-media {
+        margin-top: 1.25rem;
+      }
+      /* Salto a «Cómo se ve»: dice desde el primer vistazo que hay imágenes y lleva a ellas de
+         un toque, sin sacarlas de Hallazgos (texto e imagen del mismo hallazgo, misma pantalla). */
+      .pocus-salto-media {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin: 0 0 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #4f46e5;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        border-radius: 9999px;
+        padding: 0.4rem 0.85rem;
+        min-height: 38px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .pocus-salto-media:hover,
+      .pocus-salto-media:focus-visible {
+        background: #4f46e5;
+        color: #fff;
+      }
+      .pocus-media-cabecera,
+      .pocus-saber-mas-cabecera {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #334155;
+        margin: 0 0 0.75rem;
+      }
+      .pocus-media-rejilla {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+        gap: 1rem;
+      }
+      .prose .pocus-figura {
+        margin: 0;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        overflow: hidden;
+      }
+      .prose .pocus-figura img {
+        display: block;
+        width: 100%;
+        height: auto;
+        margin: 0;
+        background: #000;
+      }
+      .pocus-figura figcaption {
+        padding: 0.6rem 0.75rem 0.7rem;
+        font-size: 0.8rem;
+        line-height: 1.45;
+        color: #374151;
+      }
+      .pocus-figura-titulo {
+        display: block;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+      }
+      .pocus-figura-credito {
+        display: block;
+        margin-top: 0.4rem;
+        font-size: 0.7rem;
+        color: #6b7280;
+      }
+      .pocus-figura-credito a,
+      .pocus-saber-mas a {
+        color: #4f46e5;
+      }
+      .pocus-saber-mas {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+      }
+      .prose .pocus-saber-mas ul {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+      }
+      .prose .pocus-saber-mas li {
+        margin: 0 0 0.5rem;
+        padding-left: 0;
+      }
+      .pocus-enlace-meta {
+        display: block;
+        font-size: 0.7rem;
+        color: #6b7280;
+      }
+
       /* ── Enlaces profundos: destello de la ficha a la que apunta ?ficha= ────────────────
          Al llegar desde un enlace hay que responder a «¿cuál de las tarjetas es?» antes de
          que el usuario empiece a leer. El scroll solo la deja arriba; el anillo dice cuál. */
@@ -1885,6 +1982,9 @@
             <p class="text-xs text-gray-500 mt-8">
               Autor: Ernesto Barrera Linares. Médico de Familia · 2025
             </p>
+            <p class="text-xs text-gray-500 mt-1">
+              Las imágenes y los clips de terceros conservan su propia licencia, indicada al pie de cada uno.
+            </p>
           </div>
         </div>
       </div>
@@ -2703,6 +2803,104 @@ CONCLUSIÓN / RECOMENDACIÓN:
                 id: "nWyF1SoIeBQ",
                 intro: "Introducción al Protocolo BLUE",
                 desc: "Revisión completa de la sistemática de exploración y los patrones ecográficos clave en la insuficiencia respiratoria aguda.",
+              },
+            ],
+            // D-6 · Iconografía con licencia abierta (piloto, 25/11/2026). Cada medio lleva su
+            // atribución completa: título original, autor, fuente y licencia. Lo vigila pocus-audit.mjs.
+            media: [
+              {
+                src: "assets/pocus/media/pulmon-deslizamiento-lineas-a.webp",
+                ancho: 492,
+                alto: 376,
+                titulo: "Deslizamiento pleural y líneas A",
+                queMirar: "La línea pleural, la más brillante cerca de la superficie, «titila» con cada respiración: es el deslizamiento. Más abajo, a la misma distancia, se repite una copia horizontal de la pleura: una línea A. Las dos juntas son el pulmón aireado normal.",
+                alt: "Clip de ecografía pulmonar: línea pleural brillante que se desliza con la respiración y, por debajo, una línea A horizontal paralela a ella.",
+                original: "A - Lines - Normal Lung",
+                autor: "Hannah Kopinski, Lindsay Davis y Matthew Riscinti",
+                fuente: "The POCUS Atlas",
+                fuenteUrl: "https://www.thepocusatlas.com/lung",
+                licencia: "CC BY-NC 4.0",
+                licenciaUrl: "https://creativecommons.org/licenses/by-nc/4.0/deed.es",
+                cambios: "convertido de GIF a WebP",
+                verificado: "2026-11-25",
+                verificadoPor: "manual: thepocusatlas.com/legal",
+              },
+              {
+                src: "assets/pocus/media/pulmon-lineas-b.webp",
+                ancho: 600,
+                alto: 450,
+                titulo: "Líneas B",
+                queMirar: "Líneas verticales brillantes que nacen en la pleura, llegan al fondo de la pantalla sin apagarse, borran las líneas A y se mueven con la respiración. Caso de edema pulmonar, según su autor.",
+                alt: "Clip de ecografía pulmonar con sonda convexa: varias líneas B verticales que parten de la pleura y llegan al fondo de la imagen.",
+                original: "B-Lines - Pulmonary Edema",
+                autor: "Justin Bowra et al. (D. Browne y J. Knights)",
+                fuente: "The POCUS Atlas",
+                fuenteUrl: "https://www.thepocusatlas.com/lung",
+                licencia: "CC BY-NC 4.0",
+                licenciaUrl: "https://creativecommons.org/licenses/by-nc/4.0/deed.es",
+                cambios: "convertido de GIF a WebP",
+                verificado: "2026-11-25",
+                verificadoPor: "manual: thepocusatlas.com/legal",
+              },
+              {
+                src: "assets/pocus/media/pulmon-consolidacion-broncograma.webp",
+                ancho: 394,
+                alto: 394,
+                titulo: "Consolidación con broncograma aéreo",
+                queMirar: "Bajo la pleura, el pulmón ha perdido el aire y parece tejido sólido, como el hígado. Los puntos brillantes de dentro son aire en los bronquios y se mueven con la respiración (broncograma aéreo dinámico). El borde profundo, irregular, marca dónde empieza el pulmón aireado (signo del deshilachado). Caso de neumonía, según su autor.",
+                alt: "Clip de ecografía pulmonar: consolidación de aspecto tisular con puntos hiperecogénicos móviles en su interior y borde profundo irregular.",
+                original: "Classic Findings in Pneumonia",
+                autor: "Aaron Inouye, PA-C",
+                fuente: "The POCUS Atlas",
+                fuenteUrl: "https://www.thepocusatlas.com/lung",
+                licencia: "CC BY-NC 4.0",
+                licenciaUrl: "https://creativecommons.org/licenses/by-nc/4.0/deed.es",
+                cambios: "convertido de GIF a WebP",
+                verificado: "2026-11-25",
+                verificadoPor: "manual: thepocusatlas.com/legal",
+              },
+              {
+                src: "assets/pocus/media/pulmon-modo-m-playa-codigo-barras.webp",
+                ancho: 600,
+                alto: 429,
+                titulo: "Modo M: signo de la playa y código de barras",
+                queMirar: "Arriba, el modo B con la línea de muestreo en verde; abajo, el modo M. A la izquierda, signo de la playa: líneas quietas arriba (la pared) y granulado abajo (el pulmón que se mueve). A la derecha, código de barras: líneas horizontales en toda la altura, porque bajo la pleura no se mueve nada. En este caso, neumotórax.",
+                alt: "Imagen fija en dos paneles: a la izquierda, modo M con signo de la playa; a la derecha, modo M con signo del código de barras.",
+                original: "Pneumothorax: M-mode: Seashore vs Barcode",
+                autor: "Eric Roseman",
+                fuente: "The POCUS Atlas",
+                fuenteUrl: "https://www.thepocusatlas.com/lung",
+                licencia: "CC BY-NC 4.0",
+                licenciaUrl: "https://creativecommons.org/licenses/by-nc/4.0/deed.es",
+                cambios: "convertido de GIF a WebP",
+                verificado: "2026-11-25",
+                verificadoPor: "manual: thepocusatlas.com/legal",
+              },
+            ],
+            enlaces: [
+              {
+                titulo: "Guías y consenso internacional sobre ecografía pulmonar (Demi et al., J Ultrasound Med 2023)",
+                url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC10086956/",
+                tipo: "Guía",
+                idioma: "inglés",
+                acceso: "texto completo gratuito",
+                comprobado: "2026-11-25",
+              },
+              {
+                titulo: "Lung Ultrasound Made Easy: guía paso a paso (POCUS 101)",
+                url: "https://www.pocus101.com/lung-ultrasound-made-easy-step-by-step-guide/",
+                tipo: "Tutorial",
+                idioma: "inglés",
+                acceso: "gratuito",
+                comprobado: "2026-11-25",
+              },
+              {
+                titulo: "Galería pulmonar de The POCUS Atlas: más de cien clips comentados",
+                url: "https://www.thepocusatlas.com/lung",
+                tipo: "Atlas de casos",
+                idioma: "inglés",
+                acceso: "gratuito",
+                comprobado: "2026-11-25",
               },
             ],
           },
@@ -9415,6 +9613,76 @@ CONCLUSIÓN:
         }
         window.mostrarValoresReferencia = mostrarValoresReferencia;
 
+        // ── D-6 · Iconografía con licencia abierta ───────────────────────────────────────────
+        // Los textos vienen de pocusData (los escribimos nosotros), pero se escapan igual: un
+        // título original con «&» o comillas no debe poder romper el HTML de la tarjeta.
+        // Declaración de función (no `const`): se eleva, así que un render temprano por enlace
+        // profundo no puede caer en la zona muerta temporal.
+        function escPocus(s) {
+          return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        }
+
+        // «Cómo se ve»: va en Hallazgos, junto al texto, porque la imagen ilustra el hallazgo
+        // (criterio de la hoja de ruta: donde está el ojo del explorador, no una pestaña aparte).
+        // Atribución TASL al pie de cada figura: título original, autor, fuente y licencia.
+        function construirMediaHtml(media) {
+          if (!Array.isArray(media) || !media.length) return '';
+          const figuras = media
+            .map((m) => {
+              const cambios = m.cambios ? ` · ${escPocus(m.cambios)}` : '';
+              return `
+              <figure class="pocus-figura">
+                <img src="${escPocus(m.src)}" alt="${escPocus(m.alt)}" width="${Number(m.ancho) || ''}" height="${Number(m.alto) || ''}" loading="lazy" decoding="async">
+                <figcaption>
+                  <span class="pocus-figura-titulo">${escPocus(m.titulo)}</span>
+                  ${escPocus(m.queMirar)}
+                  <span class="pocus-figura-credito">«${escPocus(m.original)}» · ${escPocus(m.autor)} · <a href="${escPocus(m.fuenteUrl)}" target="_blank" rel="noopener">${escPocus(m.fuente)}</a> · <a href="${escPocus(m.licenciaUrl)}" target="_blank" rel="noopener license">${escPocus(m.licencia)}</a>${cambios}</span>
+                </figcaption>
+              </figure>`;
+            })
+            .join('');
+          return `<div class="pocus-media"><h4 class="pocus-media-cabecera">Cómo se ve</h4><div class="pocus-media-rejilla">${figuras}</div></div>`;
+        }
+
+        // Línea de salto al principio de Hallazgos. Solo existe si la ficha tiene medios.
+        function construirSaltoMediaHtml(media) {
+          if (!Array.isArray(media) || !media.length) return '';
+          const n = media.length;
+          return `<button type="button" class="pocus-salto-media" onclick="irAImagenes(this)">&#9660; Cómo se ve · ${n} ${n === 1 ? 'imagen' : 'imágenes'}</button>`;
+        }
+
+        // Baja hasta «Cómo se ve» de ESTA tarjeta, dejando el título a la vista bajo la cabecera.
+        // Mismo cálculo de cabecera que el resto de desplazamientos de la página.
+        function irAImagenes(boton) {
+          const destino = boton.closest('.tab-content').querySelector('.pocus-media');
+          if (!destino) return;
+          const cabecera = document.querySelector('header');
+          const alto = (cabecera && cabecera.offsetHeight) || 130;
+          const top = destino.getBoundingClientRect().top + window.pageYOffset - alto - 12;
+          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        }
+        window.irAImagenes = irAImagenes;
+
+        // «Para saber más»: va en Evidencia, separado de las referencias verificadas, porque no
+        // sostiene ninguna cifra de la ficha: son lecturas para ampliar.
+        function construirEnlacesHtml(enlaces) {
+          if (!Array.isArray(enlaces) || !enlaces.length) return '';
+          const items = enlaces
+            .map(
+              (e) => `
+              <li>
+                <a href="${escPocus(e.url)}" target="_blank" rel="noopener">${escPocus(e.titulo)}</a>
+                <span class="pocus-enlace-meta">${escPocus(e.tipo)} · ${escPocus(e.idioma)} · ${escPocus(e.acceso)}</span>
+              </li>`
+            )
+            .join('');
+          return `<div class="pocus-saber-mas"><h4 class="pocus-saber-mas-cabecera">Para saber más</h4><ul>${items}</ul></div>`;
+        }
+
         // Función para crear tarjetas de contenido
         function createContentCard(app, index, segmentId) {
           const cardId = `card-${segmentId}-${index}`;
@@ -9580,8 +9848,8 @@ CONCLUSIÓN:
                                       </div>
                                       <div>
                                           <div id="technique-${cardId}" class="tab-content prose prose-sm max-w-none">${app.content.technique}</div>
-                                          <div id="findings-${cardId}" class="tab-content active prose prose-sm max-w-none"><div class="findings-description">${app.content.findings}</div></div>
-                                          <div id="evidence-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="evidence">${evidenceHtml}</div></div>
+                                          <div id="findings-${cardId}" class="tab-content active prose prose-sm max-w-none">${construirSaltoMediaHtml(app.content.media)}<div class="findings-description">${app.content.findings}</div>${construirMediaHtml(app.content.media)}</div>
+                                          <div id="evidence-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="evidence">${evidenceHtml}</div>${construirEnlacesHtml(app.content.enlaces)}</div>
                                           <div id="pearls-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg">${app.content.pearls}</div></div>
                                           ${videoTabContent}
                                           ${reportTabContent}
