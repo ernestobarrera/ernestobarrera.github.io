@@ -815,7 +815,7 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
     // panel abierto desde allí no tenía «Resultados n / N», ni marca, ni J/K.
     ok(/querySelectorAll\('\.result-card\[data-nregistro\], \.fav-card\[data-nregistro\]'\)/.test(app3),
         'J/K y la posición recorren también los favoritos de Mi vademécum');
-    ok(/:is\(\.result-card, \.fav-card\)\[data-nregistro=/.test(app3) && /\.fav-card\.result-card--en-panel,/.test(css3),
+    ok(/:is\(\.result-card, \.fav-card(, \.combo-ficha-row)?\)\[data-nregistro=/.test(app3) &&/\.fav-card\.result-card--en-panel,/.test(css3),
         'y el favorito abierto se marca, sin pisar el color de su grupo ATC');
     ok(/\$\{this\._posicionEnListaHtml\(med\.nregistro\)\}/.test(app3),
         'la cabecera de la ficha dice la posición en la lista, con ‹ › para pasar al vecino');
@@ -997,6 +997,40 @@ console.log('\n— La ficha cuenta sobre la lista entera (A3, 15/11/2026) —');
         && /\$\{cuenta\.pos\} \/ \$\{cuenta\.total\}/.test(app5)
         && !/\$\{i \+ 1\} \/ \$\{lista\.length\}/.test(app5),
         'la cabecera de la ficha y el «– / N» usan esa cuenta, no las tarjetas visibles');
+}
+
+console.log('\n— Varias fichas: ‹ › recorre la lista del usuario en el mismo apartado (26/11/2026) —');
+{
+    // Desde la 4.5 de un medicamento de la lista no había forma de pasar a la 4.5 del siguiente:
+    // las filas de Varias fichas no eran «lista» para la ficha y había que cerrar y volver.
+    const fila = n => ({
+        dataset: { nregistro: n }, offsetParent: {},
+        closest: sel => (sel === '#combo-ficha' ? {} : null),
+        scrollIntoView() {},
+    });
+    const filas = ['10', '20', '30'].map(fila);
+    const c = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    c._tarjetasDeLista = () => filas;
+    c._verMasTrasTarjeta = () => null;
+    const html = c._posicionEnListaHtml('20');
+    ok(/Tu lista/.test(html) && !/Resultados/.test(html) && /2 \/ 3/.test(html),
+        'la ficha abierta desde Varias fichas dice «Tu lista 2 / 3», no «Resultados»', html.replace(/\s+/g, ' ').slice(0, 160));
+
+    const abiertas = [];
+    c._nregEnPanel = '10';
+    c.modal = { querySelector: () => null };
+    c.openMedDetails = (n, tab, opts) => abiertas.push({ n, tab, lateral: opts?.lateral });
+    ok(c._irATarjetaVecina(1) && abiertas[0]?.n === '20' && abiertas[0].tab === undefined && abiertas[0].lateral === true,
+        '› abre el siguiente de la lista sin imponer pestaña: se conserva el apartado que se estaba leyendo',
+        JSON.stringify(abiertas));
+
+    const app6 = fuenteApp(ROOT);
+    ok(/_tarjetasDeLista\(\) \{[\s\S]{0,600}\.combo-ficha-row\[data-nregistro\]/.test(app6),
+        'las filas de Varias fichas cuentan como lista para ‹ › y J/K');
+    ok(/:is\(\.result-card, \.fav-card, \.combo-ficha-row\)\[data-nregistro=/.test(app6),
+        'la fila del medicamento abierto se marca en la lista');
+    ok(/class="combo-ficha-row\$\{enPanel \? ' result-card--en-panel' : ''\}" data-nregistro="/.test(app6),
+        'cada fila de Varias fichas lleva su nregistro y nace marcada si su ficha está abierta');
 }
 
 console.log(fallos === 0 ? '\nOK — todas las aserciones pasan\n' : `\n${fallos} FALLO(S)\n`);

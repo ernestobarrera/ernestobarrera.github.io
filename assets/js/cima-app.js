@@ -6000,8 +6000,11 @@ class MedCheckApp {
                 <div class="combo-ficha-list">
                     ${this.comboDrugList.map(med => {
                         const nreg = this._escapeHtml(String(med.nregistro)).replace(/'/g, "\\'");
+                        // `data-nregistro`: con la ficha abierta, ‹ › y J/K pasan al medicamento
+                        // siguiente de esta lista en el mismo apartado (ver `_tarjetasDeLista`).
+                        const enPanel = this._nregEnPanel === String(med.nregistro) && !this.modal.classList.contains('hidden');
                         return `
-                    <div class="combo-ficha-row">
+                    <div class="combo-ficha-row${enPanel ? ' result-card--en-panel' : ''}" data-nregistro="${this._escapeHtml(String(med.nregistro))}"${enPanel ? ' aria-current="true"' : ''}>
                         <span class="combo-ficha-name" title="${this._escapeHtml(med.nombre)}">${this._escapeHtml(med.nombre)}</span>
                         <span class="combo-ficha-links">
                             <button type="button" class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${nreg}','interactions')" title="Abrir la sección 4.5 de su ficha técnica"><i class="fas fa-random"></i> 4.5 Interacciones</button>
@@ -11701,7 +11704,7 @@ class MedCheckApp {
             c.removeAttribute('aria-current');
         });
         if (!nregistro) return;
-        document.querySelectorAll(`:is(.result-card, .fav-card)[data-nregistro="${CSS.escape(String(nregistro))}"]`).forEach(c => {
+        document.querySelectorAll(`:is(.result-card, .fav-card, .combo-ficha-row)[data-nregistro="${CSS.escape(String(nregistro))}"]`).forEach(c => {
             c.classList.add('result-card--en-panel');
             c.setAttribute('aria-current', 'true');
         });
@@ -11737,7 +11740,9 @@ class MedCheckApp {
     _tarjetasDeLista() {
         const vistos = new Set();
         // `.fav-card`: Mi vademécum es una lista más por la que se compara (desde el 02/10/2026).
-        return [...document.querySelectorAll('.result-card[data-nregistro], .fav-card[data-nregistro]')]
+        // `.combo-ficha-row`: la lista de Varias fichas. Se lee la misma sección de cada
+        // medicamento uno tras otro, sin volver a la lista; no se cruzan (26/11/2026).
+        return [...document.querySelectorAll('.result-card[data-nregistro], .fav-card[data-nregistro], .combo-ficha-row[data-nregistro]')]
             .filter(c => c.offsetParent !== null && !this.modal.contains(c))
             .filter(c => !vistos.has(c.dataset.nregistro) && vistos.add(c.dataset.nregistro));
     }
@@ -11758,8 +11763,10 @@ class MedCheckApp {
         const ultima = i === lista.length - 1 && !this._verMasTrasTarjeta(lista[i]);
         const boton = (paso, icono, ayuda, inerte) =>
             `<button type="button" class="modal-pos-btn" onclick="app._irATarjetaVecina(${paso})" title="${ayuda}" aria-label="${ayuda}"${inerte ? ' disabled' : ''}><i class="fas fa-chevron-${icono}"></i></button>`;
+        // En Varias fichas no es un resultado de búsqueda: es la lista que ha reunido el usuario.
+        const rotulo = lista[i].closest('#combo-ficha') ? 'Tu lista' : 'Resultados';
         return `<div class="modal-pos-lista">
-            <span class="modal-pos-label">Resultados</span>
+            <span class="modal-pos-label">${rotulo}</span>
             ${boton(-1, 'left', 'Producto anterior de la lista (← o K)', i === 0)}
             <span class="modal-pos-num" title="Posición en la lista entera, con lo que queda tras «Ver más» y en los grupos plegados: la misma cifra que el contador de resultados">${cuenta.pos} / ${cuenta.total}</span>
             ${boton(1, 'right', 'Producto siguiente de la lista (→ o J)', ultima)}
@@ -23357,6 +23364,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-file-medical',
                         body: `
                             <p>Es lo primero bajo la lista y siempre está a la vista: cada medicamento lleva sus botones <span class="guide-key">4.5 Interacciones</span> y <span class="guide-key">4.8 Reacciones</span>, que abren esa sección de su ficha técnica con el texto literal.</p>
+                            <p>Con la ficha abierta, <span class="guide-key">‹ ›</span> (o <span class="guide-key">J</span> / <span class="guide-key">K</span>) pasa al medicamento siguiente o anterior de la lista <span class="guide-highlight">en el mismo apartado</span>, sin volver aquí.</p>
                             <p>MedCheck no cruza las fichas ni busca en ellas por ti: la lectura de cada una es tuya.</p>
                             <p class="guide-case"><strong>Caso</strong>Vas a añadir un macrólido a una lista que lleva una estatina: abres la 4.5 de cada uno y lees qué dice cada ficha sobre el otro.</p>
                         `,

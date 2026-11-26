@@ -3179,6 +3179,14 @@ a.badge-seguimiento:focus-visible {
     border-top: 1px solid var(--border-default);
 }
 .combo-ficha-row:first-child { border-top: none; }
+/* El medicamento abierto en el panel: al pasar con ‹ › la lista dice cuál se está leyendo. */
+.combo-ficha-row.result-card--en-panel {
+    box-shadow: inset 4px 0 0 var(--primary);
+    background: var(--primary-light);
+    padding-left: 0.6rem;
+    border-radius: var(--radius-sm, 4px);
+}
+.combo-ficha-row.result-card--en-panel .combo-ficha-name { color: var(--primary); }
 .combo-ficha-name {
     flex: 1 1 14rem;
     min-width: 0;
