@@ -476,6 +476,21 @@ async function main() {
   })()`);
   comprobar(`una ficha sin medios no pinta bloques vacíos de iconografía (segmento «${otraFicha && otraFicha.seg}»)`, !!otraFicha && !!otraFicha.seg && otraFicha.bloques === 0, otraFicha);
 
+  // Destello del enlace profundo (26/11/2026): al quitar `.deeplink-target` a los 2,6 s, si su
+  // animación había sustituido a `fadeIn`, el navegador reiniciaba `fadeIn` y la tarjeta entera
+  // parpadeaba de opacidad 0 a 1. Se cuenta cualquier `fadeIn` de la tarjeta pasado el primer segundo.
+  const reinicio = await ev(`(async () => {
+    const slug = pocusSlug(pocusData.find(a => a.segment !== 'cardiac').title);
+    const tardios = [];
+    const t0 = performance.now();
+    const oye = (e) => { if (e.animationName === 'fadeIn' && e.target.classList.contains('content-card') && performance.now() - t0 > 1000) tardios.push(e.target.id); };
+    document.addEventListener('animationstart', oye, true);
+    const ok = await window.abrirFicha(slug, { escribirUrl: false, suave: false });
+    await new Promise(r => setTimeout(r, 3500));
+    document.removeEventListener('animationstart', oye, true);
+    return { slug, ok, tardios, sigueClase: !!document.querySelector('.deeplink-target') };
+  })()`);
+  comprobar(`abrir una ficha por enlace no reinicia su animación de entrada al apagarse el destello («${reinicio && reinicio.slug}»)`, !!reinicio && reinicio.ok && reinicio.tardios.length === 0 && !reinicio.sigueClase, reinicio);
 }
 
 main()

@@ -544,8 +544,11 @@
       /* ── Enlaces profundos: destello de la ficha a la que apunta ?ficha= ────────────────
          Al llegar desde un enlace hay que responder a «¿cuál de las tarjetas es?» antes de
          que el usuario empiece a leer. El scroll solo la deja arriba; el anillo dice cuál. */
+      /* `fadeIn` va primero en la lista y con los mismos valores que en .content-card: si el
+         destello la sustituyera, al quitar la clase (2,6 s) el navegador vería `fadeIn` como
+         animación nueva y la reiniciaría, y la tarjeta entera parpadearía de opacidad 0 a 1. */
       .content-card.deeplink-target {
-        animation: deeplinkFlash 2.4s ease-out;
+        animation: fadeIn 0.5s ease-in-out, deeplinkFlash 2.4s ease-out;
       }
       @keyframes deeplinkFlash {
         0%,
@@ -558,7 +561,7 @@
       }
       @media (prefers-reduced-motion: reduce) {
         .content-card.deeplink-target {
-          animation: none;
+          animation: fadeIn 0.5s ease-in-out;
           box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.55), 0 20px 40px rgba(0, 0, 0, 0.1);
         }
       }
