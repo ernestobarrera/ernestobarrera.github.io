@@ -8298,6 +8298,7 @@ div.section-text th .ft-tras-hueco {
    verde: el color dice qué tipo de frase es, no si algo es grave o está permitido. */
 .section-text mark.ft-indica,
 .section-text mark.ft-datos,
+.section-text mark.ft-excip,
 .section-text mark[class^="ft-frec-"] {
     color: var(--mark-fg) !important;
     background: var(--mark-bg) !important;
@@ -8310,6 +8311,8 @@ div.section-text th .ft-tras-hueco {
 }
 mark.ft-indica     { --mark-fg: #c7d2fe; --mark-bg: rgba(99, 102, 241, 0.28); }
 mark.ft-datos      { --mark-fg: #e2e8f0; --mark-bg: rgba(148, 163, 184, 0.24); }
+/* Excipientes (4.4): piedra cálida, un tono que no usa ninguna otra categoría de la app. */
+mark.ft-excip      { --mark-fg: #f1e4d3; --mark-bg: rgba(168, 132, 92, 0.30); }
 /* Escala de frecuencia de la 4.8: un solo tono, de tenue (muy raras) a intenso (muy frecuentes).
    Ordinal y validada sobre la superficie de la ficha (#222d3f): luminosidad monótona, saltos
    visibles, el paso más tenue a 2,26:1 sobre la superficie y el texto ≥ 4,5:1 sobre cada fondo
@@ -8325,6 +8328,7 @@ mark.ft-frec-nc { --mark-fg: #f8fafc; --mark-bg: #52627a; }
 .ft-legend-titulo { color: var(--text-secondary); }
 .ft-legend mark.ft-indica,
 .ft-legend mark.ft-datos,
+.ft-legend mark.ft-excip,
 .ft-legend mark[class^="ft-frec-"] {
     color: var(--mark-fg);
     background: var(--mark-bg);

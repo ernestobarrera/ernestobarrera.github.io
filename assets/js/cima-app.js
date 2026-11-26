@@ -12684,6 +12684,10 @@ ${ftFechaDocsHtml}
         caja.innerHTML = `<div class="section-text">${String(content).normalize('NFC')}</div>`;
         caja.dataset.cargada = '1';
         this._compactarTextoFT(caja.firstElementChild);
+        // Resaltado por categorías de la 4.4. La 4.6 NO (ver `RESALTADOS_46`: p90 10,2 % coloreado,
+        // por encima de la regla de entrada); la 4.7 es tan corta que se lee entera.
+        const tabla = { '4.4': MedCheckApp.RESALTADOS_44 }[seccion];
+        if (tabla) this._resaltarPestanaSeccion(caja.firstElementChild, tabla);
         pintar(true);
     }
 
@@ -13251,7 +13255,7 @@ ${ftFechaDocsHtml}
                     new RegExp(`${ini}((?:se\\s+)?deben?\\s+(?:vigilarse|controlarse|monitorizarse))(?![${L}])`, 'gi'),
                     new RegExp(`${ini}(debe\\s+ser\\s+evitad[oa])(?![${L}])`, 'gi'),
                     new RegExp(`${ini}((?:se\\s+debe(?:n)?|debe(?:n)?|es\\s+necesario|se\\s+recomienda)\\s+(?:ajustar|reducir|aumentar|disminuir)\\s+la\\s+dosis)`, 'gi'),
-                    new RegExp(`${ini}((?:está|están)\\s+contraindicad[oa]s?|contraindicad[oa]s?)(?![${L}])`, 'gi'),
+                    new RegExp(`${ini}((?:no\\s+)?(?:está|están)\\s+contraindicad[oa]s?|(?:no\\s+)?contraindicad[oa]s?)(?![${L}])`, 'gi'),
                     new RegExp(`${ini}(no\\s+se\\s+recomienda(?:n)?)(?![${L}])`, 'gi'),
                     new RegExp(`${ini}((?:se\\s+debe(?:n)?|debe(?:n)?|deberá(?:n)?)\\s+evitar(?:se)?|evitar(?:se)?\\s+(?:el\\s+uso|la\\s+administración|la\\s+combinación))(?![${L}])`, 'gi'),
                     new RegExp(`${ini}((?:se\\s+debe(?:n)?\\s+|debe(?:n)?\\s+)?(?:tener|tenerse)\\s+(?:especial\\s+)?precaución)`, 'gi'),
@@ -13336,6 +13340,97 @@ ${ftFechaDocsHtml}
                     nivel('ft-frec-r', 'rar[ao]s?', 4, 'Raras', '≥1/10.000 a <1/1.000', desde(N10000)),
                 ];
             })(),
+        ];
+    }
+
+    /**
+     * 4.6 (segunda tanda del informe del 26/11): solo «Lo que indica la ficha», la frase de
+     * conclusión de cada subapartado con la redacción de la plantilla QRD («no se recomienda utilizar
+     * durante el embarazo», «se debe decidir si es necesario interrumpir la lactancia», «no se puede
+     * excluir el riesgo»…). Precisión 40/40 en la muestra. «Datos disponibles» se quedó fuera: con
+     * ella la 4.6 llegaba a p90 16,5 % coloreado y no cumplía la regla de entrada (≤ 10 %).
+     *
+     * NO ESTÁ CONECTADA (26/11/2026). Tras corregir la negación previa («no está contraindicada») y
+     * el uso afirmativo condicionado («solo se debe utilizar… si…»), la auditoría la deja en p90
+     * 10,2 % coloreado: por encima de la regla de entrada. No se recortaron más patrones para
+     * colarla. Lo que sube la densidad es lo corto de muchas 4.6 (400-800 caracteres), donde tres frases
+     * ya pasan del 10 %. Se sigue midiendo en `medcheck-audit-resaltado-secciones`; decidir con él.
+     */
+    static get RESALTADOS_46() {
+        const L = 'a-záéíóúüñ';
+        const ini = `(?<![${L}])`;
+        const fin = `(?![${L}])`;
+        return [
+            {
+                clase: 'ft-indica', etiqueta: 'Lo que indica la ficha', leyenda: 1,
+                ayuda: 'La frase en la que la ficha concluye qué hacer en el embarazo, la lactancia o la anticoncepción —no se recomienda, está contraindicado, evitar, puede utilizarse, se debe decidir…—, con sus palabras y su negación. Todas del mismo color: el color dice qué tipo de frase es, no lo grave que es. Léela entera, con su subapartado.',
+                patrones: [
+                    new RegExp(`${ini}((?:no\\s+)?(?:se\\s+)?recomienda(?:n)?\\s+(?:(?:el\\s+)?(?:uso|utilizar|usar|administrar|la\\s+administración|la\\s+lactancia|interrumpir|el\\s+tratamiento)|no\\s+(?:utilizar|usar|administrar|amamantar|dar\\s+el\\s+pecho)))${fin}`, 'gi'),
+                    new RegExp(`${ini}((?:no\\s+)?(?:está|están)\\s+contraindicad[oa]s?)${fin}`, 'gi'),
+                    new RegExp(`${ini}((?:es\\s+preferible|se\\s+debe(?:n)?|debe(?:n)?)\\s+evitar(?:se)?)${fin}`, 'gi'),
+                    new RegExp(`${ini}(se\\s+debe(?:n)?\\s+(?:utilizar|usar)\\s+(?:métodos\\s+)?anticonceptivos?|(?:deben|debe)\\s+(?:utilizar|usar)\\s+(?:métodos\\s+)?anticonceptivos?)${fin}`, 'gi'),
+                    // USO AFIRMATIVO («puede utilizarse», «debe administrarse»). Si la frase lo restringe
+                    // («solo se debe utilizar…») o lo condiciona («…si el beneficio justifica el riesgo»,
+                    // «…únicamente cuando sea claramente necesario»), la marca llega al final de la frase:
+                    // suelto se leería como una orden. Si es incondicional («DulcoLax puede administrarse
+                    // durante la lactancia»), marca corta. Llevar siempre la frase entera colocaba la 4.6
+                    // en p90 14,5 % coloreado (26 fichas densas en la auditoría del 26/11): no cumplía la
+                    // regla de entrada.
+                    ...(() => {
+                        const uso = '(?:(?:puede|pueden|podría|podrían)\\s+(?:utilizarse|usarse|administrarse|considerarse|emplearse)|(?:se\\s+)?debe(?:n|rá|rían)?\\s+(?:utilizar(?:se)?|usar(?:se)?|administrar(?:se)?))';
+                        const restriccion = '(?:solo|sólo|solamente|únicamente)';
+                        const condicion = `[^.;\\n]*?(?<![${L}])(?:si|cuando|únicamente|solamente|solo|sólo|excepto|salvo|a\\s+menos\\s+que|siempre\\s+que)(?![${L}])[^.;\\n]*`;
+                        return [
+                            new RegExp(`${ini}((?:no\\s+)?${restriccion}\\s+${uso}${fin}[^.;\\n]*)`, 'gi'),
+                            new RegExp(`${ini}((?:no\\s+)?${uso}${fin}${condicion})`, 'gi'),
+                            new RegExp(`${ini}((?:no\\s+)?${uso})${fin}`, 'gi'),
+                        ];
+                    })(),
+                    new RegExp(`${ini}((?:se\\s+)?debe(?:n|rá)?\\s+decidir)${fin}`, 'gi'),
+                    new RegExp(`${ini}((?:no\\s+)?(?:se\\s+)?debe(?:n|rá|rían)?\\s+(?:interrumpir(?:se)?|suspender(?:se)?))${fin}`, 'gi'),
+                    // «No se puede excluir el riesgo» NO entra: no dice qué hacer, describe lo que se
+                    // sabe (es de «Datos disponibles», que en la 4.6 se quedó fuera por densidad).
+                ],
+            },
+        ];
+    }
+
+    /**
+     * 4.4 (segunda tanda del informe del 26/11): dos tipos de frase muy repetidos en una sección
+     * larga (mediana de 4.700 caracteres). «Excipientes»: la declaración obligatoria de
+     * excipientes (sodio, lactosa, etanol, aspartamo…), 14/14 en la muestra. «Lo que indica la
+     * ficha», SOLO las frases de interrumpir o suspender el tratamiento: el resto de la 4.4 son
+     * advertencias y precauciones de principio a fin, y marcar cada «precaución» la colorearía
+     * entera. El límite de la frase está corregido respecto a la medición inicial, que arrastraba
+     * palabras de más («…si vuelve», «…en pacientes»).
+     * Se ve al pulsar «Leer la 4.4 aquí» en Seguridad (`leerSeccionSeguridad`).
+     */
+    static get RESALTADOS_44() {
+        const L = 'a-záéíóúüñ';
+        const ini = `(?<![${L}])`;
+        const fin = `(?![${L}])`;
+        const excipiente = '(?:sodio|potasio|lactosa|sacarosa|glucosa|fructosa|sorbitol|etanol|alcohol|aspartamo|fenilalanina|parahidroxibenzoato|propilenglicol|aceite\\s+de\\s+ricino|benzoato|alcohol\\s+bencílico|amarillo\\s+anaranjado|tartrazina|azoico|gluten|trigo|cacahuete|soja|polisorbato|ciclodextrina|sulfito|maltitol|isomalta|xilitol|manitol|butilhidroxitolueno|lanolina|alcohol\\s+cetoestearílico)';
+        const objeto = '(?:\\s+(?:inmediatamente|de\\s+inmediato))?(?:\\s+(?:el\\s+tratamiento|el\\s+medicamento|la\\s+administración))?';
+        return [
+            {
+                clase: 'ft-excip', etiqueta: 'Excipientes', leyenda: 2,
+                ayuda: 'La declaración de excipientes que la ficha está obligada a hacer (sodio, lactosa, etanol, aspartamo…). Que no aparezca ninguna no significa que el medicamento no tenga excipientes de declaración obligatoria: puede estar en la sección 2 o en la 6.1.',
+                patrones: [
+                    new RegExp(`${ini}(este\\s+medicamento\\s+contiene\\s+[^.\\n]{0,120}?${excipiente}[^.\\n]*)`, 'gi'),
+                    new RegExp(`${ini}((?:es\\s+)?esencialmente\\s+[«"“]?exento\\s+de\\s+(?:sodio|potasio)[»"”]?)`, 'gi'),
+                    new RegExp(`${ini}((?:los\\s+)?pacientes\\s+con\\s+(?:problemas\\s+hereditarios\\s+raros\\s+de\\s+)?intolerancia\\s+(?:hereditaria\\s+)?a\\s+(?:la\\s+)?(?:galactosa|fructosa)[^.\\n]*)`, 'gi'),
+                ],
+            },
+            {
+                clase: 'ft-indica', etiqueta: 'Interrumpir el tratamiento', leyenda: 1,
+                ayuda: 'En la 4.4 solo se marcan las frases en las que la ficha dice que se interrumpa o suspenda el tratamiento. El resto de la sección son advertencias y precauciones: léela entera.',
+                patrones: [
+                    new RegExp(`${ini}((?:no\\s+)?(?:se\\s+)?(?:debe(?:n|rá|rán)?|deberá(?:n)?)\\s+(?:interrumpir|suspender|retirar)(?:se)?${objeto})${fin}`, 'gi'),
+                    new RegExp(`${ini}(el\\s+tratamiento\\s+(?:se\\s+)?(?:debe(?:rá)?|deberá)\\s+(?:interrumpir|suspender|retirar)(?:se)?(?:\\s+(?:inmediatamente|de\\s+inmediato))?)${fin}`, 'gi'),
+                    new RegExp(`${ini}((?:es\\s+preciso|es\\s+necesario)\\s+(?:interrumpir|suspender|retirar)\\s+el\\s+tratamiento)${fin}`, 'gi'),
+                    new RegExp(`${ini}(se\\s+debe(?:n)?\\s+considerar\\s+(?:la\\s+posibilidad\\s+de\\s+)?(?:interrumpir|suspender|la\\s+interrupción\\s+del|la\\s+suspensión\\s+del)\\s+(?:el\\s+)?tratamiento)${fin}`, 'gi'),
+                ],
+            },
         ];
     }
 

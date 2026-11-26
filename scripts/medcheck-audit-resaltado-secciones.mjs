@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MedCheck — auditoría de COBERTURA, PRECISIÓN y DENSIDAD de los resaltados de 4.5 y 4.8 contra
+ * MedCheck — auditoría de COBERTURA, PRECISIÓN y DENSIDAD de los resaltados de 4.4, 4.5, 4.6 y 4.8 contra
  * fichas reales de CIMA (piloto del 26/11/2026; informe `2026-11-26_resaltados-secciones.md`).
  *
  * Hermana de `medcheck-audit-resaltado-posologia.mjs`, con dos cambios de método:
@@ -62,6 +62,8 @@ const app = Object.create(App.prototype);
 
 const SECCIONES = {
     '4.5': { categorias: () => App.RESALTADOS_45, amplio: /\b(recomiend\w*|recomienda\w*|precauci\w+|evit\w+|contraindic\w+|ajust\w+|vigil\w+|monitoriz\w+|control\w*|estudiad\w*|realizado\w*)\b/gi },
+    '4.6': { categorias: () => App.RESALTADOS_46, amplio: /(recomiend\w*|recomienda\w*|contraindic\w+|evit\w+|interrump\w+|decidir|anticoncep\w+|excluir)/gi },
+    '4.4': { categorias: () => App.RESALTADOS_44, amplio: /(contiene|exento|intolerancia|interrump\w+|suspend\w+|retir\w+)/gi },
     '4.8': { categorias: () => App.RESALTADOS_48, amplio: /(?<![a-záéíóúñ])(frecuentes?|frecuencia|raras?|raros?|no\s+conocida|desconocida)(?![a-záéíóúñ])/gi },
 };
 
@@ -150,7 +152,7 @@ async function main() {
     const lista = muestra(meds, atcDe);
     const umbral = App.UMBRAL_RESALTADO;
     const informe = [
-        '# Resaltados de 4.5 y 4.8: cobertura, precisión y densidad', '',
+        '# Resaltados de 4.4, 4.5, 4.6 y 4.8: cobertura, precisión y densidad', '',
         `Muestra: ${lista.length} productos (${POR_ATC} por grupo ATC1, uno por ATC5) del catálogo de comercializados (${meds.length}).`,
         `Umbrales de la app: mínimo ${umbral.minCaracteres} caracteres, máximo ${Math.round(umbral.maxFraccion * 100)} % coloreado.`,
         `Generado: ${new Date().toISOString()}`, '',

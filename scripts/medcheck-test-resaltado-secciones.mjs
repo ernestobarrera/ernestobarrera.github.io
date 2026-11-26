@@ -96,6 +96,50 @@ bloque('4.5', () => {
         !C.some(c => c.patrones.some(p => /CYP|P-?gp|OATP|BCRP|UGT|citocromo|glicoproteína/i.test(p.source))));
 });
 
+// --- 4.6 y 4.4 (segunda tanda, en «Leer la 4.x aquí» de Seguridad) -------------------------------
+bloque('4.6 y 4.4', () => {
+    const C46 = App.RESALTADOS_46;
+    const C44 = App.RESALTADOS_44;
+    const casos46 = [
+        ['No se recomienda utilizar Revolade durante el embarazo.', [['ft-indica', 'No se recomienda utilizar']]],
+        ['Roxadustat está contraindicado durante el tercer trimestre del embarazo.', [['ft-indica', 'está contraindicado']]],
+        // Regresión de la auditoría del 26/11: la negación previa iba fuera de la marca.
+        ['Aunque la digoxina se excreta en la leche materna, la lactancia no está contraindicada.', [['ft-indica', 'no está contraindicada']]],
+        ['Se debe decidir si es necesario interrumpir la lactancia o interrumpir el tratamiento.', [['ft-indica', 'Se debe decidir']]],
+        // Uso condicionado sin «solo» delante: la condición va dentro de la marca.
+        ['TachoSil debe administrarse a mujeres embarazadas únicamente cuando sea claramente necesario.', [['ft-indica', 'debe administrarse a mujeres embarazadas únicamente cuando sea claramente necesario']]],
+        ['No se debe utilizar Jakavi durante la lactancia (ver sección 4.3).', [['ft-indica', 'No se debe utilizar']]],
+        // Regresión: «solo se debe utilizar» suelto se leía como una orden; ahora con su «solo» y su condición.
+        ['Solamente se debe utilizar dupilumab durante el embarazo si el beneficio potencial justifica el riesgo.', [['ft-indica', 'Solamente se debe utilizar dupilumab durante el embarazo si el beneficio potencial justifica el riesgo']]],
+        ['Por tanto, DulcoLax puede administrarse durante la lactancia.', [['ft-indica', 'puede administrarse']]],
+        ['Las mujeres en edad fértil deben utilizar métodos anticonceptivos efectivos.', [['ft-indica', 'deben utilizar métodos anticonceptivos']]],
+        ['Como medida de precaución, es preferible evitar el uso de haloperidol durante el embarazo.', [['ft-indica', 'es preferible evitar']]],
+    ];
+    for (const [t, esperado] of casos46) {
+        const r = una(t, C46);
+        ok(`4.6 marca «${esperado[0][1].slice(0, 50)}»`, igual(r, esperado), JSON.stringify(r));
+    }
+    ok('4.6 no marca la base de datos (se quedó fuera por densidad)', una('Los estudios realizados en animales han mostrado toxicidad para la reproducción.', C46).length === 0);
+    ok('4.6 no marca «no se puede excluir el riesgo» (describe lo que se sabe, no qué hacer)', una('No se puede excluir el riesgo en recién nacidos/niños.', C46).length === 0);
+    const casos44 = [
+        ['Este medicamento contiene lactosa. Los pacientes con intolerancia hereditaria a galactosa no deben tomar este medicamento.',
+            [['ft-excip', 'Este medicamento contiene lactosa'], ['ft-excip', 'Los pacientes con intolerancia hereditaria a galactosa no deben tomar este medicamento']]],
+        ['Este medicamento contiene menos de 1 mmol de sodio (23 mg) por comprimido; esto es, esencialmente “exento de sodio”.',
+            [['ft-excip', 'Este medicamento contiene menos de 1 mmol de sodio (23 mg) por comprimido; esto es, esencialmente “exento de sodio”']]],
+        ['Se debe interrumpir el tratamiento con pioglitazona si se produce cualquier empeoramiento.', [['ft-indica', 'Se debe interrumpir el tratamiento']]],
+        // Regresión de la medición inicial: arrastraba palabras de más («…si vuelve»).
+        ['El tratamiento se debe interrumpir si vuelve a presentarse depresión.', [['ft-indica', 'El tratamiento se debe interrumpir']]],
+        ['En caso de duda, no se debe interrumpir el tratamiento sin consultar.', [['ft-indica', 'no se debe interrumpir el tratamiento']]],
+    ];
+    for (const [t, esperado] of casos44) {
+        const r = una(t, C44);
+        ok(`4.4 marca «${esperado[0][1].slice(0, 50)}»`, igual(r, esperado), JSON.stringify(r));
+    }
+    ok('4.4 no marca cada «precaución» (colorearía la sección entera)', una('Se debe tener precaución en pacientes con insuficiencia renal.', C44).length === 0);
+    ok('«Leer la 4.x aquí» resalta la 4.4 y no la 4.6 (p90 10,2 % > 10 %) ni la 4.7',
+        /\{ '4\.4': MedCheckApp\.RESALTADOS_44 \}\[seccion\]/.test(src) && !/'4\.[67]': MedCheckApp\.RESALTADOS/.test(src));
+});
+
 // --- 4.8 ------------------------------------------------------------------------------------------
 bloque('4.8', () => {
     const C = App.RESALTADOS_48;
