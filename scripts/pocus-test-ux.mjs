@@ -440,6 +440,80 @@ async function main() {
     await ev(`${tarjeta}.querySelector('.pocus-figura').scrollIntoView({ block: 'start' })`);
     await espera(300);
     await captura(`iconografia-${nombre}`);
+
+    // ── D-7 · Visor (26/11/2026): ampliar, pasar entre las de la ficha, Esc y «atrás» ───────
+    const esperadas = await ev(`[...${tarjeta}.querySelectorAll('.pocus-figura')].map(f => ({ src: f.querySelector('img').getAttribute('src').split('/').pop(), titulo: f.querySelector('.pocus-figura-titulo').textContent }))`);
+    const visor = () => ev(`(() => {
+      const d = document.getElementById('pocus-visor'); if (!d) return { abierto: false };
+      const img = d.querySelector('.pocus-visor-escena img'), r = img.getBoundingClientRect();
+      const pie = d.querySelector('.pocus-visor-pie'), rp = pie.getBoundingClientRect();
+      const enMedio = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+      return { abierto: d.open, contador: d.querySelector('.pocus-visor-contador').textContent,
+        src: (img.getAttribute('src') || '').split('/').pop(), ancho: Math.round(r.width), natural: img.naturalWidth,
+        dentro: r.left >= -1 && r.right <= innerWidth + 1 && r.top >= -1 && r.bottom <= innerHeight + 1,
+        pieVisible: rp.height > 0 && rp.top < innerHeight - 20 && rp.bottom <= innerHeight + 1,
+        licencia: !!pie.querySelector('a[rel~="license"][href*="creativecommons.org"]'),
+        titulo: (pie.querySelector('.pocus-figura-titulo') || {}).textContent,
+        foco: d.contains(document.activeElement), tapa: !!enMedio && d.contains(enMedio),
+        estado: history.state && history.state.pocusVisor === true };
+    })()`);
+    const aviso = await ev(`(() => { const b = ${tarjeta}.querySelector('.pocus-ampliar'); const a = b && b.querySelector('.pocus-ampliar-aviso'); if (!a) return null; const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(); return { tag: b.tagName, texto: a.textContent.trim(), dentro: ra.width > 0 && ra.left >= rb.left && ra.right <= rb.right && ra.bottom <= rb.bottom, label: b.getAttribute('aria-label') }; })()`);
+    comprobar(`[${nombre}] cada imagen es un botón con el aviso visible «Ampliar»`, !!aviso && aviso.tag === 'BUTTON' && /Ampliar/.test(aviso.texto) && aviso.dentro && /^Ampliar: /.test(aviso.label), aviso);
+    // Centrada antes de pulsar: arriba del todo queda bajo la cabecera fija y el toque cae en el buscador.
+    await ev(`${tarjeta}.querySelector('.pocus-ampliar').scrollIntoView({ block: 'center' })`);
+    await espera(300);
+    const p1 = await centro(`${tarjeta}.querySelector('.pocus-ampliar')`);
+    if (tactil) await tocar(p1.x, p1.y); else await clic(p1.x, p1.y);
+    await espera(500);
+    let v = await visor();
+    comprobar(`[${nombre}] al pulsar la imagen se abre el visor en «1 / ${esperadas.length}» con esa imagen`, v.abierto && v.contador === `1 / ${esperadas.length}` && v.src === esperadas[0].src, v);
+    comprobar(`[${nombre}] la ampliación lleva su pie con título y enlace a la licencia, a la vista`, v.licencia && v.titulo === esperadas[0].titulo && v.pieVisible, v);
+    comprobar(`[${nombre}] el visor tapa la página, cabe en la pantalla y tiene el foco`, v.tapa && v.dentro && v.foco, v);
+    comprobar(`[${nombre}] la imagen no se amplía más de 1,5× su tamaño real`, v.natural > 0 && v.ancho <= Math.ceil(v.natural * 1.5) + 1, v);
+    await captura(`visor-${nombre}`);
+    if (tactil) {
+      // Deslizar a la izquierda con el dedo = siguiente.
+      const y = Math.round(844 / 2);
+      await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 320, y }] });
+      await send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 200, y }] });
+      await send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 70, y }] });
+      await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    } else {
+      const pSig = await centro(`document.querySelector('#pocus-visor .pocus-visor-paso[data-paso="1"]')`);
+      await clic(pSig.x, pSig.y);
+    }
+    await espera(300);
+    v = await visor();
+    comprobar(`[${nombre}] ${tactil ? 'deslizar a la izquierda' : 'el botón «siguiente»'} pasa a la imagen 2 con su pie`, v.contador === `2 / ${esperadas.length}` && v.src === esperadas[1].src && v.titulo === esperadas[1].titulo, v);
+    await tecla('ArrowRight', 'ArrowRight', 39);
+    await espera(200);
+    const trasDerecha = await visor();
+    await tecla('ArrowLeft', 'ArrowLeft', 37);
+    await tecla('ArrowLeft', 'ArrowLeft', 37);
+    await espera(200);
+    v = await visor();
+    comprobar(`[${nombre}] las flechas del teclado pasan de imagen (→ a la 3, ← ← a la 1)`, trasDerecha.contador === `3 / ${esperadas.length}` && v.contador === `1 / ${esperadas.length}`, { trasDerecha: trasDerecha.contador, final: v.contador });
+    await tecla('ArrowLeft', 'ArrowLeft', 37);
+    await espera(200);
+    v = await visor();
+    comprobar(`[${nombre}] desde la primera, «anterior» da la vuelta a la última`, v.contador === `${esperadas.length} / ${esperadas.length}` && v.src === esperadas[esperadas.length - 1].src, v);
+    await tecla('Escape', 'Escape', 27);
+    await espera(600);
+    v = await visor();
+    const trasEsc = await ev(`(() => { const f = [...${tarjeta}.querySelectorAll('.pocus-figura')]; return { focoEn: f.findIndex(x => x.querySelector('.pocus-ampliar') === document.activeElement), url: location.search }; })()`);
+    comprobar(`[${nombre}] Esc cierra, deshace su entrada de historial y devuelve el foco a la última imagen vista`, !v.abierto && !v.estado && trasEsc.focoEn === esperadas.length - 1 && trasEsc.url.includes('ficha='), { v, trasEsc });
+    // Centrada antes de pulsar: arriba del todo queda bajo la cabecera fija y el toque cae en el buscador.
+    await ev(`${tarjeta}.querySelector('.pocus-ampliar').scrollIntoView({ block: 'center' })`);
+    await espera(300);
+    const p2 = await centro(`${tarjeta}.querySelector('.pocus-ampliar')`);
+    if (tactil) await tocar(p2.x, p2.y); else await clic(p2.x, p2.y);
+    await espera(400);
+    const reabierto = (await visor()).abierto;
+    await ev(`history.back()`);
+    await espera(900);
+    v = await visor();
+    const trasAtras = await ev(`({ url: location.pathname + location.search, tarjeta: !!${tarjeta} })`);
+    comprobar(`[${nombre}] «atrás» cierra la ampliación y deja el atlas en la misma ficha`, reabierto && !v.abierto && /pocus\.html\?ficha=/.test(trasAtras.url) && trasAtras.tarjeta, { reabierto, v, trasAtras });
   }
   // Todas las demás fichas con medios (la iconografía escala a todo el atlas): en escritorio, que
   // cada figura cargue de verdad y lleve su pie con licencia, y que salgan la línea de salto y

@@ -521,6 +521,134 @@
       .pocus-saber-mas a {
         color: #4f46e5;
       }
+
+      /* ── D-7 · Ampliar y pasar entre las imágenes de la ficha ─────────────────────────────
+         La imagen va dentro de un <button> (se alcanza con el tabulador y anuncia qué hace) con
+         un aviso visible «Ampliar»; el visor es un <dialog> nativo con showModal(), que ya trae
+         fondo, Esc, foco atrapado y el resto de la página inerte. `CONTRATO:` el pie con la
+         licencia viaja con la imagen ampliada: CC BY-NC obliga a atribuir donde se muestra. */
+      .pocus-ampliar {
+        position: relative;
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: #000;
+        cursor: zoom-in;
+      }
+      .pocus-ampliar:focus-visible {
+        outline: 3px solid #4f46e5;
+        outline-offset: -3px;
+      }
+      .pocus-ampliar-aviso {
+        position: absolute;
+        right: 0.5rem;
+        bottom: 0.5rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #fff;
+        background: rgba(15, 23, 42, 0.72);
+        border-radius: 9999px;
+        padding: 0.25rem 0.6rem;
+        pointer-events: none;
+      }
+      .pocus-ampliar:hover .pocus-ampliar-aviso,
+      .pocus-ampliar:focus-visible .pocus-ampliar-aviso {
+        background: #4f46e5;
+      }
+      html:has(#pocus-visor[open]) {
+        overflow: hidden;
+      }
+      #pocus-visor {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: #0b0f19;
+        color: #e5e7eb;
+      }
+      #pocus-visor[open] {
+        display: flex;
+        flex-direction: column;
+      }
+      #pocus-visor::backdrop {
+        background: #000;
+      }
+      .pocus-visor-barra {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: calc(0.5rem + env(safe-area-inset-top, 0px)) 0.75rem 0.5rem;
+        font-size: 0.85rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .pocus-visor-boton {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0 0.85rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 9999px;
+        cursor: pointer;
+      }
+      .pocus-visor-boton:hover,
+      .pocus-visor-boton:focus-visible {
+        background: #4f46e5;
+        border-color: #4f46e5;
+        outline: none;
+      }
+      .pocus-visor-escena {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0.5rem;
+        touch-action: pan-y;
+      }
+      /* El tope de 1,5× lo ponen los atributos width/height que escribe el visor; aquí solo se
+         encaja en la pantalla sin deformar (object-fit), nunca se estira más allá. */
+      .pocus-visor-escena img {
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      .pocus-visor-paso {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.4rem;
+        padding: 0;
+        background: rgba(15, 23, 42, 0.7);
+      }
+      .pocus-visor-paso[data-paso="-1"] { left: 0.5rem; }
+      .pocus-visor-paso[data-paso="1"] { right: 0.5rem; }
+      .pocus-visor-pie {
+        flex: 0 0 auto;
+        max-height: 38vh;
+        overflow-y: auto;
+        width: min(100%, 52rem);
+        margin: 0.5rem auto 0;
+        padding: 0.7rem 0.9rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+        font-size: 0.85rem;
+        line-height: 1.45;
+        color: #374151;
+        background: #fff;
+        border-radius: 0.5rem 0.5rem 0 0;
+      }
       .pocus-saber-mas {
         margin-top: 1.25rem;
         padding-top: 1rem;
@@ -10383,7 +10511,10 @@ CONCLUSIÓN:
               const cambios = m.cambios ? ` · ${escPocus(m.cambios)}` : '';
               return `
               <figure class="pocus-figura">
-                <img src="${escPocus(m.src)}" alt="${escPocus(m.alt)}" width="${Number(m.ancho) || ''}" height="${Number(m.alto) || ''}" loading="lazy" decoding="async">
+                <button type="button" class="pocus-ampliar" onclick="ampliarImagen(this)" aria-haspopup="dialog" aria-label="Ampliar: ${escPocus(m.titulo)}">
+                  <img src="${escPocus(m.src)}" alt="${escPocus(m.alt)}" width="${Number(m.ancho) || ''}" height="${Number(m.alto) || ''}" loading="lazy" decoding="async">
+                  <span class="pocus-ampliar-aviso" aria-hidden="true">&#10530; Ampliar</span>
+                </button>
                 <figcaption>
                   <span class="pocus-figura-titulo">${escPocus(m.titulo)}</span>
                   ${escPocus(m.queMirar)}
@@ -10413,6 +10544,130 @@ CONCLUSIÓN:
           window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
         }
         window.irAImagenes = irAImagenes;
+
+        // ── D-7 · Visor: ampliar y pasar entre las imágenes de la MISMA ficha ────────────────
+        // Un solo <dialog> para toda la página, creado la primera vez que hace falta. La lista
+        // de imágenes se lee del DOM de la tarjeta (`.pocus-media`), no de pocusData: así el
+        // visor enseña exactamente lo que la ficha pinta, con su mismo pie.
+        // Límite honesto: los clips miden 300-800 px; se amplían hasta 1,5× su tamaño real y no
+        // más, porque más allá solo se emborronan. La ganancia es en el móvil y en la rejilla.
+        // Botón «atrás» del móvil: al abrir se apila UNA entrada de historial con la misma URL;
+        // «atrás» la consume y cierra el visor en vez de salir del atlas. Si se cierra por otra
+        // vía (Esc, botón), se deshace esa entrada para no dejar un «atrás» que no hace nada.
+        const VISOR_AMPLIACION_MAX = 1.5;
+        const visor = { dlg: null, figuras: [], i: 0, ignorarPop: false, toqueX: null };
+
+        function crearVisor() {
+          const dlg = document.createElement('dialog');
+          dlg.id = 'pocus-visor';
+          dlg.setAttribute('aria-label', 'Imagen ampliada');
+          dlg.innerHTML = `
+            <div class="pocus-visor-barra">
+              <span class="pocus-visor-contador" aria-live="polite"></span>
+              <button type="button" class="pocus-visor-boton pocus-visor-cerrar" aria-label="Cerrar la imagen ampliada">&#10005; Cerrar</button>
+            </div>
+            <div class="pocus-visor-escena">
+              <img alt="">
+              <button type="button" class="pocus-visor-boton pocus-visor-paso" data-paso="-1" aria-label="Imagen anterior">&#8249;</button>
+              <button type="button" class="pocus-visor-boton pocus-visor-paso" data-paso="1" aria-label="Imagen siguiente">&#8250;</button>
+            </div>
+            <div class="pocus-visor-pie"></div>`;
+          dlg.querySelector('.pocus-visor-cerrar').addEventListener('click', () => dlg.close());
+          dlg.querySelectorAll('.pocus-visor-paso').forEach((b) =>
+            b.addEventListener('click', () => pasarImagen(Number(b.dataset.paso)))
+          );
+          dlg.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') { e.preventDefault(); pasarImagen(1); }
+            else if (e.key === 'ArrowLeft') { e.preventDefault(); pasarImagen(-1); }
+          });
+          const escena = dlg.querySelector('.pocus-visor-escena');
+          escena.addEventListener('touchstart', (e) => {
+            visor.toqueX = e.touches.length === 1 ? e.touches[0].clientX : null;
+          }, { passive: true });
+          escena.addEventListener('touchend', (e) => {
+            if (visor.toqueX === null || !e.changedTouches.length) return;
+            const dx = e.changedTouches[0].clientX - visor.toqueX;
+            visor.toqueX = null;
+            if (Math.abs(dx) >= 50) pasarImagen(dx < 0 ? 1 : -1);
+          });
+          // Un clic en el fondo (fuera de la imagen, el pie y los botones) también cierra.
+          escena.addEventListener('click', (e) => { if (e.target === escena) dlg.close(); });
+          dlg.addEventListener('close', () => {
+            const boton = visor.figuras[visor.i] && visor.figuras[visor.i].querySelector('.pocus-ampliar');
+            if (history.state && history.state.pocusVisor) {
+              visor.ignorarPop = true;
+              history.back();
+            }
+            // El foco vuelve a la imagen que se estaba viendo, no a la que se pulsó: el lector
+            // queda donde lo dejó la navegación dentro del visor.
+            if (boton) boton.focus({ preventScroll: false });
+          });
+          document.body.appendChild(dlg);
+          return dlg;
+        }
+
+        function pintarVisor() {
+          const dlg = visor.dlg;
+          const fig = visor.figuras[visor.i];
+          const orig = fig.querySelector('img');
+          const img = dlg.querySelector('.pocus-visor-escena img');
+          const ancho = Number(orig.getAttribute('width')) || orig.naturalWidth || 0;
+          const alto = Number(orig.getAttribute('height')) || orig.naturalHeight || 0;
+          img.src = orig.currentSrc || orig.src;
+          img.alt = orig.alt;
+          if (ancho && alto) {
+            img.width = Math.round(ancho * VISOR_AMPLIACION_MAX);
+            img.height = Math.round(alto * VISOR_AMPLIACION_MAX);
+          } else {
+            img.removeAttribute('width');
+            img.removeAttribute('height');
+          }
+          // `CONTRATO:` el pie entero (título, qué mirar, autor, fuente, licencia) viaja clonado.
+          const pie = dlg.querySelector('.pocus-visor-pie');
+          pie.innerHTML = '';
+          const cap = fig.querySelector('figcaption');
+          if (cap) pie.append(...[...cap.childNodes].map((n) => n.cloneNode(true)));
+          const n = visor.figuras.length;
+          dlg.querySelector('.pocus-visor-contador').textContent = `${visor.i + 1} / ${n}`;
+          dlg.querySelectorAll('.pocus-visor-paso').forEach((b) => { b.hidden = n < 2; });
+        }
+
+        function pasarImagen(paso) {
+          const n = visor.figuras.length;
+          if (n < 2 || !visor.dlg || !visor.dlg.open) return;
+          visor.i = (visor.i + paso + n) % n;
+          pintarVisor();
+        }
+
+        function ampliarImagen(boton) {
+          const fig = boton.closest('.pocus-figura');
+          const bloque = boton.closest('.pocus-media');
+          if (!fig || !bloque) return;
+          visor.dlg = visor.dlg || crearVisor();
+          visor.figuras = [...bloque.querySelectorAll('.pocus-figura')];
+          visor.i = Math.max(0, visor.figuras.indexOf(fig));
+          pintarVisor();
+          if (!visor.dlg.open) {
+            history.pushState({ pocusVisor: true }, '');
+            visor.dlg.showModal();
+            visor.dlg.querySelector('.pocus-visor-cerrar').focus();
+          }
+        }
+        window.ampliarImagen = ampliarImagen;
+
+        // Lo llama el `popstate` del arranque antes de resolver el enlace profundo. Devuelve
+        // true si el evento era del visor (y entonces no hay que tocar la ficha abierta).
+        function popstateDelVisor() {
+          if (visor.ignorarPop) {
+            visor.ignorarPop = false;
+            return true;
+          }
+          if (visor.dlg && visor.dlg.open) {
+            visor.dlg.close();
+            return true;
+          }
+          return false;
+        }
 
         // «Para saber más»: va en Evidencia, separado de las referencias verificadas, porque no
         // sostiene ninguna cifra de la ficha: son lecturas para ampliar.
@@ -10669,6 +10924,8 @@ CONCLUSIÓN:
           _resolverEnlace(true);
         });
         window.addEventListener("popstate", function () {
+          // El visor de imágenes (D-7) apila su propia entrada: un «atrás» suyo no cambia de ficha.
+          if (popstateDelVisor()) return;
           _resolverEnlace(true);
         });
       });

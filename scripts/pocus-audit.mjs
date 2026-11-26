@@ -535,6 +535,19 @@ if (nMedia || nEnlaces) {
     if (!html.includes(`${fn}(app.content.${campo})`))
       problemas.push(`la tarjeta ya no llama a \`${fn}(app.content.${campo})\`: los ${campo} no se pintarían`);
   }
+  /* D-7 (26/11/2026): el visor que amplía las imágenes. Definido, llamado desde cada figura de
+     `construirMediaHtml` y enganchado al `popstate`, que es lo que hace que «atrás» lo cierre. */
+  if (nMedia) {
+    const cuerpoMedia = (html.match(/function construirMediaHtml\s*\([\s\S]*?\n        \}/) || [''])[0];
+    if (!/function ampliarImagen\s*\(/.test(html))
+      problemas.push('hay fichas con medios y pocus.html ya no define `ampliarImagen`: las imágenes no se ampliarían (D-7)');
+    if (!cuerpoMedia.includes('onclick="ampliarImagen(this)"'))
+      problemas.push('`construirMediaHtml` ya no envuelve cada imagen en el botón que llama a `ampliarImagen(this)` (D-7)');
+    if (!/visor\.dlg\.showModal\(\)/.test(html))
+      problemas.push('el visor ya no abre con `showModal()`: perdería Esc, foco atrapado y página inerte (D-7)');
+    if (!/function popstateDelVisor\s*\(/.test(html) || !/if \(popstateDelVisor\(\)\) return;/.test(html))
+      problemas.push('el `popstate` del arranque ya no consulta `popstateDelVisor()`: «atrás» saldría del atlas con una imagen ampliada (D-7)');
+  }
   if (!html.includes('conservan su propia licencia'))
     problemas.push('falta la nota de portada «las imágenes de terceros conservan su propia licencia» (D-6)');
 }
