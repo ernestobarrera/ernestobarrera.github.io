@@ -3187,8 +3187,56 @@ a.badge-seguimiento:focus-visible {
     border-radius: var(--radius-sm, 4px);
 }
 .combo-ficha-row.result-card--en-panel .combo-ficha-name { color: var(--primary); }
-.combo-ficha-name {
+/* Nombre y, debajo, principio activo y ATC de nivel 5 (26/11/2026): dato oficial en gris, sin
+   color que señale nada. */
+.combo-ficha-id {
     flex: 1 1 14rem;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+.combo-ficha-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.1rem 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+.combo-ficha-pa { overflow-wrap: anywhere; }
+.combo-ficha-atc {
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    background: none;
+    padding: 0;
+}
+.combo-ficha-atc-falta { font-style: italic; }
+.combo-ficha-orden {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: var(--space-sm);
+    font-size: 0.8rem;
+}
+.combo-ficha-orden-label { color: var(--text-secondary); }
+.combo-ficha-orden-btn {
+    font: inherit;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--border-default);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.combo-ficha-orden-btn.is-active {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light);
+}
+.combo-ficha-name {
     min-width: 0;
     font-size: 0.88rem;
     font-weight: 500;

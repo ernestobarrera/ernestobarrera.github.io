@@ -257,8 +257,9 @@ class MedCheckApp {
         // Multi-drug lists
         this.interactionsDrugList = [];
         this.adverseDrugList = [];
-        // Lista compartida de la vista "Fármacos" (fusión de Interacciones + Reacciones)
-        this.comboDrugList = [];
+        // Lista compartida de la vista "Fármacos" (fusión de Interacciones + Reacciones).
+        // Sobrevive a recargar la página, no a cerrar el navegador (ver `_cargarListaCombo`).
+        this.comboDrugList = this._cargarListaCombo();
 
         // Clinical Grouping State
         this.initGroupingState();
@@ -5860,6 +5861,128 @@ class MedCheckApp {
     }
 
     // ============================================
+    // LISTA DE VARIAS FICHAS: memoria de la sesión, principio activo y ATC por fila (26/11/2026)
+    // ============================================
+
+    COMBO_LIST_KEY = 'medcheck_combo_list_v1';
+
+    /**
+     * La lista de Varias fichas, tal como quedó antes de recargar la página. MISMA REGLA DE
+     * PRIVACIDAD QUE «Últimos medicamentos» (`rememberRecentMed`): sessionStorage, nunca
+     * localStorage. Sobrevive a una recarga o a un enlace que se abre en la misma pestaña, y
+     * desaparece al cerrar el navegador: en un PC compartido de consulta, una lista que durase
+     * más sería un rastro de lo revisado con cada paciente. Solo se guardan los medicamentos y el
+     * orden elegido; los síntomas y el contexto de la consulta a la IA, no.
+     */
+    _cargarListaCombo() {
+        this._comboOrden = 'anadido';
+        try {
+            const raw = window.sessionStorage.getItem(this.COMBO_LIST_KEY);
+            const datos = raw ? JSON.parse(raw) : null;
+            if (!datos || !Array.isArray(datos.lista)) return [];
+            if (datos.orden === 'atc') this._comboOrden = 'atc';
+            return datos.lista.filter(m => m && m.nregistro && m.nombre);
+        } catch (_) {
+            return [];
+        }
+    }
+
+    /** Espejo en sessionStorage de la lista viva; si falla (modo privado), la lista sigue en memoria. */
+    _guardarListaCombo() {
+        try {
+            if (!this.comboDrugList?.length) {
+                window.sessionStorage.removeItem(this.COMBO_LIST_KEY);
+                return;
+            }
+            window.sessionStorage.setItem(this.COMBO_LIST_KEY, JSON.stringify({
+                orden: this._comboOrden === 'atc' ? 'atc' : 'anadido',
+                lista: this.comboDrugList,
+            }));
+        } catch (_) { /* storage no disponible */ }
+    }
+
+    /**
+     * Códigos ATC de nivel 5 de un detalle de CIMA, con su nombre oficial. `null` si no se pudo
+     * leer (no es lo mismo que una ficha sin ATC de nivel 5, que da `[]`). Siempre `nivel === 5`,
+     * nunca `atcs[0]`, que es el nivel 3 (regla de Utilización, CLAUDE.md del repo).
+     */
+    _atc5DeDetalle(detalle) {
+        if (!detalle || !Array.isArray(detalle.atcs)) return null;
+        return detalle.atcs
+            .filter(a => a && Number(a.nivel) === 5 && a.codigo)
+            .map(a => ({ codigo: String(a.codigo), nombre: a.nombre || '' }));
+    }
+
+    /** Principio activo de una fila, tal como lo da CIMA: VTM si es informativo, si no los PA de la ficha. */
+    _principioActivoCombo(med) {
+        const NON_INF = /^(multicomponente|varios|asociaciones|combinaciones)$/i;
+        const vtm = med?.vtm?.nombre;
+        if (vtm && !NON_INF.test(vtm.trim())) return vtm;
+        const pas = Array.isArray(med?.principiosActivos) ? med.principiosActivos.map(pa => pa?.nombre).filter(Boolean) : [];
+        return pas.length ? pas.join(' + ') : (med?.pactivos || '');
+    }
+
+    /**
+     * Filas de la lista en el orden elegido. «Por código ATC» ordena por el código tal como lo
+     * publica CIMA y, a igual código, por orden de alta; las que no tienen ATC de nivel 5 van al
+     * final. Es solo un orden: no se marca ni se avisa de nada (si dos filas comparten grupo, lo
+     * ve quien lee). La lista en memoria no se reordena: chips, Evidencia y quitar van por índice.
+     */
+    _filasComboOrdenadas() {
+        const filas = (this.comboDrugList || []).map((med, i) => ({ med, i }));
+        if (this._comboOrden !== 'atc') return filas;
+        const clave = ({ med }) => (Array.isArray(med.atc5) && med.atc5.length ? med.atc5.map(a => a.codigo).sort()[0] : null);
+        return filas.sort((a, b) => {
+            const ca = clave(a), cb = clave(b);
+            if (ca && cb && ca !== cb) return ca < cb ? -1 : 1;
+            if (!ca !== !cb) return ca ? -1 : 1;
+            return a.i - b.i;
+        });
+    }
+
+    setComboOrden(orden) {
+        this._comboOrden = orden === 'atc' ? 'atc' : 'anadido';
+        this._guardarListaCombo();
+        this.renderCombination();
+    }
+
+    /**
+     * Completa el ATC de las filas que no lo tienen (alta sin red, o lista anterior a esta
+     * función). Una vez por medicamento y sesión de la página, para que un CIMA caído no deje un
+     * bucle de peticiones; si alguna se completa, se repinta una vez.
+     */
+    async _completarAtcCombo() {
+        if (!this._comboAtcIntentado) this._comboAtcIntentado = new Set();
+        const pendientes = (this.comboDrugList || []).filter(m => m.atc5 == null && !this._comboAtcIntentado.has(String(m.nregistro)));
+        if (!pendientes.length || !this.api?.getMedicamento) return;
+        pendientes.forEach(m => this._comboAtcIntentado.add(String(m.nregistro)));
+        let cambios = 0;
+        await Promise.all(pendientes.map(async m => {
+            try {
+                const atc5 = this._atc5DeDetalle(await this.api.getMedicamento(m.nregistro, { headers: { 'X-MC-Autocomplete': '1' } }));
+                if (atc5) { m.atc5 = atc5; cambios++; }
+            } catch (_) { /* sigue sin ATC; la fila lo dice */ }
+        }));
+        if (!cambios) return;
+        this._guardarListaCombo();
+        if (this.currentView === 'combo') this.renderCombination();
+    }
+
+    /** Línea «principio activo · ATC» de una fila. Dato oficial a la vista, sin rótulo de juicio. */
+    _metaFilaComboHtml(med) {
+        const pa = this._principioActivoCombo(med);
+        let atc;
+        if (Array.isArray(med.atc5) && med.atc5.length) {
+            atc = med.atc5.map(a => `<code class="combo-ficha-atc" title="${this._escapeHtml(a.nombre ? `${a.codigo} · ${a.nombre}` : a.codigo)}">${this._escapeHtml(a.codigo)}</code>`).join(' ');
+        } else if (Array.isArray(med.atc5)) {
+            atc = '<span class="combo-ficha-atc-falta">sin ATC de nivel 5 en CIMA</span>';
+        } else {
+            atc = '<span class="combo-ficha-atc-falta" title="No se pudo leer de CIMA">ATC no disponible</span>';
+        }
+        return `<span class="combo-ficha-meta">${pa ? `<span class="combo-ficha-pa">${this._escapeHtml(pa)}</span>` : ''}${atc}</span>`;
+    }
+
+    // ============================================
     // FÁRMACOS (lista compartida: Interacciones 4.5 + Síntoma 4.8)
     // ============================================
 
@@ -5867,7 +5990,8 @@ class MedCheckApp {
      * Vista única "Fármacos": una sola lista temporal sobre la que se ejecutan dos
      * acciones informacionales (interacciones 4.5 y búsqueda de síntoma 4.8), con resultados
      * separados. Al cambiar la lista, el re-render limpia los resultados (hay que reanalizar).
-     * Lista TEMPORAL, sin persistencia: no es el botiquín de un paciente real.
+     * Lista TEMPORAL: dura lo que la sesión del navegador (`_cargarListaCombo`), nunca más; no es
+     * el botiquín de un paciente real.
      */
     renderCombination() {
         if (!this.comboDrugList) this.comboDrugList = [];
@@ -5997,15 +6121,23 @@ class MedCheckApp {
                 </div>
                 <p class="combo-research-copy">Abre la sección de cada medicamento de la lista, con su texto literal. MedCheck <strong>no cruza</strong> las fichas entre sí ni busca en ellas por ti.</p>
                 ${n === 0 ? '<p class="text-muted text-sm">Añade medicamentos a la lista para abrir sus fichas.</p>' : `
+                ${n > 1 ? `<div class="combo-ficha-orden" role="group" aria-label="Orden de la lista">
+                    <span class="combo-ficha-orden-label">Orden:</span>
+                    <button type="button" class="combo-ficha-orden-btn${this._comboOrden !== 'atc' ? ' is-active' : ''}" aria-pressed="${this._comboOrden !== 'atc'}" onclick="app.setComboOrden('anadido')">Como los añadiste</button>
+                    <button type="button" class="combo-ficha-orden-btn${this._comboOrden === 'atc' ? ' is-active' : ''}" aria-pressed="${this._comboOrden === 'atc'}" onclick="app.setComboOrden('atc')" title="Por el código ATC de nivel 5 que publica CIMA">Por código ATC</button>
+                </div>` : ''}
                 <div class="combo-ficha-list">
-                    ${this.comboDrugList.map(med => {
+                    ${this._filasComboOrdenadas().map(({ med }) => {
                         const nreg = this._escapeHtml(String(med.nregistro)).replace(/'/g, "\\'");
                         // `data-nregistro`: con la ficha abierta, ‹ › y J/K pasan al medicamento
                         // siguiente de esta lista en el mismo apartado (ver `_tarjetasDeLista`).
                         const enPanel = this._nregEnPanel === String(med.nregistro) && !this.modal.classList.contains('hidden');
                         return `
                     <div class="combo-ficha-row${enPanel ? ' result-card--en-panel' : ''}" data-nregistro="${this._escapeHtml(String(med.nregistro))}"${enPanel ? ' aria-current="true"' : ''}>
-                        <span class="combo-ficha-name" title="${this._escapeHtml(med.nombre)}">${this._escapeHtml(med.nombre)}</span>
+                        <span class="combo-ficha-id">
+                            <span class="combo-ficha-name" title="${this._escapeHtml(med.nombre)}">${this._escapeHtml(med.nombre)}</span>
+                            ${this._metaFilaComboHtml(med)}
+                        </span>
                         <span class="combo-ficha-links">
                             <button type="button" class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${nreg}','interactions')" title="Abrir la sección 4.5 de su ficha técnica"><i class="fas fa-random"></i> 4.5 Interacciones</button>
                             <button type="button" class="btn btn-sm btn-secondary" onclick="app.openMedDetails('${nreg}','adverse')" title="Abrir la sección 4.8 de su ficha técnica"><i class="fas fa-notes-medical"></i> 4.8 Reacciones</button>
@@ -6286,6 +6418,8 @@ class MedCheckApp {
         if (refineDetails) refineDetails.addEventListener('toggle', () => { this._comboRefineOpen = refineDetails.open; });
 
         this._syncComboSymptomButtons();
+        // Filas sin ATC (alta sin red): se intenta una vez y se repinta si llega.
+        this._completarAtcCombo();
 
         // Foco: por defecto el buscador de fármacos; tras añadir un síntoma, el campo de síntoma.
         const focusId = this._comboFocusId || 'combo-drug-search';
@@ -6390,22 +6524,30 @@ class MedCheckApp {
         let pactivos = med.pactivos || med.vtm?.nombre || '';
         const NON_INF = /^(multicomponente|varios|asociaciones|combinaciones)$/i;
         const vtmInformativo = vtm?.nombre && !NON_INF.test(vtm.nombre.trim());
-        // Enriquecer con el detalle cuando falte identidad fiable (vtm informativo o PA estructurados).
-        // El fallback a `pactivos` cubre fallos de red, no es la ruta habitual.
-        if (!vtmInformativo && !principiosActivos?.length && med.nregistro) {
+        // El ATC de nivel 5 de cada fila (26/11/2026) sale del detalle de CIMA: los resultados de
+        // búsqueda no lo traen. Así que el detalle se pide también cuando la identidad ya es fiable.
+        let atc5 = this._atc5DeDetalle(med);
+        // Enriquecer con el detalle cuando falte identidad fiable (vtm informativo o PA estructurados)
+        // o falte el ATC. El fallback a `pactivos` cubre fallos de red, no es la ruta habitual.
+        if (((!vtmInformativo && !principiosActivos?.length) || !atc5) && med.nregistro) {
             try {
                 const detail = await this.api.getMedicamento(med.nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
                 if (detail) {
-                    vtm = detail.vtm || vtm;
-                    principiosActivos = detail.principiosActivos || principiosActivos;
+                    vtm = vtmInformativo ? vtm : (detail.vtm || vtm);
+                    principiosActivos = principiosActivos?.length ? principiosActivos : (detail.principiosActivos || principiosActivos);
                     pactivos = pactivos || detail?.vtm?.nombre || detail?.pactivos
                         || (Array.isArray(detail?.principiosActivos) ? detail.principiosActivos.map(pa => pa.nombre).filter(Boolean).join(' + ') : '');
+                    atc5 = atc5 || this._atc5DeDetalle(detail);
                 }
             } catch (_) {
-                // Fallo de red: la lista sigue usable con pactivos/nombre comercial.
+                // Fallo de red: la lista sigue usable con pactivos/nombre comercial; el ATC se
+                // reintenta al pintar (`_completarAtcCombo`).
             }
         }
-        this.comboDrugList.push({ nregistro: med.nregistro, nombre: med.nombre, pactivos, vtm, principiosActivos });
+        // Otro alta pudo terminar mientras se esperaba el detalle: no duplicar.
+        if (this.comboDrugList.some(m => m.nregistro === med.nregistro)) return;
+        this.comboDrugList.push({ nregistro: med.nregistro, nombre: med.nombre, pactivos, vtm, principiosActivos, atc5: atc5 || null });
+        this._guardarListaCombo();
         this.rememberRecentMed(med);
         if (silent) return;
         // Re-render: vacía los contenedores de resultados → la lista cambió, hay que reanalizar.
@@ -6415,11 +6557,13 @@ class MedCheckApp {
 
     removeComboDrug(index) {
         this.comboDrugList.splice(index, 1);
+        this._guardarListaCombo();
         this.renderCombination();
     }
 
     clearComboDrugs() {
         this.comboDrugList = [];
+        this._guardarListaCombo();
         this._comboSymptoms = [];
         this._comboAIContext = '';
         this._comboFocus = new Set();
