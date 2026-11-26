@@ -100,14 +100,21 @@ bloque('4.5', () => {
 bloque('4.8', () => {
     const C = App.RESALTADOS_48;
     const casos = [
-        [['Frecuentes: cefalea, mareo.'], [['ft-frecuencia', 'Frecuentes']]],
-        [['Poco frecuentes'], [['ft-frecuencia', 'Poco frecuentes']]],
-        [['Frecuencia no conocida'], [['ft-frecuencia', 'Frecuencia no conocida']]],
-        [['Desconocida'], [['ft-frecuencia', 'Desconocida']]],
-        [['Muy frecuentes (≥1/10)'], [['ft-frecuencia', 'Muy frecuentes (≥1/10)']]],
-        [['≥1/100 a <1/10'], [['ft-frecuencia', '≥1/100 a <1/10']]],
-        [['Muy raro: angioedema.'], [['ft-frecuencia', 'Muy raro']]],
-        [['Hiperpotasemia y función hepática anormal son poco frecuentes (≥ 1/1.000, <1/100) en niños.'], [['ft-frecuencia', 'poco frecuentes (≥ 1/1.000, <1/100)']]],
+        [['Frecuentes: cefalea, mareo.'], [['ft-frec-f', 'Frecuentes']]],
+        [['Poco frecuentes'], [['ft-frec-pf', 'Poco frecuentes']]],
+        [['Frecuencia no conocida'], [['ft-frec-nc', 'Frecuencia no conocida']]],
+        [['Desconocida'], [['ft-frec-nc', 'Desconocida']]],
+        [['Muy frecuentes (≥1/10)'], [['ft-frec-mf', 'Muy frecuentes (≥1/10)']]],
+        [['Raras'], [['ft-frec-r', 'Raras']]],
+        [['Muy raras (<1/10.000)'], [['ft-frec-mr', 'Muy raras (<1/10.000)']]],
+        [['Muy raro: angioedema.'], [['ft-frec-mr', 'Muy raro']]],
+        [['Hiperpotasemia y función hepática anormal son poco frecuentes (≥ 1/1.000, <1/100) en niños.'], [['ft-frec-pf', 'poco frecuentes (≥ 1/1.000, <1/100)']]],
+        // Cifra sola en una celda: el nivel sale de su límite inferior.
+        [['≥1/10'], [['ft-frec-mf', '≥1/10']]],
+        [['≥1/100 a <1/10'], [['ft-frec-f', '≥1/100 a <1/10']]],
+        [['(≥1/1.000 a <1/100)'], [['ft-frec-pf', '(≥1/1.000 a <1/100)']]],
+        [['≥1/10 000 a <1/1 000'], [['ft-frec-r', '≥1/10 000 a <1/1 000']]],
+        [['<1/10.000'], [['ft-frec-mr', '<1/10.000']]],
     ];
     for (const [nodos, esperado] of casos) {
         const r = marcas(nodos, C).marcas;
@@ -129,7 +136,7 @@ bloque('4.8', () => {
     ok('4.8: ni en su forma con dos puntos y «?» por «<» (como llega en algunas fichas)', marcas(conDosPuntos, C).marcas.length === 0, JSON.stringify(marcas(conDosPuntos, C).marcas));
     // Tras la convención, las etiquetas de la tabla sí se marcan.
     const tras = marcas([enUno, 'Trastornos del sistema nervioso', 'Frecuentes', 'Cefalea'], C).marcas;
-    ok('4.8: tras la convención, la etiqueta de la tabla sí se marca', igual(tras, [['ft-frecuencia', 'Frecuentes']]), JSON.stringify(tras));
+    ok('4.8: tras la convención, la etiqueta de la tabla sí se marca', igual(tras, [['ft-frec-f', 'Frecuentes']]), JSON.stringify(tras));
     // Cabecera de tabla con cifra en celdas contiguas: no es una cadena (sin separador), se marca.
     const cabecera = marcas(['Muy frecuentes (≥1/10)', 'Frecuentes (≥1/100 a <1/10)'], C).marcas;
     ok('4.8: dos celdas de cabecera con su cifra se marcan (no son la frase-convención)', cabecera.length === 2, JSON.stringify(cabecera));
@@ -154,17 +161,33 @@ bloque('leyenda y doctrina', () => {
     const visible = html => html.replace(/title="[^"]*"/g, '').replace(/<[^>]+>/g, ' ');
     const l45 = app._leyendaSeccionHtml(App.RESALTADOS_45, 'aplicar');
     const l48 = app._leyendaSeccionHtml(App.RESALTADOS_48, 'aplicar');
-    ok('la leyenda nombra las categorías', /Lo que indica la ficha/.test(l45) && /Datos disponibles/.test(l45) && /Frecuencia/.test(l48));
+    ok('la leyenda nombra las categorías', /Lo que indica la ficha/.test(l45) && /Datos disponibles/.test(l45) && /Muy frecuentes/.test(l48) && /Frecuencia no conocida/.test(l48));
     ok('la leyenda no lleva recuentos (ningún número visible)', !/\d/.test(visible(l45)) && !/\d/.test(visible(l48)));
     ok('la categoría de exclusión no sale en la leyenda', !/ft-convencion/.test(l48));
     ok('sección corta: sin leyenda', app._leyendaSeccionHtml(App.RESALTADOS_48, 'corta') === '');
     ok('sección densa: la leyenda dice por qué no hay colores', /más de una quinta parte/.test(app._leyendaSeccionHtml(App.RESALTADOS_48, 'densa')));
-    const reglas = css.match(/^mark\.ft-(?:indica|datos|frecuencia)\s*\{[^}]*\}/gm) || [];
-    ok('las tres clases tienen color propio en el CSS', reglas.length === 3);
-    ok('ningún rojo en los colores del piloto (el color no dice gravedad)', reglas.length === 3 && !reglas.some(r => /239,\s*68,\s*68|#ef4444|#f87171|#dc2626|#fca5a5|danger/i.test(r)));
+    const reglas = css.match(/^mark\.ft-(?:indica|datos|frec-[a-z]+)\s*\{[^}]*\}/gm) || [];
+    ok('las ocho clases tienen color propio en el CSS (2 de la 4.5 + 6 de frecuencia)', reglas.length === 8, String(reglas.length));
+    ok('ningún rojo en los colores del piloto (el color no dice gravedad)', reglas.length === 8 && !reglas.some(r => /239,\s*68,\s*68|#ef4444|#f87171|#dc2626|#fca5a5|danger/i.test(r)));
+    // La escala de frecuencia, medida desde el CSS: contraste del texto y orden de la luminosidad.
+    const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+    const contraste = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    const color = clase => { const r = reglas.find(x => x.startsWith(`mark.${clase} `) || x.startsWith(`mark.${clase}{`)); return r ? { fg: r.match(/--mark-fg:\s*(#[0-9a-f]{6})/i)?.[1], bg: r.match(/--mark-bg:\s*(#[0-9a-f]{6})/i)?.[1] } : null; };
+    const escala = App.CLASES_FRECUENCIA.map(color);
+    ok('cada paso de frecuencia tiene fondo opaco y texto en hex (contraste medible)', escala.every(c => c?.fg && c?.bg), JSON.stringify(escala));
+    ok('texto ≥ 4,5:1 sobre cada fondo de la escala', escala.every(c => c && contraste(c.fg, c.bg) >= 4.5), escala.map(c => c && contraste(c.fg, c.bg).toFixed(2)).join(' '));
+    const ordinal = escala.slice(0, 5).map(c => lum(c.bg));
+    ok('la escala es monótona: de muy frecuentes (más intenso) a muy raras (más tenue)', ordinal.every((l, i) => i === 0 || l < ordinal[i - 1]), ordinal.map(l => l.toFixed(3)).join(' > '));
+    ok('el paso más tenue se distingue de la superficie de la ficha (≥ 2:1 sobre #222d3f)', escala[4] && contraste(escala[4].bg, '#222d3f') >= 2);
+    const sat = h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return (Math.max(r, g, b) - Math.min(r, g, b)) / 255; };
+    ok('«frecuencia no conocida» va en gris neutro, fuera de la escala', escala[5] && sat(escala[5].bg) < 0.25);
+    ok('la leyenda de la 4.8 lleva su título y va de más a menos frecuente',
+        /Frecuencia según la ficha/.test(app._leyendaSeccionHtml(App.RESALTADOS_48, 'aplicar', 'Frecuencia según la ficha:'))
+        && /Muy frecuentes[\s\S]*Frecuentes[\s\S]*Poco frecuentes[\s\S]*Raras[\s\S]*Muy raras[\s\S]*Frecuencia no conocida/.test(l48));
+    ok('la ayuda de la leyenda dice que el color es frecuencia y no gravedad', App.RESALTADOS_48.filter(c => !c.excluye).every(c => /no la gravedad/.test(c.ayuda)));
     ok('4.5 y 4.8 llaman al resaltado con su tabla',
         /_resaltarPestanaSeccion\(container\.querySelector\('\.section-text'\), MedCheckApp\.RESALTADOS_45\)/.test(src)
-        && /_resaltarPestanaSeccion\(container\.querySelector\('\.section-text'\), MedCheckApp\.RESALTADOS_48\)/.test(src));
+        && /_resaltarPestanaSeccion\(container\.querySelector\('\.section-text'\), MedCheckApp\.RESALTADOS_48, 'Frecuencia según la ficha:'\)/.test(src));
     ok('la 4.2 sigue con su propio resaltado, sin umbrales nuevos', /this\._resaltarPosologia\(textContainer\);/.test(src));
 });
 

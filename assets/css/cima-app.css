@@ -8298,7 +8298,7 @@ div.section-text th .ft-tras-hueco {
    verde: el color dice qué tipo de frase es, no si algo es grave o está permitido. */
 .section-text mark.ft-indica,
 .section-text mark.ft-datos,
-.section-text mark.ft-frecuencia {
+.section-text mark[class^="ft-frec-"] {
     color: var(--mark-fg) !important;
     background: var(--mark-bg) !important;
     margin: 0 !important;
@@ -8310,10 +8310,22 @@ div.section-text th .ft-tras-hueco {
 }
 mark.ft-indica     { --mark-fg: #c7d2fe; --mark-bg: rgba(99, 102, 241, 0.28); }
 mark.ft-datos      { --mark-fg: #e2e8f0; --mark-bg: rgba(148, 163, 184, 0.24); }
-mark.ft-frecuencia { --mark-fg: #a5f3fc; --mark-bg: rgba(6, 182, 212, 0.18); }
+/* Escala de frecuencia de la 4.8: un solo tono, de tenue (muy raras) a intenso (muy frecuentes).
+   Ordinal y validada sobre la superficie de la ficha (#222d3f): luminosidad monótona, saltos
+   visibles, el paso más tenue a 2,26:1 sobre la superficie y el texto ≥ 4,5:1 sobre cada fondo
+   (claro sobre el paso más oscuro, oscuro sobre el resto). La intensidad es frecuencia, no
+   gravedad. «Frecuencia no conocida», gris neutro y fuera de la escala. Fondos opacos, no rgba:
+   el contraste del texto tiene que ser el medido. */
+mark.ft-frec-mf { --mark-fg: #0b1220; --mark-bg: #7ee3f2; }
+mark.ft-frec-f  { --mark-fg: #0b1220; --mark-bg: #34c3dd; }
+mark.ft-frec-pf { --mark-fg: #0b1220; --mark-bg: #06a3c4; }
+mark.ft-frec-r  { --mark-fg: #0b1220; --mark-bg: #0e8eab; }
+mark.ft-frec-mr { --mark-fg: #f8fafc; --mark-bg: #176a82; }
+mark.ft-frec-nc { --mark-fg: #f8fafc; --mark-bg: #52627a; }
+.ft-legend-titulo { color: var(--text-secondary); }
 .ft-legend mark.ft-indica,
 .ft-legend mark.ft-datos,
-.ft-legend mark.ft-frecuencia {
+.ft-legend mark[class^="ft-frec-"] {
     color: var(--mark-fg);
     background: var(--mark-bg);
     padding: 0.1rem 0.35rem;

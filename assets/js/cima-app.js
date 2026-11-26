@@ -13280,7 +13280,6 @@ ${ftFechaDocsHtml}
         // El número entero y sin cortarse: «1/10», «1/100», «1/1.000», «1/10 000», «1/ 10.000».
         const n = '1\\s*\\/\\s*1\\d{0,2}(?:[.\\s]?\\d{3})*(?!\\d)';
         const cifra = `(?:(?:de\\s+)?[≥>]\\s*${n}(?:\\s*(?:a|y|,|-)\\s*[<≤?]\\s*${n})?|[<≤?]\\s*${n}|no\\s+(?:pueden?|se\\s+puede)\\s+estimar(?:se)?[^)\\n]*)`;
-        const conCifra = `${etiqueta}\\s*\\(\\s*${cifra}\\s*\\)`;
         // Un eslabón de la convención: con paréntesis o con dos puntos («raras: ≥1/10.000 a <1/1.000»).
         const eslabon = `(?:de\\s+)?${etiqueta}\\s*[(:]?\\s*${cifra}\\s*\\)?`;
         // Ni «más frecuentes (>10 %)» ni «menos frecuentes»: eso es prosa, no la etiqueta.
@@ -13293,21 +13292,56 @@ ${ftFechaDocsHtml}
                     new RegExp(`(${eslabon}(?:\\s*(?:[;,.]\\s*(?:y\\s+)?|\\s+y\\s+|\\s+[oó]\\s+)${eslabon})+)`, 'gi'),
                 ],
             },
-            {
-                clase: 'ft-frecuencia', etiqueta: 'Frecuencia', leyenda: 1,
-                ayuda: 'Las etiquetas de frecuencia de la ficha (MedDRA): muy frecuentes, frecuentes, poco frecuentes, raras, muy raras y frecuencia no conocida, con su cifra. Todas del mismo color: la frecuencia no es la gravedad. Que una reacción no esté marcada no significa nada.',
-                patrones: [
-                    // Etiqueta con su cifra, en una lista o en una cabecera de tabla.
-                    new RegExp(`${sinComparativo}(${conCifra})`, 'gi'),
-                    // Etiqueta que encabeza su lista: «Frecuentes: cefalea…».
-                    new RegExp(`${sinComparativo}(${etiqueta})(?=\\s*:)`, 'gi'),
-                    // Celda de tabla con la etiqueta sola (el nodo de texto entero).
-                    new RegExp(`^\\s*((?:frecuencia\\s+)?(?:${etiqueta}|desconocida))\\s*$`, 'gi'),
-                    // Celda de tabla con la cifra sola: «≥1/10», «(≥1/100 a <1/10)».
-                    new RegExp(`^\\s*(\\(?\\s*${cifra}\\s*\\)?)\\s*$`, 'gi'),
-                ],
-            },
+            // ESCALA DE FRECUENCIA (26/11/2026, segunda versión, a petición de Ernesto): una
+            // categoría por etiqueta MedDRA, en un solo tono (cian) de tenue a intenso según la
+            // frecuencia. Es una escala ORDINAL y la fija la propia ficha con sus palabras: los
+            // seis rótulos de la leyenda son los de la convención MedDRA, sin traducirlos a nada.
+            // El color dice frecuencia, NUNCA gravedad: una reacción rara puede ser grave, y la
+            // ayuda de la leyenda lo dice. «Frecuencia no conocida» va en gris neutro, fuera de la
+            // escala: no es una frecuencia baja, es que no se puede estimar.
+            // Rampa validada con el validador de paletas (ordinal, superficie de la ficha #222d3f):
+            // luminosidad monótona, saltos ≥ 0,06, el paso más tenue a 2,26:1 sobre la superficie y
+            // todo texto ≥ 4,5:1 sobre su fondo. Ni rojo ni verde.
+            // ORDEN: las etiquetas compuestas («muy frecuentes», «poco frecuentes», «muy raras»)
+            // van antes que las simples, para que «frecuentes» no se quede con la cola de «poco
+            // frecuentes». `leyenda` es solo el orden de los rótulos (de más a menos frecuente).
+            ...(() => {
+                const N10 = '10(?![\\d])(?![.\\s]\\d{3})';
+                const N100 = '100(?![\\d])(?![.\\s]\\d{3})';
+                const N1000 = '1[.\\s]?000(?![\\d])(?![.\\s]\\d{3})';
+                const N10000 = '10[.\\s]?000(?![\\d])';
+                const hasta = `(?:\\s*(?:a|y|,|-)\\s*[<≤?]\\s*${n})?`;
+                const desde = num => `(?:de\\s+)?[≥>]\\s*1\\s*\\/\\s*${num}${hasta}`;
+                const nivel = (clase, etq, leyenda, rotulo, rango, cifraSola) => ({
+                    clase, etiqueta: rotulo, leyenda,
+                    ayuda: `${rotulo}${rango ? ` (${rango})` : ''}: etiqueta de frecuencia de la ficha (MedDRA). La intensidad del color sigue la frecuencia, no la gravedad: una reacción rara puede ser grave. Que una reacción no esté marcada no significa nada.`,
+                    patrones: [
+                        // Etiqueta con su cifra, en una lista o en una cabecera de tabla.
+                        new RegExp(`${sinComparativo}(${etq}\\s*\\(\\s*${cifra}\\s*\\))`, 'gi'),
+                        // Etiqueta que encabeza su lista: «Frecuentes: cefalea…».
+                        new RegExp(`${sinComparativo}(${etq})(?=\\s*:)`, 'gi'),
+                        // Celda de tabla con la etiqueta sola (el nodo de texto entero).
+                        new RegExp(`^\\s*(${etq})\\s*$`, 'gi'),
+                        // Celda de tabla con la cifra sola de este nivel: «≥1/10», «(≥1/100 a <1/10)».
+                        ...(cifraSola ? [new RegExp(`^\\s*(\\(?\\s*${cifraSola}\\s*\\)?)\\s*$`, 'gi')] : []),
+                    ],
+                });
+                return [
+                    nivel('ft-frec-mf', 'muy\\s+frecuentes?', 1, 'Muy frecuentes', '≥1/10', desde(N10)),
+                    nivel('ft-frec-pf', 'poco\\s+frecuentes?', 3, 'Poco frecuentes', '≥1/1.000 a <1/100', desde(N1000)),
+                    nivel('ft-frec-mr', 'muy\\s+rar[ao]s?', 5, 'Muy raras', '<1/10.000', `[<≤?]\\s*1\\s*\\/\\s*${N10000}`),
+                    nivel('ft-frec-nc', '(?:frecuencia\\s+)?(?:no\\s+conocida|desconocida)', 6, 'Frecuencia no conocida', 'no puede estimarse con los datos disponibles',
+                        'no\\s+(?:pueden?|se\\s+puede)\\s+estimar(?:se)?[^)\\n]*'),
+                    nivel('ft-frec-f', 'frecuentes?', 2, 'Frecuentes', '≥1/100 a <1/10', desde(N100)),
+                    nivel('ft-frec-r', 'rar[ao]s?', 4, 'Raras', '≥1/10.000 a <1/1.000', desde(N10000)),
+                ];
+            })(),
         ];
+    }
+
+    /** Clases de la escala de frecuencia de la 4.8, de más a menos frecuente (la gris, aparte). */
+    static get CLASES_FRECUENCIA() {
+        return ['ft-frec-mf', 'ft-frec-f', 'ft-frec-pf', 'ft-frec-r', 'ft-frec-mr', 'ft-frec-nc'];
     }
 
     /**
@@ -13380,20 +13414,21 @@ ${ftFechaDocsHtml}
     }
 
     /** Leyenda de una sección resaltada: rótulos sin recuentos; si quedó sin colores por densidad, lo dice. */
-    _leyendaSeccionHtml(categorias, estado) {
+    _leyendaSeccionHtml(categorias, estado, titulo = '') {
         if (estado === 'corta') return '';
         if (estado === 'densa') {
             return '<div class="posology-legend ft-legend ft-legend--sin"><span class="text-muted">Sin colores en esta ficha: marcarían más de una quinta parte del texto.</span></div>';
         }
-        return `<div class="posology-legend ft-legend">${categorias.filter(c => !c.excluye).sort((a, b) => a.leyenda - b.leyenda)
+        const cabeza = titulo ? `<span class="ft-legend-titulo">${this._escapeHtml(titulo)}</span>` : '';
+        return `<div class="posology-legend ft-legend">${cabeza}${categorias.filter(c => !c.excluye).sort((a, b) => a.leyenda - b.leyenda)
             .map(c => `<span class="legend-item" title="${this._escapeHtml(c.ayuda)}"><mark class="${c.clase}">${c.etiqueta}</mark></span>`).join('')}</div>`;
     }
 
     /** Resalta el texto de una pestaña de sección y pone su leyenda delante. */
-    _resaltarPestanaSeccion(textContainer, categorias) {
+    _resaltarPestanaSeccion(textContainer, categorias, titulo = '') {
         if (!textContainer) return;
         const estado = this._resaltarSeccion(textContainer, categorias);
-        const leyenda = this._leyendaSeccionHtml(categorias, estado);
+        const leyenda = this._leyendaSeccionHtml(categorias, estado, titulo);
         if (leyenda) textContainer.insertAdjacentHTML('beforebegin', leyenda);
     }
 
@@ -13640,7 +13675,7 @@ ${ftFechaDocsHtml}
     </div>
 `;
             this._compactarTextoFT(container.querySelector('.section-text'));
-            this._resaltarPestanaSeccion(container.querySelector('.section-text'), MedCheckApp.RESALTADOS_48);
+            this._resaltarPestanaSeccion(container.querySelector('.section-text'), MedCheckApp.RESALTADOS_48, 'Frecuencia según la ficha:');
         } catch (error) {
             console.error('Error loading section 4.8:', error);
             container.innerHTML = `
