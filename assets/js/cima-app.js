@@ -13203,6 +13203,200 @@ ${ftFechaDocsHtml}
         }
     }
 
+    // ============================================
+    // RESALTADOS DE 4.5 Y 4.8 (piloto del 26/11/2026)
+    // ============================================
+    //
+    // Misma forma que `RESALTADOS_POSOLOGIA` y mismo motor (`_segmentarResaltados`). Sale del
+    // informe `2026-11-26_resaltados-secciones.md` (223 fichas de CIMA, una por ATC5): 4.5 y 4.8 son
+    // las dos secciones largas que se leen enteras en su pestaña y no tenían ningún resaltado.
+    //
+    // DOCTRINA, que no es de estilo:
+    //   · RESALTAR NO ES AFIRMAR: las frases de «lo que indica la ficha» se marcan con su negación
+    //     dentro («no se recomienda», «no es necesario ajustar la dosis»).
+    //   · EL COLOR DICE EL TIPO DE ENUNCIADO, NUNCA SU GRAVEDAD: «contraindicado» y «no es necesario
+    //     ajustar la dosis» van en el mismo color. Nada en rojo. La fuerza la dicen las palabras de la
+    //     ficha (plantilla QRD de la EMA), que son las que se resaltan; no se traducen a niveles.
+    //   · LA LEYENDA NO LLEVA RECUENTOS: «0» se leería como ausencia.
+    //   · FUERA A PROPÓSITO las enzimas y transportadores de la 4.5 (CYP, gp-P…): el 23 % de sus
+    //     menciones están en frases negadas («no es sustrato de P-gp, BCRP…») y marcar solo el
+    //     nombre se leería como afirmación.
+    // El orden de la lista es el orden de aplicación: lo que marca una categoría ya no lo ve la
+    // siguiente. Una categoría con `excluye: true` no se pinta: se busca ANTES y sobre el texto unido
+    // de la sección (`_planResaltado`), y ninguna marca que la toque se pinta (en la 4.8, la frase que
+    // DEFINE la convención de frecuencias, que CIMA suele partir en varios nodos).
+
+    /** Umbrales de densidad del piloto (informe del 26/11): por debajo de `minCaracteres` la sección se lee entera; por encima de `maxFraccion` coloreada, los colores dejan de servir. */
+    static get UMBRAL_RESALTADO() {
+        return { minCaracteres: 400, maxFraccion: 0.20 };
+    }
+
+    static get RESALTADOS_45() {
+        const L = 'a-záéíóúüñ';
+        const ini = `(?<![${L}])`;
+        return [
+            {
+                clase: 'ft-indica', etiqueta: 'Lo que indica la ficha', leyenda: 1,
+                ayuda: 'La frase en la que la ficha dice qué hacer con la combinación —contraindicado, no se recomienda, evitar, precaución, ajustar la dosis, no es necesario ajustarla, vigilar—, con sus palabras y su negación. Todas del mismo color: el color dice qué tipo de frase es, no lo grave que es. Léela entera.',
+                patrones: [
+                    // Lo más largo y específico primero: a igual inicio gana el patrón que va antes.
+                    new RegExp(`${ini}(no\\s+(?:es\\s+necesario|se\\s+requiere|se\\s+precisa)\\s+(?:ningún\\s+|un\\s+)?ajust(?:ar|e)(?:\\s+de)?(?:\\s+la)?\\s+dosis)`, 'gi'),
+                    new RegExp(`${ini}((?:puede|podría)\\s+ser\\s+necesario\\s+(?:un\\s+)?ajust(?:ar|e\\s+de)\\s+(?:la\\s+)?dosis)`, 'gi'),
+                    // Añadidos tras la auditoría del 26/11 (vocabulario amplio sin resaltar).
+                    new RegExp(`${ini}((?:puede|pueden|podría|podrían)\\s+(?:requerir|necesitar|precisar)\\s+(?:un\\s+|el\\s+)?ajustes?\\s+(?:de|en)\\s+(?:la\\s+)?dosis)`, 'gi'),
+                    new RegExp(`${ini}(se\\s+recomienda\\s+(?:tener\\s+)?(?:especial\\s+|extrema\\s+)?precaución)`, 'gi'),
+                    new RegExp(`${ini}(se\\s+recomienda\\s+evitar)(?![${L}])`, 'gi'),
+                    new RegExp(`${ini}((?:puede\\s+ser|es)\\s+necesari[oa]\\s+(?:una\\s+|un\\s+)?(?:reducción|disminución|aumento)\\s+de\\s+(?:la\\s+)?dosis)`, 'gi'),
+                    new RegExp(`${ini}((?:se\\s+recomienda|se\\s+requiere|se\\s+debe(?:n)?\\s+considerar|es\\s+necesari[oa])\\s+(?:una\\s+|la\\s+)?(?:estrecha\\s+|cuidadosa\\s+|estricta\\s+)?(?:monitorización|vigilancia|supervisión)(?:\\s+(?:estrecha|cuidadosa|estricta|clínica))?)`, 'gi'),
+                    new RegExp(`${ini}((?:se\\s+)?deben?\\s+(?:vigilarse|controlarse|monitorizarse))(?![${L}])`, 'gi'),
+                    new RegExp(`${ini}(debe\\s+ser\\s+evitad[oa])(?![${L}])`, 'gi'),
+                    new RegExp(`${ini}((?:se\\s+debe(?:n)?|debe(?:n)?|es\\s+necesario|se\\s+recomienda)\\s+(?:ajustar|reducir|aumentar|disminuir)\\s+la\\s+dosis)`, 'gi'),
+                    new RegExp(`${ini}((?:está|están)\\s+contraindicad[oa]s?|contraindicad[oa]s?)(?![${L}])`, 'gi'),
+                    new RegExp(`${ini}(no\\s+se\\s+recomienda(?:n)?)(?![${L}])`, 'gi'),
+                    new RegExp(`${ini}((?:se\\s+debe(?:n)?|debe(?:n)?|deberá(?:n)?)\\s+evitar(?:se)?|evitar(?:se)?\\s+(?:el\\s+uso|la\\s+administración|la\\s+combinación))(?![${L}])`, 'gi'),
+                    new RegExp(`${ini}((?:se\\s+debe(?:n)?\\s+|debe(?:n)?\\s+)?(?:tener|tenerse)\\s+(?:especial\\s+)?precaución)`, 'gi'),
+                    new RegExp(`${ini}((?:se\\s+debe(?:n)?\\s+|debe(?:n)?\\s+)?(?:usar|utilizar|administrar)(?:se)?\\s+con\\s+precaución)`, 'gi'),
+                    new RegExp(`${ini}((?:se\\s+recomienda|se\\s+debe(?:n)?|debe(?:n)?)\\s+(?:vigilar|monitorizar|controlar))(?![${L}])`, 'gi'),
+                ],
+            },
+            {
+                clase: 'ft-datos', etiqueta: 'Datos disponibles', leyenda: 2,
+                ayuda: 'Dónde la ficha dice que algo no se ha estudiado. Que no haya ninguna marca no significa que todo esté estudiado.',
+                patrones: [
+                    new RegExp(`${ini}(no\\s+se\\s+han\\s+realizado\\s+estudios\\s+(?:formales\\s+)?de\\s+interacci(?:ón|ones))`, 'gi'),
+                    new RegExp(`${ini}(no\\s+se\\s+ha(?:n)?\\s+estudiado)(?![${L}])`, 'gi'),
+                ],
+            },
+        ];
+    }
+
+    static get RESALTADOS_48() {
+        const L = 'a-záéíóúüñ';
+        // Las seis etiquetas MedDRA (y «desconocida», como sale partida en muchas tablas).
+        // «Muy raro», «raros»: algunas fichas usan el masculino («Muy raro: …»).
+        const etiqueta = '(?:muy\\s+frecuentes?|poco\\s+frecuentes?|frecuentes?|muy\\s+rar[ao]s?|rar[ao]s?|frecuencia\\s+no\\s+conocida|no\\s+conocida)';
+        // Su cifra: «(≥1/100 a <1/10)», «(≥ 1/1.000, < 1/100)», «(<1/10 000)», «(no puede estimarse…)».
+        // `?` incluido: en algunas fichas de CIMA el «≤» llega convertido en «?».
+        // El número entero y sin cortarse: «1/10», «1/100», «1/1.000», «1/10 000», «1/ 10.000».
+        const n = '1\\s*\\/\\s*1\\d{0,2}(?:[.\\s]?\\d{3})*(?!\\d)';
+        const cifra = `(?:(?:de\\s+)?[≥>]\\s*${n}(?:\\s*(?:a|y|,|-)\\s*[<≤?]\\s*${n})?|[<≤?]\\s*${n}|no\\s+(?:pueden?|se\\s+puede)\\s+estimar(?:se)?[^)\\n]*)`;
+        const conCifra = `${etiqueta}\\s*\\(\\s*${cifra}\\s*\\)`;
+        // Un eslabón de la convención: con paréntesis o con dos puntos («raras: ≥1/10.000 a <1/1.000»).
+        const eslabon = `(?:de\\s+)?${etiqueta}\\s*[(:]?\\s*${cifra}\\s*\\)?`;
+        // Ni «más frecuentes (>10 %)» ni «menos frecuentes»: eso es prosa, no la etiqueta.
+        const sinComparativo = `(?<!(?:más|menos)\\s)(?<![${L}])`;
+        return [
+            {
+                clase: 'ft-convencion', excluye: true, etiqueta: '', leyenda: 0, ayuda: '',
+                // La frase que DEFINE la convención: dos o más etiquetas con su cifra seguidas.
+                patrones: [
+                    new RegExp(`(${eslabon}(?:\\s*(?:[;,.]\\s*(?:y\\s+)?|\\s+y\\s+|\\s+[oó]\\s+)${eslabon})+)`, 'gi'),
+                ],
+            },
+            {
+                clase: 'ft-frecuencia', etiqueta: 'Frecuencia', leyenda: 1,
+                ayuda: 'Las etiquetas de frecuencia de la ficha (MedDRA): muy frecuentes, frecuentes, poco frecuentes, raras, muy raras y frecuencia no conocida, con su cifra. Todas del mismo color: la frecuencia no es la gravedad. Que una reacción no esté marcada no significa nada.',
+                patrones: [
+                    // Etiqueta con su cifra, en una lista o en una cabecera de tabla.
+                    new RegExp(`${sinComparativo}(${conCifra})`, 'gi'),
+                    // Etiqueta que encabeza su lista: «Frecuentes: cefalea…».
+                    new RegExp(`${sinComparativo}(${etiqueta})(?=\\s*:)`, 'gi'),
+                    // Celda de tabla con la etiqueta sola (el nodo de texto entero).
+                    new RegExp(`^\\s*((?:frecuencia\\s+)?(?:${etiqueta}|desconocida))\\s*$`, 'gi'),
+                    // Celda de tabla con la cifra sola: «≥1/10», «(≥1/100 a <1/10)».
+                    new RegExp(`^\\s*(\\(?\\s*${cifra}\\s*\\)?)\\s*$`, 'gi'),
+                ],
+            },
+        ];
+    }
+
+    /**
+     * Plan de resaltado de una sección, sin DOM: recibe los textos de sus nodos y decide.
+     *   · `corta`: menos de `minCaracteres` en total; dos o tres frases se leen enteras.
+     *   · `densa`: lo marcado pasaría de `maxFraccion` del texto; se pinta sin colores.
+     *   · `aplicar`: `segmentos[i]` es el reparto del nodo i (o `null` si no tiene marcas).
+     * Lo retirado por una categoría `excluye` no cuenta como marcado.
+     */
+    _planResaltado(textos, categorias, umbral = MedCheckApp.UMBRAL_RESALTADO) {
+        const total = textos.reduce((a, t) => a + t.length, 0);
+        if (total < umbral.minCaracteres) return { estado: 'corta', total, marcado: 0, segmentos: [] };
+        // Las exclusiones se buscan sobre el texto UNIDO de la sección, no nodo a nodo: CIMA parte
+        // la frase de la convención en varios nodos («≥» suele ir en su propio <span>), y por nodo
+        // no se veía y sus trozos salían marcados (visto en la auditoría del 26/11). Se une sin
+        // separador, como se leen los nodos en línea.
+        const unido = textos.join('');
+        // Rangos excluidos [inicio, fin) en el texto unido; los segmentos salen en orden y cubren todo.
+        const rangos = [];
+        for (const c of categorias.filter(x => x.excluye)) {
+            let cursor = 0;
+            for (const s of this._partirPorPatrones(unido, c.patrones, c.clase)) {
+                if (s.clase) rangos.push([cursor, cursor + s.texto.length]);
+                cursor += s.texto.length;
+            }
+        }
+        const pintables = categorias.filter(c => !c.excluye);
+        let marcado = 0;
+        let inicio = 0;
+        const segmentos = textos.map(t => {
+            let pos = inicio;
+            inicio += t.length;
+            const s = this._segmentarResaltados(t, pintables).map(x => {
+                const a = pos;
+                pos += x.texto.length;
+                return x.clase && rangos.some(([i, f]) => a < f && pos > i) ? { texto: x.texto, clase: null } : x;
+            });
+            const pintados = s.filter(x => x.clase);
+            marcado += pintados.reduce((a, x) => a + x.texto.length, 0);
+            return pintados.length ? s : null;
+        });
+        if (marcado / total > umbral.maxFraccion) return { estado: 'densa', total, marcado, segmentos: [] };
+        return { estado: 'aplicar', total, marcado, segmentos };
+    }
+
+    /** Aplica un plan de `_planResaltado` a los nodos de texto del contenedor, sin tocar su HTML. Devuelve el estado. */
+    _resaltarSeccion(contenedor, categorias) {
+        if (!contenedor) return 'corta';
+        const walker = document.createTreeWalker(contenedor, NodeFilter.SHOW_TEXT);
+        const nodos = [];
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            if (n.textContent.trim() && !n.parentElement?.closest('mark')) nodos.push(n);
+        }
+        const plan = this._planResaltado(nodos.map(n => n.textContent), categorias);
+        if (plan.estado !== 'aplicar') return plan.estado;
+        nodos.forEach((nodo, i) => {
+            const segmentos = plan.segmentos[i];
+            if (!segmentos) return;
+            const fragmento = document.createDocumentFragment();
+            for (const s of segmentos) {
+                if (!s.clase) { fragmento.appendChild(document.createTextNode(s.texto)); continue; }
+                const mark = document.createElement('mark');
+                mark.className = s.clase;
+                mark.textContent = s.texto;
+                fragmento.appendChild(mark);
+            }
+            nodo.parentNode.replaceChild(fragmento, nodo);
+        });
+        return plan.estado;
+    }
+
+    /** Leyenda de una sección resaltada: rótulos sin recuentos; si quedó sin colores por densidad, lo dice. */
+    _leyendaSeccionHtml(categorias, estado) {
+        if (estado === 'corta') return '';
+        if (estado === 'densa') {
+            return '<div class="posology-legend ft-legend ft-legend--sin"><span class="text-muted">Sin colores en esta ficha: marcarían más de una quinta parte del texto.</span></div>';
+        }
+        return `<div class="posology-legend ft-legend">${categorias.filter(c => !c.excluye).sort((a, b) => a.leyenda - b.leyenda)
+            .map(c => `<span class="legend-item" title="${this._escapeHtml(c.ayuda)}"><mark class="${c.clase}">${c.etiqueta}</mark></span>`).join('')}</div>`;
+    }
+
+    /** Resalta el texto de una pestaña de sección y pone su leyenda delante. */
+    _resaltarPestanaSeccion(textContainer, categorias) {
+        if (!textContainer) return;
+        const estado = this._resaltarSeccion(textContainer, categorias);
+        const leyenda = this._leyendaSeccionHtml(categorias, estado);
+        if (leyenda) textContainer.insertAdjacentHTML('beforebegin', leyenda);
+    }
+
     /**
      * Limpieza de presentación del HTML de un apartado de la ficha, sin tocar una palabra.
      *
@@ -13381,6 +13575,7 @@ ${ftFechaDocsHtml}
     </div>
 `;
             this._compactarTextoFT(container.querySelector('.section-text'));
+            this._resaltarPestanaSeccion(container.querySelector('.section-text'), MedCheckApp.RESALTADOS_45);
         } catch (error) {
             console.error('Error loading section 4.5:', error);
             container.innerHTML = `
@@ -13445,6 +13640,7 @@ ${ftFechaDocsHtml}
     </div>
 `;
             this._compactarTextoFT(container.querySelector('.section-text'));
+            this._resaltarPestanaSeccion(container.querySelector('.section-text'), MedCheckApp.RESALTADOS_48);
         } catch (error) {
             console.error('Error loading section 4.8:', error);
             container.innerHTML = `

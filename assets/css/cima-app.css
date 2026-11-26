@@ -8294,6 +8294,33 @@ div.section-text th .ft-tras-hueco {
     box-decoration-break: clone;
 }
 
+/* Resaltados de 4.5 y 4.8 (piloto del 26/11/2026). Mismo trato que los de la 4.2. Ningún rojo ni
+   verde: el color dice qué tipo de frase es, no si algo es grave o está permitido. */
+.section-text mark.ft-indica,
+.section-text mark.ft-datos,
+.section-text mark.ft-frecuencia {
+    color: var(--mark-fg) !important;
+    background: var(--mark-bg) !important;
+    margin: 0 !important;
+    padding: 0 0.12em !important;
+    display: inline !important;
+    vertical-align: baseline;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+mark.ft-indica     { --mark-fg: #c7d2fe; --mark-bg: rgba(99, 102, 241, 0.28); }
+mark.ft-datos      { --mark-fg: #e2e8f0; --mark-bg: rgba(148, 163, 184, 0.24); }
+mark.ft-frecuencia { --mark-fg: #a5f3fc; --mark-bg: rgba(6, 182, 212, 0.18); }
+.ft-legend mark.ft-indica,
+.ft-legend mark.ft-datos,
+.ft-legend mark.ft-frecuencia {
+    color: var(--mark-fg);
+    background: var(--mark-bg);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
 .section-text mark.qt-highlight {
     color: #fbbf24 !important;
     background: rgba(251, 191, 36, 0.25) !important;
