@@ -465,8 +465,17 @@ async function main() {
       !!r && r.figs === f.n && r.cargan === f.n && r.pies === f.n && r.salto && r.enlaces === f.e, r);
   }
 
-  const otraFicha = await ev(`(async () => { await window.renderSegmentContent('cardiac'); return document.querySelectorAll('.pocus-figura, .pocus-saber-mas, .pocus-salto-media').length; })()`);
-  comprobar('una ficha sin medios no pinta bloques vacíos de iconografía', otraFicha === 0, otraFicha);
+  // El control se elige de la propia página: el primer segmento en el que ninguna ficha tiene
+  // medios ni enlaces. Antes era 'cardiac' fijo, y dejó de servir en cuanto FoCUS tuvo imágenes.
+  const otraFicha = await ev(`(async () => {
+    const tiene = (a) => a.content && ((a.content.media || []).length || (a.content.enlaces || []).length);
+    const seg = [...new Set(pocusData.map(a => a.segment))].find(s => !pocusData.some(a => a.segment === s && tiene(a)));
+    if (!seg) return { seg: null };
+    await window.renderSegmentContent(seg);
+    return { seg, bloques: document.querySelectorAll('.pocus-figura, .pocus-saber-mas, .pocus-salto-media').length };
+  })()`);
+  comprobar(`una ficha sin medios no pinta bloques vacíos de iconografía (segmento «${otraFicha && otraFicha.seg}»)`, !!otraFicha && !!otraFicha.seg && otraFicha.bloques === 0, otraFicha);
+
 }
 
 main()
